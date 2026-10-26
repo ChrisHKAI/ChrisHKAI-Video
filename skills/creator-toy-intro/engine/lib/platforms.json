@@ -1,0 +1,43 @@
+{
+  "_about": "Where a film is published and the covers each place takes, by the film's orientation. No platform publishes an official cover spec; these follow each app's own grid (the themes' tiles, drawn from real screenshots) and common creator guides, checked 2026-10. \"full\" is the whole frame; a ratio is a centred cut of the held last frame. \"themes\" are the stage themes that default to this platform when film.json has no \"publish\".",
+  "x": {
+    "name": "X",
+    "themes": ["x-desktop", "x-mobile"],
+    "covers": {
+      "landscape": [{ "kind": "poster", "aspect": "full" }],
+      "portrait": [{ "kind": "poster", "aspect": "full" }]
+    }
+  },
+  "douyin": {
+    "name": "抖音",
+    "themes": ["douyin-mobile"],
+    "covers": {
+      "portrait": [{ "kind": "cover", "aspect": "full" }, { "kind": "grid", "aspect": "3:4" }],
+      "landscape": [{ "kind": "cover", "aspect": "full" }, { "kind": "cover", "aspect": "4:3" }]
+    }
+  },
+  "xhs": {
+    "name": "小红书",
+    "themes": ["xhs-mobile"],
+    "covers": {
+      "portrait": [{ "kind": "cover", "aspect": "3:4" }],
+      "landscape": [{ "kind": "cover", "aspect": "4:3" }]
+    }
+  },
+  "channels": {
+    "name": "视频号",
+    "themes": ["channels-mobile"],
+    "covers": {
+      "portrait": [{ "kind": "cover", "aspect": "full" }, { "kind": "grid", "aspect": "3:4" }],
+      "landscape": [{ "kind": "cover", "aspect": "full" }]
+    }
+  },
+  "ig": {
+    "name": "Instagram",
+    "themes": ["ig-mobile"],
+    "covers": {
+      "portrait": [{ "kind": "reels", "aspect": "full" }, { "kind": "grid", "aspect": "3:4" }, { "kind": "feed", "aspect": "4:5" }],
+      "landscape": [{ "kind": "feed", "aspect": "full" }]
+    }
+  }
+}

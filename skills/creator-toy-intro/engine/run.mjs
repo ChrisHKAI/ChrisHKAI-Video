@@ -10,7 +10,8 @@
 //           sound    the synthesized score → assets/audio/score.wav
 //           lookdev  Blender turnaround of the toy → build/lookdev/
 //           render   Blender Cycles frames → build/render/ (args after -- go to scene.py)
-//           finish   bloom, vignette, grain, H.264 + AAC → out/
+//           finish   bloom, vignette, grain, H.264 + AAC → out/, then covers
+//           covers   each platform's covers cut from the last frame → out/covers/
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -49,7 +50,11 @@ for (const [i, step] of steps.entries()) {
     case "sound": run("python3", [tpl("score.py")]); break;
     case "lookdev": run(blender, ["-b", "--factory-startup", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]); break;
     case "render": run(blender, ["-b", "--factory-startup", "-P", fromSkill("engine/scripts/scene.py"), "--", ...more]); break;
-    case "finish": run("python3", [fromSkill("engine/scripts/finish.py"), ...more]); break;
+    case "finish":
+      run("python3", [fromSkill("engine/scripts/finish.py"), ...more]);
+      run("python3", [fromSkill("engine/scripts/covers.py")]);
+      break;
+    case "covers": run("python3", [fromSkill("engine/scripts/covers.py"), ...more]); break;
     default: console.error(`unknown step: ${step}`); process.exit(1);
   }
 }

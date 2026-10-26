@@ -125,7 +125,7 @@ function portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) {
   // the end card stacks: name, handle, the slogan's lines, then the snail and
   // the toy along the floor; the text stays clear of the platform's top bar
   // and bottom captions
-  const last = K(28.0, [0, 0.42, 0.02], 2.3, 6, 0, 10);
+  const last = K(28.0, [0, 0.455, 0.02], 2.4, 6, 0, 10);
   const camera2 = [
     K(24.3833, [-0.2, 0.2, 0], 1.15, 9, 8, 9),
     K(25.2, [-0.2, 0.25, 0], 0.9, 8, 12, 7),

@@ -50,15 +50,17 @@ A folder outside the skill, never committed:
   recipes/         the film's own scripts (cover cuts, its flat avatar)
   assets/          the creator's pictures; the pipeline adds textures here
   build/           everything generated (anim.json, glyphs, frames)
-  out/             the finished film
+  out/             the finished film; out/covers/ the platforms' covers
 ```
 
 film.json holds: `template`, `theme`, `language`, `format` (fps, bpm,
-duration, size), `output`, `toy`, `recipes` (in order; `@sticker2d` and
+duration, size), `output`, `publish` (where the film goes: ids in
+`engine/lib/platforms.json`; default the stage theme's platform), `toy`, `recipes` (in order; `@sticker2d` and
 `@shape` are engine tools), `branding` (the creator's own copies of platform
 marks, if any), `profile` (name, handle, bio, counts, pictures), `posts`
 (pinned and the second post: date, title, counts, cover), `counter` (value,
-unit, label), `cta` (slogan labels, name and handle labels, the prop),
+unit, label), `cta` (slogan labels, name and handle labels, the prop;
+positions optional: the template lays the end card out per orientation),
 `sticker2d`, `pop` (confetti colours), `story` (events, places, wall pieces,
 camera keys, shakes).
 
@@ -68,8 +70,13 @@ camera keys, shakes).
 FILM=<film> node engine/run.mjs data      # recipes glyphs hero ui anim sound
 FILM=<film> node engine/run.mjs lookdev   # the toy's turnaround → build/lookdev/
 FILM=<film> node engine/run.mjs render -- --frames 1-900 --samples 128 --scale 100
-FILM=<film> node engine/run.mjs finish    # → out/
+FILM=<film> node engine/run.mjs finish    # → out/, then covers → out/covers/
 ```
+
+Covers are cut from the held last frame at the film's own pixels, one set
+per platform in `publish` (`covers` alone re-cuts them). Look at
+`build/covers-check.jpg`: every cut drawn on the frame, the covers beside it;
+a cut that loses part of the end card is reported.
 
 Previews: `render -- --frames 13,49,121 --samples 32 --scale 50 --out build/previs`.
 An animatic: `--engine eevee --samples 4 --scale 33 --out build/eev`.
