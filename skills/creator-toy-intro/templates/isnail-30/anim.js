@@ -1,5 +1,7 @@
-// Every moving thing's state at film time t, as plain numbers.
-// scripts/export-anim.mjs samples it twice a frame for Blender. World space is
+// The isnail-30 story: every moving thing's state at film time t, as plain
+// numbers. The engine's modules do the general work (the toy's rig, the
+// camera, the sticker peel, the counter, torn-paper labels, particles); this
+// file is the choreography. world.js samples it twice a frame. World space is
 // Three.js-style: metres, +y up, +z toward the viewer's (south) edge of the
 // page; 1 UI px = 1 mm, UI centre at the origin, slab tops at y = 0.
 // Transforms are { p, q, s }.
@@ -14,7 +16,7 @@ import { ballistic } from "../../engine/lib/particles.js";
 import { makePeel } from "../../engine/lib/peel.js";
 import { counterLayout, countEase, counterGlyphs } from "../../engine/lib/counter.js";
 import { mulberry32 } from "../../engine/lib/rng.js";
-import { qId, qMul, qAxis, qEuler, qRot, qFromTo, qFromBasis, qConj, trs, apply, mulT } from "../../engine/lib/quat.js";
+import { qId, qMul, qAxis, qEuler, qRot, trs, apply, mulT } from "../../engine/lib/quat.js";
 
 export const MM = 0.001;
 export const SLAB_T = 0.008;
