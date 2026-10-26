@@ -18,11 +18,10 @@ engine, one story template (`isnail-30`) and six platform themes work in
 16:9 and 9:16, and rebuild the reference film exactly; finish cuts each
 platform's covers, and previews are checked against each app's own
 controls. Steps 0 to 4 (the computer, onboarding, research, the toy in three
-kits, the storyboard page) work. Still written by hand for each new
-creator, until stage 4 gives them defaults: the cover walls' pieces (a
-recipe per cover), the flat profile picture the toy peels off as, the exit
-through a sticker on the second cover (it needs the toy drawn on that
-cover), and the end card's prop (isnail's snail is cut from his 公众号 logo).
+kits, the storyboard page) work. For each creator you also write the
+film's own code, as for isnail (`example/isnail/`): the cover walls'
+recipes, the flat profile picture, the end card's prop (from what they want
+to promote) and the exit; `references/` has the method for each.
 
 ## Making a film
 
@@ -34,19 +33,20 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
 | 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
 | 3 | the toy from the confirmed picture, in one of three kits; a turnaround beside it to approve | `references/toy.md` |
-| 4 | the storyboard page: the story, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/storyboard.md` |
+| 4 | the film's own code (cover walls, flat profile picture, exit, prop), then the storyboard page: the story, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `storyboard.md` |
 | 5 | render, finish, covers | `render`, `finish` |
 
 ## Layout
 
 | path | what it is |
 | --- | --- |
+| `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover and avatar recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
-| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `storyboard.md` (step 4) |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md` and `storyboard.md` (step 4) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
 | `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
-| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
+| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
 ## Requirements

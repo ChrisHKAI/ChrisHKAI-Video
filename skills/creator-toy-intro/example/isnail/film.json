@@ -1,0 +1,309 @@
+{
+  "id": "isnail",
+  "template": "isnail-30",
+  "theme": "x-desktop",
+  "language": "zh-Hans",
+  "format": {
+    "fps": 30,
+    "bpm": 120,
+    "duration": 30,
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "output": "out/isnail-intro.mp4",
+  "toy": "toy.json",
+  "recipes": [
+    "cover-retro.py",
+    "cover-pinned.py",
+    "@sticker2d",
+    "@shape",
+    "avatar.py"
+  ],
+  "profile": {
+    "name": "蜗牛King",
+    "nameEmoji": "👑",
+    "handle": "isnail",
+    "verified": true,
+    "postsCount": "3.5万 帖子",
+    "bio": [
+      "正在为自由努力，搞副业",
+      "公众号知识库+答疑群199",
+      "持续分享，每天进步一点点"
+    ],
+    "meta": {
+      "topic": "出海、AI账号",
+      "link": "chuhai.pet",
+      "joined": "2023年4月加入"
+    },
+    "following": "1,380",
+    "followers": "5.5万",
+    "avatar": "assets/avatar-real.jpg",
+    "banner": "assets/banner-real.jpg"
+  },
+  "posts": {
+    "pinned": {
+      "date": "5月31日",
+      "title": "公众号新号从0到1起号保姆级全阶教程（附SOP、提示词）",
+      "counts": [
+        "163",
+        "914",
+        "5,018",
+        "304万"
+      ],
+      "cover": "assets/pinned-cover.jpg"
+    },
+    "retro": {
+      "date": "10月3日",
+      "title": "9个月，46K粉，变现7W，自媒体很苦，但它是最适合普通人尝试的道路之一",
+      "counts": [
+        "62",
+        "83",
+        "243",
+        "7.5万"
+      ]
+    }
+  },
+  "counter": {
+    "value": 304,
+    "unit": "万",
+    "label": "阅读"
+  },
+  "cta": {
+    "slogan": [
+      {
+        "text": "公众号变现",
+        "paper": "cream",
+        "em": 0.1,
+        "at": [
+          -0.36,
+          0.064,
+          -0.06
+        ],
+        "tilt": -0.012
+      },
+      {
+        "text": "找蜗牛",
+        "paper": "red",
+        "em": 0.1,
+        "at": [
+          0.1,
+          0.07,
+          -0.058
+        ],
+        "tilt": 0.02
+      }
+    ],
+    "name": {
+      "text": "蜗牛King",
+      "paper": "cream",
+      "em": 0.105,
+      "at": [
+        -0.2,
+        0.322,
+        -0.09
+      ],
+      "tilt": -0.03
+    },
+    "handle": {
+      "text": "@isnail",
+      "paper": "blue",
+      "em": 0.062,
+      "at": [
+        -0.16,
+        0.2,
+        -0.085
+      ],
+      "tilt": 0.022
+    },
+    "prop": {
+      "kind": "snail",
+      "logoColor": "#07C160",
+      "bodyColor": "#E6F3E9",
+      "shape": {
+        "image": "assets/gzh-logo.png",
+        "hue": [
+          0.25,
+          0.5
+        ],
+        "minSat": 0.45,
+        "minVal": 0.35,
+        "x": [
+          150,
+          440
+        ],
+        "marginY": 20,
+        "minArea": 300
+      }
+    }
+  },
+  "sticker2d": {
+    "from": "assets/cover-full.png",
+    "cardWidth": 1030,
+    "crop": [
+      495,
+      0,
+      745,
+      215
+    ]
+  },
+  "pop": {
+    "confetti": [
+      "#F6C445",
+      "#4E7BEF",
+      "#7FC86B",
+      "#F59A3B",
+      "#FFFFFF",
+      "#B44CC8"
+    ],
+    "leaf": "#6DBE5A"
+  },
+  "story": {
+    "wall2": {
+      "stage": [
+        6.75,
+        70
+      ],
+      "boards": [
+        6.875,
+        14
+      ],
+      "stairs0": [
+        6.9,
+        50
+      ],
+      "stairs1": [
+        6.95,
+        50
+      ],
+      "t0": [
+        7,
+        40
+      ],
+      "t1": [
+        7.125,
+        40
+      ],
+      "t2": [
+        7.25,
+        40
+      ],
+      "t3": [
+        7.375,
+        40
+      ],
+      "t4": [
+        7.5,
+        40
+      ],
+      "cong": [
+        7.625,
+        42
+      ],
+      "zero": [
+        7.75,
+        75
+      ],
+      "dao": [
+        7.875,
+        40
+      ],
+      "one": [
+        8,
+        80
+      ],
+      "qihao": [
+        8.25,
+        30
+      ],
+      "quanjie": [
+        8.375,
+        30
+      ],
+      "tag": [
+        8.5,
+        16
+      ],
+      "rinei": [
+        8.625,
+        20
+      ],
+      "notebook": [
+        8.75,
+        34
+      ],
+      "card": [
+        8.875,
+        34
+      ],
+      "phone": [
+        9,
+        40
+      ],
+      "board": [
+        9.125,
+        42
+      ],
+      "board_ink": [
+        9.125,
+        46
+      ],
+      "seat": [
+        9.25,
+        26
+      ],
+      "stand": [
+        9.375,
+        26
+      ]
+    },
+    "wall": {
+      "ledge": {
+        "piece": "tag",
+        "depth": 70,
+        "at": [
+          40,
+          59.5
+        ]
+      },
+      "box9": {
+        "piece": "box9",
+        "depth": 60,
+        "at": [
+          -150,
+          109
+        ],
+        "clunks": 9
+      },
+      "box46": {
+        "piece": "box46",
+        "depth": 75,
+        "at": [
+          8,
+          143.5
+        ]
+      },
+      "box7": {
+        "piece": "box7",
+        "depth": 95,
+        "aim": [
+          200,
+          185,
+          60
+        ]
+      },
+      "title": {
+        "piece": "title",
+        "depth": 30
+      },
+      "arrow": {
+        "piece": "arrow",
+        "depth": 18
+      }
+    }
+  },
+  "toyFrom": [
+    "assets/avatar-real.jpg"
+  ]
+}

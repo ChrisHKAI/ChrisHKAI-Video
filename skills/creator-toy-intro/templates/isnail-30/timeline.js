@@ -6,7 +6,9 @@
 // 0.5 s and a bar 2 s, and every big hit sits on a downbeat.
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { film, fromSkill, readFilmJSON } from "../../engine/lib/film.js";
+import { film, fromFilm, fromSkill, readFilmJSON } from "../../engine/lib/film.js";
+import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "../../engine/lib/math.js";
+import { trs, qId, qEuler, apply, mulT } from "../../engine/lib/quat.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
@@ -55,6 +57,17 @@ export const CTA = S.stage; // the CTA stage: far beyond every other shot's clip
 export const SPOT = S.spots ?? D.spots; // places in UI px
 export const WALL2 = S.wall2; // act 2 cover pieces: [push-out time, depth mm]
 export const WALL = S.wall; // act 3 wall pieces (wall mm; box tops are where he can stand)
+// how the toy leaves the act 3 wall: "sticker" (it becomes the drawing of itself
+// on that cover: film.json "sticker2d" says where) or "jump" (out of the top of
+// the frame; it falls onto the end card's prop after the cut)
+export const EXIT = S.exit ?? (film.sticker2d ? "sticker" : "jump");
+// the end card's prop: the film's own module (film.json cta.prop.module, written
+// for this creator) or a built-in one by kind (props/<kind>.js; isnail's snail)
+const PROP_URL = film.cta.prop?.module ? pathToFileURL(fromFilm(film.cta.prop.module)).href : new URL(`./props/${film.cta.prop?.kind ?? "snail"}.js`, import.meta.url).href;
+export const PROP = (await import(PROP_URL)).makeProp({
+  film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON,
+  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4 },
+});
 export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // camera keys: target = [UI x, UI y, height mm] or a tracker name; dist m,
 // elev / az deg (az 0 = from the south edge); after the cut, CAMERA2 targets
@@ -108,7 +121,7 @@ export function soundCues() {
   add(12.72, "whoosh", { dur: 0.28 });
   add(E.slam, "slam");
   add(E.slam + 0.03, "debris", { dur: 1.1 });
-  for (let i = 0; i < 9; i++) add(E.rise9[0] + i * 0.175 + 0.07, "wood", { i });
+  for (let i = 0; i < (WALL.box9.clunks ?? 9); i++) add(E.rise9[0] + i * 0.175 + 0.07, "wood", { i });
   add(E.climb9[0], "boing"); add(E.climb9[1], "pomf");
   add(E.rise46[0], "slide", { dur: E.rise46[1] - E.rise46[0], long: true });
   add(E.climb46[0], "boing"); add(E.climb46[1], "pomf");
@@ -119,22 +132,25 @@ export function soundCues() {
   add(E.peak, "lock", { big: true });
   add(E.peak + 0.02, "coins", { dur: 0.9 });
   add(E.tagGlint, "glint");
-  add(E.toSticker[0], "boing", { soft: true }); add(E.toSticker[1], "pomf", { soft: true });
-  add(E.flat[0], "pop", { soft: true });
-  add(E.flat[0] + 0.05, "suck", { dur: E.flatLand - E.flat[0] - 0.05 });
-  add(E.flatLand, "slap", { i: 0 });
-  add(E.flatLand + 0.05, "glint", { soft: true });
-  add(E.peel2[0], "peel", { dur: E.peel2[1] - E.peel2[0] });
+  if (EXIT === "sticker") {
+    add(E.toSticker[0], "boing", { soft: true }); add(E.toSticker[1], "pomf", { soft: true });
+    add(E.flat[0], "pop", { soft: true });
+    add(E.flat[0] + 0.05, "suck", { dur: E.flatLand - E.flat[0] - 0.05 });
+    add(E.flatLand, "slap", { i: 0 });
+    add(E.flatLand + 0.05, "glint", { soft: true });
+    add(E.peel2[0], "peel", { dur: E.peel2[1] - E.peel2[0] });
+  } else {
+    add(E.toSticker[0] + 0.2, "boing", { long: true });
+    add(E.toSticker[0] + 0.25, "whooshUp", { dur: 0.5 });
+  }
   // the call to action
-  add(E.repop, "pop");
-  add(E.repop + 0.06, "whoosh", { dur: E.cut - E.repop });
-  add(E.logo[0], "whooshDown", { dur: E.logo[1] - E.logo[0] });
-  add(E.logo[1], "land");
-  add(E.snail[0], "squelch", { dur: E.snail[1] - E.snail[0] + 0.1 });
-  add(E.eyes[0], "boing", { soft: true }); add(E.eyes[0] + 0.1, "boing", { soft: true });
+  if (EXIT === "sticker") {
+    add(E.repop, "pop");
+    add(E.repop + 0.06, "whoosh", { dur: E.cut - E.repop });
+  } else add(E.cut + 0.1, "whooshDown", { dur: 0.6 });
+  PROP.cues(add);
   add(E.ride, "pomf");
   add(E.glint2, "glint");
-  add(E.glide[0], "glide", { dur: E.glide[1] - E.glide[0] });
   const TUNE = ["G5", "A5", "B5", "D6", "E6", "G6", "A6", "B6"];
   [...SLOGAN].forEach((_, i) => add(EV.letters + i * BEAT / 2, "letter", { note: TUNE[i], red: i >= SLOGAN_RED }));
   add(E.final, "lock", { big: true });

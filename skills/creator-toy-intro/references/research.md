@@ -96,20 +96,30 @@ post, number and one line of why:
 - `proof2`, the post whose cover stands up as a wall and comes apart: a
   cover with big lettering or numbers on it works best. `{ "post": "p2",
   "why": "…" }`.
-- `cta`, the closing line in one or two short parts, from the creator's own
-  words (bio, pinned post): `{ "slogan": ["公众号变现", "找蜗牛"], "why": "…" }`.
+- `cta`, what the film ends on: the closing line in one or two short parts
+  and the end card's prop, together. First work out what the creator wants
+  people to come for (a course, a group, a product, a service, a link: their
+  bio, pinned post and links say); each candidate pairs a line with a prop
+  that ties that to who they are, the way isnail's 公众号 mark becomes the
+  shell of a snail because he is 蜗牛King: `{ "slogan": ["公众号变现",
+  "找蜗牛"], "prop": "his 公众号 mark becomes a snail's shell; the toy rides it",
+  "why": "…" }`. The question asks what they want to promote as much as
+  which line: "other" lets them say it in their own words.
 
 Then `node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
 language>` writes `research/materials.png` (and `.html`). Show it, and ask
 in one round: one question per slot, A / B / C and "other" (AskUserQuestion
 where the agent has it, else one message). Write the answers into `picks`
 (the chosen candidate objects, or the user's own words in the same shape).
+If they name something to promote that no candidate covers, propose two or
+three props for it in a follow-up message before going on.
 
 ## Into film.json
 
 `node <skill>/engine/scripts/apply-research.mjs <film>` fills `profile`,
 `posts` (`pinned` = proof 1, `retro` = proof 2), `counter`, `grid` (the other
-posts), the end card's name, handle and slogan, `toyFrom` (the confirmed
+posts), the end card's name, handle, slogan and prop idea (`cta.prop.idea`,
+built in step 4: `references/props.md`), `toyFrom` (the confirmed
 pictures), and moves `step` to `toy`. It stops while the toy's picture is
 not confirmed.
 It warns when proof 1's number cannot be the counter: pick another, or

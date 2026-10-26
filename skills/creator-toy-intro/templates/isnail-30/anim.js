@@ -121,17 +121,26 @@ export function wallAt(t) {
   return { tr: trs(base, qMul(r.q, qAxis([1, 0, 0], th)), k), stood: s };
 }
 const onWall = (t, x, y, z) => apply(wallAt(t).tr, [x * MM, y * MM, z * MM]);
+// The act 3 wall's roles (film.json story.wall: role → { piece, depth, at, … }):
+// ledge (he lands on it), box9 (the first proof: rises in `clunks` steps, one
+// per unit of its number, he climbs it), box46 (the second: slides out, he
+// climbs it), box7 (the third: punches out, he points at it from `aim`), title
+// (flies out and slams back at 13.0 s), arrow (a last accent). Pieces are the
+// cover recipe's (build/cover.json) by name.
+const ROLE = Object.fromEntries(Object.entries(T.WALL).map(([role, w]) => [w.piece, role]));
+const PIECE = (role) => T.WALL[role].piece;
+export const CLUNKS = T.WALL.box9.clunks ?? 9;
 // how far each piece stands out of the wall (mm, the front face)
 export function protrudeAt(name, t) {
   const W = T.WALL;
   const back = 1 - easeInOut(seg(t, E.flat[0], E.flat[0] + 0.45));
   const f = (v) => 0.3 + (v - 0.3) * back;
-  switch (name) {
-    case "tag": return f(0.3 + W.ledge.depth * backOut(seg(t, 12.35, 12.65), 1.1));
+  switch (ROLE[name]) {
+    case "ledge": return f(0.3 + W.ledge.depth * backOut(seg(t, 12.35, 12.65), 1.1));
     case "box9": {
       let k = 0;
-      for (let i = 1; i <= 9; i++) k += easeOut(seg(t, E.rise9[0] + (i - 1) * 0.175, E.rise9[0] + (i - 1) * 0.175 + 0.09));
-      return f(0.3 + W.box9.depth * k / 9);
+      for (let i = 1; i <= CLUNKS; i++) k += easeOut(seg(t, E.rise9[0] + (i - 1) * 0.175, E.rise9[0] + (i - 1) * 0.175 + 0.09));
+      return f(0.3 + W.box9.depth * k / CLUNKS);
     }
     case "box46": return f(0.3 + W.box46.depth * easeInOut(seg(t, E.rise46[0], E.rise46[1])));
     case "box7": return f(0.3 + W.box7.depth * backOut(seg(t, E.rise7[0], E.rise7[1]), 2.2));
@@ -155,12 +164,14 @@ const centroid = (p) => {
   return [pts.reduce((s, q) => s + q[0], 0) / pts.length, pts.reduce((s, q) => s + q[1], 0) / pts.length, 0];
 };
 const PIVOT = Object.fromEntries(COVER.pieces.map((p) => [p.name, centroid(p)]));
+// where he points on the third proof (wall mm): film.json's, or the middle of its face
+const BOX7_AIM = T.WALL.box7.aim ?? (PIVOT[PIECE("box7")] ? [PIVOT[PIECE("box7")][0] / MM, PIVOT[PIECE("box7")][1] / MM, T.WALL.box7.depth] : [0, 0, 0]);
 export function pieceAt(p, t) {
   const base = p.kind === "ink" ? p.of : p.name;
   const out = protrudeAt(base, t);
   const z = (p.kind === "ink" ? out + 5 * Math.min(1, out / 10) : out) * MM - pieceDepth(p) / 2;
-  if (base !== "title") return trs([0, 0, z]);
-  const c = PIVOT.title;
+  if (ROLE[base] !== "title") return trs([0, 0, z]);
+  const c = PIVOT[PIECE("title")];
   const q = titleTilt(t);
   const rc = qRot(q, c);
   return trs([c[0] - rc[0], c[1] - rc[1], z], q);
@@ -276,7 +287,7 @@ export function mascotPose(t) {
     return o;
   }
   const W = T.WALL;
-  const ledge = (t2) => { const x = W.ledge.at[0]; return onWall(t2, x, topAt("tag", x), protrudeAt("tag", t2) * 0.5); };
+  const ledge = (t2) => { const x = W.ledge.at[0]; return onWall(t2, x, topAt(PIECE("ledge"), x), protrudeAt(PIECE("ledge"), t2) * 0.5); };
   if (t < 12.7) {
     o.pos = FRONT.slice();
     o.yaw = Math.PI - 0.5 * smooth(seg(t, 12.1, 12.5)); // watches the wall go up behind him… then turns to it
@@ -286,8 +297,8 @@ export function mascotPose(t) {
     return o;
   }
   if (t < 12.95) { hop(o, t, FRONT, ledge(12.95), 12.7, 12.95, 0.05); o.yaw = lerpAngle(Math.PI - 0.5, 0.5, seg(t, 12.7, 12.95)); return o; }
-  const box9 = (t2) => { const x = W.box9.at[0]; return onWall(t2, x, topAt("box9", x), protrudeAt("box9", t2) * 0.5); };
-  const box46 = (t2) => { const x = W.box46.at[0]; return onWall(t2, x, topAt("box46", x), protrudeAt("box46", t2) * 0.5); };
+  const box9 = (t2) => { const x = W.box9.at[0]; return onWall(t2, x, topAt(PIECE("box9"), x), protrudeAt(PIECE("box9"), t2) * 0.5); };
+  const box46 = (t2) => { const x = W.box46.at[0]; return onWall(t2, x, topAt(PIECE("box46"), x), protrudeAt(PIECE("box46"), t2) * 0.5); };
   if (t < E.climb9[0]) {
     o.pos = ledge(t);
     o.ground = o.pos[1];
@@ -300,7 +311,7 @@ export function mascotPose(t) {
     o.head = [hit > 0 ? 0.3 * Math.exp(-hit * 4) : 0, hit > 0.45 && hit < 0.9 ? 0.35 * Math.sin((hit - 0.45) * 28) : 0, 0];
     o.armR = [0, 0, hit > 0 ? -0.9 * Math.exp(-hit * 4) - 0.12 : -0.12];
     o.armL = [0, 0, hit > 0 ? 0.9 * Math.exp(-hit * 4) + 0.12 : 0.12];
-    for (let i = 1; i <= 9; i++) q += landSquash(t, E.rise9[0] + (i - 1) * 0.175 + 0.09, 0.05);
+    for (let i = 1; i <= CLUNKS; i++) q += landSquash(t, E.rise9[0] + (i - 1) * 0.175 + 0.09, 0.05);
     q += crouch(t, E.climb9[0], 0.14);
     squash(o, q);
     return o;
@@ -316,9 +327,10 @@ export function mascotPose(t) {
   }
   if (t < E.climb46[1]) { hop(o, t, box9(t), box46(t), E.climb46[0], E.climb46[1], 0.03); return o; }
   if (t >= E.repop) return ctaPose(o, t);
+  if (T.EXIT === "jump" && t >= E.toSticker[0]) return leapOut(o, t, box46(E.toSticker[0]));
   if (t >= E.flat[0] + 0.08) { o.show = false; return o; } // he is the sticker card now
   const sx = STICKER.cx / MM;
-  const onSticker = (t2) => onWall(t2, sx, topAt("box46", sx), protrudeAt("box46", t2) * 0.5);
+  const onSticker = (t2) => onWall(t2, sx, topAt(PIECE("box46"), sx), protrudeAt(PIECE("box46"), t2) * 0.5);
   if (t >= E.toSticker[0] && t < E.toSticker[1]) {
     hop(o, t, box46(t), onSticker(t), E.toSticker[0], E.toSticker[1], 0.03, { yaw: 0.5 });
     return o;
@@ -334,7 +346,7 @@ export function mascotPose(t) {
   squash(o, (there ? landSquash(t, E.toSticker[1], 0.2) : landSquash(t, E.climb46[1], 0.24)) - 0.06 * k + (there ? 0 : crouch(t, E.toSticker[0], 0.12)));
   o.legL = [-0.55 * k, 0, 0.15 * k]; o.legR = [0.6 * k, 0, -0.1 * k];
   o.body = [0.08 * k, -0.2 * k, 0];
-  const aim = there ? onWall(t, sx + 220, topAt("box46", sx) + 75, 40) : onWall(t, 200, 185, 60);
+  const aim = there ? onWall(t, sx + 220, topAt(PIECE("box46"), sx) + 75, 40) : onWall(t, ...BOX7_AIM);
   o.aimL = { world: aim, k, len: 1.1 };
   o.pointL = k;
   o.armR = [0.6 * k, 0, -0.35 * k];
@@ -347,14 +359,28 @@ export function mascotPose(t) {
   return o;
 }
 
+// the other way off the wall: a crouch, then a leap straight up out of the frame
+function leapOut(o, t, from) {
+  const t0 = E.toSticker[0] + 0.2, s = seg(t, t0, t0 + 0.5);
+  if (s >= 1) { o.show = false; return o; }
+  o.pos = v3.add(from, [0, 0.75 * Math.pow(s, 0.8), 0]);
+  o.ground = from[1];
+  o.yaw = 0.7;
+  squash(o, crouch(t, t0, 0.16));
+  o.armR = [0, 0, -2.4 * smooth(s)]; o.armL = [0, 0, 2.4 * smooth(s)];
+  o.legR = [0.5 * s, 0, 0]; o.legL = [0.5 * s, 0, 0];
+  return o;
+}
+
 // the sticker card, wall-local: poof → pressed flush with the boxes; peel → pop
 export function sticker2dAt(t) {
   const S = STICKER;
+  if (T.EXIT !== "sticker") return trs([S.cx, S.cy, 0], qId(), HIDDEN);
   const home = [S.cx, S.cy, 0.0006];
   const sx = S.cx / MM;
   if (t >= E.flat[0] && t < E.flatLand + 0.07) {
     // stands where his feet were, then sinks into its own place in the picture
-    const start = [S.cx, topAt("box46", sx) * MM + S.h / 2 - 0.003, protrudeAt("box46", t) * 0.5 * MM];
+    const start = [S.cx, topAt(PIECE("box46"), sx) * MM + S.h / 2 - 0.003, protrudeAt(PIECE("box46"), t) * 0.5 * MM];
     const s = easeInOut(seg(t, E.flat[0] + 0.05, E.flatLand));
     const pos = v3.lerp(start, home, s);
     const grow = backOut(seg(t, E.flat[0], E.flat[0] + 0.1), 1.8);
@@ -376,6 +402,7 @@ export function sticker2dAt(t) {
 
 // the call to action: out of the cover, onto the snail's shell, point at you
 function ctaPose(o, t) {
+  if (t < E.cut && T.EXIT !== "sticker") { o.show = false; return o; } // still above the frame
   if (t < E.cut) {
     const p0 = onWall(E.repop, STICKER.cx / MM, STICKER.feet / MM, 30);
     const s = seg(t, E.repop + 0.06, E.cut);
@@ -391,7 +418,7 @@ function ctaPose(o, t) {
   }
   o.noBlob = true;
   o.pop = 1.3;
-  const top = shellTop(t);
+  const top = T.PROP.topAt(t);
   if (t < E.ride) {
     const u = seg(t, E.ride - 0.32, E.ride);
     o.pos = v3.add(top, [0, 0.9 * Math.pow(1 - u, 2), 0]);
@@ -501,72 +528,8 @@ export function glowBarAt(i, t) {
 }
 
 // ── The call to action (CTA stage, metres from T.CTA) ───────────────────────
-export const LOGO = readFilmJSON("build/logo.json", null) ?? { rings: [], aspect: 1 };
-export const SHELL_H = 0.19;
-export const SHELL_D = 0.032;
+// the prop itself (isnail's snail) lives in props/snail.js or the film's own module (T.PROP)
 const cta = (x, y, z) => [T.CTA[0] + x, T.CTA[1] + y, T.CTA[2] + z];
-// the snail: x forward (it crawls to +x), y up, z to the camera
-const SN = (shape, name, a, b, c = null, extra = {}) => ({ name, shape, ...(shape === "ellipsoid" ? { r: a } : { size: a, radius: extra.radius }), pos: b, rot: c, mat: extra.mat || "body" });
-export const SNAIL_PARTS = [
-  SN("ellipsoid", "body", [0.13, 0.03, 0.05], [0, 0.03, 0]),
-  SN("ellipsoid", "tail", [0.07, 0.017, 0.032], [-0.12, 0.017, 0]),
-  SN("ellipsoid", "neck", [0.06, 0.036, 0.043], [0.085, 0.046, 0]),
-  SN("ellipsoid", "head", [0.043, 0.046, 0.043], [0.125, 0.078, 0]),
-  ...[-1, 1].flatMap((k) => [
-    SN("roundBox", `stalk${k}`, [0.008, 0.05, 0.008], [0.135, 0.125, k * 0.017], [k * 0.25, 0, -0.22], { radius: 0.0038 }),
-    SN("ellipsoid", `eye${k}`, [0.011, 0.011, 0.011], [0.146, 0.151, k * 0.023], null, { mat: "eye" }),
-    SN("ellipsoid", `pupil${k}`, [0.0048, 0.0048, 0.003], [0.15, 0.152, k * 0.023 + 0.0095], null, { mat: "pupil" }),
-  ]),
-  { name: "smile", shape: "arc", radius: 0.007, tube: 0.0016, arc: Math.PI * 0.75, pos: [0.14, 0.07, 0.04], rot: [0, 0.35, -Math.PI / 2 - Math.PI * 0.375], mat: "pupil" },
-];
-export const snailX = (t) => lerp(T.CTA_LAYOUT.path[0], T.CTA_LAYOUT.path[1], easeInOut(seg(t, E.glide[0], E.glide[1])));
-function snailT(t) {
-  const x = snailX(t);
-  const grow = t < E.snail[0] ? 0 : backOut(seg(t, E.snail[0], E.snail[1]), 1.4);
-  const crawl = t > E.glide[0] && t < E.glide[1] + 0.2 ? Math.sin((t - E.glide[0]) * TAU * 3) : 0;
-  return trs(cta(x, 0, 0.07), qId(), grow < 0.01 ? HIDDEN : [grow * (1 + 0.05 * crawl), grow * (1 - 0.04 * crawl), grow]);
-}
-export function snailPartsAt(t) {
-  const sT = snailT(t);
-  const eyes = backOut(seg(t, E.eyes[0], E.eyes[1]), 2.2);
-  return SNAIL_PARTS.map((p) => {
-    let pos = p.pos, s = [1, 1, 1];
-    if (/stalk|eye|pupil/.test(p.name)) {
-      const wob = 0.05 * Math.sin(t * 9 + (p.name.endsWith("-1") ? 0 : 1.3));
-      pos = [pos[0], 0.1 + (pos[1] - 0.1) * Math.max(eyes, 1e-3), pos[2]];
-      s = eyes < 0.01 ? [HIDDEN, HIDDEN, HIDDEN] : [1, 1, 1];
-      return mulT(sT, trs(pos, p.rot ? qEuler(p.rot[0], p.rot[1], p.rot[2] + wob) : qEuler(0, 0, wob), s));
-    }
-    return mulT(sT, trs(pos, p.rot ? qEuler(...p.rot) : qId(), s));
-  });
-}
-// the 公众号 mark: drops in spinning, then rides the snail as its shell
-const SHELL_REST = [-0.015, 0.042 + SHELL_H / 2, 0];
-export function logoAt(t) {
-  const sT = snailT(Math.max(t, E.snail[1]));
-  const rest = apply(trs(sT.p, qId(), 1), SHELL_REST);
-  if (t < E.logo[0]) return trs(v3.add(rest, [0, 0.9, 0]), qId(), HIDDEN);
-  const d = seg(t, E.logo[0], E.logo[1]);
-  const floorY = SHELL_H / 2;
-  const lift = smooth(seg(t, E.snail[0], E.snail[1]));
-  const base = [rest[0], lerp(floorY, rest[1], lift), rest[2]];
-  if (t < E.logo[1]) {
-    const p = v3.add(base, [0, 0.3 * (1 - d * d), 0]);
-    return trs(p, qEuler(0, -TAU * 2 * (1 - easeOut(d)), 0));
-  }
-  const b = t - E.logo[1];
-  const sq = 0.18 * Math.exp(-b * 9) * Math.cos(b * 32);
-  const sway = t > E.glide[0] ? 0.05 * Math.sin((t - E.glide[0]) * TAU * 1.5) * (1 - seg(t, E.glide[1], E.glide[1] + 0.4)) : 0;
-  const x = t >= E.snail[0] ? snailT(t).p[0] + SHELL_REST[0] : base[0];
-  return trs([x, base[1] - SHELL_H / 2 * sq, base[2]], qEuler(0, 0, sway), [1 + sq * 0.5, 1 - sq, 1]);
-}
-// where his feet go on top of the shell (logo rings are in units of its height)
-const SHELL_TOP = (() => {
-  let best = 0.5;
-  for (const r of LOGO.rings) for (const [x, y] of r) if (Math.abs(x) < 0.12 && y > (best === 0.5 ? -1 : best)) best = y;
-  return best;
-})();
-const shellTop = (t) => apply(logoAt(t), [0.0, SHELL_TOP * SHELL_H + 0.002, 0]);
 // ── The sign-off on torn paper, like the 《自媒体很苦》 cover ────────────────
 // Each label is a sheet of coloured paper with a white torn rim behind it and
 // raised Lantinghei Heavy letters on it. The line 公众号变现 | 找蜗牛 stands on
@@ -632,7 +595,7 @@ export function flakeAt(i, t) {
 export const SPARKS = 22;
 export function sparkAt(i, t) {
   const stk = () => onWall(t, STICKER.cx / MM, STICKER.cy / MM, 40);
-  const bursts = [[E.lock, () => statCentre(t), "#FFFFFF"], [E.peak, () => onWall(t, 190, 210, 100), "#FFD25A"], [E.flat[0], stk, "#FFF4E0"], [E.repop, stk, "#FFF4E0"], [E.final, () => heroCentre(t), "#FFFFFF"]];
+  const bursts = [[E.lock, () => statCentre(t), "#FFFFFF"], [E.peak, () => onWall(t, 190, 210, 100), "#FFD25A"], ...(T.EXIT === "sticker" ? [[E.flat[0], stk, "#FFF4E0"], [E.repop, stk, "#FFF4E0"]] : []), [E.final, () => heroCentre(t), "#FFFFFF"]];
   for (const [t0, at, color] of bursts) {
     const dt = t - t0;
     if (dt < 0 || dt > 0.7) continue;
@@ -670,6 +633,7 @@ export function fxAt(t) {
 }
 // the cover: 0 = without the 2D mascot (he is out), 1 = as published
 export function coverMix(t) {
+  if (T.EXIT !== "sticker") return 1; // nothing of him is drawn on this cover
   if (t >= E.peel2[0]) return 0; // the sticker card is off the picture again
   if (t >= E.flatLand) return 1; // the card is flush: the drawing is back
   if (t < E.leap[0]) return 1;

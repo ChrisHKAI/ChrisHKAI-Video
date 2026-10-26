@@ -52,11 +52,7 @@ export function declare({ add, pack, objects }) {
 
   // the call to action
   add({ name: "cta_floor", geo: { type: "plane", w: 10, h: 10 }, mat: { type: "stage" }, tr: pack(trs([T.CTA[0], 0, T.CTA[2]], qEuler(-Math.PI / 2, 0, 0))) });
-  add({ name: "logo", geo: { type: "curve", rings: A.LOGO.rings.map((r) => r.map(([x, y]) => [+(x * A.SHELL_H).toFixed(6), +(y * A.SHELL_H).toFixed(6)])), depth: A.SHELL_D, bevel: 0.0022 }, mat: { type: "type", color: film.cta.prop.logoColor, emit: 0.25 }, anim: true });
-  A.SNAIL_PARTS.forEach((p) => {
-    const geo = p.shape === "roundBox" ? { type: "roundBox", size: p.size, radius: p.radius } : p.shape === "ellipsoid" ? { type: "ellipsoid", r: p.r } : { type: "arc", radius: p.radius, tube: p.tube, arc: p.arc };
-    add({ name: `snail_${p.name}`, geo, mat: { type: "toy", key: { body: "snail", eye: "white", pupil: "black" }[p.mat] }, anim: true });
-  });
+  T.PROP.declare(add); // the end card's prop (isnail's snail, or the film's own)
   // the sign-off: torn paper labels with raised letters, and the crown
   A.LABELS.forEach((L, i) => {
     const [paper, ink] = PAPER[L.paper];
@@ -118,8 +114,7 @@ export function sample(t, { put, putColor, regular, whole, scalars, hex }) {
   A.GLOW_BARS.forEach((_, i) => put(`glow_${i}`, A.glowBarAt(i, t)));
   put("stat_lid", A.lidAt(t));
   for (const [name, tr] of Object.entries(A.statAt(t))) put(name, tr);
-  put("logo", A.logoAt(t));
-  A.snailPartsAt(t).forEach((tr, i) => put(`snail_${A.SNAIL_PARTS[i].name}`, tr));
+  T.PROP.sample(put, t);
   A.LABELS.forEach((L, i) => {
     put(`label${i}_rim`, A.labelRimAt(i, t));
     put(`label${i}_sheet`, A.labelSheetAt(i, t));

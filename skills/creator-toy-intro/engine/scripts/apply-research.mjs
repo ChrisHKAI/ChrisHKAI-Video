@@ -65,6 +65,8 @@ const next = {
   ...(others.length ? { grid: others.map((p) => ({ cover: p.cover, ...(show(p, TILE) ? { count: show(p, TILE) } : {}) })) } : {}),
   cta: {
     ...(film.cta ?? {}),
+    // the prop idea the user picked with the closing line; the agent builds it (references/props.md)
+    ...(picks.cta.prop ? { prop: { ...(film.cta?.prop ?? {}), idea: picks.cta.prop } } : {}),
     slogan: slogan.map((text, k) => ({ text, paper: k % 2 ? "red" : "cream" })),
     name: { text: pr.name, paper: "cream" },
     handle: { text: pr.handle ? `@${pr.handle}` : pr.name, paper: "blue" },

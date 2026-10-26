@@ -60,10 +60,11 @@ def rgba(hex_, k=1.0):
     return (r * k, g * k, b * k, 1.0)
 
 
-# the toy's colours and finishes (toy.json), plus the CTA prop's body colour
+# the toy's colours and finishes (toy.json), plus the end card prop's (film.json cta.prop: colors, bodyColor)
 TOY_SPEC = json.loads((FILM / FILM_JSON["toy"]).read_text())
 # the prop's eyes take the toy's white and black when it has them (isnail's), else these
-TOY = {"white": "#F3F1EC", "black": "#141416", **TOY_SPEC["colors"], "snail": FILM_JSON["cta"]["prop"]["bodyColor"]}
+PROP = FILM_JSON["cta"].get("prop", {})
+TOY = {"white": "#F3F1EC", "black": "#141416", **TOY_SPEC["colors"], **PROP.get("colors", {}), **({"snail": PROP["bodyColor"]} if "bodyColor" in PROP else {})}
 FINISH = TOY_SPEC.get("finish", {})  # vinyl (default) | matte | soft | lens
 
 # ── Scene ───────────────────────────────────────────────────────────────────

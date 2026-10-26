@@ -16,9 +16,9 @@ const facts = JSON.parse(readFileSync(join(dir, "research/facts.json"), "utf8"))
 const film = existsSync(join(dir, "film.json")) ? JSON.parse(readFileSync(join(dir, "film.json"), "utf8")) : {};
 const lang = argv.includes("--lang") ? argv[argv.indexOf("--lang") + 1] : film.language ?? "zh-Hans";
 const T = {
-  "zh-Hans": { title: "素材表", pinned: "置顶", proof1: "证据一：数字升起的帖子", proof2: "证据二：封面企起做墙的帖子", cta: "结尾口号", other: "其他：直接讲", ask: "用这几个做素材好不好？" },
-  "zh-Hant": { title: "素材表", pinned: "置頂", proof1: "證據一：數字升起嘅帖", proof2: "證據二：封面企起做牆嘅帖", cta: "結尾口號", other: "其他：直接講", ask: "用呢幾個做素材好唔好？" },
-  en: { title: "Material", pinned: "pinned", proof1: "Proof 1: the post whose number rises", proof2: "Proof 2: the post whose cover becomes the wall", cta: "Closing line", other: "Other: just say", ask: "Use these as the material?" },
+  "zh-Hans": { title: "素材表", pinned: "置顶", proof1: "证据一：数字升起的帖子", proof2: "证据二：封面企起做墙的帖子", cta: "结尾：口号和道具", other: "其他：直接讲", ask: "用这几个做素材好不好？" },
+  "zh-Hant": { title: "素材表", pinned: "置頂", proof1: "證據一：數字升起嘅帖", proof2: "證據二：封面企起做牆嘅帖", cta: "結尾：口號同道具", other: "其他：直接講", ask: "用呢幾個做素材好唔好？" },
+  en: { title: "Material", pinned: "pinned", proof1: "Proof 1: the post whose number rises", proof2: "Proof 2: the post whose cover becomes the wall", cta: "The ending: line and prop", other: "Other: just say", ask: "Use these as the material?" },
 }[lang] ?? {};
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const img = (p) => (p && existsSync(join(dir, p)) ? `file://${encodeURI(join(dir, p))}` : null);
@@ -35,7 +35,8 @@ const cand = (slot, c, k) => {
   const p = posts.find((q) => q.id === c.post);
   const head = c.slogan ? c.slogan.map(esc).join(" ／ ") : `#${no(c.post)} ${esc(p?.title ?? "")}`;
   const num = c.number && p?.numbers?.[c.number] ? `<b>${esc(p.numbers[c.number].display)}</b> ${esc(p.numbers[c.number].label)}` : "";
-  return `<div class="c"><span class="k">${"ABC"[k] ?? k + 1}</span><div><div class="h">${head}</div>${num ? `<div class="num">${num}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;
+  const prop = c.prop ? `<div class="num">${esc(c.prop)}</div>` : "";
+  return `<div class="c"><span class="k">${"ABC"[k] ?? k + 1}</span><div><div class="h">${head}</div>${num ? `<div class="num">${num}</div>` : ""}${prop}<div class="why">${esc(c.why)}</div></div></div>`;
 };
 const slots = Object.entries(facts.slots ?? {}).map(([slot, list]) => `<section><h2>${esc(T[slot] ?? slot)}</h2>${list.slice(0, 3).map((c, k) => cand(slot, c, k)).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>`).join("");
 
