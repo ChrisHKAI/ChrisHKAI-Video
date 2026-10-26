@@ -12,6 +12,7 @@
 //           render   Blender Cycles frames → build/render/ (args after -- go to scene.py)
 //           finish   bloom, vignette, grain, H.264 + AAC → out/, then covers
 //           covers   each platform's covers cut from the last frame → out/covers/
+//           safezone the platforms' controls over preview frames → build/safezone-check.jpg
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -55,6 +56,7 @@ for (const [i, step] of steps.entries()) {
       run("python3", [fromSkill("engine/scripts/covers.py")]);
       break;
     case "covers": run("python3", [fromSkill("engine/scripts/covers.py"), ...more]); break;
+    case "safezone": run("python3", [fromSkill("engine/scripts/safezone.py"), ...more]); break;
     default: console.error(`unknown step: ${step}`); process.exit(1);
   }
 }

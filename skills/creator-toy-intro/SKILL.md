@@ -79,6 +79,10 @@ per platform in `publish` (`covers` alone re-cuts them). Look at
 a cut that loses part of the end card is reported.
 
 Previews: `render -- --frames 13,49,121 --samples 32 --scale 50 --out build/previs`.
+Then `safezone`: the platforms' own controls (top bar, captions, the
+buttons column) laid over the previews in `build/safezone-check.jpg`, with
+the safe box clear of all of them; include a frame of the end card's hold to
+have it checked by itself.
 An animatic: `--engine eevee --samples 4 --scale 33 --out build/eev`.
 
 ## Rules the films taught
@@ -90,4 +94,5 @@ An animatic: `--engine eevee --samples 4 --scale 33 --out build/eev`.
 - After a change, re-render only the frames it touches; keep the old frames
   until the new cut is checked.
 - Look before spending GPU time: check the UI texture, cover-piece check
-  images and a contact sheet of previews before the full render.
+  images, a contact sheet of previews and the safe-zone sheet before the
+  full render. Counters, labels and the end card's text stay inside the safe box.
