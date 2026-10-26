@@ -1,6 +1,6 @@
 ---
 name: creator-toy-intro
-description: Make a 30 s self-introduction film for a creator (X, 抖音, 小红书, 视频号, Instagram), starring the creator as a smooth 3D vinyl toy that pops out of their profile page, rendered in Blender Cycles. Use when someone asks for a self-intro or intro video, 自我介绍视频, 自我介紹短片, 个人介绍片 or a creator intro with a 3D toy.
+description: Make a 30 s self-introduction film for a creator on X, starring the creator as a smooth 3D vinyl toy that pops out of their profile page, rendered in Blender Cycles. Use when someone asks for a self-intro or intro video, 自我介绍视频, 自我介紹短片, 个人介绍片 or a creator intro with a 3D toy.
 effort: xhigh
 ---
 
@@ -12,6 +12,10 @@ best posts, whose covers stand up as walls while the numbers lift out of the
 spots where the page shows them; the end card slaps their name and call to
 action up on torn paper. Everything is code: the toy is built from a part
 list, the page is HTML, the score is synthesized, Blender renders.
+
+**This release publishes on X** (16:9 or 9:16). The phone themes for 抖音,
+小红书, 视频号 and Instagram are here and work, and come out one platform per
+later release.
 
 **Status: development stage 4 of 4 (testing with new creators).** The
 engine, one story template (`isnail-30`) and six platform themes work in

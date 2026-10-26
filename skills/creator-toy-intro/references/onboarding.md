@@ -54,17 +54,16 @@ Without image viewing, say so before starting: the checks cannot be skipped.
    the creator at all).
 4. Ask, in one round (AskUserQuestion where the agent has it, else one
    message with numbered options), only what is still open:
-   - always: where it will be posted. Several may be picked: 抖音, 小红书,
-     视频号, Instagram Reels, X. Any phone platform makes a 9:16 film; one
-     9:16 film serves all of them, X included.
-   - only when X is the only place: 16:9 (the X desktop page, recommended)
-     or 9:16 (the X phone page).
-   - only when the link's site has no stage yet (YouTube, B站, 公众号): which
-     page the toy pops out of, from the six stages.
+   - always: 16:9 (the X desktop page, recommended) or 9:16 (the X phone
+     page). This release publishes on X only; 抖音, 小红书, 视频号 and
+     Instagram come one per later release, so if the user names one, say so
+     and make the X film (the 9:16 one plays on phones).
+   - only when the link is not an X profile: the creator's X handle, if they
+     have one; the film's page is the X profile either way.
    Not asked: the length (30 s is the only template for now), the folder,
    colours, music.
 5. Open the workspace: `node <skill>/engine/scripts/new-film.mjs
-   <handle>-intro --link "…" --publish douyin,xhs [--aspect …] [--theme …]`,
+   <handle>-intro --link "…" --publish x --aspect 16:9|9:16`,
    in the user's current folder; tell them where it is. It writes
    `film.json` (`step: "research"`) and the empty `research/`, `assets/`,
    `recipes/`.

@@ -7,7 +7,7 @@
 //
 // usage: node engine/scripts/new-film.mjs <folder> [--link "<url or pasted share text>"]
 //          [--publish douyin,xhs] [--aspect 9:16|16:9] [--theme <id>] [--language zh-Hans|zh-Hant]
-//          [--id <name>] [--force] [--dry-run: print what it would write, write nothing]
+//          [--id <name>] [--force] [--dry-run: print what it would write, write nothing] [--any-platform]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,9 +27,12 @@ const THEMES = { "x-desktop": "16:9", "x-mobile": "9:16", "douyin-mobile": "9:16
 
 const link = arg("--link") ? readLink(arg("--link")) : null;
 if (arg("--link") && !link) fail(`no link found in: ${arg("--link")}`);
-const publish = arg("--publish")?.split(",").filter(Boolean) ?? (link && PLATFORMS[link.platform] ? [link.platform] : []);
+const publish = arg("--publish")?.split(",").filter(Boolean) ?? (link && PLATFORMS[link.platform] && (PLATFORMS[link.platform].release === "v1" || argv.includes("--any-platform")) ? [link.platform] : ["x"]);
 const unknown = publish.filter((p) => !PLATFORMS[p]);
 if (unknown.length) fail(`unknown platform ${unknown.join(", ")}; known: ${Object.keys(PLATFORMS).join(", ")}`);
+// this release publishes on X only; the others come later (--any-platform for development)
+const later = publish.filter((p) => PLATFORMS[p].release !== "v1");
+if (later.length && !argv.includes("--any-platform")) fail(`${later.map((p) => PLATFORMS[p].name).join(", ")}: not in this release yet (it publishes on X); later releases add one platform at a time`);
 const theme0 = arg("--theme");
 if (theme0 && !THEMES[theme0]) fail(`unknown theme ${theme0}; known: ${Object.keys(THEMES).join(", ")}`);
 const aspect = arg("--aspect") ?? (theme0 ? THEMES[theme0] : publish.some((p) => p !== "x") ? "9:16" : "16:9");

@@ -1,5 +1,5 @@
 {
-  "about": "Where a film is published: the covers each place takes and where its app lays its own controls over the picture, by the film's orientation. No platform publishes official specs for ordinary posts (only for ads), and guides disagree, so these follow each app's own grid (the themes' tiles, drawn from real screenshots) and the more careful guides, checked 2026-10. Covers: \"full\" is the whole frame, a ratio a centred cut of the held last frame. Zones are [left, top, right, bottom] as fractions of the frame; kind bar / captions / buttons only changes how the check draws them. \"safe\" is the box clear of every platform's controls: key text stays inside it. \"themes\" are the stage themes that default to this platform when film.json has no \"publish\". \"sfxCut\": finish also writes the film with the sound effects alone, for creators who lay the platform's own music under it.",
+  "about": "Where a film is published: the covers each place takes and where its app lays its own controls over the picture, by the film's orientation. No platform publishes official specs for ordinary posts (only for ads), and guides disagree, so these follow each app's own grid (the themes' tiles, drawn from real screenshots) and the more careful guides, checked 2026-10. Covers: \"full\" is the whole frame, a ratio a centred cut of the held last frame. Zones are [left, top, right, bottom] as fractions of the frame; kind bar / captions / buttons only changes how the check draws them. \"safe\" is the box clear of every platform's controls: key text stays inside it. \"themes\" are the stage themes that default to this platform when film.json has no \"publish\". \"release\": v1 offers X only; the others come one platform per later release (their themes and data stay here for that). \"sfxCut\": finish also writes the film with the sound effects alone, for creators who lay the platform's own music under it.",
   "safe": {
     "portrait": [0.056, 0.125, 0.833, 0.75],
     "landscape": [0.05, 0.05, 0.95, 0.88]
@@ -7,6 +7,7 @@
   "platforms": {
     "x": {
       "name": "X",
+      "release": "v1",
       "themes": ["x-desktop", "x-mobile"],
       "covers": {
         "landscape": [{ "kind": "poster", "aspect": "full" }],
@@ -18,6 +19,7 @@
       }
     },
     "douyin": {
+      "release": "later",
       "name": "抖音",
       "sfxCut": true,
       "themes": ["douyin-mobile"],
@@ -31,6 +33,7 @@
       }
     },
     "xhs": {
+      "release": "later",
       "name": "小红书",
       "themes": ["xhs-mobile"],
       "covers": {
@@ -43,6 +46,7 @@
       }
     },
     "channels": {
+      "release": "later",
       "name": "视频号",
       "themes": ["channels-mobile"],
       "covers": {
@@ -55,6 +59,7 @@
       }
     },
     "ig": {
+      "release": "later",
       "name": "Instagram",
       "themes": ["ig-mobile"],
       "covers": {
