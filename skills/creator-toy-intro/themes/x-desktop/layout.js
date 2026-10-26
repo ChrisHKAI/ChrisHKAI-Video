@@ -1,6 +1,17 @@
 // X (Twitter) on the desktop web, dark mode: where everything sits on the page.
 // The page is laid out on a 1920 x 1440 workspace in UI px; 1 UI px = 1 mm in
 // the 3D world. Each panel [x, y, w, h] becomes its own glass slab.
+//
+// The theme contract (every theme exports these; stories use nothing else):
+//   UI_W, UI_H, UI_SCALE  the page's size and screenshot scale
+//   PANELS                the slabs; "pinned" is the post the toy stomps
+//   AVATAR                { c: centre, d: diameter } of the profile picture
+//   ANCHORS               pinnedCover: the pinned post's cover [x, y, w, h];
+//                         count: where that post shows the count the story lifts;
+//                         second: where the second post rises [x, y, w, h] (it is
+//                         screenshotted on its own canvas of that size);
+//                         secondCover: its cover
+//   ACCENT                the platform's highlight colour
 export const UI_W = 1920;
 export const UI_H = 1440;
 export const UI_SCALE = 2; // the page is screenshotted at 3840 x 2880
@@ -24,3 +35,13 @@ export const ACTIONS_Y = 396; // the action bar row (relative to the slab)
 export const ACTION_X = [0, 132, 264, 384]; // replies, reposts, likes, views
 export const VIEWS_DX = 52; // from the views icon to the middle of its count
 export const ACCENT = "#1D9BF0"; // X blue: the selected post's outline, the count's bar
+
+// ── the theme contract's anchors ──────────────────────────────────────────
+const P = PANELS.pinned;
+const second = [P[0], P[1] + P[3] + 24, P[2], P[3]]; // a second post rises just below the pinned one
+export const ANCHORS = {
+  pinnedCover: [P[0] + CARD.x, P[1] + CARD.y, CARD.w, CARD.coverH],
+  count: [P[0] + CARD.x + ACTION_X[3] + VIEWS_DX, P[1] + ACTIONS_Y],
+  second,
+  secondCover: [second[0] + CARD.x, second[1] + CARD.y, CARD.w, CARD.coverH],
+};

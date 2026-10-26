@@ -6,9 +6,13 @@
 // 0.5 s and a bar 2 s, and every big hit sits on a downbeat.
 import { pathToFileURL } from "node:url";
 import { film, fromSkill } from "../../engine/lib/film.js";
+import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
 const S = film.story;
+const [FW, FH] = film.format.size;
+export const PORTRAIT = FH > FW;
+const D = places(L, PORTRAIT); // defaults from the theme's anchors; film.json "story" pins its own
 
 export const FPS = film.format.fps;
 export const BPM = film.format.bpm;
@@ -17,37 +21,36 @@ export const BAR = BEAT * 4;
 export const DURATION = film.format.duration;
 export const bar = (n, beat = 0) => +(n * BAR + beat * BEAT).toFixed(4);
 
-// ── The page (theme) ────────────────────────────────────────────────────────
-export const { UI_W, UI_H, UI_SCALE, PANELS, AVATAR, CARD, ACTIONS_Y, ACTION_X, ACCENT } = L;
-const [MX, , MW] = PANELS.pinned;
+// ── The page (theme contract: themes/<theme>/layout.js) ─────────────────────
+export const { UI_W, UI_H, UI_SCALE, PANELS, AVATAR, ACCENT } = L;
 
 // ── The two posts: the pinned one (act 2) and the one that rises (act 3) ───
 export const PINNED = film.posts.pinned;
 export const RETRO = film.posts.retro;
-// the views stat lifts out of the pinned post's action bar as 3D lettering
-export const VIEWS = [MX + CARD.x + ACTION_X[3] + L.VIEWS_DX, PANELS.pinned[1] + ACTIONS_Y];
+// the count lifts out of the spot where the pinned post shows it, as 3D lettering
+export const VIEWS = L.ANCHORS.count;
 export const VIEWS_COUNT = film.counter.value;
 // the pinned post's cover: it stands up as a wall in act 2 (hinge = bottom edge)
-export const PINNED_COVER = [MX + CARD.x, PANELS.pinned[1] + CARD.y, CARD.w, CARD.coverH];
+export const PINNED_COVER = L.ANCHORS.pinnedCover;
 // the second post rises below the pinned one in act 3 (assets/retro.png)
-export const RETRO_RECT = [MX, PANELS.pinned[1] + PANELS.pinned[3] + 24, MW, PANELS.pinned[3]];
+export const RETRO_RECT = L.ANCHORS.second;
 // its cover: the wall's hinge is the cover's bottom edge
-export const RETRO_COVER = [MX + CARD.x, RETRO_RECT[1] + CARD.y, CARD.w, CARD.coverH];
+export const RETRO_COVER = L.ANCHORS.secondCover;
 
 // ── Story (film.json "story") ───────────────────────────────────────────────
 export const EV = S.events;
 export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
 export const SLOGAN_RED = film.cta.slogan[0].text.length; // the second label's letters are red
 export const CTA = S.stage; // the CTA stage: far beyond every other shot's clip distance
-export const SPOT = S.spots; // places in UI px
+export const SPOT = S.spots ?? D.spots; // places in UI px
 export const WALL2 = S.wall2; // act 2 cover pieces: [push-out time, depth mm]
 export const WALL = S.wall; // act 3 wall pieces (wall mm; box tops are where he can stand)
 export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // camera keys: target = [UI x, UI y, height mm] or a tracker name; dist m,
 // elev / az deg (az 0 = from the south edge); after the cut, CAMERA2 targets
 // are metres from the CTA stage
-export const CAMERA = S.camera;
-export const CAMERA2 = S.camera2;
+export const CAMERA = S.camera ?? D.camera;
+export const CAMERA2 = S.camera2 ?? D.camera2;
 export const FOV = S.fov;
 export const SHAKES = S.shakes; // 2–3 frame shakes on hits: [t, strength]
 
