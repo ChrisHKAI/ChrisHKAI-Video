@@ -9,6 +9,8 @@ import { TOY, CENTER } from "../../engine/lib/toy.js";
 import { clamp01, seg, smooth, lerp, easeOut, easeIn, easeInOut, backOut, TAU, v3, lerpAngle, yawTo } from "../../engine/lib/math.js";
 import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "../../engine/lib/rig.js";
 import { makeCamera, smoothTracker } from "../../engine/lib/camera.js";
+import { makeLabel, tear, labelT, rimT, letterT } from "../../engine/lib/labels.js";
+import { ballistic } from "../../engine/lib/particles.js";
 import { mulberry32 } from "../../engine/lib/rng.js";
 import { qId, qMul, qAxis, qEuler, qRot, qFromTo, qFromBasis, qConj, trs, apply, mulT } from "../../engine/lib/quat.js";
 
@@ -612,17 +614,8 @@ const shellTop = (t) => apply(logoAt(t), [0.0, SHELL_TOP * SHELL_H + 0.002, 0]);
 // the floor where the snail has crawled, a letter per 8th note; 蜗牛King (with a
 // gold crown) and @isnail are slapped up in the empty space above at 28 s.
 const BEAT8 = T.BEAT / 2;
-const PAPER = { cream: ["#EFE6D4", "#161514"], red: ["#D8382D", "#FBF3E6"], blue: ["#2F5D9E", "#F3EEE4"] };
 // label: text, em (m), paper, centre (m from CTA), tilt, when it lands, letter times
-function label(id, text, em, paper, cx, cy, cz, tilt, at, letterAt) {
-  const keys = [...text].map((ch) => `heavy:${ch}`);
-  const w = keys.reduce((sum, k) => sum + adv(k) * em, 0);
-  const padX = 0.2 * em, padY = 0.2 * em;
-  const W = w + 2 * padX, H = 0.93 * em + 2 * padY;
-  let x = -w / 2;
-  const letters = keys.map((k, i) => { const o = { key: k, x, y: -0.36 * em, at: letterAt(i) }; x += adv(k) * em; return o; });
-  return { id, text, em, paper, c: [cx, cy, cz], tilt, at, W, H, letters };
-}
+const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt) => makeLabel({ id, text, em, paper, c: [cx, cy, cz], tilt, at, letterAt, adv });
 export const SLOGAN_LETTER = (i) => E.letters + i * BEAT8;
 // the slogan's labels run on from one another, a letter per 8th note; the name
 // and the handle are slapped up together at E.name
@@ -639,49 +632,17 @@ export const LABELS = [
   label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + 0.05 + 0.05 * i),
   label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + 0.18, (i) => E.name + 0.22 + 0.025 * i),
 ];
-// a torn outline round a w x h sheet: little bites on the long edges, ragged ends
-function torn(w, h, seed, grow = 0) {
-  const r = mulberry32(seed);
-  const pts = [];
-  const edge = (x0, y0, x1, y1, n, amp, nx, ny) => {
-    for (let i = 0; i < n; i++) {
-      const s = i / n, j = (r() - 0.35) * amp;
-      pts.push([x0 + (x1 - x0) * s + nx * (j + grow), y0 + (y1 - y0) * s + ny * (j + grow)]);
-    }
-  };
-  const nx = Math.max(6, Math.round(w / 0.008)), ny = Math.max(4, Math.round(h / 0.008));
-  edge(-w / 2, h / 2, w / 2, h / 2, nx, 0.0022, 0, 1);
-  edge(w / 2, h / 2, w / 2, -h / 2, ny, 0.006, 1, 0);
-  edge(w / 2, -h / 2, -w / 2, -h / 2, nx, 0.0022, 0, -1);
-  edge(-w / 2, -h / 2, -w / 2, h / 2, ny, 0.006, -1, 0);
-  return pts.map(([x, y]) => [+x.toFixed(5), +y.toFixed(5)]);
-}
-LABELS.forEach((L, i) => {
-  L.sheet = torn(L.W, L.H, 900 + i);
-  L.rim = torn(L.W, L.H, 950 + i, 0.0028);
-});
-// the label slaps on: a little big and twisted, then flat and still
-function labelT(L, t) {
-  const s = seg(t, L.at, L.at + 0.18);
-  if (t < L.at) return trs(cta(...L.c), qId(), HIDDEN);
-  const k = lerp(1.25, 1, easeOut(s));
-  const tw = L.tilt + 0.12 * (1 - easeOut(s));
-  return trs(cta(L.c[0], L.c[1], L.c[2] + 0.02 * (1 - easeOut(s))), qEuler(-0.15 * (1 - s), 0, tw), k);
-}
-export const labelSheetAt = (i, t) => labelT(LABELS[i], t);
-export const labelRimAt = (i, t) => mulT(labelT(LABELS[i], t), trs([0, 0, -0.0012]));
-export function labelLetterAt(i, j, t) {
-  const L = LABELS[i], g = L.letters[j];
-  const s = seg(t, g.at, g.at + 0.16);
-  const k = t < g.at ? 0 : backOut(s, 2.0);
-  return mulT(labelT(L, t), trs([g.x, g.y, 0.0012 + 0.002 * (1 - smooth(s))], qId(), k < 0.01 ? HIDDEN : [k, k, 1]));
-}
+LABELS.forEach(tear);
+const labelAt = (L, t) => labelT(L, t, cta);
+export const labelSheetAt = (i, t) => labelAt(LABELS[i], t);
+export const labelRimAt = (i, t) => rimT(LABELS[i], t, cta);
+export const labelLetterAt = (i, j, t) => letterT(LABELS[i], j, t, cta);
 // the crown lands on the name label's top right corner
 export const CROWN_W = 0.07;
 export const CROWN = [[0, 0], [1, 0], [1, 0.68], [0.76, 0.44], [0.5, 0.92], [0.24, 0.44], [0, 0.68]];
 export function crownAt(t) {
   const L = LABELS.find((l) => l.id === "name");
-  const rest = mulT(labelT(L, Math.max(t, E.crown[1])), trs([L.W / 2 - 0.05, L.H / 2 - 0.022, 0.006], qEuler(0, 0, 0.32)));
+  const rest = mulT(labelAt(L, Math.max(t, E.crown[1])), trs([L.W / 2 - 0.05, L.H / 2 - 0.022, 0.006], qEuler(0, 0, 0.32)));
   if (t < E.crown[0]) return trs(v3.add(rest.p, [0, 0.25, 0]), qId(), HIDDEN);
   const d = seg(t, E.crown[0], E.crown[1]);
   const b = t - E.crown[1];
@@ -691,12 +652,6 @@ export function crownAt(t) {
 const CTA_CAM = cta(0.03, 0.15 + 1.5 * Math.sin(0.157), 1.5 * Math.cos(0.157));
 
 // ── Particles ───────────────────────────────────────────────────────────────
-const G = 2.4; // toy-scale gravity, m/s²
-function ballistic(p0, v0, dt, floor) {
-  const p = [p0[0] + v0[0] * dt, p0[1] + v0[1] * dt - 0.5 * G * dt * dt, p0[2] + v0[2] * dt];
-  if (floor !== undefined && p[1] < floor) p[1] = floor;
-  return p;
-}
 export const FLAKES = 18;
 const FLAKE_COLS = film.pop.confetti; // the avatar's confetti; the first two flakes are its leaves
 export function flakeAt(i, t) {
