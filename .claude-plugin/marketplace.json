@@ -1,10 +1,13 @@
 {
-  "name": "ChrisHKAI-Video",
+  "name": "chrishkai-video",
   "description": "Video skills by ChrisHKAI: films made with code, starring the creator as a 3D vinyl toy.",
-  "owner": { "name": "ChrisHKAI" },
+  "owner": {
+    "name": "ChrisHKAI"
+  },
   "plugins": [
     {
-      "name": "ChrisHKAI-Video",
+      "name": "chrishkai-video",
+      "displayName": "ChrisHKAI-Video",
       "source": "./",
       "description": "Video skills by ChrisHKAI. First skill: creator-toy-intro, a 30 s self-introduction film for a creator, starring their 3D vinyl toy."
     }

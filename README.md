@@ -12,7 +12,7 @@ ChrisHKAI 的视频 Skill 合集：用代码做视频，主角是创作者自己
 
 ```bash
 claude plugin marketplace add ChrisHKAI/ChrisHKAI-Video
-claude plugin install ChrisHKAI-Video@ChrisHKAI-Video
+claude plugin install chrishkai-video@chrishkai-video
 ```
 
 其他 agent：把 `skills/creator-toy-intro/` 整个文件夹复制到它的 skills 目录。
