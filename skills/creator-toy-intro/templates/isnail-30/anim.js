@@ -510,7 +510,7 @@ export const SNAIL_PARTS = [
   ]),
   { name: "smile", shape: "arc", radius: 0.007, tube: 0.0016, arc: Math.PI * 0.75, pos: [0.14, 0.07, 0.04], rot: [0, 0.35, -Math.PI / 2 - Math.PI * 0.375], mat: "pupil" },
 ];
-export const snailX = (t) => lerp(-0.4, 0.47, easeInOut(seg(t, E.glide[0], E.glide[1])));
+export const snailX = (t) => lerp(T.CTA_LAYOUT.path[0], T.CTA_LAYOUT.path[1], easeInOut(seg(t, E.glide[0], E.glide[1])));
 function snailT(t) {
   const x = snailX(t);
   const grow = t < E.snail[0] ? 0 : backOut(seg(t, E.snail[0], E.snail[1]), 1.4);
@@ -574,9 +574,10 @@ let sloganAt = 0;
 const sloganLabels = CTA_TEXT.slogan.map((p, k) => {
   const first = sloganAt;
   sloganAt += [...p.text].length;
-  return label(`slogan${k}`, p.text, p.em, p.paper, ...p.at, p.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
+  const d = T.CTA_LAYOUT.slogan[k] ?? { ...T.CTA_LAYOUT.slogan.at(-1), at: T.CTA_LAYOUT.slogan.at(-1).at.map((v, j) => v + T.CTA_LAYOUT.sloganStep[j] * (k - T.CTA_LAYOUT.slogan.length + 1)) };
+  return label(`slogan${k}`, p.text, p.em ?? d.em, p.paper, ...(p.at ?? d.at), p.tilt ?? d.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
 });
-const N = CTA_TEXT.name, HD = CTA_TEXT.handle;
+const N = { ...T.CTA_LAYOUT.name, ...CTA_TEXT.name }, HD = { ...T.CTA_LAYOUT.handle, ...CTA_TEXT.handle };
 export const LABELS = [
   ...sloganLabels,
   label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + 0.05 + 0.05 * i),
@@ -599,7 +600,7 @@ export function crownAt(t) {
   const bounce = b > 0 ? 0.01 * Math.exp(-b * 9) * Math.abs(Math.sin(b * 22)) : 0;
   return trs(v3.add(rest.p, [0, 0.25 * (1 - easeIn(d)) + bounce, 0]), qMul(rest.q, qEuler(0, TAU * (1 - easeOut(d)), 0)), 1);
 }
-const CTA_CAM = cta(0.03, 0.15 + 1.5 * Math.sin(0.157), 1.5 * Math.cos(0.157));
+const CTA_CAM = cta(...T.CTA_LAYOUT.pointAt); // where the camera ends up: he points at you
 
 // ── Particles ───────────────────────────────────────────────────────────────
 export const FLAKES = 18;
