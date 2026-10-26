@@ -5,7 +5,10 @@
 // Transforms are { p, q, s }.
 import { film, readFilmJSON } from "../../engine/lib/film.js";
 import * as T from "./timeline.js";
-import { MASCOT_PARTS, JOINTS, CENTER } from "../../engine/lib/toy.js";
+import { TOY, CENTER } from "../../engine/lib/toy.js";
+import { clamp01, seg, smooth, lerp, easeOut, easeIn, easeInOut, backOut, TAU, v3, lerpAngle, yawTo } from "../../engine/lib/math.js";
+import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "../../engine/lib/rig.js";
+import { makeCamera, smoothTracker } from "../../engine/lib/camera.js";
 import { mulberry32 } from "../../engine/lib/rng.js";
 import { qId, qMul, qAxis, qEuler, qRot, qFromTo, qFromBasis, qConj, trs, apply, mulT } from "../../engine/lib/quat.js";
 
@@ -16,30 +19,6 @@ export const wx = (px) => (px - T.UI_W / 2) * MM;
 export const wz = (py) => (py - T.UI_H / 2) * MM;
 const P = (spot, h = 0) => [wx(spot[0]), h, wz(spot[1])];
 
-const clamp01 = (a) => Math.min(1, Math.max(0, a));
-const seg = (t, a, b) => clamp01((t - a) / (b - a));
-const smooth = (a) => a * a * (3 - 2 * a);
-const lerp = (a, b, s) => a + (b - a) * s;
-const easeOut = (a) => 1 - Math.pow(1 - a, 3);
-const easeIn = (a) => a * a * a;
-const easeInOut = (a) => (a < 0.5 ? 4 * a * a * a : 1 - Math.pow(-2 * a + 2, 3) / 2);
-const backOut = (a, k = 1.6) => 1 + (k + 1) * Math.pow(a - 1, 3) + k * Math.pow(a - 1, 2);
-const TAU = Math.PI * 2;
-export const v3 = {
-  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
-  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
-  scale: (a, k) => [a[0] * k, a[1] * k, a[2] * k],
-  lerp: (a, b, s) => [lerp(a[0], b[0], s), lerp(a[1], b[1], s), lerp(a[2], b[2], s)],
-  len: (a) => Math.hypot(a[0], a[1], a[2]),
-  norm: (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
-  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
-};
-const lerpAngle = (a, b, s) => {
-  let d = ((b - a + Math.PI) % TAU) - Math.PI;
-  if (d < -Math.PI) d += TAU;
-  return a + d * s;
-};
-const yawTo = (a, b) => Math.atan2(b[0] - a[0], b[2] - a[2]);
 const hidden = (p) => trs(p.slice(), qId(), HIDDEN);
 const E = T.EV;
 
@@ -145,42 +124,7 @@ export const STICKER = (() => {
   return { w, h, cx, cy: bottom + h / 2, feet: bottom + 0.003 };
 })();
 
-// ── The mascot ──────────────────────────────────────────────────────────────
-// pose: where his feet are, which way he faces, squash, and joint angles
-function basePose(pos) {
-  return {
-    pos: pos.slice(), yaw: 0, pitch: 0, roll: 0, sy: 1, sxz: 1, flat: 1, pop: 1, show: true, ground: pos[1],
-    head: [0, 0, 0], ears: [0, 0, 0], body: [0, 0, 0],
-    armR: [0, 0, -0.12], armL: [0, 0, 0.12], aimR: null, aimL: null, reachR: 1, reachL: 1,
-    legR: [0, 0, 0], legL: [0, 0, 0], pointR: 0, pointL: 0, glint: 0,
-  };
-}
-const squash = (o, q) => { o.sy -= q; o.sxz += q * 0.5; };
-function landSquash(t, tl, k = 0.22) {
-  const l = t - tl;
-  if (l < 0 || l > 0.26) return 0;
-  const u = l / 0.26;
-  return k * Math.exp(-4 * u) * Math.cos(u * Math.PI * 1.6);
-}
-function crouch(t, t0, k = 0.14) { // anticipation before a take-off at t0
-  const a = t - (t0 - 0.12);
-  return a >= 0 && a < 0.12 ? Math.sin((a / 0.12) * Math.PI * 0.5) * k : 0;
-}
-// a ballistic hop: feet from a to b, apex above the higher end
-function hop(o, t, a, b, t0, t1, apex, opts = {}) {
-  const s = seg(t, t0, t1);
-  o.pos = v3.lerp(a, b, s);
-  o.pos[1] += apex * 4 * s * (1 - s);
-  o.yaw = opts.yaw ?? yawTo(a, b);
-  const air = Math.sin(Math.PI * s);
-  o.sy = 1 + 0.1 * air; o.sxz = 1 - 0.05 * air;
-  o.legR = [-0.6 * air, 0, 0]; o.legL = [0.5 * air, 0, 0];
-  o.armR = [0.5 * air, 0, -0.5 * air]; o.armL = [0.5 * air, 0, 0.5 * air];
-  if (opts.flip) o.pitch = -TAU * easeInOut(s);
-  o.ground = Math.min(a[1], b[1]);
-  return s;
-}
-
+// ── The mascot (poses; engine/lib/rig.js turns them into parts) ────────────
 // places
 const POP = P(T.SPOT.pop), LAND = P(T.SPOT.land), HOP1 = P(T.SPOT.hop1);
 const onPinned = (spot, t) => { const p = P(spot); p[1] = pinnedY(t); return p; };
@@ -504,101 +448,14 @@ function ctaPose(o, t) {
   return o;
 }
 
-// joint transforms (hero-local) from the pose
-const QX = (a) => qAxis([1, 0, 0], a);
-function eul(v) { return qEuler(v[0], v[1], v[2]); }
-function heroT(o) {
-  const q = qEuler(o.pitch, o.yaw, o.roll, "YXZ");
-  const s = [o.sxz * o.pop, o.sy * o.pop, o.sxz * o.pop * o.flat];
-  // pitch / roll turn around the body centre, squash keeps the feet down
-  const rc = qRot(q, [CENTER[0] * s[0], CENTER[1] * s[1], CENTER[2] * s[2]]);
-  const c = [CENTER[0] * s[0], CENTER[1] * s[1], CENTER[2] * s[2]];
-  return trs([o.pos[0] + c[0] - rc[0], o.pos[1] + c[1] - rc[1], o.pos[2] + c[2] - rc[2]], q, s);
-}
 export function mascotAt(t) {
   const o = mascotPose(t);
   if (!o.show) return { hero: hidden(POP), o };
-  return { hero: heroT(o), o };
-}
-// aim an arm (hanging along -y) at a hero-local target; returns [q, reach]
-function aimArm(side, o, hero, aim) {
-  const sh = JOINTS[side].p;
-  let local;
-  if (aim.target) local = aim.target.map((v) => v * MM);
-  else {
-    // world → hero-local (undo the hero transform)
-    const d = v3.sub(aim.world, hero.p);
-    const r = qRot(qConj(hero.q), d);
-    local = [r[0] / hero.s[0], r[1] / hero.s[1], r[2] / hero.s[2]];
-  }
-  const dir = v3.norm(v3.sub(local, sh));
-  const len = v3.len(v3.sub(local, sh));
-  const q = qFromTo([0, -1, 0], dir);
-  const reach = aim.target ? Math.min(1.25, Math.max(1, (len - 0.004) / 0.0205)) : aim.len || 1;
-  return [q, reach];
-}
-function slerpId(q, k) { // identity → q by k
-  const d = q[3];
-  const th = Math.acos(Math.min(1, Math.abs(d)));
-  if (th < 1e-5) return q;
-  const s = Math.sin(th);
-  const a = Math.sin((1 - k) * th) / s, b = Math.sin(k * th) / s * Math.sign(d || 1);
-  const r = [q[0] * b, q[1] * b, q[2] * b, a + q[3] * b];
-  const l = Math.hypot(...r);
-  return r.map((v) => v / l);
+  return { hero: heroT(o, CENTER), o };
 }
 export function mascotParts(t) {
   const { hero, o } = mascotAt(t);
-  const J = {};
-  const rot = {
-    body: eul(o.body), head: eul(o.head), ears: eul(o.ears),
-    armR: eul(o.armR), armL: eul(o.armL), legR: eul(o.legR), legL: eul(o.legL), finger: qId(), fingerL: qId(),
-  };
-  const reach = { armR: o.reachR, armL: o.reachL };
-  for (const side of ["armR", "armL"]) {
-    const aim = side === "armL" ? o.aimL : o.aimR;
-    if (aim && aim.k > 0) {
-      const [q, r] = aimArm(side, o, hero, aim);
-      // blend from the rest swing to the aim
-      rot[side] = slerpBetween(rot[side], q, aim.k);
-      reach[side] = lerp(1, r, aim.k);
-    }
-  }
-  const order = ["body", "head", "ears", "armR", "armL", "finger", "fingerL", "legR", "legL"];
-  for (const j of order) {
-    const spec = JOINTS[j];
-    const parent = spec.parent ? J[spec.parent] : trs([0, 0, 0]);
-    const pp = spec.parent ? JOINTS[spec.parent].p : [0, 0, 0];
-    let off = v3.sub(spec.p, pp);
-    if (spec.parent === "armR" || spec.parent === "armL") off = [off[0], off[1] * reach[spec.parent], off[2]];
-    J[j] = mulT(parent, trs(off, rot[j]));
-  }
-  const pointK = { finger: o.pointR, fingerL: o.pointL };
-  return MASCOT_PARTS.map((p) => {
-    const g = p.group;
-    let off = v3.sub(p.pos, JOINTS[g].p);
-    let s = [1, 1, 1];
-    if (g === "armR" || g === "armL") {
-      // stretch the sleeve towards the hand, keep the mitten round
-      if (p.name.startsWith("sleeve")) { off = [off[0], off[1] * reach[g], off[2]]; s = [1, reach[g], 1]; }
-      else off = [off[0], off[1] + (reach[g] - 1) * -0.0204, off[2]];
-    }
-    if (g === "finger" || g === "fingerL") {
-      const k = pointK[g];
-      s = [lerp(0.55, 1, k), lerp(0.12, 1, k), lerp(0.55, 1, k)];
-      off = [off[0], off[1] * lerp(0.1, 1, k), off[2] * lerp(0.4, 1, k)];
-    }
-    const local = mulT(J[g], trs(off, p.rot ? qEuler(...p.rot) : qId(), s));
-    return local;
-  });
-}
-function slerpBetween(a, b, k) {
-  let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-  let bb = b;
-  if (d < 0) { d = -d; bb = b.map((v) => -v); }
-  if (d > 0.9995) { const r = a.map((v, i) => v + (bb[i] - v) * k); const l = Math.hypot(...r); return r.map((v) => v / l); }
-  const th = Math.acos(d), s = Math.sin(th);
-  return a.map((v, i) => v * Math.sin((1 - k) * th) / s + bb[i] * Math.sin(k * th) / s);
+  return partsAt(hero, o, TOY);
 }
 export const heroCentre = (t) => {
   const { hero } = mascotAt(t);
@@ -920,27 +777,7 @@ export function blobAt(t) {
   return { tr: trs([o.pos[0], o.ground + 0.0007, o.pos[2]], q, k > 0.01 ? [0.07 * s, 0.05 * s, 1] : HIDDEN), opacity: 0.7 * k * k * o.flat };
 }
 
-// ── Camera ──────────────────────────────────────────────────────────────────
-function monotone(ts, ys) {
-  const n = ts.length;
-  const d = [], m = new Array(n).fill(0);
-  for (let i = 0; i < n - 1; i++) d.push((ys[i + 1] - ys[i]) / (ts[i + 1] - ts[i]));
-  m[0] = d[0]; m[n - 1] = d[n - 2];
-  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
-  for (let i = 0; i < n - 1; i++) {
-    if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
-    const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
-    if (s > 9) { const k = 3 / Math.sqrt(s); m[i] = k * a * d[i]; m[i + 1] = k * b * d[i]; }
-  }
-  return (t) => {
-    if (t <= ts[0]) return ys[0];
-    if (t >= ts[n - 1]) return ys[n - 1];
-    let i = 0;
-    while (t > ts[i + 1]) i++;
-    const h = ts[i + 1] - ts[i], s = (t - ts[i]) / h;
-    return (2 * s ** 3 - 3 * s ** 2 + 1) * ys[i] + (s ** 3 - 2 * s ** 2 + s) * h * m[i] + (-2 * s ** 3 + 3 * s ** 2) * ys[i + 1] + (s ** 3 - s ** 2) * h * m[i + 1];
-  };
-}
+// ── Camera (engine/lib/camera.js) ───────────────────────────────────────────
 const wallCentre = (t) => onWall(t, 0, WALL_H / MM / 2, 0);
 function trackerRaw(name, t) {
   if (name === "stat") return statCentre(t);
@@ -950,66 +787,19 @@ function trackerRaw(name, t) {
   const c = heroCentre(t);
   return c;
 }
-const SM_RATE = 120, SM_SIGMA = 0.12;
 const TRACK = {};
 function tracker(name, t) {
-  if (name === "wallFront") return wallCentre(Math.max(t, E.stand[1]));
-  if (!TRACK[name]) {
-    const n = Math.ceil(T.DURATION * SM_RATE) + 1;
-    const raw = Array.from({ length: n }, (_, i) => trackerRaw(name, i / SM_RATE));
-    const sig = SM_SIGMA * SM_RATE, rad = Math.ceil(sig * 3);
-    const ker = Array.from({ length: 2 * rad + 1 }, (_, k) => Math.exp(-((k - rad) ** 2) / (2 * sig * sig)));
-    TRACK[name] = raw.map((_, i) => {
-      let acc = [0, 0, 0], ws = 0;
-      for (let k = -rad; k <= rad; k++) {
-        const j = Math.min(n - 1, Math.max(0, i + k));
-        acc = v3.add(acc, v3.scale(raw[j], ker[k + rad])); ws += ker[k + rad];
-      }
-      return v3.scale(acc, 1 / ws);
-    });
-  }
-  const arr = TRACK[name];
-  const f = clamp01(t / T.DURATION) * (arr.length - 1);
-  const i = Math.floor(f);
-  return v3.lerp(arr[i], arr[Math.min(i + 1, arr.length - 1)], f - i);
+  if (name === "wallFront") return wallCentre(Math.max(t, E.stand[1])); // squared up to the cover: not smoothed
+  TRACK[name] ??= smoothTracker((t2) => trackerRaw(name, t2), T.DURATION);
+  return TRACK[name](t);
 }
 const keyTarget = (k, t) => (typeof k.target === "string" ? tracker(k.target, t) : [wx(k.target[0]), k.target[2] * MM, wz(k.target[1])]);
-const CAMF = (() => {
-  const ts = T.CAMERA.map((k) => k.t);
-  const f = (key) => monotone(ts, T.CAMERA.map((k) => k[key]));
-  return { ts, dist: f("dist"), elev: f("elev"), az: f("az"), fstop: f("fstop") };
-})();
-const CAMF2 = (() => {
-  const ts = T.CAMERA2.map((k) => k.t);
-  const f = (key) => monotone(ts, T.CAMERA2.map((k) => k[key]));
-  return { ts, dist: f("dist"), elev: f("elev"), az: f("az"), fstop: f("fstop") };
-})();
-function shakeAt(t) {
-  let o = [0, 0, 0];
-  for (const [ts, k] of T.SHAKES) {
-    const d = t - ts;
-    if (d < 0 || d > 0.12) continue;
-    const a = k * (1 - d / 0.12) ** 2;
-    o = v3.add(o, [0.004 * a * Math.sin(t * 173 + ts), 0.003 * a * Math.sin(t * 211 + 1), 0.004 * a * Math.sin(t * 157 + 2)]);
-  }
-  return o;
-}
-export function cameraAt(t) {
-  // targets blend between keys with the same easing as the distances
-  const after = t >= E.cut;
-  const ks = after ? T.CAMERA2 : T.CAMERA, F = after ? CAMF2 : CAMF;
-  const kt = after ? (k) => cta(...k.target) : (k) => keyTarget(k, t);
-  let i = 0;
-  while (i < ks.length - 2 && t > ks[i + 1].t) i++;
-  const a = ks[i], b = ks[i + 1];
-  const s = smooth(seg(t, a.t, b.t));
-  const target = v3.lerp(kt(a), kt(b), s);
-  const el = (F.elev(t) * Math.PI) / 180, az = (F.az(t) * Math.PI) / 180, d = F.dist(t);
-  const pos = [target[0] + d * Math.sin(az) * Math.cos(el), target[1] + d * Math.sin(el), target[2] + d * Math.cos(az) * Math.cos(el)];
-  const sh = shakeAt(t);
-  const eye = v3.add(pos, sh), look = v3.add(target, v3.scale(sh, 0.6));
-  const z = v3.norm(v3.sub(eye, look));
-  const x = v3.norm(v3.cross([0, 1, 0], z));
-  const y = v3.cross(z, x);
-  return { tr: trs(eye, qFromBasis(x, y, z)), pos: eye, target, fov: T.FOV, fstop: F.fstop(t), focus: v3.len(v3.sub(pos, target)), az };
-}
+// the page shots, then (after the cut) the CTA stage, its targets in metres from the stage
+export const cameraAt = makeCamera({
+  shots: [
+    { start: -Infinity, keys: T.CAMERA, target: keyTarget },
+    { start: E.cut, keys: T.CAMERA2, target: (k) => cta(...k.target) },
+  ],
+  fov: T.FOV,
+  shakes: T.SHAKES,
+});
