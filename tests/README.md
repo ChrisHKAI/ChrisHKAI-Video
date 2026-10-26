@@ -20,3 +20,14 @@ python3 tests/framediff.py films/isnail/build/render-check <reference frames fol
 
 Cycles on the GPU differs by at most a level or two between runs of the same
 scene; more than that means the scene changed.
+
+Step 2 (research) round trip: writes the research the film's own film.json
+implies, opens a new workspace, builds the material table, applies the picks
+and checks that the profile, posts, counter and end card come back the same.
+
+```bash
+node tests/research-roundtrip.mjs films/isnail <scratch folder>
+```
+
+Theme layouts: `node tests/make-theme-films.mjs films/isnail` makes a 9:16
+test workspace per phone theme (films/test-<theme>) with test values.

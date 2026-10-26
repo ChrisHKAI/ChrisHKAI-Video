@@ -17,10 +17,10 @@ list, the page is HTML, the score is synthesized, Blender renders.
 template (`isnail-30`) and six platform themes work in 16:9 and 9:16, and
 rebuild the reference film exactly; finish cuts each platform's covers, and
 previews are checked against each app's own controls. Steps 0 and 1 (the
-computer, onboarding) work. Not yet: creator research, the toy kits and the
+computer, onboarding) and 2 (research) work. Not yet: the toy kits and the
 storyboard page (the rest of stage 3); testing with new creators (stage 4).
-Until then, after onboarding a film for a new creator needs its film.json,
-toy.json and cover recipes written by hand, as below.
+Until then, after research a film for a new creator needs the rest of its
+film.json, its toy.json and cover recipes written by hand, as below.
 
 ## Making a film
 
@@ -30,7 +30,7 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | --- | --- | --- |
 | 0 | the computer: check, then one yes installs what is missing | `references/onboarding.md` |
 | 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
-| 2 | research: profile, pinned and best posts, numbers; the user picks | not yet: by hand |
+| 2 | research: profile, pinned and best posts, numbers; the user picks from a material table | `references/research.md` |
 | 3 | the toy from the profile picture; a turnaround to approve | not yet: by hand (`toy.json`, `lookdev`) |
 | 4 | story and storyboard: real preview renders, safe zones | `render` previews, `safezone` |
 | 5 | render, finish, covers | `render`, `finish` |
@@ -39,10 +39,10 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 
 | path | what it is |
 | --- | --- |
-| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1) |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
-| `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
+| `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K) |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
@@ -67,7 +67,7 @@ A folder outside the skill, never committed:
   recipes/         the film's own scripts (cover cuts, its flat avatar)
   assets/          the creator's pictures; the pipeline adds textures here
   build/           everything generated (anim.json, glyphs, frames)
-  research/        step 2's screenshots and notes
+  research/        step 2: facts.json, screenshots, the material table
   out/             the finished film; out/covers/ the platforms' covers
 ```
 
