@@ -63,14 +63,14 @@ const SE = A.STAT_EM;
 for (let i = 0; i < 3; i++) for (let d = 0; d <= 9; d++) {
   add({ name: `stat_${i}_${d}`, geo: glyphGeo(`latin:${d}`, SE.digit * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
 }
-add({ name: "stat_wan", geo: glyphGeo("cjk:万", SE.wan * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true });
-add({ name: "stat_yue", geo: glyphGeo("cjk:阅", SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
-add({ name: "stat_du", geo: glyphGeo("cjk:读", SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
+add({ name: "stat_wan", geo: glyphGeo(A.STAT_KEYS.unit, SE.wan * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true });
+add({ name: "stat_yue", geo: glyphGeo(A.STAT_KEYS.label[0], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
+add({ name: "stat_du", geo: glyphGeo(A.STAT_KEYS.label[1], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
 add({ name: "stat_bar", geo: { type: "roundBox", size: [A.STAT.width * MM, 0.005, 0.005], radius: 0.0022 }, mat: { type: "glow", color: "#1D9BF0", strength: 3 }, anim: true, step: true });
 
 // the call to action
 add({ name: "cta_floor", geo: { type: "plane", w: 10, h: 10 }, mat: { type: "stage" }, tr: pack(trs([T.CTA[0], 0, T.CTA[2]], qEuler(-Math.PI / 2, 0, 0))) });
-add({ name: "logo", geo: { type: "curve", rings: A.LOGO.rings.map((r) => r.map(([x, y]) => [+(x * A.SHELL_H).toFixed(6), +(y * A.SHELL_H).toFixed(6)])), depth: A.SHELL_D, bevel: 0.0022 }, mat: { type: "type", color: "#07C160", emit: 0.25 }, anim: true });
+add({ name: "logo", geo: { type: "curve", rings: A.LOGO.rings.map((r) => r.map(([x, y]) => [+(x * A.SHELL_H).toFixed(6), +(y * A.SHELL_H).toFixed(6)])), depth: A.SHELL_D, bevel: 0.0022 }, mat: { type: "type", color: film.cta.prop.logoColor, emit: 0.25 }, anim: true });
 A.SNAIL_PARTS.forEach((p) => {
   const geo = p.shape === "roundBox" ? { type: "roundBox", size: p.size, radius: p.radius } : p.shape === "ellipsoid" ? { type: "ellipsoid", r: p.r } : { type: "arc", radius: p.radius, tube: p.tube, arc: p.arc };
   add({ name: `snail_${p.name}`, geo, mat: { type: "toy", key: { body: "snail", eye: "white", pupil: "black" }[p.mat] }, anim: true });

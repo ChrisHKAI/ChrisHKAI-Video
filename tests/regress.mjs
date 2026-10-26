@@ -31,12 +31,20 @@ function firstDiff(a, b, path = "$") {
   return a === b ? null : `${path}: ${a} ≠ ${b}`;
 }
 
+const SUBSET = new Set(["build/glyphs.json"]);
 let bad = 0;
 for (const f of FILES) {
   const A = join(film, f), B = join(ref, f);
   if (!existsSync(A) || !existsSync(B)) { console.log(`MISSING ${f}${existsSync(A) ? " (reference)" : ""}`); bad++; continue; }
   const a = readFileSync(A), b = readFileSync(B);
   if (a.equals(b)) { console.log(`same    ${f}`); continue; }
+  if (SUBSET.has(f)) {
+    // the film only extracts the glyphs it uses: each must equal the reference's
+    const A2 = JSON.parse(a), B2 = JSON.parse(b);
+    const off = Object.keys(A2).filter((k) => JSON.stringify(A2[k]) !== JSON.stringify(B2[k]));
+    if (!off.length) { console.log(`subset  ${f}  (${Object.keys(A2).length} of ${Object.keys(B2).length})`); continue; }
+    console.log(`DIFF    ${f}  ${off.slice(0, 5).join(", ")}`); bad++; continue;
+  }
   bad++;
   if (f.endsWith(".json")) console.log(`DIFF    ${f}  ${firstDiff(JSON.parse(a), JSON.parse(b))}`);
   else console.log(`DIFF    ${f}  (${a.length} vs ${b.length} bytes)`);

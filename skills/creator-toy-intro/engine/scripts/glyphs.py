@@ -1,9 +1,11 @@
-"""Glyph outlines for the 3D lettering, flattened to polygons: the stat's
-digits / 万 / 阅读 (act 2) and the call to action's torn-paper labels
-(公众号变现找蜗牛, 蜗牛King, @isnail in Lantinghei SC Heavy).
+"""Glyph outlines for the 3D lettering, flattened to polygons: the counter's
+digits, unit and label (act 2) and the call to action's torn-paper labels.
+Each role takes its face from engine/lib/fonts.py (isnail's type design, with
+free fallbacks) and its characters from film.json. A character the face does
+not have stops the build here, before anything renders.
 Rings are in em units (y up, baseline 0); Blender extrudes them as curves.
 
-usage: python3 scripts/glyphs.py   → build/glyphs.json
+usage: FILM=<film folder> python3 engine/scripts/glyphs.py   → build/glyphs.json
 """
 import json
 import sys
@@ -13,17 +15,24 @@ from fontTools.pens.basePen import BasePen
 from fontTools.ttLib import TTFont
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
-from film import FILM  # noqa: E402  the film workspace (FILM env var)
+from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
+from fonts import face  # noqa: E402
 
 ROOT = FILM
-PINGFANG = "/System/Library/AssetsV2/com_apple_MobileAsset_Font8/86ba2c91f017a3749571a82f2c6d890ac7ffb2fb.asset/AssetData/PingFang.ttc"
-LANTING = "/System/Library/AssetsV2/com_apple_MobileAsset_Font8/f14049099a04e570b893c01d9a4cd71f87c9e8d8.asset/AssetData/Lantinghei.ttc"
-FONTS = {
-    "latin": ("/System/Library/Fonts/HelveticaNeue.ttc", 1, "0123456789@isnailKg"),  # Helvetica Neue Bold
-    "cjk": (PINGFANG, 11, "万阅读公众号变现找蜗牛"),  # PingFang SC Semibold
-    # the sign-off on torn paper (one heavy face for Chinese and Latin, like the cover)
-    "heavy": (LANTING, 2, "蜗牛King@isnail公众号变现找"),  # Lantinghei SC Heavy
+F = FILM_JSON
+lang = F.get("language", "zh-Hans")
+prefs = {role: [(p["family"], p["style"]) for p in v] for role, v in F.get("type", {}).items()}
+cta = F["cta"]
+CHARS = {
+    "latin": "0123456789",  # the counter's digits
+    "cjk": F["counter"]["unit"] + F["counter"]["label"],
+    "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta["handle"]]),
 }
+FONTS = {}
+for role, chars in CHARS.items():
+    path, index, name = face(role, lang, prefs.get(role, ()), [str(FILM / "fonts")])
+    FONTS[role] = (path, index, chars)
+    print(f"{role:6s} {name}  ({Path(path).name} #{index})")
 
 
 class Flatten(BasePen):
@@ -69,6 +78,9 @@ for key, (path, index, chars) in FONTS.items():
     cmap = font.getBestCmap()
     gs = font.getGlyphSet()
     hmtx = font["hmtx"]
+    missing = sorted({ch for ch in chars if ord(ch) not in cmap})
+    if missing:
+        raise SystemExit(f"{key}: {Path(path).name} has no glyph for {' '.join(missing)}")
     for ch in sorted(set(chars)):
         name = cmap[ord(ch)]
         pen = Flatten(gs)

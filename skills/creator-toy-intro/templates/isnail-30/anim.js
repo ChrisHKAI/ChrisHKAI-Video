@@ -3,7 +3,7 @@
 // Three.js-style: metres, +y up, +z toward the viewer's (south) edge of the
 // page; 1 UI px = 1 mm, UI centre at the origin, slab tops at y = 0.
 // Transforms are { p, q, s }.
-import { readFilmJSON } from "../../engine/lib/film.js";
+import { film, readFilmJSON } from "../../engine/lib/film.js";
 import * as T from "./timeline.js";
 import { MASCOT_PARTS, JOINTS, CENTER } from "../../engine/lib/toy.js";
 import { mulberry32 } from "../../engine/lib/rng.js";
@@ -612,14 +612,16 @@ export const heroCentre = (t) => {
 export const GLYPHS = readFilmJSON("build/glyphs.json", null) ?? {};
 const adv = (k) => (GLYPHS[k] ? GLYPHS[k].advance : 0.6);
 export const STAT_EM = { digit: 70, wan: 62, label: 30 };
+// glyph keys of the counter's unit (万) and its two-character label (阅读)
+export const STAT_KEYS = { unit: `cjk:${film.counter.unit}`, label: [...film.counter.label].map((c) => `cjk:${c}`) };
 export const STAT = (() => {
   const dw = adv("latin:0") * STAT_EM.digit;
   let x = 0;
   const slots = [0, 1, 2].map(() => { const p = x; x += dw; return p; });
   const wan = x + 3;
-  x = wan + adv("cjk:万") * STAT_EM.wan + 10;
-  const label = [x, x + adv("cjk:阅") * STAT_EM.label];
-  x = label[1] + adv("cjk:读") * STAT_EM.label;
+  x = wan + adv(STAT_KEYS.unit) * STAT_EM.wan + 10;
+  const label = [x, x + adv(STAT_KEYS.label[0]) * STAT_EM.label];
+  x = label[1] + adv(STAT_KEYS.label[1]) * STAT_EM.label;
   const off = -x / 2;
   return { slots: slots.map((v) => v + off), wan: wan + off, label: label.map((v) => v + off), width: x, left: off, bar: -11 };
 })();
@@ -765,11 +767,20 @@ function label(id, text, em, paper, cx, cy, cz, tilt, at, letterAt) {
   return { id, text, em, paper, c: [cx, cy, cz], tilt, at, W, H, letters };
 }
 export const SLOGAN_LETTER = (i) => E.letters + i * BEAT8;
+// the slogan's labels run on from one another, a letter per 8th note; the name
+// and the handle are slapped up together at E.name
+const CTA_TEXT = film.cta;
+let sloganAt = 0;
+const sloganLabels = CTA_TEXT.slogan.map((p, k) => {
+  const first = sloganAt;
+  sloganAt += [...p.text].length;
+  return label(`slogan${k}`, p.text, p.em, p.paper, ...p.at, p.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
+});
+const N = CTA_TEXT.name, HD = CTA_TEXT.handle;
 export const LABELS = [
-  label("gzh", "公众号变现", 0.1, "cream", -0.36, 0.064, -0.06, -0.012, SLOGAN_LETTER(0) - 0.06, (i) => SLOGAN_LETTER(i)),
-  label("zhao", "找蜗牛", 0.1, "red", 0.1, 0.07, -0.058, 0.02, SLOGAN_LETTER(5) - 0.06, (i) => SLOGAN_LETTER(5 + i)),
-  label("name", "蜗牛King", 0.105, "cream", -0.2, 0.322, -0.09, -0.03, E.name, (i) => E.name + 0.05 + 0.05 * i),
-  label("handle", "@isnail", 0.062, "blue", -0.16, 0.2, -0.085, 0.022, E.name + 0.18, (i) => E.name + 0.22 + 0.025 * i),
+  ...sloganLabels,
+  label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + 0.05 + 0.05 * i),
+  label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + 0.18, (i) => E.name + 0.22 + 0.025 * i),
 ];
 // a torn outline round a w x h sheet: little bites on the long edges, ragged ends
 function torn(w, h, seed, grow = 0) {
@@ -812,7 +823,7 @@ export function labelLetterAt(i, j, t) {
 export const CROWN_W = 0.07;
 export const CROWN = [[0, 0], [1, 0], [1, 0.68], [0.76, 0.44], [0.5, 0.92], [0.24, 0.44], [0, 0.68]];
 export function crownAt(t) {
-  const L = LABELS[2];
+  const L = LABELS.find((l) => l.id === "name");
   const rest = mulT(labelT(L, Math.max(t, E.crown[1])), trs([L.W / 2 - 0.05, L.H / 2 - 0.022, 0.006], qEuler(0, 0, 0.32)));
   if (t < E.crown[0]) return trs(v3.add(rest.p, [0, 0.25, 0]), qId(), HIDDEN);
   const d = seg(t, E.crown[0], E.crown[1]);
@@ -830,7 +841,7 @@ function ballistic(p0, v0, dt, floor) {
   return p;
 }
 export const FLAKES = 18;
-const FLAKE_COLS = ["#F6C445", "#4E7BEF", "#7FC86B", "#F59A3B", "#FFFFFF", "#B44CC8"];
+const FLAKE_COLS = film.pop.confetti; // the avatar's confetti; the first two flakes are its leaves
 export function flakeAt(i, t) {
   const r = mulberry32(100 + i);
   const a = r() * TAU, sp = 0.25 + r() * 0.35;
@@ -838,7 +849,7 @@ export function flakeAt(i, t) {
   const p0 = [POP[0], 0.06, POP[2] - 0.01];
   const dt = t - E.pop;
   const life = 1.6 + r() * 0.5;
-  const color = i < 2 ? "#6DBE5A" : FLAKE_COLS[i % FLAKE_COLS.length];
+  const color = i < 2 ? film.pop.leaf : FLAKE_COLS[i % FLAKE_COLS.length];
   if (dt < 0 || dt > life) return { tr: hidden(p0), color };
   const p = ballistic(p0, v0, dt, 0.0006);
   const spin = qEuler(dt * (4 + r() * 8), dt * (3 + r() * 6), dt * 5);

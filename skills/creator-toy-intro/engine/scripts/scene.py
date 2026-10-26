@@ -25,7 +25,7 @@ from bpy_extras import anim_utils
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
-from film import FILM  # noqa: E402  the film workspace (FILM env var)
+from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
 
 ROOT = FILM
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -59,11 +59,10 @@ def rgba(hex_, k=1.0):
     return (r * k, g * k, b * k, 1.0)
 
 
-TOY = {
-    "white": "#F3F1EC", "hoodie": "#E6E3DD", "red": "#D5322A", "redDark": "#A3241D", "grey": "#77706A",
-    "sole": "#2C2C31", "black": "#141416", "blue": "#2F6BFF", "lensRed": "#E8352B", "string": "#5C5C62", "gold": "#F2C14E",
-    "snail": "#E6F3E9",
-}
+# the toy's colours and finishes (toy.json), plus the CTA prop's body colour
+TOY_SPEC = json.loads((FILM / FILM_JSON["toy"]).read_text())
+TOY = {**TOY_SPEC["colors"], "snail": FILM_JSON["cta"]["prop"]["bodyColor"]}
+FINISH = TOY_SPEC.get("finish", {})  # vinyl (default) | matte | soft | lens
 
 # ── Scene ───────────────────────────────────────────────────────────────────
 scene = bpy.context.scene
@@ -242,10 +241,11 @@ def material(spec):
         L.new(cut.outputs["Shader"], out.inputs["Surface"])
     elif kind == "toy":
         k = spec["key"]
-        lens = k in ("blue", "lensRed")
-        p = principled(nt, TOY[k], 0.1 if lens else 0.55 if k == "grey" else 0.34, 0.5,
-                       coat=1.0 if lens else 0.15 if k == "grey" else 0.5, coat_rough=0.03 if lens else 0.16)
-        if k in ("white", "hoodie"):
+        fin = FINISH.get(k, "vinyl")
+        lens, matte = fin == "lens", fin == "matte"
+        p = principled(nt, TOY[k], 0.1 if lens else 0.55 if matte else 0.34, 0.5,
+                       coat=1.0 if lens else 0.15 if matte else 0.5, coat_rough=0.03 if lens else 0.16)
+        if fin == "soft":
             p.inputs["Subsurface Weight"].default_value = 0.08
             p.inputs["Subsurface Radius"].default_value = (0.004, 0.003, 0.003)
         if lens:
@@ -442,7 +442,7 @@ def material(spec):
         mp.inputs["Scale"].default_value = (1 / spec["w"], 1 / spec["h"], 1)
         mp.inputs["Location"].default_value = (0.5, 0, 0)
         L.new(tc.outputs["Object"], mp.inputs["Vector"])
-        tx = tex_node(nt, image("assets/pinned-cover.jpg"), "EXTEND")
+        tx = tex_node(nt, image(FILM_JSON["posts"]["pinned"]["cover"]), "EXTEND")
         L.new(mp.outputs["Vector"], tx.inputs["Vector"])
         sep = nt.nodes.new("ShaderNodeSeparateXYZ")
         L.new(tc.outputs["Normal"], sep.inputs["Vector"])
