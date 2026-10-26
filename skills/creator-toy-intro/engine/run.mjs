@@ -14,9 +14,9 @@
 //           covers   each platform's covers cut from the last frame → out/covers/
 //           safezone the platforms' controls over preview frames → build/safezone-check.jpg
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { film, FILM, fromSkill } from "./lib/film.js";
+import { findBlender, findPython, toolEnv } from "./lib/tools.js";
 
 const argv = process.argv.slice(2);
 const dash = argv.indexOf("--");
@@ -29,11 +29,13 @@ if (!steps.length) {
   process.exit(1);
 }
 
-const blender = process.env.BLENDER || (existsSync("/Applications/Blender.app/Contents/MacOS/Blender") ? "/Applications/Blender.app/Contents/MacOS/Blender" : "blender");
+// Blender, the Python with the pipeline's modules, the skill's bin on PATH (engine/lib/tools.js)
+const blender = findBlender() ?? "blender";
+const PY = findPython() ?? "python3";
 const tpl = (f) => fromSkill("templates", film.template, f);
 const run = (cmd, args) => {
   console.log(`\n▶ ${cmd} ${args.join(" ")}`);
-  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: FILM, env: { ...process.env, FILM, SKILL: fromSkill() } });
+  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
@@ -42,21 +44,21 @@ for (const [i, step] of steps.entries()) {
   switch (step) {
     case "recipes":
       // "@tool" is one of the engine's tools (engine/scripts/tool.py); anything else is the film's own recipe
-      for (const r of film.recipes ?? []) run("python3", [r.startsWith("@") ? fromSkill("engine/scripts", `${r.slice(1)}.py`) : join(FILM, "recipes", r)]);
+      for (const r of film.recipes ?? []) run(PY, [r.startsWith("@") ? fromSkill("engine/scripts", `${r.slice(1)}.py`) : join(FILM, "recipes", r)]);
       break;
-    case "glyphs": run("python3", [fromSkill("engine/scripts/glyphs.py"), ...more]); break;
+    case "glyphs": run(PY, [fromSkill("engine/scripts/glyphs.py"), ...more]); break;
     case "hero": run("node", [fromSkill("engine/scripts/dump-hero.mjs")]); break;
     case "ui": run("node", [fromSkill("engine/scripts/build-ui.mjs"), ...more]); break;
     case "anim": run("node", [fromSkill("engine/scripts/export-anim.mjs")]); break;
-    case "sound": run("python3", [tpl("score.py")]); break;
+    case "sound": run(PY, [tpl("score.py")]); break;
     case "lookdev": run(blender, ["-b", "--factory-startup", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]); break;
     case "render": run(blender, ["-b", "--factory-startup", "-P", fromSkill("engine/scripts/scene.py"), "--", ...more]); break;
     case "finish":
-      run("python3", [fromSkill("engine/scripts/finish.py"), ...more]);
-      run("python3", [fromSkill("engine/scripts/covers.py")]);
+      run(PY, [fromSkill("engine/scripts/finish.py"), ...more]);
+      run(PY, [fromSkill("engine/scripts/covers.py")]);
       break;
-    case "covers": run("python3", [fromSkill("engine/scripts/covers.py"), ...more]); break;
-    case "safezone": run("python3", [fromSkill("engine/scripts/safezone.py"), ...more]); break;
+    case "covers": run(PY, [fromSkill("engine/scripts/covers.py"), ...more]); break;
+    case "safezone": run(PY, [fromSkill("engine/scripts/safezone.py"), ...more]); break;
     default: console.error(`unknown step: ${step}`); process.exit(1);
   }
 }

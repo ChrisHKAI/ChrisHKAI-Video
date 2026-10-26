@@ -10,7 +10,8 @@ import { film, fromSkill, readFilmJSON } from "../../engine/lib/film.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
-const S = film.story;
+// the story's own tuned values (story.json), under whatever film.json "story" pins
+const S = { ...JSON.parse(readFileSync(new URL("./story.json", import.meta.url), "utf8")), ...film.story };
 const [FW, FH] = film.format.size;
 export const PORTRAIT = FH > FW;
 export const ASPECT = FW / FH;

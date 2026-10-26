@@ -13,29 +13,45 @@ spots where the page shows them; the end card slaps their name and call to
 action up on torn paper. Everything is code: the toy is built from a part
 list, the page is HTML, the score is synthesized, Blender renders.
 
-**Status: development stage 2 of 4 done.** The engine, one story template
-(`isnail-30`) and six platform themes work in 16:9 and 9:16, and rebuild the
-reference film exactly; finish cuts each platform's covers, and previews are
-checked against each app's own controls. Not yet: onboarding, creator
-research, the toy kits and the storyboard page (stage 3); testing with new
-creators (stage 4). Until then,
-building a film for a new creator means writing its film.json, toy.json and
-cover recipes by hand, as below.
+**Status: development stage 3 of 4 under way.** The engine, one story
+template (`isnail-30`) and six platform themes work in 16:9 and 9:16, and
+rebuild the reference film exactly; finish cuts each platform's covers, and
+previews are checked against each app's own controls. Steps 0 and 1 (the
+computer, onboarding) work. Not yet: creator research, the toy kits and the
+storyboard page (the rest of stage 3); testing with new creators (stage 4).
+Until then, after onboarding a film for a new creator needs its film.json,
+toy.json and cover recipes written by hand, as below.
+
+## Making a film
+
+Effort stays at xhigh. Each step ends on something the user looks at.
+
+| step | what | how |
+| --- | --- | --- |
+| 0 | the computer: check, then one yes installs what is missing | `references/onboarding.md` |
+| 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
+| 2 | research: profile, pinned and best posts, numbers; the user picks | not yet: by hand |
+| 3 | the toy from the profile picture; a turnaround to approve | not yet: by hand (`toy.json`, `lookdev`) |
+| 4 | story and storyboard: real preview renders, safe zones | `render` previews, `safezone` |
+| 5 | render, finish, covers | `render`, `finish` |
 
 ## Layout
 
 | path | what it is |
 | --- | --- |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
-| `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py` |
-| `engine/scripts/` | build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
-| `templates/isnail-30/` | the story: `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
+| `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link) |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
+| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
 ## Requirements
 
-Blender 5.2 LTS or later, Node 22+, Python 3.9+ with numpy, scipy, pillow,
-fonttools, contourpy and scikit-image, ffmpeg, and Chrome (headless). The end
+Blender 5.2 LTS or later (Apple silicon on a Mac), Node 22+, Python 3.9+
+with numpy, scipy, pillow, fonttools and contourpy, ffmpeg, and Chrome
+(headless); `engine/scripts/doctor.mjs` checks them all and installs what is
+missing (step 0). The end
 card's face is Lantinghei SC/TC Heavy, the counter's PingFang Semibold and
 Helvetica Neue Bold (macOS); without them `engine/lib/fonts.py` falls back to
 Source Han Sans and Arial. Never copy font files into the skill.
@@ -51,8 +67,11 @@ A folder outside the skill, never committed:
   recipes/         the film's own scripts (cover cuts, its flat avatar)
   assets/          the creator's pictures; the pipeline adds textures here
   build/           everything generated (anim.json, glyphs, frames)
+  research/        step 2's screenshots and notes
   out/             the finished film; out/covers/ the platforms' covers
 ```
+
+`engine/scripts/new-film.mjs` opens one (step 1).
 
 film.json holds: `template`, `theme`, `language`, `format` (fps, bpm,
 duration, size), `output`, `publish` (where the film goes: ids in
@@ -62,8 +81,10 @@ marks, if any), `profile` (name, handle, bio, counts, pictures), `posts`
 (pinned and the second post: date, title, counts, cover), `counter` (value,
 unit, label), `cta` (slogan labels, name and handle labels, the prop;
 positions optional: the template lays the end card out per orientation),
-`sticker2d`, `pop` (confetti colours), `story` (events, places, wall pieces,
-camera keys, shakes).
+`sticker2d`, `pop` (confetti colours), `story` (the cover walls' pieces;
+events, places, camera keys and shakes only where they differ from the
+template's own `story.json`), `source` (the creator's link, platform,
+handle) and `step` (the step a film being made is at).
 
 `format.size` is `[1920, 1080]` for 16:9 or `[1080, 1920]` for 9:16, and the
 theme matches it: `x-desktop` is 16:9, the `-mobile` themes 9:16. The camera

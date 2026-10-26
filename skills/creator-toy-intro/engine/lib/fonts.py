@@ -10,6 +10,7 @@ film.json "type": { role: [{ "family": …, "style": … }, …] } puts the film
 choices in front. Font files a film brings sit in its fonts/ folder.
 """
 import glob
+import os
 from pathlib import Path
 
 from fontTools.ttLib import TTCollection, TTFont
@@ -25,7 +26,10 @@ ROLES = {
         "zh-Hant": [("Lantinghei TC", "Heavy"), ("Source Han Sans HK", "Heavy"), ("Source Han Sans TC", "Heavy")],
     },
 }
+# faces step 0 installed (scripts/doctor.mjs) sit in the skill's home
+HOME_FONTS = str(Path(os.environ.get("CHRISHKAI_VIDEO_HOME") or Path.home() / ".chrishkai-video") / "fonts")
 DIRS = [
+    HOME_FONTS,
     "/System/Library/Fonts", "/System/Library/Fonts/Supplemental", "/Library/Fonts", str(Path.home() / "Library/Fonts"),
     "/System/Library/AssetsV2/com_apple_MobileAsset_Font*/*/AssetData",
     "C:/Windows/Fonts", "/usr/share/fonts/**", "/usr/local/share/fonts/**", str(Path.home() / ".local/share/fonts/**"),
