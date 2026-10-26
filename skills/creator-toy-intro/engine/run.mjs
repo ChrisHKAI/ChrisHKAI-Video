@@ -31,7 +31,7 @@ const blender = process.env.BLENDER || (existsSync("/Applications/Blender.app/Co
 const tpl = (f) => fromSkill("templates", film.template, f);
 const run = (cmd, args) => {
   console.log(`\n▶ ${cmd} ${args.join(" ")}`);
-  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: FILM, env: { ...process.env, FILM } });
+  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: FILM, env: { ...process.env, FILM, SKILL: fromSkill() } });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
@@ -39,7 +39,8 @@ for (const [i, step] of steps.entries()) {
   const more = i === steps.length - 1 ? extra : [];
   switch (step) {
     case "recipes":
-      for (const r of film.recipes ?? []) run("python3", [join(FILM, "recipes", r)]);
+      // "@tool" is one of the engine's tools (engine/scripts/tool.py); anything else is the film's own recipe
+      for (const r of film.recipes ?? []) run("python3", [r.startsWith("@") ? fromSkill("engine/scripts", `${r.slice(1)}.py`) : join(FILM, "recipes", r)]);
       break;
     case "glyphs": run("python3", [fromSkill("engine/scripts/glyphs.py"), ...more]); break;
     case "hero": run("node", [fromSkill("engine/scripts/dump-hero.mjs")]); break;
