@@ -13,15 +13,16 @@ spots where the page shows them; the end card slaps their name and call to
 action up on torn paper. Everything is code: the toy is built from a part
 list, the page is HTML, the score is synthesized, Blender renders.
 
-**Status: development stage 3 of 4 under way.** The engine, one story
-template (`isnail-30`) and six platform themes work in 16:9 and 9:16, and
-rebuild the reference film exactly; finish cuts each platform's covers, and
-previews are checked against each app's own controls. Steps 0 and 1 (the
-computer, onboarding), 2 (research), 3 (the toy: three kits) and 4 (the
-storyboard page) work. Not yet: the optional concept picture (the rest of
-stage 3); testing with new creators (stage 4).
-Until then, after the toy a film for a new creator needs the rest of its
-film.json and its cover recipes written by hand, as below.
+**Status: development stage 4 of 4 (testing with new creators).** The
+engine, one story template (`isnail-30`) and six platform themes work in
+16:9 and 9:16, and rebuild the reference film exactly; finish cuts each
+platform's covers, and previews are checked against each app's own
+controls. Steps 0 to 4 (the computer, onboarding, research, the toy in three
+kits, the storyboard page) work. Still written by hand for each new
+creator, until stage 4 gives them defaults: the cover walls' pieces (a
+recipe per cover), the flat profile picture the toy peels off as, the exit
+through a sticker on the second cover (it needs the toy drawn on that
+cover), and the end card's prop (isnail's snail is cut from his 公众号 logo).
 
 ## Making a film
 

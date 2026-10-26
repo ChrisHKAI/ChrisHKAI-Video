@@ -6,7 +6,7 @@ ChrisHKAI 的视频 Skill 合集：用代码做视频，主角是创作者自己
 
 | Skill | 做什么 | 状态 |
 | --- | --- | --- |
-| `creator-toy-intro` | 自媒体 3D 公仔介绍片：贴一条主页链接，做出一条 30 秒、主角是你自己 3D 搪胶公仔的自我介绍片 | 开发中（第三阶段） |
+| `creator-toy-intro` | 自媒体 3D 公仔介绍片：贴一条主页链接，做出一条 30 秒、主角是你自己 3D 搪胶公仔的自我介绍片 | 开发中（第四阶段：实测） |
 
 ## 作品
 
@@ -20,6 +20,14 @@ claude plugin install chrishkai-video@chrishkai-video
 ```
 
 其他 agent：把 `skills/creator-toy-intro/` 整个文件夹复制到它的 skills 目录。
+
+## 实测过的 agent 和模型
+
+第四阶段用真实创作者实测后填写：哪个 agent、哪个模型、什么思考强度、什么电脑，做出来的片怎样。
+
+| agent | 模型 | 强度 | 电脑 | 结果 |
+| --- | --- | --- | --- | --- |
+| — | — | — | — | 待实测 |
 
 ## 授权
 
