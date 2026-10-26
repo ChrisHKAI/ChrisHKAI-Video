@@ -3,6 +3,9 @@ films/
 build/
 out/
 research/
+# the Chris toy's sheets are kept; finished films go to GitHub Releases (release/films/)
+!examples/chris-toy/build/
+release/
 
 node_modules/
 __pycache__/

@@ -1,4 +1,4 @@
-// Writes the toy.json of every toy here that is written as code: the calico cat
+// Writes the toy.json of every toy here that is written as code: Kin's calico cat
 // (pet kit) and Tim and Steve Jobs (the Tim film's toy line, also the pet
 // kit's shapes), with their joints renamed onto the story's rig contract.
 // isnail is a toy.json already; Chris is a sculpt (chris/sculpt.py).
@@ -24,7 +24,7 @@ const rename = (joints, parts, G) => ({
   const G = { legL: "armL", legR: "armR", hindL: "legL", hindR: "legR", earL: "ears", earR: "ears" };
   const { joints, parts } = rename(JOINTS, CAT_PARTS, G);
   joints.ears = { p: [0, 0.077, 0], parent: "head" }; // between the two ears
-  write("kingao-cat", { name: "金敖 (kingao), a calico cat", kit: "pet", height: HEIGHT, center: CENTER, colors: COLORS,
+  write("kingao-cat", { name: "Kin's calico cat (@KinGao476942)", kit: "pet", height: HEIGHT, center: CENTER, colors: COLORS,
     finish: { white: "soft", line: "gloss", nose: "gloss", whisker: "gloss" }, joints, parts });
 }
 

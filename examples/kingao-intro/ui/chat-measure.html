@@ -1,0 +1,11 @@
+<!doctype html><html><head><meta charset="utf-8"><style>* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "PingFang SC", -apple-system, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; color: #111; }
+.b { display: inline-block; max-width: 322px; padding: 12px 16px; font-size: 24px; line-height: 34px; font-weight: 500; } body { width: 405px; } div { margin-bottom: 4px; }</style></head><body>
+<div><span class="b" id="me1">你好，你是 Grok bot 么？</span></div>
+<div><span class="b" id="bot1">回皇上，是奴才，御前总管太监，跑在 Grok Bot 上伺候您。微信这条路已经通了，您有什么旨意直接吩咐就成。</span></div>
+<div><span class="b" id="me2">把奶娃的达里奥表情包发我</span></div>
+<div><span class="b" id="bot2">这个我帮不了</span></div>
+<div><span class="b" id="bot3">不要逼我把你号封了</span></div>
+<div><span class="b" id="bot4">封号还不退款</span></div>
+<script>const r = {}; for (const e of document.querySelectorAll(".b")) { const b = e.getBoundingClientRect(); r[e.id] = [Math.ceil(b.width), Math.ceil(b.height)]; }
+document.body.innerHTML = "<pre id=out>" + JSON.stringify(r) + "</pre>";</script></body></html>

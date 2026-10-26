@@ -1,0 +1,194 @@
+<title>Kin 介紹片分鏡</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a dark screening-room board in the calico's colours — the animatic, the bar grid, then every previs frame in film order. */
+:root {
+  --bg: #121110;
+  --panel: #1b1a18;
+  --ink: #efe9df;
+  --muted: #a39b8f;
+  --rule: #34302b;
+  --orange: #e8903a;
+  --cream: #efe6d4;
+  --blue: #3d7bd9;
+  --red: #d8382d;
+  --display: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --body: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; display: grid; gap: 44px; }
+header { display: grid; gap: 14px; }
+h1 { font-family: var(--display); font-weight: 900; font-size: clamp(28px, 5vw, 48px); line-height: 1.1; margin: 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--orange); }
+.lede { max-width: 70ch; margin: 0; font-size: 16px; text-wrap: pretty; }
+.specs { display: flex; flex-wrap: wrap; gap: 8px; }
+.specs span { font-family: var(--mono); font-size: 12.5px; border: 1px solid var(--rule); background: var(--panel); padding: 3px 9px; border-radius: 3px; color: var(--muted); }
+h2 { font-family: var(--display); font-weight: 900; font-size: 24px; margin: 0; text-wrap: balance; }
+h2 small { font-family: var(--body); font-weight: 500; font-size: 14px; color: var(--muted); margin-left: 8px; }
+section { display: grid; gap: 16px; }
+video { width: 100%; max-width: 100%; display: block; border: 1px solid var(--rule); border-radius: 4px; background: #000; aspect-ratio: 16 / 9; }
+.note { color: var(--muted); font-size: 13.5px; margin: 0; }
+
+/* bar grid: 15 bars of 4 beats */
+.gridbox { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); padding: 14px; border-radius: 4px; }
+.grid { min-width: 980px; display: grid; grid-template-columns: repeat(60, 1fr); row-gap: 4px; font-family: var(--mono); font-size: 11px; }
+.act { grid-row: 1; padding: 3px 8px; color: #141210; font-family: var(--body); font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barlab { grid-row: 2; border-left: 1px solid var(--ink); padding-left: 4px; color: var(--muted); }
+.beat { grid-row: 3; height: 14px; border-left: 1px solid var(--rule); }
+.beat.down { border-left: 2px solid var(--ink); }
+.hit { grid-row: 4; position: relative; height: 64px; }
+.hit i { position: absolute; left: -1px; top: 0; bottom: 0; border-left: 2px solid var(--orange); }
+.hit em { position: absolute; left: 5px; top: 0; font-style: normal; font-family: var(--body); font-size: 11.5px; line-height: 1.25; white-space: nowrap; }
+.hit.low em { top: 30px; }
+
+/* frames */
+.acthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--rule); padding-top: 18px; }
+.acthead b { font-family: var(--mono); font-size: 13px; color: var(--muted); font-weight: 500; }
+.chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 18px 16px; }
+figure { margin: 0; display: grid; gap: 8px; align-content: start; min-width: 0; }
+figure img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 3px; border: 1px solid var(--rule); background: #000; }
+figcaption { display: grid; gap: 2px; }
+figcaption .t { font-family: var(--mono); font-size: 12px; color: var(--orange); font-variant-numeric: tabular-nums; }
+figcaption .d { font-size: 14px; line-height: 1.5; }
+.ask { background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 18px 20px; display: grid; gap: 10px; max-width: 80ch; }
+.ask ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Kin 介紹片 · <em>三花貓</em>分鏡</h1>
+    <p class="lede">主角係 Kin 頭像嗰隻三花貓，做成搪膠公仔。每一格都係用正式 Blender 流程渲染出嚟（Cycles，50% 解像度，32 spp），唔係手繪草圖。上面嗰條係全片 animatic（25% 解像度、8 spp、已經配咗合成配樂），可以睇到郁動同節拍；正式版會用 1080p、128 spp，加動態模糊同後期。</p>
+    <div class="specs"><span>30 秒</span><span>1920×1080 · 30 fps</span><span>120 BPM · 一小節 2 秒</span><span>畫面字：簡體 · 兰亭黑 Heavy</span><span>Blender 5.2 Cycles</span><span>配樂：程式合成</span></div>
+  </header>
+
+  <section>
+    <h2>Animatic<small>低解像度試片，有聲</small></h2>
+    <video controls preload="metadata" src="animatic.mp4" poster="frames/0064.jpg"></video>
+    <p class="note">轉場：每次都係隻貓向上跳出畫面、鏡頭跟住上升，下一場由上面跌落嚟。</p>
+  </section>
+
+  <section>
+    <h2>節拍表<small>每格一拍，粗線係小節頭</small></h2>
+    <div class="gridbox"><div class="grid" id="grid"></div></div>
+  </section>
+
+  <section id="board"></section>
+
+  <section class="ask">
+    <h2>想你確認</h2>
+    <ol>
+      <li>成個故事次序同節奏 OK 未？（平面主頁 → 大使 → 微信同 Grok bot → 萬粉 → 入群）</li>
+      <li>畫面上嘅字啱唔啱：SpaceXAI／官方认证大使／中国区；第一个想到用微信／直接和 Grok bot 聊天的人；155万 浏览；一个月零18天／破万!／11000+ 粉丝；想学 Grok bot｜找 Kin 进群；Kin @KinGao476942。</li>
+      <li>OK 嘅話我就開始正式渲染（約 2 小時），之後再俾你睇成片嘅格仔檢查。</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const ACTS = [
+  { a: 0, b: 2, name: "平面變 3D", color: "#9aa7b8" },
+  { a: 2, b: 4, name: "貓跳出嚟", color: "#e8903a" },
+  { a: 4, b: 8, name: "SpaceXAI 官方大使", color: "#e9b949" },
+  { a: 8, b: 16, name: "微信 × Grok bot · 155万", color: "#7fc86b" },
+  { a: 16, b: 24, name: "一个月零18天 破万粉", color: "#4e9bef" },
+  { a: 24, b: 30, name: "想学 Grok bot｜找 Kin 进群", color: "#d8382d" },
+];
+const HITS = [[2, "頭像膨出貓"], [4, "金牌"], [6, "中国区 印章", 1], [8, "轉場"], [10, "第一个想到…"], [14, "155万 鎖定"], [16, "轉場", 1], [20, "10000 破万!"], [22, "11000+", 1], [24, "轉場"], [26.5, "Kin @KinGao476942", 1], [28, "招手 · 定格"]];
+const grid = document.getElementById("grid");
+const col = (t) => Math.round(t * 2) + 1; // a beat = 0.5 s
+for (const A of ACTS) {
+  const d = document.createElement("div");
+  d.className = "act"; d.textContent = A.name; d.style.background = A.color;
+  d.style.gridColumn = `${col(A.a)} / ${col(A.b)}`;
+  grid.appendChild(d);
+}
+for (let bar = 0; bar < 15; bar++) {
+  const d = document.createElement("div");
+  d.className = "barlab"; d.textContent = `${bar * 2}s`;
+  d.style.gridColumn = `${bar * 4 + 1} / span 4`;
+  grid.appendChild(d);
+  for (let k = 0; k < 4; k++) {
+    const b = document.createElement("div");
+    b.className = "beat" + (k === 0 ? " down" : "");
+    b.style.gridColumn = `${bar * 4 + k + 1}`;
+    grid.appendChild(b);
+  }
+}
+for (const [t, label, low] of HITS) {
+  const h = document.createElement("div");
+  h.className = "hit" + (low ? " low" : "");
+  h.style.gridColumn = `${col(t)} / span 1`;
+  h.innerHTML = `<i></i><em>${t}s ${label}</em>`;
+  grid.appendChild(h);
+}
+
+const BOARD = [
+  ["平面變 3D", "#9aa7b8", "0–2 秒", [
+    [0.2, "一開始就係 Kin 嘅 X 主頁，平面填滿畫面，好似截圖咁。"],
+    [1.2, "成版向左轉、退去右邊，一路分開做幾塊浮起嘅玻璃板；兩邊欄飄走。"],
+    [1.87, "主頁企喺右邊，頭像張相開始脹起。"],
+  ]],
+  ["貓跳出嚟", "#e8903a", "2–4 秒", [
+    [2.1, "2.0 秒重拍：頭像「膨」一聲，張相消失，貓公仔由相入面跳出嚟。"],
+    [2.4, "一個弧線跳落地。"],
+    [3.4, "抬下巴、閉埋眼，即係原相嗰個滿足樣。"],
+  ]],
+  ["SpaceXAI 官方大使", "#e9b949", "4–8 秒", [
+    [4.3, "4.0 秒：一個金牌跌落佢頸度。"],
+    [5.7, "撕紙標籤拍落嚟：SpaceXAI、官方认证大使（一拍幾個字）。"],
+    [6.6, "6.0 秒：「中国区」印章大力拍落。"],
+    [7.5, "自豪咁抬頭，跟住向上跳出畫面。"],
+  ]],
+  ["微信 × Grok bot · 155万浏览", "#7fc86b", "8–16 秒", [
+    [8.3, "跌落另一場，一部手機升起，打開同 Grok bot 嘅對話。"],
+    [8.8, "8.5 秒：「@Grok bot 在吗？」"],
+    [9.8, "9.5 秒：Grok bot（Kin 橫幅上嗰粒黑色貼紙，做成公仔）由對話頭像位彈出嚟回覆。"],
+    [10.6, "10.0 秒：「第一个想到用微信」"],
+    [11.5, "「直接和 Grok bot 聊天的人」，停一小節俾人睇。"],
+    [12.4, "鏡頭移去嗰篇長文《如何把 Grok Bot 接入你的微信？》。"],
+    [13.3, "瀏覽數由長文跳出嚟，變成 3D 大字計數。"],
+    [14.2, "14.0 秒：155万 浏览鎖定，貓舉手歡呼。"],
+  ]],
+  ["一个月零18天 破万粉", "#4e9bef", "16–24 秒", [
+    [16.3, "跌落柱狀圖第一格；「第N天」同粉絲數一齊開始跑。"],
+    [17.1, "每拍跳上高一格，柱一格格升起。"],
+    [18.4, "越跳越高，數字越跑越快。"],
+    [19.6, "最後一跳。"],
+    [20.13, "20.0 秒：10000 粉丝鎖定，「破万!」印章加彩紙碎。"],
+    [21.2, "「一个月零18天」標籤。"],
+    [22.8, "22.0 秒：再升到 11000+ 粉丝（而家嘅數）。"],
+  ]],
+  ["想学 Grok bot｜找 Kin 进群", "#d8382d", "24–30 秒", [
+    [24.3, "跌落結尾場，三隻 Grok bot（橙、紫、黑）跌埋嚟陪佢。"],
+    [25.2, "「想学 Grok bot」一拍一個字。"],
+    [26.2, "「找 Kin 进群」紅色標籤。"],
+    [27.3, "26.5 秒：Kin 同 @KinGao476942。"],
+    [28.6, "28.0 秒：招財貓式招手叫你入群。"],
+    [29.93, "定格到 30 秒，唔淡出。"],
+  ]],
+];
+const board = document.getElementById("board");
+for (const [title, color, span, frames] of BOARD) {
+  const head = document.createElement("div");
+  head.className = "acthead";
+  head.innerHTML = `<h2><span class="chip" style="background:${color}"></span>${title}</h2><b>${span}</b>`;
+  board.appendChild(head);
+  const g = document.createElement("div");
+  g.className = "frames";
+  for (const [t, d] of frames) {
+    const f = String(Math.round(t * 30) + 1).padStart(4, "0");
+    const fig = document.createElement("figure");
+    fig.innerHTML = `<img src="frames/${f}.jpg" alt="${t.toFixed(2)} 秒：${d}" loading="lazy"><figcaption><span class="t">${t.toFixed(2)} s</span><span class="d">${d}</span></figcaption>`;
+    g.appendChild(fig);
+  }
+  board.appendChild(g);
+}
+</script>

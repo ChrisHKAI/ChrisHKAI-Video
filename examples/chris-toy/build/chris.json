@@ -1,0 +1,704 @@
+{
+ "units": "m",
+ "facing": "-y",
+ "height_mm": 120,
+ "colors": {
+  "skin": "#F5C29C",
+  "blush": "#F2948A",
+  "mouth": "#7A2630",
+  "tongue": "#E07A78",
+  "teeth": "#FBFAF6",
+  "hair": "#3A2A24",
+  "hairHi": "#6E5142",
+  "fade": "#5B4840",
+  "brow": "#2E211C",
+  "black": "#16161A",
+  "pad": "#C9CDD3",
+  "blue": "#1767EC",
+  "blueDark": "#0F52C2",
+  "navy": "#222E4A",
+  "navyDark": "#1A2440",
+  "white": "#F5F4F0",
+  "sole": "#E2E1DC",
+  "lace": "#D8DCE2"
+ },
+ "parts": [
+  {
+   "name": "head",
+   "file": "parts/head.npz",
+   "bone": "head",
+   "material": "skin"
+  },
+  {
+   "name": "head_grit",
+   "file": "parts/head_grit.npz",
+   "bone": "head",
+   "material": "skin"
+  },
+  {
+   "name": "head_oh",
+   "file": "parts/head_oh.npz",
+   "bone": "head",
+   "material": "skin"
+  },
+  {
+   "name": "hair",
+   "file": "parts/hair.npz",
+   "bone": "head",
+   "material": "hair"
+  },
+  {
+   "name": "teeth",
+   "file": "parts/teeth.npz",
+   "bone": "head",
+   "material": "teeth"
+  },
+  {
+   "name": "teeth_grit",
+   "file": "parts/teeth_grit.npz",
+   "bone": "head",
+   "material": "teeth"
+  },
+  {
+   "name": "tongue",
+   "file": "parts/tongue.npz",
+   "bone": "head",
+   "material": "tongue"
+  },
+  {
+   "name": "tongue_oh",
+   "file": "parts/tongue_oh.npz",
+   "bone": "head",
+   "material": "tongue"
+  },
+  {
+   "name": "glasses",
+   "file": "parts/glasses.npz",
+   "bone": "head",
+   "material": "frame"
+  },
+  {
+   "name": "lenses",
+   "file": "parts/lenses.npz",
+   "bone": "head",
+   "material": "lens"
+  },
+  {
+   "name": "pads",
+   "file": "parts/pads.npz",
+   "bone": "head",
+   "material": "pad"
+  },
+  {
+   "name": "torso",
+   "file": "parts/torso.npz",
+   "bone": "spine",
+   "material": "shirt"
+  },
+  {
+   "name": "hips",
+   "file": "parts/hips.npz",
+   "bone": "hips",
+   "material": "pants"
+  },
+  {
+   "name": "browR",
+   "file": "parts/browR.npz",
+   "bone": "brow.R",
+   "material": "hair"
+  },
+  {
+   "name": "eyeR",
+   "file": "parts/eyeR.npz",
+   "bone": "head",
+   "material": "eye",
+   "frame": {
+    "c": [
+     -0.0116,
+     -0.017818747561315285,
+     0.0778
+    ],
+    "R": [
+     [
+      0.9563047559630354,
+      0.29237170472273677,
+      0.0
+     ],
+     [
+      -0.29237170472273677,
+      0.9563047559630354,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   }
+  },
+  {
+   "name": "lidR",
+   "file": "parts/lidR.npz",
+   "bone": "head",
+   "material": "skin"
+  },
+  {
+   "name": "lashR_happy",
+   "file": "parts/lashR_happy.npz",
+   "bone": "head",
+   "material": "hair"
+  },
+  {
+   "name": "lashR_squint",
+   "file": "parts/lashR_squint.npz",
+   "bone": "head",
+   "material": "hair"
+  },
+  {
+   "name": "legR",
+   "file": "parts/legR.npz",
+   "bone": "thigh.R",
+   "material": "pants"
+  },
+  {
+   "name": "shoeR",
+   "file": "parts/shoeR.npz",
+   "bone": "foot.R",
+   "material": "shoe"
+  },
+  {
+   "name": "lacesR",
+   "file": "parts/lacesR.npz",
+   "bone": "foot.R",
+   "material": "shoe"
+  },
+  {
+   "name": "heelTabR",
+   "file": "parts/heelTabR.npz",
+   "bone": "foot.R",
+   "material": "shoe"
+  },
+  {
+   "name": "sleeveR",
+   "file": "parts/sleeveR.npz",
+   "bone": "upper_arm.R",
+   "material": "shirt"
+  },
+  {
+   "name": "upperArmR",
+   "file": "parts/upperArmR.npz",
+   "bone": "upper_arm.R",
+   "material": "skin"
+  },
+  {
+   "name": "forearmR",
+   "file": "parts/forearmR.npz",
+   "bone": "forearm.R",
+   "material": "skin"
+  },
+  {
+   "name": "handR",
+   "file": "parts/handR.npz",
+   "bone": "hand.R",
+   "material": "skin"
+  },
+  {
+   "name": "handR_grip",
+   "file": "parts/handR_grip.npz",
+   "bone": "hand.R",
+   "material": "skin"
+  },
+  {
+   "name": "handR_point",
+   "file": "parts/handR_point.npz",
+   "bone": "hand.R",
+   "material": "skin"
+  },
+  {
+   "name": "handR_open",
+   "file": "parts/handR_open.npz",
+   "bone": "hand.R",
+   "material": "skin"
+  },
+  {
+   "name": "browL",
+   "file": "parts/browL.npz",
+   "bone": "brow.L",
+   "material": "hair"
+  },
+  {
+   "name": "eyeL",
+   "file": "parts/eyeL.npz",
+   "bone": "head",
+   "material": "eye",
+   "frame": {
+    "c": [
+     0.0116,
+     -0.017818747561315285,
+     0.0778
+    ],
+    "R": [
+     [
+      0.9563047559630354,
+      -0.29237170472273677,
+      0.0
+     ],
+     [
+      0.29237170472273677,
+      0.9563047559630354,
+      0.0
+     ],
+     [
+      0.0,
+      0.0,
+      1.0
+     ]
+    ]
+   }
+  },
+  {
+   "name": "lidL",
+   "file": "parts/lidL.npz",
+   "bone": "head",
+   "material": "skin"
+  },
+  {
+   "name": "lashL_happy",
+   "file": "parts/lashL_happy.npz",
+   "bone": "head",
+   "material": "hair"
+  },
+  {
+   "name": "lashL_squint",
+   "file": "parts/lashL_squint.npz",
+   "bone": "head",
+   "material": "hair"
+  },
+  {
+   "name": "legL",
+   "file": "parts/legL.npz",
+   "bone": "thigh.L",
+   "material": "pants"
+  },
+  {
+   "name": "shoeL",
+   "file": "parts/shoeL.npz",
+   "bone": "foot.L",
+   "material": "shoe"
+  },
+  {
+   "name": "lacesL",
+   "file": "parts/lacesL.npz",
+   "bone": "foot.L",
+   "material": "shoe"
+  },
+  {
+   "name": "heelTabL",
+   "file": "parts/heelTabL.npz",
+   "bone": "foot.L",
+   "material": "shoe"
+  },
+  {
+   "name": "sleeveL",
+   "file": "parts/sleeveL.npz",
+   "bone": "upper_arm.L",
+   "material": "shirt"
+  },
+  {
+   "name": "upperArmL",
+   "file": "parts/upperArmL.npz",
+   "bone": "upper_arm.L",
+   "material": "skin"
+  },
+  {
+   "name": "forearmL",
+   "file": "parts/forearmL.npz",
+   "bone": "forearm.L",
+   "material": "skin"
+  },
+  {
+   "name": "handL",
+   "file": "parts/handL.npz",
+   "bone": "hand.L",
+   "material": "skin"
+  },
+  {
+   "name": "handL_grip",
+   "file": "parts/handL_grip.npz",
+   "bone": "hand.L",
+   "material": "skin"
+  },
+  {
+   "name": "handL_point",
+   "file": "parts/handL_point.npz",
+   "bone": "hand.L",
+   "material": "skin"
+  },
+  {
+   "name": "handL_open",
+   "file": "parts/handL_open.npz",
+   "bone": "hand.L",
+   "material": "skin"
+  }
+ ],
+ "bones": [
+  {
+   "name": "root",
+   "head": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "tail": [
+    0.0,
+    0.0,
+    0.01
+   ],
+   "parent": null
+  },
+  {
+   "name": "hips",
+   "head": [
+    0.0,
+    0.0005,
+    0.027
+   ],
+   "tail": [
+    0.0,
+    0.0005,
+    0.031
+   ],
+   "parent": "root"
+  },
+  {
+   "name": "spine",
+   "head": [
+    0.0,
+    0.0005,
+    0.029
+   ],
+   "tail": [
+    0.0,
+    0.0008,
+    0.05
+   ],
+   "parent": "hips"
+  },
+  {
+   "name": "head",
+   "head": [
+    0.0,
+    0.0025,
+    0.053
+   ],
+   "tail": [
+    0.0,
+    0.002,
+    0.084
+   ],
+   "parent": "spine"
+  },
+  {
+   "name": "upper_arm.R",
+   "head": [
+    -0.0134,
+    0.0008,
+    0.05
+   ],
+   "tail": [
+    -0.0202,
+    0.0005,
+    0.039200000000000006
+   ],
+   "parent": "spine"
+  },
+  {
+   "name": "forearm.R",
+   "head": [
+    -0.0202,
+    0.0005,
+    0.039200000000000006
+   ],
+   "tail": [
+    -0.023,
+    0.0002,
+    0.0308
+   ],
+   "parent": "upper_arm.R"
+  },
+  {
+   "name": "hand.R",
+   "head": [
+    -0.023,
+    0.0002,
+    0.0308
+   ],
+   "tail": [
+    -0.022460968081410557,
+    -6.974733304052061e-05,
+    0.02324707467486542
+   ],
+   "parent": "forearm.R"
+  },
+  {
+   "name": "brow.R",
+   "head": [
+    -0.01,
+    -0.019,
+    0.087
+   ],
+   "tail": [
+    -0.01,
+    -0.019,
+    0.092
+   ],
+   "parent": "head"
+  },
+  {
+   "name": "thigh.R",
+   "head": [
+    -0.007,
+    0.0006,
+    0.0255
+   ],
+   "tail": [
+    -0.009800000000000001,
+    0.0002,
+    0.0095
+   ],
+   "parent": "hips"
+  },
+  {
+   "name": "foot.R",
+   "head": [
+    -0.010199999999999999,
+    0.0006,
+    0.0085
+   ],
+   "tail": [
+    -0.010199999999999999,
+    -0.012,
+    0.002
+   ],
+   "parent": "thigh.R"
+  },
+  {
+   "name": "upper_arm.L",
+   "head": [
+    0.0134,
+    0.0008,
+    0.05
+   ],
+   "tail": [
+    0.0202,
+    0.0005,
+    0.039200000000000006
+   ],
+   "parent": "spine"
+  },
+  {
+   "name": "forearm.L",
+   "head": [
+    0.0202,
+    0.0005,
+    0.039200000000000006
+   ],
+   "tail": [
+    0.023,
+    0.0002,
+    0.0308
+   ],
+   "parent": "upper_arm.L"
+  },
+  {
+   "name": "hand.L",
+   "head": [
+    0.023,
+    0.0002,
+    0.0308
+   ],
+   "tail": [
+    0.022460968081410557,
+    -6.974733304052061e-05,
+    0.02324707467486542
+   ],
+   "parent": "forearm.L"
+  },
+  {
+   "name": "brow.L",
+   "head": [
+    0.01,
+    -0.019,
+    0.087
+   ],
+   "tail": [
+    0.01,
+    -0.019,
+    0.092
+   ],
+   "parent": "head"
+  },
+  {
+   "name": "thigh.L",
+   "head": [
+    0.007,
+    0.0006,
+    0.0255
+   ],
+   "tail": [
+    0.009800000000000001,
+    0.0002,
+    0.0095
+   ],
+   "parent": "hips"
+  },
+  {
+   "name": "foot.L",
+   "head": [
+    0.010199999999999999,
+    0.0006,
+    0.0085
+   ],
+   "tail": [
+    0.010199999999999999,
+    -0.012,
+    0.002
+   ],
+   "parent": "thigh.L"
+  }
+ ],
+ "variants": {
+  "mouth": {
+   "grin": [
+    "head",
+    "teeth",
+    "tongue"
+   ],
+   "grit": [
+    "head_grit",
+    "teeth_grit"
+   ],
+   "oh": [
+    "head_oh",
+    "tongue_oh"
+   ]
+  },
+  "eye.L": {
+   "open": [
+    "eyeL"
+   ],
+   "happy": [
+    "lidL",
+    "lashL_happy"
+   ],
+   "squint": [
+    "lidL",
+    "lashL_squint"
+   ]
+  },
+  "hand.L": {
+   "relaxed": [
+    "handL"
+   ],
+   "grip": [
+    "handL_grip"
+   ],
+   "point": [
+    "handL_point"
+   ],
+   "open": [
+    "handL_open"
+   ]
+  },
+  "eye.R": {
+   "open": [
+    "eyeR"
+   ],
+   "happy": [
+    "lidR",
+    "lashR_happy"
+   ],
+   "squint": [
+    "lidR",
+    "lashR_squint"
+   ]
+  },
+  "hand.R": {
+   "relaxed": [
+    "handR"
+   ],
+   "grip": [
+    "handR_grip"
+   ],
+   "point": [
+    "handR_point"
+   ],
+   "open": [
+    "handR_open"
+   ]
+  }
+ },
+ "grip": {
+  "R": {
+   "c": [
+    -0.022460968081410557,
+    -6.974733304052061e-05,
+    0.02324707467486542
+   ],
+   "axis": [
+    -1.734723475976807e-18,
+    -0.9993628543475493,
+    0.035691530512412466
+   ],
+   "frame": [
+    [
+     -0.31604641385650245,
+     -1.734723475976807e-18,
+     0.9487437295120554
+    ],
+    [
+     -0.03386211577033953,
+     -0.9993628543475493,
+     -0.011280180223497896
+    ],
+    [
+     -0.9481392415695072,
+     0.035691530512412466,
+     -0.3158450462579412
+    ]
+   ],
+   "rope_radius": 0.0011
+  },
+  "L": {
+   "c": [
+    0.022460968081410557,
+    -6.974733304052061e-05,
+    0.02324707467486542
+   ],
+   "axis": [
+    1.734723475976807e-18,
+    -0.9993628543475493,
+    0.035691530512412466
+   ],
+   "frame": [
+    [
+     0.31604641385650245,
+     1.734723475976807e-18,
+     -0.9487437295120554
+    ],
+    [
+     -0.03386211577033953,
+     -0.9993628543475493,
+     -0.011280180223497896
+    ],
+    [
+     -0.9481392415695072,
+     0.035691530512412466,
+     -0.3158450462579412
+    ]
+   ],
+   "rope_radius": 0.0011
+  }
+ }
+}

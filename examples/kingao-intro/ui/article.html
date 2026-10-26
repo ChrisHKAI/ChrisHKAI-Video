@@ -1,0 +1,62 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; background: #000; overflow: hidden; }
+body { font-family: "PingFang SC", -apple-system, "Helvetica Neue", Helvetica, sans-serif; color: #E7E9EA; -webkit-font-smoothing: antialiased; }
+.panel { position: absolute; overflow: hidden; background: #000; }
+.emo { font-family: "Apple Color Emoji"; font-size: .9em; }
+.grey { color: #71767B; }
+.socket { position: absolute; border-radius: 50%; background: radial-gradient(circle at 50% 42%, #0b0c0e 0 58%, #020203 72%); box-shadow: inset 0 10px 22px rgba(0,0,0,.95), 0 0 0 2px #16181c; }
+.nav-item { position: absolute; left: 12px; display: flex; align-items: center; gap: 20px; font-size: 20px; height: 50px; padding: 0 12px; }
+.nav-item.on { font-weight: 700; }
+.post-btn { position: absolute; left: 12px; width: 236px; height: 52px; border-radius: 26px; background: #EFF3F4; color: #0F1419; font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+.hdr { position: absolute; left: 16px; top: 4px; display: flex; align-items: center; gap: 30px; }
+.hdr .t { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.hdr .s { font-size: 13px; color: #71767B; margin-top: 1px; }
+.btn { position: absolute; top: 12px; height: 36px; border-radius: 18px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.name { position: absolute; left: 16px; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+.line { position: absolute; left: 16px; font-size: 15px; line-height: 20px; white-space: nowrap; }
+.meta { position: absolute; left: 16px; display: flex; gap: 14px; font-size: 15px; color: #71767B; }
+.meta span { display: flex; align-items: center; gap: 4px; }
+.tabs { display: flex; height: 53px; }
+.tab { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #71767B; position: relative; font-weight: 500; }
+.tab.on { color: #E7E9EA; font-weight: 700; }
+.tab.on::after { content: ""; position: absolute; bottom: 0; width: 56px; height: 4px; border-radius: 2px; background: #1D9BF0; }
+.post-top { position: absolute; left: 40px; top: 12px; font-size: 13px; color: #71767B; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+.av { position: absolute; left: 16px; top: 34px; width: 40px; height: 40px; border-radius: 50%; background: #16181c; }
+.who { position: absolute; left: 68px; top: 34px; font-size: 15px; display: flex; align-items: center; gap: 4px; }
+.txt { position: absolute; left: 68px; top: 58px; width: 512px; font-size: 15px; line-height: 21px; }
+.shots { position: absolute; left: 68px; top: 168px; width: 512px; height: 214px; display: flex; gap: 2px; border-radius: 16px; overflow: hidden; border: 1px solid #2F3336; }
+.shots i { flex: 1; background: #EDEDED; position: relative; }
+.shots b { position: absolute; height: 26px; border-radius: 6px; }
+.shots b.me { right: 46px; background: #95EC69; }
+.shots b.bot { left: 46px; background: #fff; }
+.shots u { position: absolute; width: 30px; height: 30px; border-radius: 6px; top: 0; }
+.shots u.me { right: 10px; background: #c9c9c9; }
+.shots u.bot { left: 10px; background: #1b1b1d; }
+.acts { position: absolute; top: 396px; left: 68px; width: 512px; height: 24px; font-size: 13px; color: #71767B; }
+.acts span { position: absolute; display: flex; align-items: center; gap: 6px; height: 24px; }
+.sep { position: absolute; left: 0; width: 100%; height: 1px; background: #2F3336; }
+.search { position: absolute; left: 0; top: 8px; width: 350px; height: 44px; border-radius: 22px; background: #202327; display: flex; align-items: center; gap: 12px; padding-left: 18px; color: #71767B; font-size: 15px; }
+.box { position: absolute; left: 0; width: 350px; border: 1px solid #2F3336; border-radius: 16px; padding: 12px 16px; }
+.box h4 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.sk { display: flex; align-items: center; gap: 12px; height: 64px; }
+.sk i { display: block; background: #202327; border-radius: 6px; }
+
+html, body { width: 540px; height: 600px; }
+.cover { position: absolute; left: 0; top: 0; width: 100%; height: 228px; background: linear-gradient(135deg, #0BD56E, #06A452); display: flex; align-items: center; justify-content: center; gap: 18px; color: #fff; }
+.cover b { font-family: "Helvetica Neue"; font-weight: 800; font-size: 46px; letter-spacing: -1px; }
+.cover s { text-decoration: none; font-size: 40px; font-weight: 300; opacity: .9; }
+.cover u { text-decoration: none; font-weight: 800; font-size: 46px; }
+.bub { position: absolute; border-radius: 10px; height: 26px; }
+</style></head><body>
+<div class="av" style="top:16px"></div>
+<div class="who" style="top:24px"><b>Kin</b><svg width="18" height="18" viewBox="0 0 24 24"><path fill="#1D9BF0" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"/><path fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="m8 12.3 2.8 2.8L16.5 9"/></svg><span class="grey">@KinGao476942 · 10月8日</span></div>
+<div style="position:absolute;left:68px;top:60px;width:456px;border:1px solid #2F3336;border-radius:16px;overflow:hidden;height:376px">
+  <div class="cover"><b>Grok Bot</b><s>×</s><u>微信</u>
+    <i class="bub" style="left:28px;top:30px;width:86px;background:#fff;opacity:.92"></i><i class="bub" style="left:28px;top:66px;width:54px;background:#fff;opacity:.92"></i>
+    <i class="bub" style="right:28px;bottom:58px;width:70px;background:#95EC69"></i><i class="bub" style="right:28px;bottom:22px;width:104px;background:#95EC69"></i></div>
+  <div style="position:absolute;top:244px;left:16px;right:16px;font-size:23px;font-weight:700;line-height:32px">如何把 Grok Bot 接入你的微信？<br>保姆级新手指南</div>
+  <div style="position:absolute;top:330px;left:16px;display:flex;gap:6px;align-items:center;font-size:15px;color:#71767B"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#71767B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>文章</div>
+</div>
+<div class="acts" style="top:544px"><span style="left:0px;font-size:15px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#71767B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5C4 7.4 7.6 4.5 12 4.5s8 2.9 8 7-3.6 7-8 7c-1 0-2-.1-2.9-.4L5 20l.9-3.6C4.7 15.1 4 13.4 4 11.5z"/></svg>225</span><span style="left:110px;font-size:15px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#71767B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V7h12l-3-3M20 15v2H8l3 3"/><path d="M16 4l3 3-3 3M8 20l-3-3 3-3"/></svg>1,145</span><span style="left:230px;font-size:15px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#71767B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-8.6-9.6C2.7 7 5 4.5 7.8 4.5c1.8 0 3.2 1 4.2 2.5 1-1.5 2.4-2.5 4.2-2.5 2.8 0 5.1 2.5 4.4 5.9C19.5 15.4 12 20 12 20z"/></svg>4,775</span><span style="left:340px;font-size:15px"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#71767B" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V12M10 20V5M15 20v-9M20 20V8"/></svg>155万</span></div>
+</body></html>

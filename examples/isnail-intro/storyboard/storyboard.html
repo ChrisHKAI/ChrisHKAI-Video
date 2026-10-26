@@ -1,0 +1,166 @@
+<title>蜗牛King 自我介紹片分鏡</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@900&family=Noto+Sans+TC:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a dark screening-room board — title, the beat grid, then the rendered frames in film order, then the decisions. */
+:root {
+  --bg: #0c0d10;
+  --panel: #15171c;
+  --ink: #eceae6;
+  --muted: #9a978f;
+  --rule: #2a2d33;
+  --red: #e2463b;
+  --blue: #3d7bff;
+  --kraft: #c9a679;
+  --a1: #e2463b;
+  --a2: #3d7bff;
+  --a3: #c9a679;
+  --display: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --body: "Noto Sans TC", "PingFang TC", "Heiti TC", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.6; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 28px 64px; display: grid; gap: 40px; }
+header { display: grid; gap: 14px; }
+.hero { position: relative; border-radius: 6px; overflow: hidden; border: 1px solid var(--rule); }
+.hero img { display: block; width: 100%; height: auto; }
+.hero .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 22px 18px; background: linear-gradient(transparent, rgba(0,0,0,.82)); display: grid; gap: 4px; }
+h1 { font-family: var(--display); font-weight: 900; font-size: clamp(26px, 4.6vw, 46px); line-height: 1.1; margin: 0; letter-spacing: .5px; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--red); }
+.lede { max-width: 72ch; margin: 0; font-size: 16px; color: var(--ink); text-wrap: pretty; }
+.specs { display: flex; flex-wrap: wrap; gap: 8px; }
+.specs span { font-family: var(--mono); font-size: 12.5px; border: 1px solid var(--rule); background: var(--panel); padding: 3px 9px; border-radius: 3px; color: var(--muted); }
+h2 { font-family: var(--display); font-weight: 900; font-size: 24px; margin: 0; text-wrap: balance; }
+h2 small { font-family: var(--body); font-weight: 500; font-size: 14px; color: var(--muted); margin-left: 8px; }
+section { display: grid; gap: 16px; }
+
+/* beat grid */
+.gridbox { overflow-x: auto; background: var(--panel); border: 1px solid var(--rule); padding: 14px; border-radius: 4px; }
+.grid { min-width: 1080px; display: grid; grid-template-columns: repeat(58, 1fr); gap: 2px 0; font-family: var(--mono); font-size: 11px; }
+.grid .act { grid-row: 1; padding: 3px 8px; color: #0c0d10; font-family: var(--body); font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; }
+.grid .barlab { grid-row: 2; border-left: 1px solid var(--ink); padding-left: 4px; color: var(--muted); }
+.grid .beat { grid-row: 3; height: 16px; border-left: 1px solid var(--rule); }
+.grid .beat.down { border-left: 2px solid var(--ink); }
+.grid .hit { grid-row: 4; position: relative; height: 54px; }
+.grid .hit i { position: absolute; left: -1px; top: 0; bottom: 0; border-left: 2px solid var(--red); }
+.grid .hit em { position: absolute; left: 4px; top: 0; font-style: normal; font-family: var(--body); font-size: 11.5px; line-height: 1.25; white-space: nowrap; }
+.grid .hit.low em { top: 26px; }
+.grid .feel { grid-row: 5; font-family: var(--body); font-size: 12px; color: var(--muted); padding: 4px 6px 0; border-top: 1px dashed var(--rule); white-space: nowrap; overflow: hidden; }
+
+/* frames */
+.acthead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--rule); padding-top: 14px; }
+.acthead b { font-size: 13px; color: #0c0d10; padding: 1px 8px; border-radius: 2px; }
+.acthead h3 { margin: 0; font-size: 19px; }
+.acthead p { margin: 0; color: var(--muted); font-size: 14px; flex-basis: 100%; max-width: 80ch; }
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 22px 18px; }
+.frame { display: grid; gap: 8px; align-content: start; min-width: 0; }
+.frame img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 4px; border: 1px solid var(--rule); background: #000; }
+.frame .tc { display: flex; gap: 10px; align-items: baseline; }
+.frame .tc code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.frame h4 { margin: 0; font-size: 16px; }
+.frame p { margin: 0; font-size: 14px; color: #cfccc5; }
+.frame .snd { font-size: 13px; color: var(--muted); }
+.frame .snd b { color: var(--ink); font-weight: 700; margin-right: 4px; }
+.a1 { background: var(--a1); } .a2 { background: var(--a2); } .a3 { background: var(--a3); } .a4 { background: #07C160; }
+
+.idea { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 14px; }
+.idea div { background: var(--panel); border: 1px solid var(--rule); padding: 14px 16px; border-radius: 4px; min-width: 0; }
+.idea h3 { margin: 0 0 6px; font-size: 16px; }
+.idea p { margin: 0; font-size: 14px; color: #cfccc5; }
+.ask { background: var(--panel); border: 1px solid var(--ink); padding: 18px 20px; display: grid; gap: 12px; border-radius: 4px; }
+.ask ol { margin: 0; padding-left: 22px; display: grid; gap: 10px; }
+.ask li { max-width: 84ch; }
+.ask code { font-family: var(--mono); font-size: 12.5px; color: var(--kraft); }
+.note { font-size: 13.5px; color: var(--muted); max-width: 84ch; margin: 0; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="hero"><img src="frames3/0850.jpg" alt="結尾：公众号变现找蜗牛，公仔騎住公众号 logo 蝸牛">
+      <div class="cap"><h1>蜗牛King<em>·</em>由頭像到封面</h1></div>
+    </div>
+    <p class="lede">29 秒 3D 自我介紹片（第 3 版）。第一、三幕唔變；<b>第二幕</b>改成鏡頭升到半空望落成篇置頂文章，304万 由佢嘅互動列升起變成大字，一路跳數，一眼睇到「呢篇文章 → 304万 阅读」；<b>結尾加多一幕</b>：公众号 logo 跌落嚟變成蝸牛殼，蝸牛爬過嘅地方逐隻字彈出「公众号变现找蜗牛」。</p>
+    <div class="specs"><span>1920×1080 · 30 fps</span><span>29.0 s · 120 BPM</span><span>Blender Cycles</span><span>景深 · 動態模糊 · 真光影</span><span>合成配樂＋音效</span></div>
+  </header>
+
+  <section>
+    <h2>音樂節拍格<small>每格一拍（0.5 秒），粗線係每小節第一拍，紅線係重拍事件</small></h2>
+    <div class="gridbox"><div class="grid" id="grid"></div></div>
+  </section>
+
+  <section>
+    <h2>預覽畫面<small>以下全部係真 3D 渲染（半解像度、低取樣），唔係草圖</small></h2>
+    <div id="acts" style="display:grid;gap:30px"></div>
+  </section>
+
+  <section>
+    <h2>點解咁改</h2>
+    <div class="idea">
+      <div><h3>第二幕：文章同數字一齊出</h3><p>之前計數器同文章分開咗，觀眾唔知 304万 係邊篇。而家鏡頭望落成篇 post，封面、標題、藍框同大字 304万 喺同一個畫面，數字由佢自己個互動列升起。</p></div>
+      <div><h3>結尾：個名就係梗</h3><p>佢叫蜗牛，公众号個 logo 又啱啱係一個漩渦，好似蝸牛殼。logo 一跌落嚟就變成蝸牛，「公众号」同「蜗牛」一個畫面講晒，好易記。</p></div>
+      <div><h3>蝸牛爬過就寫出句說話</h3><p>蝸牛會留低痕跡，佢爬過嘅地方逐隻字彈出「公众号变现找蜗牛」。每隻字踩一個八分音符，連起嚟係一段旋律，聽落都記得。</p></div>
+      <div><h3>首尾都係「彈出嚟」</h3><p>開場佢由頭像彈出嚟，第三幕佢壓返入封面，結尾佢再由封面彈出嚟去騎蝸牛，最後指住觀眾。</p></div>
+    </div>
+  </section>
+
+  <section class="ask">
+    <h2>開工前要你拍板</h2>
+    <ol>
+      <li><b>新第二幕同結尾 OK 嗎？</b>想改邊格直接講，例如唔要蝸牛、或者句說話想改。</li>
+      <li><b>句說話用簡體「公众号变现找蜗牛」</b>，同介面同封面一致；想用繁體就講。</li>
+    </ol>
+    <p class="note">第一幕同第三幕照上一版，唔使重新批；以上全部係真 3D 預覽（半解像度、低取樣），唔係最終質素。</p>
+  </section>
+</div>
+
+<script>
+const ACTS = [
+  { k: 1, name: "第一幕", title: "頭像活過來（唔變）", sub: "X 主頁浮喺半空，圓形頭像好似貼紙咁撕起，啪一聲變成立體公仔。" },
+  { k: 2, name: "第二幕（新）", title: "呢篇文章，304万 阅读", sub: "佢踩落置頂文章，篇 post 亮起藍框，其他介面沉入黑暗；鏡頭升到半空望落，封面同標題清清楚楚；304万 由互動列升起變成大字，一路跳數，藍色進度條填滿。" },
+  { k: 3, name: "第三幕", title: "封面變牆（唔變）", sub: "封面企起變成一幅立體牆，標題、紙箱、標語逐件凸出嚟；佢一級級爬上去，最後壓返入封面。" },
+  { k: 4, name: "結尾（新）", title: "公众号变现找蜗牛", sub: "公仔由封面再彈出嚟；公众号 logo 跌落嚟變成一隻蝸牛嘅殼，佢騎上去扶眼鏡；蝸牛爬過嘅地方逐隻字彈出「公众号变现找蜗牛」，每隻字踩一個八分音符；最後佢指住你，下面出「蜗牛King @isnail」。" },
+];
+const F = [
+  [1, "frames/0046.jpg", "1.0–1.9", "頭像撕起", "頭像好似貼紙咁捲起企直。", "膠紙撕開"],
+  [1, "frames/0100.jpg", "2.4–3.7", "推眼鏡", "變成立體公仔，扶一扶 3D 眼鏡。", "鏡片「叮」"],
+  [2, "frames3/0190.jpg", "6.0–6.8", "撳開置頂文章", "一腳踩落去，篇 post 亮起藍框，其他介面沉落去。", "「咔嚓」＋低頻「呼」"],
+  [2, "frames3/0211.jpg", "6.8–7.5", "望清楚篇文章", "鏡頭升到半空，封面同標題「公众号新号从0到1起号保姆级全阶教程」睇得一清二楚。", "groove 繼續"],
+  [2, "frames3/0235.jpg", "7.5", "指住閱讀數", "佢跳到 post 右下角，指住 📊 304万。", "細跳兩下"],
+  [2, "frames3/0259.jpg", "8.0–9.7", "304万 升起跳數", "閱讀數由互動列升起，變成大立體字，由 0 一路跳上去，下面藍條同步填滿。", "跳數「嗒嗒嗒」越嚟越慢"],
+  [2, "frames3/0283.jpg", "9.4", "就嚟到", "301万……", "鼓組推上去"],
+  [2, "frames3/0303.jpg", "10.0", "304万 阅读", "重拍鎖定，大字彈一彈，火花，佢跳起歡呼。", "重鼓＋「叮」"],
+  [3, "frames/0457.jpg", "14.0–15.6", "9个月", "封面牆，紙箱逐格推出。", "9 下「咔」"],
+  [3, "frames/0574.jpg", "18.4–20.0", "变现7W", "佢指住 7W，7W 一下衝出。", "金幣聲"],
+  [4, "frames3/0724.jpg", "24.0", "再彈出嚟", "佢由封面上嘅 2D 公仔再「啵」一聲彈返做立體，飛向鏡頭。", "「啵」＋呼"],
+  [4, "frames3/0737.jpg", "24.4", "公众号 logo 跌落嚟", "鏡頭切到黑色舞台，綠色公众号 logo 轉住跌落嚟。", "「嗖」＋落地「咚」"],
+  [4, "frames3/0748.jpg", "24.7–25.1", "變咗隻蝸牛", "logo 下面生出一隻蝸牛，logo 就係佢個殼，兩隻眼彈出嚟。", "黏黏聲＋兩下「boing」"],
+  [4, "frames3/0769.jpg", "25.2–25.8", "騎上蝸牛", "公仔跌落殼頂，扶一扶眼鏡，閃光。", "落地＋鏡片「叮」"],
+  [4, "frames3/0790.jpg", "26.0–27.8", "爬出一句說話", "蝸牛向右爬，身後留低一條綠光，逐隻字彈出「公众号变现找蜗牛」。", "每隻字一個音，連成一段旋律"],
+  [4, "frames3/0850.jpg", "28.0–29.0", "指住你", "佢轉身指住觀眾，下面彈出「蜗牛King @isnail」，最後和弦。", "大和弦＋閃光"],
+];
+document.getElementById("acts").innerHTML = ACTS.map((a) => `
+  <div style="display:grid;gap:16px">
+    <div class="acthead"><b class="a${a.k}">${a.name}</b><h3>${a.title}</h3><p>${a.sub}</p></div>
+    <div class="frames">${F.filter((f) => f[0] === a.k).map(([, img, t, h, d, s]) => `
+      <figure class="frame" style="margin:0">
+        <img src="${img}" alt="${h}" loading="lazy">
+        <div class="tc"><code>${t} s</code></div>
+        <h4>${h}</h4><p>${d}</p><p class="snd"><b>聲</b>${s}</p>
+      </figure>`).join("")}</div>
+  </div>`).join("");
+
+const acts = [[0, 12, "第一幕", "a1"], [12, 24, "第二幕（新）304万", "a2"], [24, 48, "第三幕 封面變牆", "a3"], [48, 58, "結尾（新）找蜗牛", "a4"]];
+const hits = [[2, "撕起"], [4, "變立體"], [12, "撳開文章"], [16, "304万 升起"], [20, "304万"], [24, "封面企起"], [26, "很苦"], [28, "9个月"], [32, "46K粉"], [36, "7W"], [44, "變返封面"], [48, "再彈出"], [49, "logo"], [52, "逐字彈出"], [56, "指住你"]];
+const feels = [[0, 4, "前奏"], [4, 24, "主 groove"], [24, 28, "停頓"], [28, 32, "半速"], [32, 36, "正常"], [36, 40, "雙倍"], [40, 48, "收"], [48, 56, "彈跳 groove"], [56, 58, "大和弦"]];
+let g = "";
+for (const [a, b, t, c] of acts) g += `<div class="act ${c}" style="grid-column:${a + 1}/${b + 1}">${t}</div>`;
+for (let i = 0; i < 15; i++) g += `<div class="barlab" style="grid-column:${i * 4 + 1}/span ${i === 14 ? 2 : 4}">${i + 1} · ${i * 2}s</div>`;
+for (let i = 0; i < 58; i++) g += `<div class="beat${i % 4 === 0 ? " down" : ""}" style="grid-column:${i + 1}"></div>`;
+hits.forEach(([b, t], i) => { g += `<div class="hit${i % 2 ? " low" : ""}" style="grid-column:${b + 1}/span 3"><i></i><em>${(b / 2).toFixed(1)}s ${t}</em></div>`; });
+for (const [a, b, t] of feels) g += `<div class="feel" style="grid-column:${a + 1}/${b + 1}">${t}</div>`;
+document.getElementById("grid").innerHTML = g;
+</script>

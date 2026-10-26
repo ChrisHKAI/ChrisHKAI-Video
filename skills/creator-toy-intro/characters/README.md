@@ -8,7 +8,7 @@ sculpt in with `engine/scripts/import-sculpt.py`.
 | toy | kit | from | files |
 | --- | --- | --- | --- |
 | 蜗牛King's mascot (isnail) | parts | the creator's avatar | `isnail/toy.json` |
-| 金敖, a calico cat (kingao) | pet | a photo of the cat | `kingao-cat/cat.js` → `toy.json` |
+| Kin's calico cat (@KinGao476942) | pet | his avatar, a photo of the cat | `kingao-cat/cat.js` → `toy.json` |
 | Tim (Tim Pan, 影视飓风) | pet, the Tim line | a still from his video | `tim-line/figure.js`, `tim.js` → `tim/toy.json` |
 | Steve Jobs | pet, the Tim line | his portrait | `tim-line/figure.js`, `jobs.js` → `steve/toy.json` |
 | Chris (@ChrisHKAI) | sculpt | his chibi character sheet | `chris/sculpt.py` |
