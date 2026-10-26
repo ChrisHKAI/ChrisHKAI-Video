@@ -18,7 +18,8 @@ const rename = (joints, parts, G) => ({
   parts: parts.map((p) => ({ ...p, group: G[p.group] ?? p.group })),
 });
 
-// the cat: front legs are its arms, hind legs its legs, both ears one joint
+// the cat: front legs are its arms, hind legs its legs, both ears one joint; no
+// glasses, so its signature move is the default wave (a raised paw)
 {
   const { CAT_PARTS, JOINTS, COLORS, HEIGHT, CENTER } = await import(here("kingao-cat/cat.js"));
   const G = { legL: "armL", legR: "armR", hindL: "legL", hindR: "legR", earL: "ears", earR: "ears" };
@@ -38,7 +39,10 @@ const rename = (joints, parts, G) => ({
     const m = await import(here(`tim-line/${file}`));
     const fig = m[key];
     const { joints, parts } = rename(fig.joints, fig.parts.filter((p) => !p.expr || keep.has(p.expr)).map(({ expr, ...p }) => p), { hips: "body" });
-    write(dir, { name, kit: "pet", line: "tim", expression: EXPR, height: HEIGHT, center: [0, +(HEIGHT * 0.42).toFixed(4), 0],
+    // the signature move: fingers to the left temple's hinge, where the big head carries it (mm)
+    const H = joints.head, hinge = parts.find((p) => p.name === "templeL").pts[0];
+    const at = hinge.map((v, i) => +(1000 * (H.p[i] + (H.t?.[i] ?? 0) + (H.s ?? 1) * (v - H.p[i]))).toFixed(1));
+    write(dir, { name, kit: "pet", line: "tim", expression: EXPR, signature: { move: "glasses", at }, height: HEIGHT, center: [0, +(HEIGHT * 0.42).toFixed(4), 0],
       colors: m.COLORS, finish: m.FINISH, joints, parts });
   }
 }

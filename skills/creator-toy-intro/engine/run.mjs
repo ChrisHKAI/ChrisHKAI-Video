@@ -13,6 +13,9 @@
 //           finish   bloom, vignette, grain, H.264 + AAC → out/, then covers
 //           covers   each platform's covers cut from the last frame → out/covers/
 //           safezone the platforms' controls over preview frames → build/safezone-check.jpg
+//           storyboard  the page to sign off: parts, beat grid, previews, checks → build/storyboard/
+//                    (storyboard -- --frames prints the preview frames to render)
+//           animatic the whole film in EEVEE, small, with its score → build/storyboard/animatic.mp4
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { film, FILM, fromSkill } from "./lib/film.js";
@@ -62,6 +65,11 @@ for (const [i, step] of steps.entries()) {
       break;
     case "covers": run(PY, [fromSkill("engine/scripts/covers.py"), ...more]); break;
     case "safezone": run(PY, [fromSkill("engine/scripts/safezone.py"), ...more]); break;
+    case "storyboard": run(PY, [fromSkill("engine/scripts/storyboard.py"), ...more]); break;
+    case "animatic":
+      run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/scene.py"), "--", "--frames", `1-${film.format.duration * film.format.fps}`, "--engine", "eevee", "--samples", "4", "--scale", "33", "--out", "build/eev", ...more]);
+      run(PY, [fromSkill("engine/scripts/animatic.py")]);
+      break;
     default: console.error(`unknown step: ${step}`); process.exit(1);
   }
 }

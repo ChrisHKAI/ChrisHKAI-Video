@@ -1,0 +1,54 @@
+{
+  "_about": "The isnail-30 story as the storyboard page shows it: its five parts, the moments to render as previews, the hits marked on the beat grid and what the user signs off. Times are story events (story.json) plus an offset, so a film that moves an event moves its frame. {name} {handle} {counter} {slogan} {prop} {signature} {proof1} {proof2} {publish} {aspect} are filled from film.json.",
+  "parts": [
+    { "from": 0, "to": "pop", "label": { "zh-Hant": "開場", "zh-Hans": "开场", "en": "Hook" },
+      "what": { "zh-Hant": "主頁浮喺半空，頭像好似貼紙咁撕起，2.0 秒強拍彈出變公仔", "zh-Hans": "主页浮在半空，头像像贴纸一样撕起，2.0 秒强拍弹出变公仔", "en": "The profile floats as glass; the picture peels off like a sticker and pops into the toy on the 2.0 s downbeat" },
+      "uses": { "zh-Hant": "頭像、主頁", "zh-Hans": "头像、主页", "en": "picture, profile" } },
+    { "from": "pop", "to": "click", "label": { "zh-Hant": "出場", "zh-Hans": "出场", "en": "Entrance" },
+      "what": { "zh-Hant": "做招牌動作（{signature}），跳落置頂帖", "zh-Hans": "做招牌动作（{signature}），跳到置顶帖上", "en": "Its signature move ({signature}), then hops onto the pinned post" },
+      "uses": { "zh-Hant": "招牌動作", "zh-Hans": "招牌动作", "en": "signature move" } },
+    { "from": "click", "to": "retroIn", "label": { "zh-Hant": "證據一", "zh-Hans": "证据一", "en": "Proof 1" },
+      "what": { "zh-Hant": "踩落去（等於撳），封面企起做牆，{counter} 由佢喺頁面嘅位置升起跳數，10.0 秒鎖定", "zh-Hans": "踩下去（等于点开），封面立起成墙，{counter} 从它在页面上的位置升起跳数，10.0 秒锁定", "en": "A stomp (the click), the cover stands up as a wall, {counter} rises from its spot on the page and counts, locking at 10.0 s" },
+      "uses": { "zh-Hant": "{proof1}", "zh-Hans": "{proof1}", "en": "{proof1}" } },
+    { "from": "retroIn", "to": "cut", "label": { "zh-Hant": "證據二", "zh-Hans": "证据二", "en": "Proof 2" },
+      "what": { "zh-Hant": "第二篇帖升起做牆，13.0 秒標題砸落，封面上嘅字同數字逐件推出，公仔壓返入封面變貼紙", "zh-Hans": "第二篇帖升起成墙，13.0 秒标题砸下，封面上的字和数字逐件推出，公仔压回封面变贴纸", "en": "The second post rises as a wall, its title slams at 13.0 s, the cover's words and numbers push out piece by piece, the toy presses back into the cover" },
+      "uses": { "zh-Hant": "{proof2}", "zh-Hans": "{proof2}", "en": "{proof2}" } },
+    { "from": "cut", "to": "end", "label": { "zh-Hant": "結尾", "zh-Hans": "结尾", "en": "Call to action" },
+      "what": { "zh-Hant": "公仔再彈出，{prop}登場，口號每半拍拍落一隻字，28.0 秒指住鏡頭，停到最後", "zh-Hans": "公仔再弹出，{prop}登场，口号每半拍拍下一个字，28.0 秒指着镜头，停到最后", "en": "The toy pops out again, {prop} arrives, the slogan slaps down a letter every half beat, it points at the camera at 28.0 s and holds" },
+      "uses": { "zh-Hant": "「{slogan}」、{name} {handle}", "zh-Hans": "「{slogan}」、{name} {handle}", "en": "\"{slogan}\", {name} {handle}" } }
+  ],
+  "frames": [
+    { "at": 0.5, "title": { "zh-Hant": "主頁", "zh-Hans": "主页", "en": "The profile" }, "what": { "zh-Hant": "主頁好似手機畫面咁平放，頭像喺度", "zh-Hans": "主页像手机画面一样平放，头像就在那里", "en": "The profile lies flat like a screen" } },
+    { "ev": "peel", "dt": 0.5, "title": { "zh-Hant": "頭像撕起", "zh-Hans": "头像撕起", "en": "The peel" }, "what": { "zh-Hant": "頭像好似貼紙咁捲起企直", "zh-Hans": "头像像贴纸一样卷起立直", "en": "The picture curls up like a sticker" } },
+    { "ev": "pop", "dt": 0.15, "title": { "zh-Hant": "彈出變公仔", "zh-Hans": "弹出变公仔", "en": "The pop" }, "what": { "zh-Hant": "啪一聲變成立體公仔", "zh-Hans": "啪一声变成立体公仔", "en": "It puffs into the 3D toy" } },
+    { "ev": "push", "dt": 0.5, "title": { "zh-Hant": "{signature}", "zh-Hans": "{signature}", "en": "{signature}" }, "what": { "zh-Hant": "公仔嘅招牌動作", "zh-Hans": "公仔的招牌动作", "en": "The toy's signature move" } },
+    { "ev": "hops", "i": 1, "dt": 0.25, "title": { "zh-Hant": "跳上置頂帖", "zh-Hans": "跳上置顶帖", "en": "Onto the pinned post" }, "what": { "zh-Hant": "兩下跳到置頂帖上面", "zh-Hans": "两下跳到置顶帖上", "en": "Two hops onto the pinned post" } },
+    { "ev": "click", "dt": 0.05, "title": { "zh-Hant": "踩落去", "zh-Hans": "踩下去", "en": "The stomp" }, "what": { "zh-Hant": "一腳踩落去，好似撳開篇帖", "zh-Hans": "一脚踩下去，像点开这篇帖", "en": "A stomp: the click" } },
+    { "ev": "point", "dt": 0.0, "title": { "zh-Hant": "封面企起做牆", "zh-Hans": "封面立起成墙", "en": "The cover stands" }, "what": { "zh-Hant": "置頂帖嘅封面企起變成立體牆", "zh-Hans": "置顶帖的封面立起变成立体墙", "en": "The pinned cover stands up as a wall" } },
+    { "ev": "count", "dt": 1.0, "title": { "zh-Hant": "{counter} 升起", "zh-Hans": "{counter} 升起", "en": "{counter} rises" }, "what": { "zh-Hant": "數字由頁面上原本嘅位置升起，一路跳數", "zh-Hans": "数字从页面上原本的位置升起，一路跳数", "en": "The number lifts out of its spot on the page and counts up" } },
+    { "ev": "lock", "dt": 0.2, "title": { "zh-Hant": "鎖定", "zh-Hans": "锁定", "en": "The lock" }, "what": { "zh-Hant": "重拍鎖定喺平台寫法，火花", "zh-Hans": "重拍锁定在平台写法，火花", "en": "It locks on the downbeat, the way the platform writes it" } },
+    { "ev": "stand", "dt": 0.3, "title": { "zh-Hant": "第二篇帖升起", "zh-Hans": "第二篇帖升起", "en": "The second post" }, "what": { "zh-Hant": "第二篇帖升起，封面企起做牆", "zh-Hans": "第二篇帖升起，封面立起成墙", "en": "The second post rises and its cover stands" } },
+    { "ev": "slam", "dt": 0.1, "title": { "zh-Hant": "標題砸落", "zh-Hans": "标题砸下", "en": "The slam" }, "what": { "zh-Hant": "封面標題砸落，鏡頭震", "zh-Hans": "封面标题砸下，镜头震", "en": "The cover's title slams down" } },
+    { "ev": "rise46", "dt": 1.0, "title": { "zh-Hant": "逐件推出", "zh-Hans": "逐件推出", "en": "Piece by piece" }, "what": { "zh-Hant": "封面上嘅字同數字逐件推出，公仔逐級爬", "zh-Hans": "封面上的字和数字逐件推出，公仔逐级爬", "en": "The cover's words and numbers push out; the toy climbs" } },
+    { "ev": "flat", "dt": 0.3, "title": { "zh-Hant": "變返貼紙", "zh-Hans": "变回贴纸", "en": "Back into the cover" }, "what": { "zh-Hant": "公仔壓返入封面，變返平面", "zh-Hans": "公仔压回封面，变回平面", "en": "The toy presses back into the cover" } },
+    { "ev": "ride", "dt": 0.4, "title": { "zh-Hant": "騎上{prop}", "zh-Hans": "骑上{prop}", "en": "On {prop}" }, "what": { "zh-Hant": "公仔再彈出，跌落{prop}上面", "zh-Hans": "公仔再弹出，落在{prop}上", "en": "The toy pops out again and lands on {prop}" } },
+    { "ev": "letters", "dt": 0.9, "title": { "zh-Hant": "口號逐隻字", "zh-Hans": "口号逐字", "en": "The slogan" }, "what": { "zh-Hant": "「{slogan}」每半拍拍落一隻字", "zh-Hans": "「{slogan}」每半拍拍下一个字", "en": "\"{slogan}\", a letter every half beat" } },
+    { "ev": "final", "dt": 1.0, "title": { "zh-Hant": "指住你", "zh-Hans": "指着你", "en": "Pointing at you" }, "what": { "zh-Hant": "{name} {handle}，最後一格停住做封面", "zh-Hans": "{name} {handle}，最后一帧停住当封面", "en": "{name} {handle}; the last frame holds as the cover" } }
+  ],
+  "hits": [
+    { "ev": "pop", "label": { "zh-Hant": "彈出", "zh-Hans": "弹出", "en": "pop" } },
+    { "ev": "click", "label": { "zh-Hant": "踩", "zh-Hans": "踩", "en": "stomp" } },
+    { "ev": "lock", "label": { "zh-Hant": "鎖定", "zh-Hans": "锁定", "en": "lock" } },
+    { "ev": "slam", "label": { "zh-Hant": "砸落", "zh-Hans": "砸下", "en": "slam" } },
+    { "ev": "peak", "label": { "zh-Hant": "高潮", "zh-Hans": "高潮", "en": "peak" } },
+    { "ev": "cut", "label": { "zh-Hant": "切", "zh-Hans": "切", "en": "cut" } },
+    { "ev": "final", "label": { "zh-Hant": "指住你", "zh-Hans": "指着你", "en": "point" } }
+  ],
+  "decisions": [
+    { "zh-Hant": "故事同畫面 OK 嗎？想改邊格直接講。", "zh-Hans": "故事和画面 OK 吗？想改哪一格直接说。", "en": "Is the story right? Name any frame to change." },
+    { "zh-Hant": "數字 {counter}：照平台寫法，由{proof1}嘅位置升起。", "zh-Hans": "数字 {counter}：照平台写法，从{proof1}的位置升起。", "en": "The number {counter}, as the platform writes it, rising from {proof1}." },
+    { "zh-Hant": "結尾口號「{slogan}」，下面出 {name} {handle}。", "zh-Hans": "结尾口号「{slogan}」，下面出 {name} {handle}。", "en": "The closing line \"{slogan}\", with {name} {handle} below." },
+    { "zh-Hant": "招牌動作：{signature}。", "zh-Hans": "招牌动作：{signature}。", "en": "The signature move: {signature}." },
+    { "zh-Hant": "出街：{publish}，{aspect}。", "zh-Hans": "发布：{publish}，{aspect}。", "en": "Published on {publish}, {aspect}." }
+  ]
+}

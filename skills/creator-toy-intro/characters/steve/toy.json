@@ -3,6 +3,14 @@
  "kit": "pet",
  "line": "tim",
  "expression": "happy",
+ "signature": {
+  "move": "glasses",
+  "at": [
+   20.3,
+   109,
+   29.4
+  ]
+ },
  "height": 0.148,
  "center": [
   0,

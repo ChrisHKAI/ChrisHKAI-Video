@@ -77,6 +77,15 @@ FILM=<film> python3 <skill>/engine/scripts/import-sculpt.py <sculpt folder> --ma
 
 Mesh at about 0.4 mm voxels while shaping (seconds), 0.25 mm for the film.
 
+## The signature move
+
+Right after it lands, and again on the end card's prop, the toy does its own
+move (toy.json `signature`): `{ "move": "glasses", "at": [x, y, z] }` puts
+its left fingers to its glasses at that point (mm, toy space: the hinge of
+the frame), anything else a wave of the left arm, a cat's raised paw. Without
+the field it waves. `import-sculpt.py` and `characters/build.mjs` find the
+hinge of a toy's glasses by themselves.
+
 ## The rig contract
 
 The story poses these joints; a toy has the ones it needs:

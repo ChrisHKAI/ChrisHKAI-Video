@@ -196,11 +196,11 @@ export function mascotPose(t) {
     o.yaw = lerp(0.35, -0.15, smooth(look));
     o.head = [0, 0.35 * Math.sin(look * Math.PI), 0];
     const g = seg(t, E.push[0], E.push[0] + 0.25) * (1 - seg(t, E.push[1] - 0.2, E.push[1]));
-    o.aimL = { target: [27, 63, 13], k: smooth(g) }; // fingers to the temple of his glasses
+    signature(o, t, E.push[0], g);
     o.head = v3.add(o.head, [-0.12 * g, -0.1 * g, -0.1 * g]);
     o.body = [-0.06 * g, 0.12 * g, 0];
     o.armR = [0.1 * g, 0, -0.25 - 0.1 * g];
-    o.glint = Math.exp(-Math.pow((t - E.lensGlint) / 0.09, 2));
+    o.glint = SIG.move === "glasses" ? Math.exp(-Math.pow((t - E.lensGlint) / 0.09, 2)) : 0;
     o.ears = [0, 0, 0.08 * Math.sin(t * 7) * g];
     return o;
   }
@@ -404,7 +404,7 @@ function ctaPose(o, t) {
   o.yaw = 0.45;
   let q = landSquash(t, E.ride, 0.3);
   const g = seg(t, E.push2[0], E.push2[0] + 0.2) * (1 - seg(t, E.push2[1] - 0.15, E.push2[1]));
-  o.aimL = { target: [27, 63, 13], k: smooth(g) };
+  signature(o, t, E.push2[0], g);
   o.head = [-0.1 * g, -0.1 * g, -0.08 * g];
   o.glint = Math.exp(-Math.pow((t - E.glint2) / 0.09, 2)) + Math.exp(-Math.pow((t - (E.final + 0.15)) / 0.1, 2));
   if (t > E.glide[0] && t < E.glide[1]) {
@@ -430,6 +430,15 @@ export function mascotAt(t) {
   const o = mascotPose(t);
   if (!o.show) return { hero: hidden(POP), o };
   return { hero: heroT(o, CENTER), o };
+}
+// the toy's own move once it lands and again on the prop (toy.json "signature"):
+// fingers to its glasses at `at` (mm, toy space), or, by default, a wave (a
+// cat's raised paw)
+const SIG = TOY.signature ?? { move: "wave" };
+function signature(o, t, t0, g) {
+  if (g <= 0) return;
+  if (SIG.move === "glasses") { o.aimL = { target: SIG.at, k: smooth(g) }; return; }
+  o.armL = [0, 0, lerp(o.armL[2], 2.3 + 0.35 * Math.sin((t - t0) * TAU * 2.5), smooth(g))];
 }
 export function mascotParts(t) {
   const { hero, o } = mascotAt(t);

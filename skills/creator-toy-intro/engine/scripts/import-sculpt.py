@@ -96,6 +96,13 @@ for j in ["body", "head", "armR", "armL", "legR", "legL"]:
         b = bones.get(JOINT_BONE[j])
         joints[j] = {"p": [round(x, 6) for x in (np.array(b["head"]) @ B2T.T).tolist()] if b else [0, 0, 0], "parent": PARENT[j]}
 H = M.get("height_mm", 120) / 1000
-toy = {"name": M.get("name", SRC.name), "kit": "sculpt", "height": H, "center": [0, round(0.44 * H, 4), 0], "colors": {}, "finish": {}, "joints": joints, "parts": parts}
+# glasses make the signature move a push of their left hinge (the frame's outermost front at +x, mm)
+sig = {"move": "wave"}
+frame = next((p for p in parts if p["finish"] == "gloss" and "glass" in p["name"]), None)
+if frame:
+    v = np.load(FILM / frame["file"])["verts"]
+    hinge = v[v[:, 0] > v[:, 0].max() - 0.002]
+    sig = {"move": "glasses", "at": [round(float(x) * 1000, 1) for x in hinge.mean(0)]}
+toy = {"name": M.get("name", SRC.name), "kit": "sculpt", "signature": sig, "height": H, "center": [0, round(0.44 * H, 4), 0], "colors": {}, "finish": {}, "joints": joints, "parts": parts}
 (FILM / "toy.json").write_text(json.dumps(toy, ensure_ascii=False, indent=1))
 print(f"toy.json: {len(parts)} parts on {', '.join(joints)}; height {H * 1000:.0f} mm")

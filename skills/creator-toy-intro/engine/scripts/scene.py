@@ -9,7 +9,7 @@ in the wall's space. Keys go straight into the F-curves.
 
 usage:
   blender -b --factory-startup -P scripts/scene.py -- \
-      [--frames 1-720 | --frames 13,49,121] [--samples 128] [--scale 100] \
+      [--frames 1-720 | 13,49,121 | 1-20,45] [--samples 128] [--scale 100] \
       [--out build/render] [--save build/scene.blend] [--engine cycles|eevee]
 """
 import json
@@ -884,11 +884,11 @@ if "--save" in argv:
 spec = arg("--frames", None)
 if spec:
     OUT.mkdir(parents=True, exist_ok=True)
-    if "-" in spec and "," not in spec:
-        a, b = map(int, spec.split("-"))
-        frames = list(range(a, b + 1))
-    else:
-        frames = [int(x) for x in spec.split(",")]
+    # "1-720", "13,49,121" or both: "1-20,45,60-64"
+    frames = []
+    for part in spec.split(","):
+        a, _, b = part.partition("-")
+        frames += list(range(int(a), int(b or a) + 1))
     for f in frames:
         t0 = time.time()
         scene.frame_set(f)

@@ -17,8 +17,9 @@ list, the page is HTML, the score is synthesized, Blender renders.
 template (`isnail-30`) and six platform themes work in 16:9 and 9:16, and
 rebuild the reference film exactly; finish cuts each platform's covers, and
 previews are checked against each app's own controls. Steps 0 and 1 (the
-computer, onboarding), 2 (research) and 3 (the toy: three kits) work. Not
-yet: the storyboard page (the rest of stage 3); testing with new creators (stage 4).
+computer, onboarding), 2 (research), 3 (the toy: three kits) and 4 (the
+storyboard page) work. Not yet: the optional concept picture (the rest of
+stage 3); testing with new creators (stage 4).
 Until then, after the toy a film for a new creator needs the rest of its
 film.json and its cover recipes written by hand, as below.
 
@@ -32,7 +33,7 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
 | 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
 | 3 | the toy from the confirmed picture, in one of three kits; a turnaround beside it to approve | `references/toy.md` |
-| 4 | story and storyboard: real preview renders, safe zones | `render` previews, `safezone` |
+| 4 | the storyboard page: the story, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/storyboard.md` |
 | 5 | render, finish, covers | `render`, `finish` |
 
 ## Layout
@@ -40,11 +41,11 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | path | what it is |
 | --- | --- |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
-| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3) |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `storyboard.md` (step 4) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
-| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
+| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
 ## Requirements
