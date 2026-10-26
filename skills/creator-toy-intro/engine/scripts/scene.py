@@ -91,8 +91,7 @@ else:
     scene.cycles.caustics_reflective = False
     scene.cycles.caustics_refractive = False
     scene.cycles.blur_glossy = 0.5
-scene.render.resolution_x = 1920
-scene.render.resolution_y = 1080
+scene.render.resolution_x, scene.render.resolution_y = FILM_JSON["format"].get("size", [1920, 1080])  # 16:9 or 9:16
 scene.render.resolution_percentage = SCALE
 scene.render.fps = DATA["fps"]
 scene.frame_start = 1

@@ -8,7 +8,7 @@
 // `asset(path)` turns a workspace path into a url() argument; `cover` is the
 // HTML of the post's cover slot (a picture, or an empty socket the 3D wall
 // stands up from).
-const STRINGS = {
+export const STRINGS = {
   "zh-Hans": {
     nav: ["主页", "探索", "通知", "私信", "Grok", "书签", "社群", "个人资料", "更多"],
     post: "发帖", subscribe: "订阅", follow: "关注", following: "正在关注", followers: "关注者",
@@ -17,7 +17,7 @@ const STRINGS = {
   },
 };
 
-const ICON = {
+export const ICON = {
   home: '<path d="M3 10.5 12 3l9 7.5V21h-6v-6H9v6H3z"/>',
   search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
   bell: '<path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4"/>',
