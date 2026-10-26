@@ -1,0 +1,9 @@
+{
+  "name": "ChrisHKAI-Video",
+  "version": "0.0.1",
+  "description": "Video skills by ChrisHKAI. First skill: creator-toy-intro, a 30 s self-introduction film for a creator, starring their 3D vinyl toy.",
+  "author": { "name": "ChrisHKAI" },
+  "license": "MIT",
+  "repository": "https://github.com/ChrisHKAI/ChrisHKAI-Video",
+  "keywords": ["video", "blender", "3d", "creator", "intro", "self-introduction"]
+}

@@ -1,0 +1,11 @@
+# Film workspaces hold creators' pictures and data: never committed.
+films/
+build/
+out/
+research/
+
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
