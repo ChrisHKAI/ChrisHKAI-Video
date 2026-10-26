@@ -16,7 +16,7 @@ import { trs, qEuler } from "../lib/quat.js";
 const template = (f) => import(pathToFileURL(fromSkill("templates", film.template, f)).href);
 const T = await template("timeline.js");
 const A = await template("anim.js");
-const { MASCOT_PARTS } = await template("hero.js");
+const { MASCOT_PARTS } = await import("../lib/toy.js");
 const root = FILM;
 const SUB = 2;
 const FRAMES = Math.round(T.DURATION * T.FPS); // 900
@@ -210,6 +210,9 @@ for (const [name, list] of Object.entries(tracks)) {
 const outColors = {};
 for (const [name, list] of Object.entries(colors)) outColors[name] = compress(list); // positions in frames
 
+mkdirSync(join(root, "build"), { recursive: true });
+// the story's numbers for the score (templates/<t>/score.py)
+writeFileSync(join(root, "build/timeline.json"), JSON.stringify({ FPS: T.FPS, DURATION: T.DURATION, BPM: T.BPM, BEAT: T.BEAT, BAR: T.BAR, EV: T.EV, cues: T.soundCues ? T.soundCues() : [] }, null, 1));
 const out = { fps: T.FPS, frames: FRAMES, sub: SUB, samples: SAMPLES, objects, tracks: outTracks, colors: outColors, scalars };
 mkdirSync(join(root, "build"), { recursive: true });
 writeFileSync(join(root, "build/anim.json"), JSON.stringify(out));

@@ -5,7 +5,7 @@
 // Transforms are { p, q, s }.
 import { readFilmJSON } from "../../engine/lib/film.js";
 import * as T from "./timeline.js";
-import { MASCOT_PARTS, JOINTS, CENTER } from "./hero.js";
+import { MASCOT_PARTS, JOINTS, CENTER } from "../../engine/lib/toy.js";
 import { mulberry32 } from "../../engine/lib/rng.js";
 import { qId, qMul, qAxis, qEuler, qRot, qFromTo, qFromBasis, qConj, trs, apply, mulT } from "../../engine/lib/quat.js";
 
