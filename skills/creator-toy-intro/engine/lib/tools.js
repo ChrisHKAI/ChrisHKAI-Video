@@ -15,7 +15,7 @@ export const FONTS = join(HOME, "fonts");
 export const WIN = process.platform === "win32";
 
 const venvPython = WIN ? join(VENV, "Scripts", "python.exe") : join(VENV, "bin", "python3");
-export const PY_MODULES = ["numpy", "scipy", "PIL", "fontTools", "contourpy"];
+export const PY_MODULES = ["numpy", "scipy", "PIL", "fontTools", "contourpy", "skimage"]; // skimage: the sculpt kit's marching cubes
 
 // whether a command runs (exits 0)
 const runs = (cmd, args = ["--version"]) => spawnSync(cmd, args, { encoding: "utf8", timeout: 60000 }).status === 0;

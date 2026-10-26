@@ -53,8 +53,8 @@ check("chrome", "headless Chrome", Boolean(chrome), chrome ?? "not found");
 
 // the lettering faces, through the pipeline's own lookup (engine/lib/fonts.py)
 let fontsOk = false, fontsFound = "needs Python first", fontsNote = "";
-if (py) {
-  const r = sh(py, ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(SKILL, "engine/lib"))})
+if (pyAny) {
+  const r = sh(py ?? pyAny, ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(SKILL, "engine/lib"))})
 from fonts import face
 out = {}
 for role in ("latin", "cjk", "heavy"):
@@ -65,7 +65,7 @@ print(json.dumps(out))`]);
   const faces = r.status === 0 ? JSON.parse(r.stdout) : {};
   const missing = Object.entries(faces).filter(([, v]) => !v).map(([k]) => k);
   fontsOk = r.status === 0 && !missing.length;
-  fontsFound = r.status === 0 ? Object.entries(faces).map(([k, v]) => `${k}: ${v ?? "none"}`).join("; ") : r.stderr.trim().split("\n").pop();
+  fontsFound = r.status === 0 ? Object.entries(faces).map(([k, v]) => `${k}: ${v ?? "none"}`).join("; ") : /No module/.test(r.stderr) ? "needs the Python modules first" : r.stderr.trim().split("\n").pop();
   if (fontsOk && !/Lantinghei/.test(faces["heavy zh-Hans"] ?? "")) fontsNote = "end-card labels fall back to Source Han Sans Heavy; on a Mac, Lantinghei SC Heavy (the isnail look) can be added in Font Book";
 }
 check("fonts", "lettering faces", fontsOk, fontsFound, fontsNote);
@@ -99,13 +99,13 @@ if (failed.has("python-modules") || failed.has("python")) {
   item("python-modules", "the Python modules, in the skill's own venv", "~150 MB", "PyPI", false, [
     [base, "-m", "venv", VENV],
     [vpy, "-m", "pip", "install", "--upgrade", "pip"],
-    [vpy, "-m", "pip", "install", "numpy", "scipy", "pillow", "fonttools", "contourpy"],
+    [vpy, "-m", "pip", "install", "numpy", "scipy", "pillow", "fonttools", "contourpy", "scikit-image"],
   ]);
 }
 if (failed.has("blender") && supported) item("blender", `Blender ${BLENDER_SERIES} LTS`, "~400 MB", "download.blender.org", OS === "win32", OS === "win32" ? [["winget", "install", "-e", "--id", "BlenderFoundation.Blender"]] : [["@blender"]]);
 if (failed.has("ffmpeg")) item("ffmpeg", "ffmpeg", "~80 MB", OS === "win32" ? "gyan.dev via winget" : "Homebrew / apt", OS === "linux", OS === "darwin" ? [["brew", "install", "ffmpeg"]] : OS === "win32" ? [["winget", "install", "-e", "--id", "Gyan.FFmpeg"]] : [["sudo", "apt", "install", "-y", "ffmpeg"]], OS === "linux");
 if (failed.has("chrome")) item("chrome", "headless Chrome (Chrome for Testing)", "~100 MB", "Google, via @puppeteer/browsers", false, [["npx", "-y", "@puppeteer/browsers", "install", "chrome-headless-shell@stable", "--path", join(homedir(), ".cache/puppeteer")]]);
-if (failed.has("fonts") && py) item("fonts", "Source Han Sans (free faces, SIL OFL)", "~96 MB", "github.com/adobe-fonts", false, [["@fonts"]]);
+if (failed.has("fonts") && py && fontsFound !== "needs the Python modules first") item("fonts", "Source Han Sans (free faces, SIL OFL)", "~96 MB", "github.com/adobe-fonts", false, [["@fonts"]]);
 
 // ── output ─────────────────────────────────────────────────────────────────
 if (argv.includes("--json")) {

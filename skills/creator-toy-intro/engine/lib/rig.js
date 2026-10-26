@@ -88,6 +88,7 @@ export function partsAt(hero, o, toy) {
   const rot = {
     body: eul(o.body), head: eul(o.head), ears: eul(o.ears),
     armR: eul(o.armR), armL: eul(o.armL), legR: eul(o.legR), legL: eul(o.legL), finger: qId(), fingerL: qId(),
+    ...Object.fromEntries(Object.keys(o.extra ?? {}).map((j) => [j, eul(o.extra[j])])),
   };
   const reach = { armR: o.reachR, armL: o.reachL };
   for (const side of ["armR", "armL"]) {
@@ -99,14 +100,22 @@ export function partsAt(hero, o, toy) {
       reach[side] = lerp(1, r, aim.k);
     }
   }
-  for (const j of ORDER) {
+  // the contract's joints first, then any others the toy has (a tail…), each after its parent
+  const rest = Object.keys(JOINTS).filter((j) => !ORDER.includes(j));
+  const order = [...ORDER];
+  while (rest.length) {
+    const k = rest.findIndex((j) => !JOINTS[j].parent || order.includes(JOINTS[j].parent));
+    if (k < 0) throw new Error(`toy joints ${rest.join(", ")}: parent missing`);
+    order.push(...rest.splice(k, 1));
+  }
+  for (const j of order) {
     const spec = JOINTS[j];
-    if (!spec) continue; // ears are optional
+    if (!spec) continue; // ears and fingers are optional
     const parent = spec.parent ? J[spec.parent] : trs([0, 0, 0]);
     const pp = spec.parent ? JOINTS[spec.parent].p : [0, 0, 0];
     let off = v3.sub(spec.p, pp);
     if (spec.parent === "armR" || spec.parent === "armL") off = [off[0], off[1] * reach[spec.parent], off[2]];
-    J[j] = mulT(parent, trs(off, rot[j]));
+    J[j] = mulT(parent, trs(off, rot[j] ?? qId())); // a joint the story does not pose stays at rest
   }
   const pointK = { finger: o.pointR, fingerL: o.pointL };
   return toy.parts.map((p) => {

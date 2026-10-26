@@ -2,8 +2,11 @@
 // list read by the motion (anim.js) and, through build/anim.json, by Blender.
 // Local axes follow Three.js: +y up, +z = the face; origin between the feet on
 // the ground; metres. Sides are the toy's own: R = its right = -x.
-//   parts:  { name, shape: roundBox (size, radius) | ellipsoid (r) | arc (radius, tube, arc),
-//             pos, rot? (Euler XYZ, radians), mat (a colours key, or "shine"), group (its joint) }
+//   parts:  { name, shape, pos, rot? (Euler XYZ, radians), mat (a colours key, "shine", or
+//             "paint" for a sculpted part's own colours), group (its joint), paint? (layers) }
+//   shapes by kit: every kit roundBox (size, radius) | ellipsoid (r) | arc (radius, tube, arc);
+//             the pet kit blob (r, p, taper) | tube (pts, radii) | prism (sides, r, depth, bevel);
+//             the sculpt kit mesh (file: build/toy/<part>.npz from engine/scripts/sculpt.py)
 //   joints: { name: { p (where it turns), parent } }
 //   center: where flips and squashes turn round; height: overall height (m)
 import { readFileSync } from "node:fs";
@@ -15,3 +18,17 @@ export const JOINTS = TOY.joints;
 export const COLORS = TOY.colors;
 export const HEIGHT = TOY.height;
 export const CENTER = TOY.center;
+
+// the geometry Blender builds for a part (scene.py, lib/toyblend.py)
+export function toyGeo(p) {
+  switch (p.shape) {
+    case "roundBox": return { type: "roundBox", size: p.size, radius: p.radius };
+    case "ellipsoid": return { type: "ellipsoid", r: p.r };
+    case "arc": return { type: "arc", radius: p.radius, tube: p.tube, arc: p.arc };
+    case "blob": return { type: "blob", r: p.r, p: p.p ?? 2, taper: p.taper ?? 0 };
+    case "tube": return { type: "tube", pts: p.pts, radii: p.radii };
+    case "prism": return { type: "prism", sides: p.sides, r: p.r, depth: p.depth, bevel: p.bevel };
+    case "mesh": return { type: "mesh", file: p.file };
+    default: throw new Error(`toy part ${p.name}: unknown shape ${p.shape}`);
+  }
+}

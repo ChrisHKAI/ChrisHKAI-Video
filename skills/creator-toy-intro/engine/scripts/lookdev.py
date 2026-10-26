@@ -1,5 +1,7 @@
-"""Look-dev turnaround of the mascot: builds the toy from build/hero.json and
-renders a few posed views in Cycles on a plain studio floor.
+"""Look-dev turnaround of the toy: builds it from build/hero.json (any kit:
+rounded parts, the pet kit's blobs and tubes with painted markings, the
+sculpt kit's meshes) and renders a few posed views in Cycles on the studio
+floor. The views scale with the toy's height.
 
 usage:
   blender -b --factory-startup -P scripts/lookdev.py -- [--samples 64] [--out build/lookdev]
@@ -15,6 +17,7 @@ from mathutils import Euler, Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from film import FILM  # noqa: E402  the film workspace (FILM env var)
+import toyblend  # noqa: E402  the pet and sculpt kits' shapes and paint
 
 ROOT = FILM
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -25,6 +28,7 @@ def arg(name, default):
 
 
 HERO = json.loads((ROOT / "build/hero.json").read_text())
+HT = HERO.get("height", 0.113)  # the toy's height (m): every view is framed by it
 OUT = ROOT / arg("--out", "build/lookdev")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -98,10 +102,12 @@ sun("Fill", 0.6, "#ffe2d0", (1.6, 0.8, 1.4), 30)
 mats = {}
 
 
-def material(key):
-    if key in mats:
-        return mats[key]
-    m = bpy.data.materials.new(key)
+def material(key, paint=None, name=None, finish=None):
+    """Vinyl in the colour key's finish (toy.json "finish"); painted parts get their own."""
+    tag = name or key
+    if tag in mats:
+        return mats[tag]
+    m = bpy.data.materials.new(tag)
     m.use_nodes = True
     nt = m.node_tree
     nt.nodes.clear()
@@ -113,19 +119,25 @@ def material(key):
         nt.links.new(e.outputs["Emission"], out.inputs["Surface"])
     else:
         p = nt.nodes.new("ShaderNodeBsdfPrincipled")
-        p.inputs["Base Color"].default_value = rgba(HERO["colors"][key])
-        lens = key in ("blue", "lensRed")
-        p.inputs["Roughness"].default_value = 0.1 if lens else 0.55 if key == "grey" else 0.34
-        p.inputs["Coat Weight"].default_value = 1.0 if lens else 0.15 if key == "grey" else 0.5
-        p.inputs["Coat Roughness"].default_value = 0.03 if lens else 0.16
-        if key in ("white", "hoodie"):
+        fin = HERO.get("finish", {}).get(key, "vinyl")
+        rough, coat, coat_rough = toyblend.FINISH.get(fin, toyblend.FINISH["vinyl"])
+        p.inputs["Roughness"].default_value = rough
+        p.inputs["Coat Weight"].default_value = coat
+        p.inputs["Coat Roughness"].default_value = coat_rough
+        if key == "paint":
+            toyblend.vertex_paint(nt, p, finish or "vinyl")
+        else:
+            p.inputs["Base Color"].default_value = rgba(HERO["colors"][key])
+        if fin == "soft":
             p.inputs["Subsurface Weight"].default_value = 0.08
             p.inputs["Subsurface Radius"].default_value = (0.004, 0.003, 0.003)
-        if lens:
+        if fin == "lens":
             p.inputs["Emission Color"].default_value = rgba(HERO["colors"][key])
             p.inputs["Emission Strength"].default_value = 0.25
+        if paint:
+            toyblend.paint(nt, p, HERO["colors"], key, paint)
         nt.links.new(p.outputs["BSDF"], out.inputs["Surface"])
-    mats[key] = m
+    mats[tag] = m
     return m
 
 
@@ -196,9 +208,13 @@ def build_hero(name):
             me = round_box_mesh(p["name"], p["size"], p["radius"])
         elif p["shape"] == "ellipsoid":
             me = sphere_mesh(p["name"], p["r"])
-        else:
+        elif p["shape"] == "arc":
             me = arc_mesh(p["name"], p["radius"], p["tube"], p["arc"])
-        me.materials.append(material(p["mat"]))
+        else:
+            g = {"type": p["shape"], **{k: v for k, v in p.items() if k not in ("name", "shape", "pos", "rot", "mat", "group", "paint", "finish")}}
+            me = toyblend.part_mesh(p["name"], g, ROOT)
+        tag = f"{p['mat']}_{p['name']}" if p.get("paint") else f"paint_{p.get('finish', 'vinyl')}" if p["mat"] == "paint" else None
+        me.materials.append(material(p["mat"], p.get("paint"), tag, p.get("finish")))
         ob = bpy.data.objects.new(f"{name}_{p['name']}", me)
         scene.collection.objects.link(ob)
         jo, spec = joints[p["group"]]
@@ -250,7 +266,8 @@ def look(target, az, el, dist):
 def pose(p):
     for j, ob in J.items():
         ob.rotation_euler = Euler(p.get(j, (0, 0, 0)), "XYZ")
-    J["finger"].scale = (1, 1, 1) if p.get("point") else (0.6, 0.15, 0.6)
+    if "finger" in J:
+        J["finger"].scale = (1, 1, 1) if p.get("point") else (0.6, 0.15, 0.6)
 
 
 REST = {"armR": (0, 0, -0.12), "armL": (0, 0, 0.12)}
@@ -282,7 +299,8 @@ if "--avatar" in argv:
         nt2.nodes.clear()
         o2 = nt2.nodes.new("ShaderNodeOutputMaterial")
         e2 = nt2.nodes.new("ShaderNodeEmission")
-        col = "#ffffff" if key == "shine" else HERO["colors"][key]
+        base = key.split("_")[0]
+        col = "#ffffff" if base == "shine" else HERO["colors"].get(base, "#ffffff")
         e2.inputs["Color"].default_value = rgba(col)
         nt2.links.new(e2.outputs["Emission"], o2.inputs["Surface"])
     for ob in list(scene.objects):
@@ -297,19 +315,20 @@ if "--avatar" in argv:
             mod.use_rim = False
             mod.material_offset = len(ob.data.materials) - 1
     pose({"armR": (0, 0, -0.18), "armL": (0, 0, 0.18)})
-    look((0, 0.066, 0), 0, 4, 0.36)
+    look((0, 0.584 * HT, 0), 0, 4, 3.19 * HT)
     cam_data.lens = 12 / math.tan(math.radians(30) / 2)
     scene.render.filepath = str(OUT / "avatar-toy.png")
     bpy.ops.render.render(write_still=True)
     print("rendered avatar", flush=True)
     raise SystemExit
 
+# framed by the toy's height (isnail's 113 mm gave the numbers these come from)
 views = [
-    ("front", REST, (0, 0.056, 0), 0, 8, 0.42),
-    ("threequarter", POINT, (0, 0.056, 0), 35, 12, 0.40),
-    ("side", REST, (0, 0.056, 0), 90, 6, 0.42),
-    ("back", CHEER, (0, 0.06, 0), 150, 18, 0.44),
-    ("face", REST, (0, 0.075, 0), 22, 6, 0.2),
+    ("front", REST, (0, 0.5 * HT, 0), 0, 8, 3.72 * HT),
+    ("threequarter", POINT, (0, 0.5 * HT, 0), 35, 12, 3.54 * HT),
+    ("side", REST, (0, 0.5 * HT, 0), 90, 6, 3.72 * HT),
+    ("back", CHEER, (0, 0.53 * HT, 0), 150, 18, 3.9 * HT),
+    ("face", REST, (0, 0.66 * HT, 0), 22, 6, 1.77 * HT),
 ]
 for name, p, target, az, el, dist in views:
     pose(p)

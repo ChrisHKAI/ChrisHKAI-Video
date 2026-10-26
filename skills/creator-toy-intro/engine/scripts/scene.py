@@ -26,6 +26,7 @@ from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
+import toyblend  # noqa: E402  the pet and sculpt kits' shapes and paint
 
 ROOT = FILM
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -61,7 +62,8 @@ def rgba(hex_, k=1.0):
 
 # the toy's colours and finishes (toy.json), plus the CTA prop's body colour
 TOY_SPEC = json.loads((FILM / FILM_JSON["toy"]).read_text())
-TOY = {**TOY_SPEC["colors"], "snail": FILM_JSON["cta"]["prop"]["bodyColor"]}
+# the prop's eyes take the toy's white and black when it has them (isnail's), else these
+TOY = {"white": "#F3F1EC", "black": "#141416", **TOY_SPEC["colors"], "snail": FILM_JSON["cta"]["prop"]["bodyColor"]}
 FINISH = TOY_SPEC.get("finish", {})  # vinyl (default) | matte | soft | lens
 
 # ── Scene ───────────────────────────────────────────────────────────────────
@@ -238,6 +240,11 @@ def material(spec):
         L.new(tr.outputs["BSDF"], cut.inputs[1])
         L.new(side.outputs["Shader"], cut.inputs[2])
         L.new(cut.outputs["Shader"], out.inputs["Surface"])
+    elif kind == "toy" and spec["key"] == "paint":
+        # a sculpted part: its colours and roughness are painted per vertex
+        p = principled(nt, "#ffffff", 0.34, 0.5, coat=0.5, coat_rough=0.16)
+        toyblend.vertex_paint(nt, p, spec.get("finish", "vinyl"))
+        L.new(p.outputs["BSDF"], out.inputs["Surface"])
     elif kind == "toy":
         k = spec["key"]
         fin = FINISH.get(k, "vinyl")
@@ -257,6 +264,8 @@ def material(spec):
             mul.inputs[2].default_value = 0.25
             L.new(mul.outputs[0], p.inputs["Emission Strength"])
             keyed.append(("glint", nt, g))
+        if spec.get("paint"):
+            toyblend.paint(nt, p, TOY, k, spec["paint"])
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
     elif kind == "shine":
         e = nt.nodes.new("ShaderNodeEmission")
@@ -669,6 +678,8 @@ def build_geo(o):
         me = sphere_mesh(o["name"], g["r"])
     elif t == "arc":
         me = arc_mesh(o["name"], g["radius"], g["tube"], g["arc"])
+    elif t in ("blob", "tube", "prism", "mesh"):
+        me = toyblend.part_mesh(o["name"], g, FILM)
     elif t == "uiBox":
         x0, y0, w, h = g["rect"]
         ux, uy, uw, uh = g["uvRect"]

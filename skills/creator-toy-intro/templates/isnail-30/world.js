@@ -3,7 +3,7 @@
 // them, samples them twice a frame and writes build/anim.json for Blender.
 import { film } from "../../engine/lib/film.js";
 import { trs, qEuler } from "../../engine/lib/quat.js";
-import { MASCOT_PARTS } from "../../engine/lib/toy.js";
+import { MASCOT_PARTS, toyGeo } from "../../engine/lib/toy.js";
 import { PAPER } from "../../engine/lib/labels.js";
 import * as T from "./timeline.js";
 import * as A from "./anim.js";
@@ -33,10 +33,7 @@ export function declare({ add, pack, objects }) {
   // the toy
   add({ name: "hero", geo: null, anim: true });
   for (const p of MASCOT_PARTS) {
-    const geo = p.shape === "roundBox" ? { type: "roundBox", size: p.size, radius: p.radius }
-      : p.shape === "ellipsoid" ? { type: "ellipsoid", r: p.r }
-      : { type: "arc", radius: p.radius, tube: p.tube, arc: p.arc };
-    add({ name: `hero_${p.name}`, parent: "hero", geo, mat: { type: p.mat === "shine" ? "shine" : "toy", key: p.mat }, anim: true });
+    add({ name: `hero_${p.name}`, parent: "hero", geo: toyGeo(p), mat: { type: p.mat === "shine" ? "shine" : "toy", key: p.mat, ...(p.paint?.length ? { paint: p.paint } : {}), ...(p.finish ? { finish: p.finish } : {}) }, anim: true });
   }
   add({ name: "blob", geo: { type: "plane", w: 1, h: 1 }, mat: { type: "blob" }, anim: true });
 

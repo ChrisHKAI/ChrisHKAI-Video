@@ -8,7 +8,7 @@
 //           ui       the platform page as HTML → assets/ui.png …, build/timeline.json
 //           anim     every object at every half frame → build/anim.json
 //           sound    the synthesized score → assets/audio/score.wav
-//           lookdev  Blender turnaround of the toy → build/lookdev/
+//           lookdev  Blender turnaround of the toy → build/lookdev/, beside its picture: compare.jpg
 //           render   Blender Cycles frames → build/render/ (args after -- go to scene.py)
 //           finish   bloom, vignette, grain, H.264 + AAC → out/, then covers
 //           covers   each platform's covers cut from the last frame → out/covers/
@@ -51,8 +51,11 @@ for (const [i, step] of steps.entries()) {
     case "ui": run("node", [fromSkill("engine/scripts/build-ui.mjs"), ...more]); break;
     case "anim": run("node", [fromSkill("engine/scripts/export-anim.mjs")]); break;
     case "sound": run(PY, [tpl("score.py")]); break;
-    case "lookdev": run(blender, ["-b", "--factory-startup", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]); break;
-    case "render": run(blender, ["-b", "--factory-startup", "-P", fromSkill("engine/scripts/scene.py"), "--", ...more]); break;
+    case "lookdev":
+      run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
+      if (!more.includes("--avatar")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);
+      break;
+    case "render": run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/scene.py"), "--", ...more]); break;
     case "finish":
       run(PY, [fromSkill("engine/scripts/finish.py"), ...more]);
       run(PY, [fromSkill("engine/scripts/covers.py")]);
