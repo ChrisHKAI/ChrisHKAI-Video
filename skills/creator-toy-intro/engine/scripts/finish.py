@@ -4,7 +4,7 @@ Bloom on the brightest light (glints, sparks, the lock flash; Cycles does not gl
 fine seeded grain; then H.264 High CRF 17, 30 fps, the WAV muxed as AAC 320k,
 +faststart.
 
-usage: python3 scripts/finish.py [--in build/render] [--out out/isnail-intro.mp4]
+usage: FILM=<film folder> python3 engine/scripts/finish.py [--in build/render] [--out out/<name>.mp4]  (default: film.json "output")
 """
 import subprocess
 import sys
@@ -15,7 +15,7 @@ from PIL import Image
 from scipy.ndimage import gaussian_filter
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
-from film import FILM  # noqa: E402  the film workspace (FILM env var)
+from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
 
 ROOT = FILM
 argv = sys.argv[1:]
@@ -27,7 +27,7 @@ def arg(name, default):
 
 SRC = ROOT / arg("--in", "build/render")
 FIN = ROOT / "build/final"
-OUT = ROOT / arg("--out", "out/isnail-intro.mp4")
+OUT = ROOT / arg("--out", FILM_JSON.get("output", "out/film.mp4"))
 FIN.mkdir(parents=True, exist_ok=True)
 OUT.parent.mkdir(parents=True, exist_ok=True)
 
