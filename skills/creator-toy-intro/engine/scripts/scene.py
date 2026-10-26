@@ -10,7 +10,7 @@ in the wall's space. Keys go straight into the F-curves.
 usage:
   blender -b --factory-startup -P scripts/scene.py -- \
       [--frames 1-720 | 13,49,121 | 1-20,45] [--samples 128] [--scale 100] \
-      [--out build/render] [--save build/scene.blend] [--engine cycles|eevee]
+      [--out build/render] [--save build/scene.blend] [--engine cycles|eevee] [--resume]
 """
 import json
 import math
@@ -890,9 +890,16 @@ if spec:
     for part in spec.split(","):
         a, _, b = part.partition("-")
         frames += list(range(int(a), int(b or a) + 1))
-    for f in frames:
+    # --resume: frames already on disk stay (a long render picks up where it stopped)
+    todo = [f for f in frames if not ("--resume" in argv and (OUT / f"{f:04d}.png").exists())]
+    if len(todo) < len(frames):
+        print(f"resuming: {len(frames) - len(todo)} frames already in {OUT.name}/", flush=True)
+    spent = 0.0
+    for n, f in enumerate(todo, 1):
         t0 = time.time()
         scene.frame_set(f)
         scene.render.filepath = str(OUT / f"{f:04d}.png")
         bpy.ops.render.render(write_still=True)
-        print(f"rendered frame {f} in {time.time() - t0:.1f}s", flush=True)
+        spent += time.time() - t0
+        left = spent / n * (len(todo) - n)
+        print(f"rendered frame {f} in {time.time() - t0:.1f}s ({n}/{len(todo)}, about {left / 60:.0f} min to go)", flush=True)

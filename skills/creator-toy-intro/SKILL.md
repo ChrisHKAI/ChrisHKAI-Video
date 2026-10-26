@@ -34,7 +34,7 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
 | 3 | the toy from the confirmed picture, in one of three kits; a turnaround beside it to approve | `references/toy.md` |
 | 4 | the film's own code (cover walls, flat profile picture, exit, prop), then the storyboard page: the story, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `storyboard.md` |
-| 5 | render, finish, covers | `render`, `finish` |
+| 5 | how long, the render, the finish: the film, the effects-only cut, each platform's covers, the last look | `references/render.md` |
 
 ## Layout
 
@@ -42,10 +42,10 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | --- | --- |
 | `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover and avatar recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
-| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md` and `storyboard.md` (step 4) |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md` and `storyboard.md` (step 4), `render.md` (step 5) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
@@ -124,7 +124,7 @@ way the app writes them (`5.5万`, `1,380`), and taken as the creator gives them
 FILM=<film> node engine/run.mjs data      # recipes glyphs hero ui anim sound
 FILM=<film> node engine/run.mjs lookdev   # the toy's turnaround → build/lookdev/
 FILM=<film> node engine/run.mjs render -- --frames 1-900 --samples 128 --scale 100
-FILM=<film> node engine/run.mjs finish    # → out/, then covers → out/covers/
+FILM=<film> node engine/run.mjs finish    # → out/ (+ the effects-only cut), covers → out/covers/, the last look → build/qa.txt
 ```
 
 Covers are cut from the held last frame at the film's own pixels, one set

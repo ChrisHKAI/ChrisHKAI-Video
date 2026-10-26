@@ -12,7 +12,7 @@ letters play a tune up to the last chord (28.0 s).
 Every effect cue lands on its frame; instruments and effects come from the
 synth kit (engine/lib/synth.py), the arrangement and the mix are this story's.
 
-usage: FILM=<film folder> python3 templates/isnail-30/score.py   (writes assets/audio/score.wav)
+usage: FILM=<film folder> python3 templates/isnail-30/score.py   (writes assets/audio/score.wav and score-sfx.wav, the effects alone)
 """
 import json
 import sys
@@ -199,16 +199,32 @@ mix *= np.clip((DUR - tt) / 0.8, 0, 1)[:, None]
 
 
 sec = mix[int(DROP * SR):int(EV["count"][0] * SR)]
-mix *= 10 ** (-9.0 / 20) / max(np.sqrt((sec ** 2).mean()), 1e-9)
+level = 10 ** (-9.0 / 20) / max(np.sqrt((sec ** 2).mean()), 1e-9)
+mix *= level
 mix = limit(compress(mix))
 
+# the same sound effects without the music, at the level they have in the mix:
+# the cut for platforms where creators lay their own music under the film
+sfx_wet = np.stack([signal.fftconvolve(verb.x[:, c], ir[:, c])[:N] for c in range(2)], axis=1) * 0.5
+fx = sfx.x * 0.95 + sfx_wet
+fx = signal.sosfilt(sos("lowpass", 16000), fx, axis=0)
+fx = signal.sosfilt(sos("highpass", 25), fx, axis=0)
+fx *= np.clip((DUR - tt) / 0.8, 0, 1)[:, None]
+fx = limit(compress(fx * level))
+
+
+def write(path, x):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(SR)
+        w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
+
+
 out = ROOT / "assets/audio/score.wav"
-out.parent.mkdir(parents=True, exist_ok=True)
-with wave.open(str(out), "wb") as w:
-    w.setnchannels(2)
-    w.setsampwidth(2)
-    w.setframerate(SR)
-    w.writeframes((np.clip(mix, -1, 1) * 32767).astype(np.int16).tobytes())
+write(out, mix)
+write(ROOT / "assets/audio/score-sfx.wav", fx)
 for s0 in np.arange(0, DUR - 1e-6, BAR):
     seg = mix[int(s0 * SR):int((s0 + BAR) * SR)]
     print(f"bar {s0:5.1f}s {20 * np.log10(np.sqrt((seg ** 2).mean()) + 1e-12):6.1f} dB")
