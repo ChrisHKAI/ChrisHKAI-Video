@@ -30,7 +30,7 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | --- | --- | --- |
 | 0 | the computer: check, then one yes installs what is missing | `references/onboarding.md` |
 | 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
-| 2 | research: profile, pinned and best posts, numbers; the user picks from a material table | `references/research.md` |
+| 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
 | 3 | the toy from the profile picture; a turnaround to approve | not yet: by hand (`toy.json`, `lookdev`) |
 | 4 | story and storyboard: real preview renders, safe zones | `render` previews, `safezone` |
 | 5 | render, finish, covers | `render`, `finish` |
@@ -84,7 +84,8 @@ positions optional: the template lays the end card out per orientation),
 `sticker2d`, `pop` (confetti colours), `story` (the cover walls' pieces;
 events, places, camera keys and shakes only where they differ from the
 template's own `story.json`), `source` (the creator's link, platform,
-handle) and `step` (the step a film being made is at).
+handle), `toyFrom` (the pictures the user confirmed the toy is made from)
+and `step` (the step a film being made is at).
 
 `format.size` is `[1920, 1080]` for 16:9 or `[1080, 1920]` for 9:16, and the
 theme matches it: `x-desktop` is 16:9, the `-mobile` themes 9:16. The camera

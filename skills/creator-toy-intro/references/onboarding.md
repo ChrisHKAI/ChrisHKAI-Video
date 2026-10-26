@@ -49,8 +49,9 @@ Without image viewing, say so before starting: the checks cannot be skipped.
      from screenshots, the app they show.
    - the script, 简 or 繁: from the profile's own text once seen (step 2);
      `zh-Hans` until then.
-   - the toy's source: the profile picture (step 3 asks only when it has no
-     character in it).
+   Not worked out: which picture the toy is made from. Step 2 always asks,
+   as soon as the profile picture is in (many are real people, some are not
+   the creator at all).
 4. Ask, in one round (AskUserQuestion where the agent has it, else one
    message with numbered options), only what is still open:
    - always: where it will be posted. Several may be picked: 抖音, 小红书,

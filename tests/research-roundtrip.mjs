@@ -2,7 +2,8 @@
 // (research/facts.json, two extra test posts with test numbers so each slot
 // has candidates), opens a fresh workspace with new-film, builds the material
 // table, applies the picks and checks that profile, posts, counter and the end
-// card's name and handle come back as the film had them.
+// card's name and handle come back as the film had them, and that nothing is
+// applied before the toy's picture is confirmed.
 //
 // usage: node tests/research-roundtrip.mjs films/isnail <scratch folder>
 import { execFileSync } from "node:child_process";
@@ -46,11 +47,18 @@ writeFileSync(join(out, "research/facts.json"), JSON.stringify(facts, null, 2));
 execFileSync("node", [join(S, "materials.mjs"), out, "--lang", "zh-Hant"], { stdio: "inherit" });
 facts.picks = { proof1: facts.slots.proof1[0], proof2: facts.slots.proof2[0], cta: facts.slots.cta[0] };
 writeFileSync(join(out, "research/facts.json"), JSON.stringify(facts, null, 2));
+// it must stop while the user has not said which picture the toy is made from
+let stopped = false;
+try { execFileSync("node", [join(S, "apply-research.mjs"), out], { stdio: "pipe" }); } catch { stopped = true; }
+facts.toy = { images: [pr.avatar], confirmed: true };
+writeFileSync(join(out, "research/facts.json"), JSON.stringify(facts, null, 2));
 execFileSync("node", [join(S, "apply-research.mjs"), out], { stdio: "inherit" });
 
 const g = JSON.parse(readFileSync(join(out, "film.json"), "utf8"));
 const strip = (p) => { const { cover, count, ...rest } = p; return rest; }; // the film's own posts may carry no cover / tile count
 const checks = {
+  "stops until the toy's picture is confirmed": [stopped, true],
+  toyFrom: [g.toyFrom, [pr.avatar]],
   profile: [g.profile, pr],
   pinned: [strip(g.posts.pinned), strip(f.posts.pinned)],
   retro: [strip(g.posts.retro), strip(f.posts.retro)],

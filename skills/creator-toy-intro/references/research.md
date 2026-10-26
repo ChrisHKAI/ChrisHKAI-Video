@@ -3,8 +3,9 @@
 Find the creator's profile, pinned post and three to five best posts, with
 every number exactly as the page writes it and the spot where it sits; keep
 the pictures as originals; then show a material table and let the user pick.
-The picks are the only question. Never ask who the film is for or whether a
-number is true: use the numbers the user gives as they are.
+Two questions only: which picture the toy is made from (as soon as the
+profile picture is in), and the picks. Never ask who the film is for or
+whether a number is true: use the numbers the user gives as they are.
 
 ## Where to look
 
@@ -30,9 +31,15 @@ goes to `extra`; in the film it rises from the name at the top.
 
 ## What to keep
 
-- The profile picture first, full size, as `assets/avatar.<ext>`: step 3 (the
-  toy) can start from it while the research goes on. On X, drop the
-  `_normal` / `_400x400` size from the image URL for the original.
+- The profile picture first, full size, as `assets/avatar.<ext>`. On X, drop
+  the `_normal` / `_400x400` size from the image URL for the original.
+- Then, before anything is built from it, show it and ask which picture the
+  toy is made from: this one, or another the user sends. Many profile
+  pictures are real people, and some are not the person at all (a logo, a
+  pet, a friend's photo), so this is always asked, never assumed. A real
+  person's toy reads better from a clearer photo (half or full body, plain
+  light), so offer that too. Record the answer in `toy` (below); step 3 (the
+  toy) can start right away while the research goes on.
 - The banner and every post's cover, as originals (`curl` the image URL; X
   media: `?name=orig`), in `assets/`.
 - Screenshots of the profile and each post in `research/shots/` (on a Mac
@@ -61,13 +68,16 @@ goes to `extra`; in the film it rises from the name at the top.
     { "id": "p1", "url": "…", "date": "5月31日", "title": "…", "cover": "assets/p1.jpg", "shot": "research/shots/p1.png", "pinned": true,
       "numbers": { "replies": { "label": "回复", "display": "163" }, "reposts": { "label": "转帖", "display": "914" }, "likes": { "label": "喜欢", "display": "5,018" }, "views": { "label": "阅读", "display": "304万" } } }
   ],
+  "toy": { "images": ["assets/avatar.jpg"], "confirmed": true },
   "extra": [{ "label": "总播放", "display": "1200万", "source": "research/shots/dashboard.png" }],
   "slots": { "proof1": [], "proof2": [], "cta": [] },
   "picks": {}
 }
 ```
 
-`profile.fields` takes what the stage theme shows (SKILL.md lists them per
+`toy.images` are the pictures the user said the toy is made from (the
+avatar, or what they sent instead, saved in `assets/`); `confirmed` is true
+only once they said so. `profile.fields` takes what the stage theme shows (SKILL.md lists them per
 theme: `ip`, `title`, `category`, `tags`, `collections`, `highlights`,
 `meta`…); `profile.numbers` the counts (`followers`, `following`, `likes`,
 `posts`). A post's numbers are keyed `replies`, `reposts`, `likes`, `views`
@@ -99,7 +109,9 @@ where the agent has it, else one message). Write the answers into `picks`
 
 `node <skill>/engine/scripts/apply-research.mjs <film>` fills `profile`,
 `posts` (`pinned` = proof 1, `retro` = proof 2), `counter`, `grid` (the other
-posts), the end card's name, handle and slogan, and moves `step` to `toy`.
+posts), the end card's name, handle and slogan, `toyFrom` (the confirmed
+pictures), and moves `step` to `toy`. It stops while the toy's picture is
+not confirmed.
 It warns when proof 1's number cannot be the counter: pick another, or
 change its label. Set film.json `language` from the profile's own script
 (简 → `zh-Hans`, 繁 → `zh-Hant`).

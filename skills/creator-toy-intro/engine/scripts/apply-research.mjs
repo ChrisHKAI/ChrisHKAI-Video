@@ -2,11 +2,13 @@
 // profile and its numbers go to "profile", the first proof to the pinned post
 // (its number becomes the counter that rises from the spot where the page
 // shows it), the second proof to the post whose cover stands up as a wall, the
-// other posts to the grid, the name, handle and slogan to the end card.
-// Numbers stay as the platform writes them. "step" moves on to the toy.
+// other posts to the grid, the name, handle and slogan to the end card, the
+// pictures the user confirmed for the toy to "toyFrom". Numbers stay as the
+// platform writes them. "step" moves on to the toy.
 //
 // usage: node engine/scripts/apply-research.mjs <film folder> [--dry-run]
-// reads research/facts.json ("picks": { proof1: { post, number }, proof2: { post }, cta: { slogan } })
+// reads research/facts.json ("picks": { proof1: { post, number }, proof2: { post }, cta: { slogan } },
+// "toy": { images, confirmed })
 import { readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { readNumber } from "../lib/numbers.js";
@@ -19,6 +21,8 @@ const fail = (msg) => { console.error(msg); process.exit(1); };
 const warn = [];
 
 const picks = facts.picks ?? fail("research/facts.json has no \"picks\" yet: the user picks from the material table first");
+// the toy is only made from a picture the user said to use: many profile pictures are real people
+if (!facts.toy?.confirmed || !facts.toy.images?.length) fail("the toy's picture is not confirmed yet: show the user the profile picture and ask which picture the toy is made from (research/facts.json \"toy\")");
 const post = (id) => facts.posts.find((p) => p.id === id) ?? fail(`no post "${id}" in research/facts.json`);
 const p1 = post(picks.proof1?.post), p2 = post(picks.proof2?.post);
 // the stage platform's own grid shows one number per tile
@@ -65,6 +69,7 @@ const next = {
     name: { text: pr.name, paper: "cream" },
     handle: { text: pr.handle ? `@${pr.handle}` : pr.name, paper: "blue" },
   },
+  toyFrom: facts.toy.images,
   source: { ...(film.source ?? {}), read: facts.read },
   step: "toy",
 };
