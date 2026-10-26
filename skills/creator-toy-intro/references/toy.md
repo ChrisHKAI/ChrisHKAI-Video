@@ -25,9 +25,13 @@ Pick from the picture; parts of one kit may sit on another's toy.
 | the picture shows | kit | how it is made |
 | --- | --- | --- |
 | a mascot, a logo, a drawn character | parts | toy.json lists rounded boxes, balls, arcs: the isnail mascot |
-| a pet or another animal | pet | toy.json adds blobs (superellipsoids), tubes (tails, whiskers, eyelids) and markings painted on in soft blobs |
+| a pet or another animal | pet | toy.json adds blobs (superellipsoids), tubes (tails, whiskers, eyelids), loops and plates (glasses), and markings painted on in soft blobs |
 | a real person, a chibi drawing | sculpt | a sculpt script shapes signed distance fields (`engine/lib/sdf.py`), meshes them and paints them per vertex; `import-sculpt.py` brings them in |
 | nothing that can be a character | — | offer two or three mascot ideas from the name or brand, and build the one picked |
+
+Start from the nearest toy in `characters/` (the isnail mascot, a calico
+cat, Tim and Steve Jobs in one simpler toy line, Chris as a sculpt):
+copy its toy.json or its source and change it, rather than from nothing.
 
 ### toy.json (parts and pet kits)
 
@@ -44,11 +48,16 @@ Pick from the picture; parts of one kit may sit on another's toy.
 
 Shapes: `roundBox` (size, radius), `ellipsoid` (r), `arc` (radius, tube,
 arc), `blob` (r, p: 2 round … 3 boxy, taper < 0 narrows the top), `tube` (pts,
-radii: through the points, round ends), `prism` (sides, r, depth, bevel).
-`pos` and `rot` (Euler XYZ) place a part; paint blobs sit in the part's own
-space (before its `pos` and `rot`). Finishes: `vinyl` (default), `soft`
-(light under the surface: white, skin), `matte`, `gloss` (eyes, lines,
-noses), `lens` (glowing lenses).
+radii: through the points, round ends), `prism` (sides, r, depth, bevel),
+`loop` (pts, radii: a closed tube; rims, collars), `plate` (w, d, t, corner,
+bevel, or an `outline` of (x, z) points; lenses, watch faces). `pos` and
+`rot` (Euler XYZ) or `q` (a quaternion [x, y, z, w]) place a part; paint
+blobs sit in the part's own space (before its `pos` and turn). Finishes:
+`vinyl` (default), `soft` (light under the surface: white, skin), `matte`,
+`gloss` (eyes, lines, noses, frames), `satin`, `metal`, `glass` (clear
+lenses), `blackGlass` (a watch face), `emit` (a glint), `lens` (glowing
+lenses). A joint may carry `t` and `s`, a nudge and a scale kept for good
+(the Tim line's big head).
 
 ### The sculpt kit
 

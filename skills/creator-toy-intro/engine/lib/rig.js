@@ -100,22 +100,23 @@ export function partsAt(hero, o, toy) {
       reach[side] = lerp(1, r, aim.k);
     }
   }
-  // the contract's joints first, then any others the toy has (a tail…), each after its parent
-  const rest = Object.keys(JOINTS).filter((j) => !ORDER.includes(j));
-  const order = [...ORDER];
-  while (rest.length) {
-    const k = rest.findIndex((j) => !JOINTS[j].parent || order.includes(JOINTS[j].parent));
-    if (k < 0) throw new Error(`toy joints ${rest.join(", ")}: parent missing`);
-    order.push(...rest.splice(k, 1));
+  // the contract's joints first, then any others the toy has (a chest, elbows, a tail…),
+  // each after its parent
+  const todo = [...ORDER.filter((j) => JOINTS[j]), ...Object.keys(JOINTS).filter((j) => !ORDER.includes(j))];
+  const order = [];
+  while (todo.length) {
+    const k = todo.findIndex((j) => !JOINTS[j].parent || order.includes(JOINTS[j].parent));
+    if (k < 0) throw new Error(`toy joints ${todo.join(", ")}: parent missing`);
+    order.push(...todo.splice(k, 1));
   }
   for (const j of order) {
     const spec = JOINTS[j];
-    if (!spec) continue; // ears and fingers are optional
     const parent = spec.parent ? J[spec.parent] : trs([0, 0, 0]);
     const pp = spec.parent ? JOINTS[spec.parent].p : [0, 0, 0];
     let off = v3.sub(spec.p, pp);
     if (spec.parent === "armR" || spec.parent === "armL") off = [off[0], off[1] * reach[spec.parent], off[2]];
-    J[j] = mulT(parent, trs(off, rot[j] ?? qId())); // a joint the story does not pose stays at rest
+    // a joint the story does not pose stays at rest; t and s nudge and scale it for good (a big toy head)
+    J[j] = mulT(parent, spec.s ? trs(spec.t ? v3.add(off, spec.t) : off, rot[j] ?? qId(), spec.s) : trs(spec.t ? v3.add(off, spec.t) : off, rot[j] ?? qId()));
   }
   const pointK = { finger: o.pointR, fingerL: o.pointL };
   return toy.parts.map((p) => {
@@ -132,6 +133,6 @@ export function partsAt(hero, o, toy) {
       s = [lerp(0.55, 1, k), lerp(0.12, 1, k), lerp(0.55, 1, k)];
       off = [off[0], off[1] * lerp(0.1, 1, k), off[2] * lerp(0.4, 1, k)];
     }
-    return mulT(J[g], trs(off, p.rot ? qEuler(...p.rot) : qId(), s));
+    return mulT(J[g], trs(off, p.q ?? (p.rot ? qEuler(...p.rot) : qId()), s));
   });
 }

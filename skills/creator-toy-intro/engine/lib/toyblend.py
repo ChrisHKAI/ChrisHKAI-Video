@@ -1,7 +1,9 @@
 """The toy's shapes and vinyl in Blender, beyond the rounded boxes, balls and
-arcs every kit has (scene.py, lookdev.py): the pet kit's blobs, tubes and
-pillows with markings painted on, and the sculpt kit's meshes made offline
-(engine/scripts/sculpt.py → build/toy/<part>.npz, painted per vertex).
+arcs every kit has (scene.py, lookdev.py): the pet kit's blobs, tubes,
+pillows, closed loops (rims, collars) and plates (lenses) with markings
+painted on, the finishes beyond vinyl (gloss, satin, metal, glass, black
+glass, glowing), and the sculpt kit's meshes made offline
+(engine/scripts/import-sculpt.py → build/toy/<part>.npz, painted per vertex).
 
 Paint: a part's `paint` layers each union a few blobs ({ c, r } in the part's
 own space, metres) into one soft mask; noise wobbles the edges so patches read
@@ -126,6 +128,106 @@ def prism_mesh(name, sides, r, depth, bevel):
     return me
 
 
+def loop_mesh(name, pts, radii, ring=16, per_seg=6):
+    """A smooth closed tube through pts (closed Catmull-Rom), per-point radii.
+    Parallel-transport frames, the leftover twist spread round the loop."""
+    P = [Vector(p) for p in pts]
+    n = len(P)
+    samples, rads = [], []
+    for i in range(n):
+        p0, p1, p2, p3 = P[i - 1], P[i], P[(i + 1) % n], P[(i + 2) % n]
+        r1, r2 = radii[i], radii[(i + 1) % n]
+        for k in range(per_seg):
+            t = k / per_seg
+            t2, t3 = t * t, t * t * t
+            samples.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3))
+            rads.append(r1 + (r2 - r1) * (3 * t2 - 2 * t3))
+    m = len(samples)
+    tans = [(samples[(i + 1) % m] - samples[i - 1]).normalized() for i in range(m)]
+    up = Vector((0, 1, 0)) if abs(tans[0].y) < 0.9 else Vector((1, 0, 0))
+    nrm = tans[0].cross(up).normalized()
+    n0 = nrm.copy()
+    normals = []
+    for i, t in enumerate(tans):
+        if i:
+            nrm = (nrm - t * nrm.dot(t)).normalized()
+        normals.append(nrm.copy())
+    # twist left over after going round once
+    last = (normals[-1] - tans[0] * normals[-1].dot(tans[0])).normalized()
+    twist = math.atan2(n0.cross(last).dot(tans[0]), n0.dot(last))
+    verts, faces = [], []
+    for i, (c, rad, t, nv) in enumerate(zip(samples, rads, tans, normals)):
+        a = -twist * i / m
+        nv = nv * math.cos(a) + t.cross(nv) * math.sin(a)
+        bv = t.cross(nv).normalized()
+        for j in range(ring):
+            b = 2 * math.pi * j / ring
+            verts.append(c + (nv * math.cos(b) + bv * math.sin(b)) * rad)
+    for i in range(m):
+        a, b = i * ring, ((i + 1) % m) * ring
+        for j in range(ring):
+            j2 = (j + 1) % ring
+            faces.append((a + j, a + j2, b + j2, b + j))
+    me = bpy.data.meshes.new(name)
+    me.from_pydata([tuple(v) for v in verts], [], faces)
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.to_mesh(me)
+    bm.free()
+    me.shade_smooth()
+    return me
+
+
+def round_rect(w, d, corners, n=8):
+    """Rounded rectangle in the xz plane; corners (+x+z, -x+z, -x-z, +x-z)."""
+    if not isinstance(corners, (list, tuple)):
+        corners = [corners] * 4
+    out = []
+    for k, ((sx, sz), r) in enumerate(zip(((1, 1), (-1, 1), (-1, -1), (1, -1)), corners)):
+        r = min(r, w / 2 - 1e-6, d / 2 - 1e-6)
+        cx, cz = sx * (w / 2 - r), sz * (d / 2 - r)
+        if r < 1e-6:
+            out.append((sx * w / 2, sz * d / 2))
+            continue
+        for i in range(n + 1):
+            a = (k + i / n) * math.pi / 2
+            out.append((cx + r * math.cos(a), cz + r * math.sin(a)))
+    return out
+
+
+def plate_mesh(name, w, d, t, corners, bevel, uv=None, outline=None):
+    """A slab lying in the xz plane (w along x, d along z, t thick along y),
+    rounded corners (or any outline of (x, z) points), bevelled rim.
+    uv = [u at -x, v at -z, u at +x, v at +z]."""
+    bm = bmesh.new()
+    if outline:
+        w = max(x for x, _ in outline) - min(x for x, _ in outline)
+        d = max(z for _, z in outline) - min(z for _, z in outline)
+    vs = [bm.verts.new((x, -t / 2, z)) for x, z in (outline or round_rect(w, d, corners))]
+    f = bm.faces.new(vs)
+    ext = bmesh.ops.extrude_face_region(bm, geom=[f])
+    for v in ext["geom"]:
+        if isinstance(v, bmesh.types.BMVert):
+            v.co.y += t
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    if bevel > 0:
+        rim = [e for e in bm.edges if e.calc_face_angle(0) > 0.6]
+        bmesh.ops.bevel(bm, geom=rim, offset=min(bevel, t / 2 - 1e-6), segments=4, profile=0.5, affect="EDGES", clamp_overlap=True)
+    u0, v0, u1, v1 = uv or (0, 0, 1, 1)
+    layer = bm.loops.layers.uv.new("UVMap")
+    for face in bm.faces:
+        for lp in face.loops:
+            x, _, z = lp.vert.co
+            lp[layer].uv = (u0 + (x / w + 0.5) * (u1 - u0), v0 + (z / d + 0.5) * (v1 - v0))
+    me = bpy.data.meshes.new(name)
+    bm.to_mesh(me)
+    bm.free()
+    me.shade_smooth()
+    me.set_sharp_from_angle(angle=math.radians(35))
+    return me
+
+
 def file_mesh(name, path):
     """A sculpted part (sculpt.py): verts (m, part space), faces, and per-vertex
     colour (linear RGB) and roughness in the "paint" and "rough" attributes."""
@@ -153,7 +255,7 @@ def file_mesh(name, path):
 
 
 def part_mesh(name, g, root):
-    """The mesh for a geometry spec { type: blob | tube | prism | mesh, … }; root resolves mesh files."""
+    """The mesh for a geometry spec { type: blob | tube | prism | loop | plate | mesh, … }; root resolves mesh files."""
     t = g["type"]
     if t == "blob":
         return blob_mesh(name, g["r"], g.get("p", 2.0), g.get("taper", 0.0))
@@ -161,6 +263,10 @@ def part_mesh(name, g, root):
         return tube_mesh(name, g["pts"], g["radii"])
     if t == "prism":
         return prism_mesh(name, g["sides"], g["r"], g["depth"], g["bevel"])
+    if t == "loop":
+        return loop_mesh(name, g["pts"], g["radii"])
+    if t == "plate":
+        return plate_mesh(name, g.get("w"), g.get("d"), g["t"], g.get("corner"), g["bevel"], g.get("uv"), g.get("outline"))
     if t == "mesh":
         return file_mesh(name, root / g["file"])
     raise ValueError(t)
@@ -260,3 +366,45 @@ def vertex_paint(nt, p, finish="vinyl"):
         p.inputs["Subsurface Weight"].default_value = 0.18
         p.inputs["Subsurface Radius"].default_value = (1.0, 0.45, 0.25)
         p.inputs["Subsurface Scale"].default_value = 0.0015
+
+
+# finishes beyond vinyl for a colour (toy.json "finish"), from the Tim and Steve toy line
+MORE_FINISHES = ("gloss", "satin", "metal", "blackGlass", "emit", "glass")
+
+
+def finish(nt, p, name, color):
+    """Sets Principled node p up as finish `name` in colour `color` (rgba);
+    returns the shader to send to the output (glass lets shadows through)."""
+    p.inputs["Base Color"].default_value = color
+    shader = p.outputs["BSDF"]
+    if name == "gloss":
+        p.inputs["Roughness"].default_value = 0.3
+        p.inputs["Coat Weight"].default_value = 0.45
+        p.inputs["Coat Roughness"].default_value = 0.14
+    elif name == "satin":
+        p.inputs["Roughness"].default_value = 0.42
+        p.inputs["Coat Weight"].default_value = 0.25
+        p.inputs["Coat Roughness"].default_value = 0.3
+    elif name == "metal":
+        p.inputs["Metallic"].default_value = 1.0
+        p.inputs["Roughness"].default_value = 0.2
+    elif name == "blackGlass":
+        p.inputs["Roughness"].default_value = 0.08
+        p.inputs["Coat Weight"].default_value = 1.0
+        p.inputs["Coat Roughness"].default_value = 0.02
+    elif name == "emit":
+        p.inputs["Emission Color"].default_value = color
+        p.inputs["Emission Strength"].default_value = 1.6
+    elif name == "glass":
+        # a thin clear lens: refracts in camera, lets light through for shadows
+        p.inputs["Transmission Weight"].default_value = 1.0
+        p.inputs["Roughness"].default_value = 0.02
+        p.inputs["IOR"].default_value = 1.25
+        lp = nt.nodes.new("ShaderNodeLightPath")
+        tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+        mix = nt.nodes.new("ShaderNodeMixShader")
+        nt.links.new(lp.outputs["Is Shadow Ray"], mix.inputs["Fac"])
+        nt.links.new(p.outputs["BSDF"], mix.inputs[1])
+        nt.links.new(tr.outputs["BSDF"], mix.inputs[2])
+        shader = mix.outputs["Shader"]
+    return shader

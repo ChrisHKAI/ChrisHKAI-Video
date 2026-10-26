@@ -245,6 +245,9 @@ def material(spec):
         p = principled(nt, "#ffffff", 0.34, 0.5, coat=0.5, coat_rough=0.16)
         toyblend.vertex_paint(nt, p, spec.get("finish", "vinyl"))
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
+    elif kind == "toy" and FINISH.get(spec["key"]) in toyblend.MORE_FINISHES:
+        p = principled(nt, TOY[spec["key"]], 0.34, 0.5)
+        L.new(toyblend.finish(nt, p, FINISH[spec["key"]], rgba(TOY[spec["key"]])), out.inputs["Surface"])
     elif kind == "toy":
         k = spec["key"]
         fin = FINISH.get(k, "vinyl")
@@ -678,7 +681,7 @@ def build_geo(o):
         me = sphere_mesh(o["name"], g["r"])
     elif t == "arc":
         me = arc_mesh(o["name"], g["radius"], g["tube"], g["arc"])
-    elif t in ("blob", "tube", "prism", "mesh"):
+    elif t in ("blob", "tube", "prism", "loop", "plate", "mesh"):
         me = toyblend.part_mesh(o["name"], g, FILM)
     elif t == "uiBox":
         x0, y0, w, h = g["rect"]

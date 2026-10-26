@@ -1,0 +1,409 @@
+{
+  "name": "蜗牛King",
+  "height": 0.113,
+  "center": [0, 0.05, 0],
+  "colors": {
+    "white": "#F3F1EC",
+    "hoodie": "#E6E3DD",
+    "red": "#D5322A",
+    "redDark": "#A3241D",
+    "grey": "#77706A",
+    "sole": "#2C2C31",
+    "black": "#141416",
+    "blue": "#2F6BFF",
+    "lensRed": "#E8352B",
+    "string": "#5C5C62",
+    "gold": "#F2C14E"
+  },
+  "finish": { "blue": "lens", "lensRed": "lens", "grey": "matte", "white": "soft", "hoodie": "soft" },
+  "joints": {
+    "body": { "p": [0, 0.02, 0], "parent": null },
+    "head": { "p": [0, 0.046, 0], "parent": "body" },
+    "ears": { "p": [0, 0.08700000000000001, 0], "parent": "head" },
+    "armR": { "p": [-0.017, 0.04, 0], "parent": "body" },
+    "armL": { "p": [0.017, 0.04, 0], "parent": "body" },
+    "finger": { "p": [-0.0185, 0.0182, 0.0022], "parent": "armR" },
+    "fingerL": { "p": [0.0185, 0.0182, 0.0022], "parent": "armL" },
+    "legR": { "p": [-0.007, 0.019, 0], "parent": null },
+    "legL": { "p": [0.007, 0.019, 0], "parent": null }
+  },
+  "parts": [
+    {
+      "name": "solelegR",
+      "shape": "roundBox",
+      "size": [0.0136, 0.0026000000000000003, 0.0206],
+      "radius": 0.0012,
+      "pos": [-0.0075, 0.0013000000000000002, 0.0025],
+      "mat": "sole",
+      "group": "legR"
+    },
+    {
+      "name": "shoelegR",
+      "shape": "roundBox",
+      "size": [0.013000000000000001, 0.0074, 0.02],
+      "radius": 0.0034,
+      "pos": [-0.0075, 0.005200000000000001, 0.0025],
+      "mat": "white",
+      "group": "legR"
+    },
+    {
+      "name": "lacelegR",
+      "shape": "roundBox",
+      "size": [0.006500000000000001, 0.0012, 0.005],
+      "radius": 0.0005,
+      "pos": [-0.0075, 0.0088, 0.007],
+      "mat": "sole",
+      "group": "legR"
+    },
+    {
+      "name": "trouserlegR",
+      "shape": "roundBox",
+      "size": [0.0105, 0.0125, 0.0105],
+      "radius": 0.0035,
+      "pos": [-0.007, 0.013800000000000002, 0],
+      "mat": "grey",
+      "group": "legR"
+    },
+    {
+      "name": "solelegL",
+      "shape": "roundBox",
+      "size": [0.0136, 0.0026000000000000003, 0.0206],
+      "radius": 0.0012,
+      "pos": [0.0075, 0.0013000000000000002, 0.0025],
+      "mat": "sole",
+      "group": "legL"
+    },
+    {
+      "name": "shoelegL",
+      "shape": "roundBox",
+      "size": [0.013000000000000001, 0.0074, 0.02],
+      "radius": 0.0034,
+      "pos": [0.0075, 0.005200000000000001, 0.0025],
+      "mat": "white",
+      "group": "legL"
+    },
+    {
+      "name": "lacelegL",
+      "shape": "roundBox",
+      "size": [0.006500000000000001, 0.0012, 0.005],
+      "radius": 0.0005,
+      "pos": [0.0075, 0.0088, 0.007],
+      "mat": "sole",
+      "group": "legL"
+    },
+    {
+      "name": "trouserlegL",
+      "shape": "roundBox",
+      "size": [0.0105, 0.0125, 0.0105],
+      "radius": 0.0035,
+      "pos": [0.007, 0.013800000000000002, 0],
+      "mat": "grey",
+      "group": "legL"
+    },
+    {
+      "name": "jacket",
+      "shape": "roundBox",
+      "size": [0.032, 0.024, 0.022],
+      "radius": 0.006500000000000001,
+      "pos": [0, 0.031, 0],
+      "mat": "red",
+      "group": "body"
+    },
+    {
+      "name": "hem",
+      "shape": "roundBox",
+      "size": [0.032600000000000004, 0.0036000000000000003, 0.022600000000000002],
+      "radius": 0.0016,
+      "pos": [0, 0.0206, 0],
+      "mat": "redDark",
+      "group": "body"
+    },
+    {
+      "name": "hoodie",
+      "shape": "roundBox",
+      "size": [0.013000000000000001, 0.011, 0.0024],
+      "radius": 0.0012,
+      "pos": [0, 0.0386, 0.010400000000000001],
+      "mat": "hoodie",
+      "group": "body"
+    },
+    {
+      "name": "zip",
+      "shape": "roundBox",
+      "size": [0.0012, 0.0125, 0.001],
+      "radius": 0.0004,
+      "pos": [0, 0.0274, 0.0111],
+      "mat": "redDark",
+      "group": "body"
+    },
+    {
+      "name": "stringR",
+      "shape": "roundBox",
+      "size": [0.001, 0.005, 0.001],
+      "radius": 0.00045000000000000004,
+      "pos": [-0.0026000000000000003, 0.0386, 0.01175],
+      "mat": "string",
+      "group": "body"
+    },
+    {
+      "name": "stringL",
+      "shape": "roundBox",
+      "size": [0.001, 0.005, 0.001],
+      "radius": 0.00045000000000000004,
+      "pos": [0.0026000000000000003, 0.0386, 0.01175],
+      "mat": "string",
+      "group": "body"
+    },
+    {
+      "name": "badge",
+      "shape": "roundBox",
+      "size": [0.007, 0.0026000000000000003, 0.001],
+      "radius": 0.0004,
+      "pos": [0.0095, 0.0375, 0.0111],
+      "mat": "white",
+      "group": "body"
+    },
+    {
+      "name": "collar",
+      "shape": "roundBox",
+      "size": [0.025, 0.0046, 0.019],
+      "radius": 0.0022,
+      "pos": [0, 0.0442, -0.0005],
+      "mat": "red",
+      "group": "body"
+    },
+    {
+      "name": "hood",
+      "shape": "roundBox",
+      "size": [0.02, 0.009000000000000001, 0.007],
+      "radius": 0.0034,
+      "pos": [0, 0.044, -0.0105],
+      "mat": "hoodie",
+      "group": "body"
+    },
+    {
+      "name": "sleevearmR",
+      "shape": "roundBox",
+      "size": [0.009000000000000001, 0.019, 0.009000000000000001],
+      "radius": 0.0043,
+      "pos": [-0.0185, 0.032, 0],
+      "mat": "red",
+      "group": "armR"
+    },
+    {
+      "name": "cuffarmR",
+      "shape": "roundBox",
+      "size": [0.0096, 0.0026000000000000003, 0.0096],
+      "radius": 0.0012,
+      "pos": [-0.0185, 0.023600000000000003, 0],
+      "mat": "redDark",
+      "group": "armR"
+    },
+    {
+      "name": "handarmR",
+      "shape": "ellipsoid",
+      "r": [0.0053, 0.0056, 0.0053],
+      "pos": [-0.0185, 0.019600000000000003, 0.0004],
+      "mat": "white",
+      "group": "armR"
+    },
+    {
+      "name": "finger",
+      "shape": "roundBox",
+      "size": [0.0028, 0.0075, 0.0028],
+      "radius": 0.0013000000000000002,
+      "pos": [-0.0185, 0.014400000000000001, 0.0022],
+      "mat": "white",
+      "group": "finger"
+    },
+    {
+      "name": "sleevearmL",
+      "shape": "roundBox",
+      "size": [0.009000000000000001, 0.019, 0.009000000000000001],
+      "radius": 0.0043,
+      "pos": [0.0185, 0.032, 0],
+      "mat": "red",
+      "group": "armL"
+    },
+    {
+      "name": "cuffarmL",
+      "shape": "roundBox",
+      "size": [0.0096, 0.0026000000000000003, 0.0096],
+      "radius": 0.0012,
+      "pos": [0.0185, 0.023600000000000003, 0],
+      "mat": "redDark",
+      "group": "armL"
+    },
+    {
+      "name": "handarmL",
+      "shape": "ellipsoid",
+      "r": [0.0053, 0.0056, 0.0053],
+      "pos": [0.0185, 0.019600000000000003, 0.0004],
+      "mat": "white",
+      "group": "armL"
+    },
+    {
+      "name": "fingerL",
+      "shape": "roundBox",
+      "size": [0.0028, 0.0075, 0.0028],
+      "radius": 0.0013000000000000002,
+      "pos": [0.0185, 0.014400000000000001, 0.0022],
+      "mat": "white",
+      "group": "fingerL"
+    },
+    {
+      "name": "head",
+      "shape": "roundBox",
+      "size": [0.05, 0.041, 0.04],
+      "radius": 0.011,
+      "pos": [0, 0.0665, 0],
+      "mat": "white",
+      "group": "head"
+    },
+    {
+      "name": "frame",
+      "shape": "roundBox",
+      "size": [0.036000000000000004, 0.013000000000000001, 0.0034],
+      "radius": 0.0016,
+      "pos": [0, 0.069, 0.0206],
+      "mat": "black",
+      "group": "head"
+    },
+    {
+      "name": "frameR",
+      "shape": "roundBox",
+      "size": [0.01, 0.013000000000000001, 0.0034],
+      "radius": 0.0014,
+      "pos": [-0.0213, 0.069, 0.0169],
+      "rot": [0, -0.85, 0],
+      "mat": "black",
+      "group": "head"
+    },
+    {
+      "name": "frameL",
+      "shape": "roundBox",
+      "size": [0.01, 0.013000000000000001, 0.0034],
+      "radius": 0.0014,
+      "pos": [0.0213, 0.069, 0.0169],
+      "rot": [0, 0.85, 0],
+      "mat": "black",
+      "group": "head"
+    },
+    {
+      "name": "templeR",
+      "shape": "roundBox",
+      "size": [0.0016, 0.0026000000000000003, 0.02],
+      "radius": 0.0006,
+      "pos": [-0.0253, 0.07100000000000001, 0.003],
+      "mat": "black",
+      "group": "head"
+    },
+    {
+      "name": "templeL",
+      "shape": "roundBox",
+      "size": [0.0016, 0.0026000000000000003, 0.02],
+      "radius": 0.0006,
+      "pos": [0.0253, 0.07100000000000001, 0.003],
+      "mat": "black",
+      "group": "head"
+    },
+    {
+      "name": "lensBlue",
+      "shape": "roundBox",
+      "size": [0.0154, 0.009000000000000001, 0.001],
+      "radius": 0.00045000000000000004,
+      "pos": [-0.009000000000000001, 0.069, 0.0224],
+      "mat": "blue",
+      "group": "head"
+    },
+    {
+      "name": "lensRed",
+      "shape": "roundBox",
+      "size": [0.0154, 0.009000000000000001, 0.001],
+      "radius": 0.00045000000000000004,
+      "pos": [0.009000000000000001, 0.069, 0.0224],
+      "mat": "lensRed",
+      "group": "head"
+    },
+    {
+      "name": "shineA-9",
+      "shape": "roundBox",
+      "size": [0.0017, 0.008199999999999999, 0.0004],
+      "radius": 0.0002,
+      "pos": [-0.0112, 0.069, 0.022949999999999998],
+      "rot": [0, 0, -0.55],
+      "mat": "shine",
+      "group": "head"
+    },
+    {
+      "name": "shineB-9",
+      "shape": "roundBox",
+      "size": [0.0009000000000000001, 0.0064, 0.0004],
+      "radius": 0.0002,
+      "pos": [-0.0076, 0.069, 0.022949999999999998],
+      "rot": [0, 0, -0.55],
+      "mat": "shine",
+      "group": "head"
+    },
+    {
+      "name": "shineA9",
+      "shape": "roundBox",
+      "size": [0.0017, 0.008199999999999999, 0.0004],
+      "radius": 0.0002,
+      "pos": [0.0068, 0.069, 0.022949999999999998],
+      "rot": [0, 0, -0.55],
+      "mat": "shine",
+      "group": "head"
+    },
+    {
+      "name": "shineB9",
+      "shape": "roundBox",
+      "size": [0.0009000000000000001, 0.0064, 0.0004],
+      "radius": 0.0002,
+      "pos": [0.010400000000000001, 0.069, 0.022949999999999998],
+      "rot": [0, 0, -0.55],
+      "mat": "shine",
+      "group": "head"
+    },
+    {
+      "name": "smile",
+      "shape": "arc",
+      "radius": 0.0029,
+      "tube": 0.0007,
+      "arc": 2.356194490192345,
+      "pos": [0, 0.0565, 0.0202],
+      "rot": [0, 0, -2.748893571891069],
+      "mat": "black",
+      "group": "head"
+    },
+    {
+      "name": "stem",
+      "shape": "roundBox",
+      "size": [0.013000000000000001, 0.007, 0.0095],
+      "radius": 0.0038,
+      "pos": [0, 0.088, 0],
+      "mat": "white",
+      "group": "ears"
+    },
+    {
+      "name": "earR",
+      "shape": "roundBox",
+      "size": [0.0125, 0.027, 0.009000000000000001],
+      "radius": 0.005200000000000001,
+      "pos": [-0.006493388444042907, 0.09899135957146131, 0],
+      "rot": [0, 0, 0.6],
+      "mat": "white",
+      "group": "ears"
+    },
+    {
+      "name": "earL",
+      "shape": "roundBox",
+      "size": [0.0125, 0.027, 0.009000000000000001],
+      "radius": 0.005200000000000001,
+      "pos": [0.006493388444042907, 0.09899135957146131, 0],
+      "rot": [0, 0, -0.6],
+      "mat": "white",
+      "group": "ears"
+    }
+  ]
+}

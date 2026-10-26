@@ -120,6 +120,10 @@ def material(key, paint=None, name=None, finish=None):
     else:
         p = nt.nodes.new("ShaderNodeBsdfPrincipled")
         fin = HERO.get("finish", {}).get(key, "vinyl")
+        if fin in toyblend.MORE_FINISHES and key != "paint":
+            nt.links.new(toyblend.finish(nt, p, fin, rgba(HERO["colors"][key])), out.inputs["Surface"])
+            mats[tag] = m
+            return m
         rough, coat, coat_rough = toyblend.FINISH.get(fin, toyblend.FINISH["vinyl"])
         p.inputs["Roughness"].default_value = rough
         p.inputs["Coat Weight"].default_value = coat
@@ -202,7 +206,9 @@ def build_hero(name):
         parent = joints[spec["parent"]][0] if spec["parent"] else hero
         ob.parent = parent
         pp = Vector(joints[spec["parent"]][1]["p"]) if spec["parent"] else Vector((0, 0, 0))
-        ob.location = Vector(spec["p"]) - pp
+        ob.location = Vector(spec["p"]) - pp + Vector(spec.get("t", (0, 0, 0)))
+        if spec.get("s"):
+            ob.scale = (spec["s"],) * 3
     for p in HERO["parts"]:
         if p["shape"] == "roundBox":
             me = round_box_mesh(p["name"], p["size"], p["radius"])
@@ -211,7 +217,7 @@ def build_hero(name):
         elif p["shape"] == "arc":
             me = arc_mesh(p["name"], p["radius"], p["tube"], p["arc"])
         else:
-            g = {"type": p["shape"], **{k: v for k, v in p.items() if k not in ("name", "shape", "pos", "rot", "mat", "group", "paint", "finish")}}
+            g = {"type": p["shape"], **{k: v for k, v in p.items() if k not in ("name", "shape", "pos", "rot", "q", "mat", "group", "paint", "finish")}}
             me = toyblend.part_mesh(p["name"], g, ROOT)
         tag = f"{p['mat']}_{p['name']}" if p.get("paint") else f"paint_{p.get('finish', 'vinyl')}" if p["mat"] == "paint" else None
         me.materials.append(material(p["mat"], p.get("paint"), tag, p.get("finish")))
@@ -220,7 +226,11 @@ def build_hero(name):
         jo, spec = joints[p["group"]]
         ob.parent = jo
         ob.location = Vector(p["pos"]) - Vector(spec["p"])
-        ob.rotation_euler = Euler(p.get("rot", [0, 0, 0]), "XYZ")
+        if p.get("q"):
+            ob.rotation_mode = "QUATERNION"
+            ob.rotation_quaternion = (p["q"][3], p["q"][0], p["q"][1], p["q"][2])
+        else:
+            ob.rotation_euler = Euler(p.get("rot", [0, 0, 0]), "XYZ")
     return hero, {j: ob for j, (ob, _) in joints.items()}
 
 

@@ -39,6 +39,7 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 
 | path | what it is |
 | --- | --- |
+| `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
 | `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
