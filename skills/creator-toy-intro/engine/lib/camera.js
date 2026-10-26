@@ -3,7 +3,9 @@
 // distance, elevation and azimuth (degrees; az 0 = from the south edge) and an
 // f-stop. Distances and angles run through monotone curves so they never
 // overshoot; targets blend between keys with the same easing. A story can cut
-// to a new set of keys (a shot) at a given time.
+// to a new set of keys (a shot) at a given time. A key's optional `frame`
+// [x, y] puts its target that far from the frame's centre (fractions of the
+// frame, x right, y up) instead of in the middle.
 import { trs, qFromBasis } from "./quat.js";
 import { clamp01, seg, smooth, v3 } from "./math.js";
 
@@ -67,8 +69,9 @@ export function shakeAt(t, shakes) {
 }
 
 // shots: [{ start, keys, target: (key, t) → world point }], in time order;
+// fov is vertical (deg), aspect the frame's width / height;
 // returns t → { tr, pos, target, fov, fstop, focus, az }
-export function makeCamera({ shots, fov, shakes }) {
+export function makeCamera({ shots, fov, shakes, aspect = 16 / 9 }) {
   const curves = shots.map(({ keys }) => {
     const ts = keys.map((k) => k.t);
     const f = (key) => monotone(ts, keys.map((k) => k[key]));
@@ -91,6 +94,14 @@ export function makeCamera({ shots, fov, shakes }) {
     const z = v3.norm(v3.sub(eye, look));
     const x = v3.norm(v3.cross([0, 1, 0], z));
     const y = v3.cross(z, x);
+    if (a.frame || b.frame) {
+      // slide the camera sideways so the target lands off centre
+      const [fa, fb] = [a.frame ?? [0, 0], b.frame ?? [0, 0]];
+      const fh = 2 * d * Math.tan((fov * Math.PI) / 360);
+      const off = v3.add(v3.scale(x, -(fa[0] + (fb[0] - fa[0]) * s) * fh * aspect), v3.scale(y, -(fa[1] + (fb[1] - fa[1]) * s) * fh));
+      const e2 = v3.add(eye, off);
+      return { tr: trs(e2, qFromBasis(x, y, z)), pos: e2, target, fov, fstop: F.fstop(t), focus: v3.len(v3.sub(pos, target)), az };
+    }
     return { tr: trs(eye, qFromBasis(x, y, z)), pos: eye, target, fov, fstop: F.fstop(t), focus: v3.len(v3.sub(pos, target)), az };
   };
 }

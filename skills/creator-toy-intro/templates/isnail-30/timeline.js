@@ -4,6 +4,7 @@
 // them: the UI builder, the motion (anim.js → Blender) and the score (through
 // build/timeline.json). Every time is film seconds; at 120 BPM a beat is
 // 0.5 s and a bar 2 s, and every big hit sits on a downbeat.
+import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { film, fromSkill, readFilmJSON } from "../../engine/lib/film.js";
 import { places } from "./places.js";
@@ -12,10 +13,13 @@ const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js"
 const S = film.story;
 const [FW, FH] = film.format.size;
 export const PORTRAIT = FH > FW;
+export const ASPECT = FW / FH;
+// the box clear of every platform's own controls (engine/lib/platforms.json)
+const SAFE = JSON.parse(readFileSync(fromSkill("engine/lib/platforms.json"), "utf8")).safe[PORTRAIT ? "portrait" : "landscape"];
 // the cover walls once they stand up (m): their width is the story's, their height the cover's
 const coverAspect = (f, w, h) => { const c = readFilmJSON(f, null); return c ? c.h / c.w : h / w; };
 const WALL_W_M = S.coverMM / 1000;
-const D = places(L, { portrait: PORTRAIT, aspect: FW / FH }, { w: WALL_W_M, h2: WALL_W_M * coverAspect("build/cover2.json", 1983, 793), h3: WALL_W_M * coverAspect("build/cover.json", 1028, 411) });
+const D = places(L, { portrait: PORTRAIT, aspect: ASPECT, safe: SAFE }, { w: WALL_W_M, h2: WALL_W_M * coverAspect("build/cover2.json", 1983, 793), h3: WALL_W_M * coverAspect("build/cover.json", 1028, 411) });
 // the end card's layout: film.json "cta" pins positions, else the defaults for the orientation
 export const CTA_LAYOUT = D.cta;
 

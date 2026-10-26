@@ -5,8 +5,9 @@
 // own tuned values. Places are UI px; camera targets are [UI x, UI y, height
 // mm] or a tracker; CTA positions are metres from the CTA stage.
 //
-// frame: { portrait, aspect: width / height }; walls: { w, h2, h3 } in metres
-// (the act 2 and act 3 cover walls once they stand up).
+// frame: { portrait, aspect: width / height, safe: [l, t, r, b] the box clear
+// of the platforms' controls, fractions }; walls: { w, h2, h3 } in metres (the
+// act 2 and act 3 cover walls once they stand up).
 const VFOV = 30; // the camera's vertical field (deg), as in the film's "fov"
 
 export function places(L, frame, walls) {
@@ -92,6 +93,12 @@ function portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) {
   const page = fit(L.UI_W / 1000, L.UI_H / 1000 * 0.6, 1.02); // the page seen from high up
   const wall2 = fit(walls.w, walls.h2), wall3 = fit(walls.w, walls.h3);
   const H = 1.25; // close-ups of the toy step back a little: the frame is narrow
+  // the count is aimed at and set in the middle of the safe box, clear of the
+  // platforms' buttons; a four-digit count with its unit and label (≈0.3 m)
+  // fills 80% of the box's width
+  const S = frame.safe, mid = [(S[0] + S[2]) / 2 - 0.5, 0.5 - (S[1] + S[3]) / 2];
+  const count = +(0.3 / (0.8 * (S[2] - S[0])) / (2 * t15 * frame.aspect)).toFixed(3);
+  const C = (t, elev, az) => ({ ...K(t, "stat", count, elev, az, 7.5), frame: mid });
   const camera = [
     K(0.0, [L.UI_W / 2, L.UI_H * 0.48, 0], page, 64, 0, 8), // the whole page, like a screen
     K(1.0, [A.c[0] + 10, A.c[1] + 40, 20], 0.95, 40, -6, 5), // in on the picture
@@ -103,10 +110,10 @@ function portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) {
     K(6.0, "hero", 0.55 * H, 30, -12, 4.5),
     K(6.8, [cx, cb, walls.h2 * 500], wall2 * 1.04, 12, -18, 7), // the pinned cover stands up
     K(7.6, [cx, cb, walls.h2 * 500], wall2 * 0.98, 10, -12, 7),
-    K(8.3, [cx + 14, cb + 38, 120], wall2 * 0.92, 13, -6, 7.5), // the count rises in front of it
-    K(9.2, [cx + 19, cb + 58, 110], wall2 * 0.9, 15, 4, 7.5),
-    K(9.8, [cx + 19, cb + 58, 110], wall2 * 0.9, 16, 8, 7.5),
-    K(10.2, [cx + 19, cb + 58, 110], wall2 * 0.92, 16, 10, 7.5),
+    C(8.3, 13, -6), // the count rises in front of it
+    C(9.2, 15, 4),
+    C(9.8, 16, 8),
+    C(10.2, 16, 10),
     K(10.9, [P[0] + P[2] * 0.6, R[1] + 32, 40], 1.6, 30, 8, 6), // the second post rises
     K(11.7, "wall", wall3 * 1.05, 20, 10, 6),
     K(12.8, "wall", wall3 * 1.0, 12, 12, 5.6),

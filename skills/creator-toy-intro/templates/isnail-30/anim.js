@@ -708,4 +708,5 @@ export const cameraAt = makeCamera({
   ],
   fov: T.FOV,
   shakes: T.SHAKES,
+  aspect: T.ASPECT,
 });
