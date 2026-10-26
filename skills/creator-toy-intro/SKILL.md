@@ -13,11 +13,12 @@ spots where the page shows them; the end card slaps their name and call to
 action up on torn paper. Everything is code: the toy is built from a part
 list, the page is HTML, the score is synthesized, Blender renders.
 
-**Status: development stage 1 of 4.** The engine, one story template
-(`isnail-30`), one theme (`x-desktop`) and the film workspace format work, and
-rebuild the reference film exactly. Not yet: 9:16 and the other platform
-themes (stage 2); onboarding, creator research, the toy kits and the
-storyboard page (stage 3); testing with new creators (stage 4). Until then,
+**Status: development stage 2 of 4 done.** The engine, one story template
+(`isnail-30`) and six platform themes work in 16:9 and 9:16, and rebuild the
+reference film exactly; finish cuts each platform's covers, and previews are
+checked against each app's own controls. Not yet: onboarding, creator
+research, the toy kits and the storyboard page (stage 3); testing with new
+creators (stage 4). Until then,
 building a film for a new creator means writing its film.json, toy.json and
 cover recipes by hand, as below.
 
@@ -26,10 +27,10 @@ cover recipes by hand, as below.
 | path | what it is |
 | --- | --- |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
-| `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects) |
-| `engine/scripts/` | build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, sheet |
+| `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py` |
+| `engine/scripts/` | build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), finish, covers, safezone, sheet |
 | `templates/isnail-30/` | the story: `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
-| `themes/x-desktop/` | X on the desktop web, dark mode: `layout.js`, `page.js` |
+| `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
 ## Requirements
 
@@ -63,6 +64,33 @@ unit, label), `cta` (slogan labels, name and handle labels, the prop;
 positions optional: the template lays the end card out per orientation),
 `sticker2d`, `pop` (confetti colours), `story` (events, places, wall pieces,
 camera keys, shakes).
+
+`format.size` is `[1920, 1080]` for 16:9 or `[1080, 1920]` for 9:16, and the
+theme matches it: `x-desktop` is 16:9, the `-mobile` themes 9:16. The camera
+and the end card follow the orientation; `story` and `cta` only pin values
+that should differ from them.
+
+What each theme shows (a field left out is simply not shown; every theme
+shows `profile.name` and `profile.bio`, a list of lines):
+
+| theme | the page | from `profile` | a grid tile's number |
+| --- | --- | --- | --- |
+| `x-desktop` | X on the web, dark | `nameEmoji`, `handle`, `banner`, `postsCount`, `meta` (`topic`, `link`, `joined`), `following`, `followers` | no grid: both posts show `counts` (replies, reposts, likes, views) |
+| `x-mobile` | the X app | `nameEmoji`, `handle`, `banner`, `meta` (`topic`, `link`), `following`, `followers` | no grid: as above |
+| `douyin-mobile` | 抖音 | `handle`, `banner`, `likes`, `following`, `followers`, `ip`, `tags`, `posts`, `collections` | likes |
+| `xhs-mobile` | 小红书 | `handle`, `banner`, `ip`, `following`, `followers`, `likes`, `tags`, `collections` | likes |
+| `channels-mobile` | 视频号 | `title` (with a verified mark), `ip`, `posts`, `collections` | likes |
+| `ig-mobile` | Instagram, Reels tab | `handle`, `posts`, `followers`, `following`, `category`, `meta.link`, `highlights` | plays |
+
+`ip` is the region the app shows (广东), `likes` the profile's total, `posts`
+the number of works, `tags` and `collections` short lists of words,
+`highlights` `[{ image, label }]` (default: the first three grid covers,
+labelled with `collections`). The pinned and second posts give `date`,
+`title`, `counts` and `cover`, plus `count`, the number their tile shows on a
+mobile theme (default from `counts`: likes, plays on Instagram). `grid` is the
+creator's other posts that fill the grid after those two, `[{ cover, count }]`,
+repeated when there are fewer than seven. All numbers are text, written the
+way the app writes them (`5.5万`, `1,380`), and taken as the creator gives them.
 
 ## Pipeline
 
