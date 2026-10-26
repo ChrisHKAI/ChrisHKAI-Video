@@ -18,7 +18,7 @@ export const DURATION = film.format.duration;
 export const bar = (n, beat = 0) => +(n * BAR + beat * BEAT).toFixed(4);
 
 // ── The page (theme) ────────────────────────────────────────────────────────
-export const { UI_W, UI_H, UI_SCALE, PANELS, AVATAR, CARD, ACTIONS_Y, ACTION_X } = L;
+export const { UI_W, UI_H, UI_SCALE, PANELS, AVATAR, CARD, ACTIONS_Y, ACTION_X, ACCENT } = L;
 const [MX, , MW] = PANELS.pinned;
 
 // ── The two posts: the pinned one (act 2) and the one that rises (act 3) ───

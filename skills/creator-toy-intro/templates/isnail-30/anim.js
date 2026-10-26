@@ -11,6 +11,8 @@ import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "../..
 import { makeCamera, smoothTracker } from "../../engine/lib/camera.js";
 import { makeLabel, tear, labelT, rimT, letterT } from "../../engine/lib/labels.js";
 import { ballistic } from "../../engine/lib/particles.js";
+import { makePeel } from "../../engine/lib/peel.js";
+import { counterLayout, countEase, counterGlyphs } from "../../engine/lib/counter.js";
 import { mulberry32 } from "../../engine/lib/rng.js";
 import { qId, qMul, qAxis, qEuler, qRot, qFromTo, qFromBasis, qConj, trs, apply, mulT } from "../../engine/lib/quat.js";
 
@@ -62,38 +64,10 @@ export function retroAt(t) {
 }
 
 // ── The profile picture sticker: strips that peel up off the far edge ──────
-export const STRIPS = 24;
 const AV = T.AVATAR;
 const D = AV.d * MM;
 const HINGE = [wx(AV.c[0]), 0.0006, wz(AV.c[1]) + D / 2]; // near edge (camera side)
-// the sticker detaches from the far edge back to the hinge, curling up on a radius
-function peelState(t) {
-  const s = seg(t, E.peel[0], E.peel[1]);
-  const e = easeInOut(s);
-  const d = D * (1 - e); // still stuck from the hinge to d
-  const phi = (Math.PI / 2) * Math.pow(e, 0.8) + 0.12 * Math.sin(seg(t, E.peel[1], E.pop) * Math.PI * 2) * (t > E.peel[1] ? 1 : 0);
-  const R = lerp(0.016, 0.011, e);
-  return { d, phi, R };
-}
-// position and bend angle of the sticker at arc length a from the hinge
-function peelPoint(a, st) {
-  const { d, phi, R } = st;
-  if (a <= d || phi < 1e-4) return { y: 0, z: -a, th: 0 };
-  const curl = R * phi;
-  if (a <= d + curl) {
-    const th = (a - d) / R;
-    return { y: R * (1 - Math.cos(th)), z: -d - R * Math.sin(th), th };
-  }
-  const r = a - d - curl;
-  return { y: R * (1 - Math.cos(phi)) + r * Math.sin(phi), z: -d - R * Math.sin(phi) - r * Math.cos(phi), th: phi };
-}
-export function stripAt(i, t) {
-  const a = (i + 0.5) / STRIPS * D;
-  if (t >= E.pop) return hidden([HINGE[0], 0.06, HINGE[2] - 0.01]);
-  const pt = peelPoint(a, peelState(t));
-  return trs([HINGE[0], HINGE[1] + pt.y, HINGE[2] + pt.z], qAxis([1, 0, 0], pt.th));
-}
-export const STRIP_W = D, STRIP_H = D / STRIPS;
+export const { stripAt, STRIPS, STRIP_W, STRIP_H } = makePeel({ hinge: HINGE, size: D, strips: 24, peel: E.peel, pop: E.pop });
 
 // ── The pinned cover as a wall (act 2) ──────────────────────────────────────
 export const COVER2 = readFilmJSON("build/cover2.json", null) ?? { w: 1983, h: 793, pieces: [] };
@@ -473,17 +447,7 @@ const adv = (k) => (GLYPHS[k] ? GLYPHS[k].advance : 0.6);
 export const STAT_EM = { digit: 70, wan: 62, label: 30 };
 // glyph keys of the counter's unit (万) and its two-character label (阅读)
 export const STAT_KEYS = { unit: `cjk:${film.counter.unit}`, label: [...film.counter.label].map((c) => `cjk:${c}`) };
-export const STAT = (() => {
-  const dw = adv("latin:0") * STAT_EM.digit;
-  let x = 0;
-  const slots = [0, 1, 2].map(() => { const p = x; x += dw; return p; });
-  const wan = x + 3;
-  x = wan + adv(STAT_KEYS.unit) * STAT_EM.wan + 10;
-  const label = [x, x + adv(STAT_KEYS.label[0]) * STAT_EM.label];
-  x = label[1] + adv(STAT_KEYS.label[1]) * STAT_EM.label;
-  const off = -x / 2;
-  return { slots: slots.map((v) => v + off), wan: wan + off, label: label.map((v) => v + off), width: x, left: off, bar: -11 };
-})();
+export const STAT = counterLayout({ value: T.VIEWS_COUNT, adv, em: STAT_EM, keys: STAT_KEYS });
 // it floats just past the post's bottom edge, so the post's title stays clear above it
 const STAT_HOME = [wx(T.VIEWS[0] - 40), 0, wz(T.PANELS.pinned[1] + T.PANELS.pinned[3]) + 0.016];
 function statGroup(t) {
@@ -497,27 +461,11 @@ function statGroup(t) {
 }
 export function countAt(t) {
   if (t < E.count[0] + 0.12) return 0;
-  const s = seg(t, E.count[0] + 0.12, E.count[1]);
-  return Math.round(T.VIEWS_COUNT * (1 - Math.pow(1 - s, 3)));
+  return countEase(T.VIEWS_COUNT, seg(t, E.count[0] + 0.12, E.count[1]));
 }
 // every glyph of the stat, group-local; digits not showing are parked
-export function statAt(t) {
-  const g = statGroup(t);
-  const v = countAt(t);
-  const dig = [Math.floor(v / 100), Math.floor(v / 10) % 10, v % 10];
-  const on = [v >= 100, v >= 10, true];
-  const L = (tr) => mulT(g, tr);
-  const glyphs = {};
-  STAT.slots.forEach((x, i) => {
-    for (let d = 0; d <= 9; d++) glyphs[`stat_${i}_${d}`] = L(trs([x * MM, 0, 0], qId(), on[i] && dig[i] === d ? 1 : HIDDEN));
-  });
-  glyphs.stat_wan = L(trs([STAT.wan * MM, 0, 0]));
-  glyphs.stat_yue = L(trs([STAT.label[0] * MM, 0, 0]));
-  glyphs.stat_du = L(trs([STAT.label[1] * MM, 0, 0]));
-  const p = Math.max(v / T.VIEWS_COUNT, 1e-4);
-  glyphs.stat_bar = L(trs([(STAT.left + STAT.width * p / 2) * MM, STAT.bar * MM, 0], qId(), [p, 1, 1]));
-  return glyphs;
-}
+const STAT_NAMES = { digit: (i, d) => `stat_${i}_${d}`, unit: "stat_wan", label: ["stat_yue", "stat_du"], bar: "stat_bar" };
+export const statAt = (t) => counterGlyphs(countAt(t), T.VIEWS_COUNT, STAT, statGroup(t), STAT_NAMES);
 export function statCentre(t) {
   return apply(statGroup(Math.max(t, E.count[0] + 0.38)), [0, 0.03, 0]);
 }
