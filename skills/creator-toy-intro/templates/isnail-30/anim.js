@@ -166,6 +166,9 @@ const centroid = (p) => {
 const PIVOT = Object.fromEntries(COVER.pieces.map((p) => [p.name, centroid(p)]));
 // where he points on the third proof (wall mm): film.json's, or the middle of its face
 const BOX7_AIM = T.WALL.box7.aim ?? (PIVOT[PIECE("box7")] ? [PIVOT[PIECE("box7")][0] / MM, PIVOT[PIECE("box7")][1] / MM, T.WALL.box7.depth] : [0, 0, 0]);
+// the peak's sparks and light burst from the payoff, a little above and in front of where he points
+const PEAK_AT = [BOX7_AIM[0] - 10, BOX7_AIM[1] + 25, BOX7_AIM[2] + 40];
+const PEAK_LIGHT = [BOX7_AIM[0], BOX7_AIM[1] + 30, BOX7_AIM[2] + 70];
 export function pieceAt(p, t) {
   const base = p.kind === "ink" ? p.of : p.name;
   const out = protrudeAt(base, t);
@@ -576,7 +579,10 @@ const CTA_CAM = cta(...T.CTA_LAYOUT.pointAt); // where the camera ends up: he po
 
 // ── Particles ───────────────────────────────────────────────────────────────
 export const FLAKES = 18;
-const FLAKE_COLS = film.pop.confetti; // the avatar's confetti; the first two flakes are its leaves
+// film.json "pop": the avatar's confetti and its two leaves (the first two flakes); without it, party colours
+const POP_COLS = film.pop ?? { confetti: ["#F6C445", "#4E7BEF", "#7FC86B", "#F59A3B", "#FFFFFF", "#B44CC8"] };
+const FLAKE_COLS = POP_COLS.confetti;
+const LEAF = POP_COLS.leaf ?? FLAKE_COLS[0];
 export function flakeAt(i, t) {
   const r = mulberry32(100 + i);
   const a = r() * TAU, sp = 0.25 + r() * 0.35;
@@ -584,7 +590,7 @@ export function flakeAt(i, t) {
   const p0 = [POP[0], 0.06, POP[2] - 0.01];
   const dt = t - E.pop;
   const life = 1.6 + r() * 0.5;
-  const color = i < 2 ? film.pop.leaf : FLAKE_COLS[i % FLAKE_COLS.length];
+  const color = i < 2 ? LEAF : FLAKE_COLS[i % FLAKE_COLS.length];
   if (dt < 0 || dt > life) return { tr: hidden(p0), color };
   const p = ballistic(p0, v0, dt, 0.0006);
   const spin = qEuler(dt * (4 + r() * 8), dt * (3 + r() * 6), dt * 5);
@@ -595,7 +601,7 @@ export function flakeAt(i, t) {
 export const SPARKS = 22;
 export function sparkAt(i, t) {
   const stk = () => onWall(t, STICKER.cx / MM, STICKER.cy / MM, 40);
-  const bursts = [[E.lock, () => statCentre(t), "#FFFFFF"], [E.peak, () => onWall(t, 190, 210, 100), "#FFD25A"], ...(T.EXIT === "sticker" ? [[E.flat[0], stk, "#FFF4E0"], [E.repop, stk, "#FFF4E0"]] : []), [E.final, () => heroCentre(t), "#FFFFFF"]];
+  const bursts = [[E.lock, () => statCentre(t), "#FFFFFF"], [E.peak, () => onWall(t, ...PEAK_AT), "#FFD25A"], ...(T.EXIT === "sticker" ? [[E.flat[0], stk, "#FFF4E0"], [E.repop, stk, "#FFF4E0"]] : []), [E.final, () => heroCentre(t), "#FFFFFF"]];
   for (const [t0, at, color] of bursts) {
     const dt = t - t0;
     if (dt < 0 || dt > 0.7) continue;
@@ -627,7 +633,7 @@ export function fxAt(t) {
   if (t < 4) return { p: [POP[0], 0.08, POP[2] + 0.03], energy: pulse(E.pop, 1.2, 0.18), color: "#FFE9E0" };
   if (t < 12) return { p: v3.add(statCentre(t), [0, 0.06, 0.08]), energy: pulse(E.lock, 1.6, 0.22) + 0.15 * seg(t, E.count[0], E.count[0] + 0.3) * (1 - seg(t, 10.6, 11.2)), color: "#DCE8FF" };
   if (t < 17) return { p: onWall(t, -160, 190, 120), energy: pulse(E.slam, 2.2, 0.16), color: "#FFD8C8" };
-  if (t < E.cut) return { p: onWall(t, 200, 215, 130), energy: pulse(E.peak, 2.0, 0.3) + pulse(E.rise7[1], 0.8, 0.2) + pulse(E.repop, 0.8, 0.15), color: "#FFE6B0" };
+  if (t < E.cut) return { p: onWall(t, ...PEAK_LIGHT), energy: pulse(E.peak, 2.0, 0.3) + pulse(E.rise7[1], 0.8, 0.2) + pulse(E.repop, 0.8, 0.15), color: "#FFE6B0" };
   if (t < 26) return { p: cta(-0.4, 0.25, 0.25), energy: pulse(E.logo[1], 1.2, 0.2) + pulse(E.ride, 0.6, 0.15) + pulse(E.glint2, 0.4, 0.1), color: "#E6FFEE" };
   return { p: v3.add(heroCentre(t), [0, 0.08, 0.15]), energy: pulse(E.final, 2.0, 0.3), color: "#FFF4E0" };
 }

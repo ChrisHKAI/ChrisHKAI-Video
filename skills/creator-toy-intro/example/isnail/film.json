@@ -19,7 +19,7 @@
     "cover-pinned.py",
     "@sticker2d",
     "@shape",
-    "avatar.py"
+    "@avatar"
   ],
   "profile": {
     "name": "蜗牛King",

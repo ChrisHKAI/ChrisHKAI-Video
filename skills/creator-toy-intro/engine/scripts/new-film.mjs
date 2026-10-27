@@ -52,6 +52,8 @@ const film = {
   publish,
   ...(link ? { source: Object.fromEntries(Object.entries({ link: link.url, platform: link.platform, handle: link.handle, id: link.id, short: link.short || undefined }).filter(([, v]) => v !== undefined)) } : {}),
   step: "research",
+  // the profile picture that peels: the creator's own, cut to the app's circle (references/avatar.md)
+  recipes: ["@avatar"],
   story: {},
 };
 if (argv.includes("--dry-run")) { console.log(JSON.stringify(film, null, 2)); process.exit(0); }

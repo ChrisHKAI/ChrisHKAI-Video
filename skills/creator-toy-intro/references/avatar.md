@@ -1,35 +1,27 @@
-# The flat profile picture
+# The profile picture
 
 The film opens on the creator's profile page; the profile picture peels off
-like a sticker and pops into the 3D toy. For the pop to read as "the
-picture came alive", the picture that peels must already be the toy: so
-you redraw the profile picture with the toy in it, in the style of the
-creator's own picture. The page shows this picture (`assets/avatar.png`),
-not the original.
+like a sticker and pops into the 3D toy. The picture that peels is the
+creator's own, exactly as their page shows it. Never redraw it, in any case:
+the page in the film has to match their real page, and a redrawn picture no
+longer does (the user, after the first test with a new creator). The pop
+reads as the picture coming alive because the toy is made from that picture
+(step 3), not because the picture was changed.
 
-Worked example: `example/isnail/recipes/avatar.py`. isnail's own picture is
-his drawn mascot on a red disc with confetti and leaves inside X's black
-ring; the recipe paints the same disc, confetti and leaves, then puts the
-toy rendered flat in the middle, so the 2D strips that peel and the 3D toy
-that pops are one character.
+## The step
 
-## Steps
+`@avatar` (`engine/scripts/avatar.py`) cuts the picture research saved
+(film.json `profile.avatar`, the original at full size) to a circle, sets it
+inside the ring the app draws round it and writes `assets/avatar.png` (1024 px,
+transparent outside), the sticker that peels. `new-film.mjs` puts `@avatar`
+in film.json `recipes`, so `run.mjs data` makes it every time.
 
-1. Render the toy flat: `FILM=<film> node engine/run.mjs lookdev --
-   --avatar` writes `build/lookdev/avatar-toy.png`: the toy facing front,
-   flat colours with an inked outline, on transparency.
-2. Write `recipes/avatar.py`: a 1024 px square, transparent outside the
-   circle, that rebuilds the creator's picture around the toy:
-   - the background of their picture: its colour, gradient, pattern or
-     scene, simplified (a photo's room becomes two or three flat shapes);
-   - the toy (`avatar-toy.png`), cropped to its bounding box and scaled so
-     the head fills about half the picture, as their face or mascot does;
-   - what makes the picture theirs: a ring, a frame, confetti, a logo
-     corner, their colours;
-   - the platform's own ring if the app draws one (X's black border).
-3. List it last in film.json `recipes` (after `lookdev -- --avatar` has
-   run once), and look at it beside the original: at a glance it should
-   read as their picture.
+The ring: on the X themes, X's black ring round the picture (4 px round 134 px
+on the web); film.json `avatarRing` changes its colour (`"#FFFFFF"` for X's
+light page) or turns it off (`false`, the default on the other themes).
 
-A real person's photo becomes a drawn picture of their toy: keep the
-photo's light, background colour and framing, so followers still know it.
+## Check
+
+Look at `assets/avatar.png` beside the creator's picture on their real page:
+the same picture, the same framing, the ring like the app's. Nothing else to
+make or approve here.

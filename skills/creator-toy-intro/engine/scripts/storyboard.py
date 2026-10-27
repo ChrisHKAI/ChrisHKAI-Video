@@ -56,20 +56,23 @@ if "--frames" in argv:
 
 # ── the words, filled from film.json ────────────────────────────────────────
 W = {
-    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖；疊住出街平台嘅介面", "zones": "顯示平台介面", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 未跳到數（要整數、單位同兩個字標籤）", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住"},
-    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图；叠着发布平台的界面", "zones": "显示平台界面", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 还不能跳数（要整数、单位和两个字的标签）", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住"},
-    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches; the platforms' controls laid over them", "zones": "Show the platforms' controls", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} cannot count up yet (whole digits, a unit and a two-character label)", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls"},
+    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖；疊住出街平台嘅介面", "zones": "顯示平台介面", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 未跳到數（要整數、單位同兩個字標籤）", "c_nocounter": "呢部片冇計數器", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住"},
+    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图；叠着发布平台的界面", "zones": "显示平台界面", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 还不能跳数（要整数、单位和两个字的标签）", "c_nocounter": "这部片没有计数器", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住"},
+    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches; the platforms' controls laid over them", "zones": "Show the platforms' controls", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} cannot count up yet (whole digits, a unit and a two-character label)", "c_nocounter": "this film has no counter", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls"},
 }[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
 PROP = {"snail": {"zh-Hant": "蝸牛", "zh-Hans": "蜗牛", "en": "the snail"}}
 toy = json.loads((FILM / FILM_JSON["toy"]).read_text())
-pr, posts, cta, counter = FILM_JSON["profile"], FILM_JSON["posts"], FILM_JSON["cta"], FILM_JSON["counter"]
+pr, posts, cta = FILM_JSON["profile"], FILM_JSON["posts"], FILM_JSON["cta"]
+# the counter, unless the film has none (no film.json "counter", or story "counter": false)
+counter = FILM_JSON.get("counter") if FILM_JSON.get("story", {}).get("counter", True) is not False else None
 short = lambda s, n=16: s if len(s) <= n else s[:n] + "…"  # noqa: E731
 W_, H_ = FILM_JSON["format"]["size"]
 orient = orientation(W_, H_)
 publish = platforms([])
 FILL = {
     "name": pr["name"], "handle": "@" + pr["handle"] if pr.get("handle") else "",
-    "counter": f"{counter['value']}{counter['unit']} {counter['label']}",
+    # as the platform writes it when research kept that ("10,000 关注者"), else the digits and the unit
+    "counter": f"{counter.get('display') or str(counter['value']) + counter['unit']} {counter['label']}" if counter else "",
     "slogan": "".join(p["text"] for p in cta["slogan"]),
     "prop": PROP.get(cta.get("prop", {}).get("kind"), {}).get(LANG, cta.get("prop", {}).get("kind", "")),
     "signature": W[(toy.get("signature") or {"move": "wave"})["move"]],
@@ -85,8 +88,11 @@ have = [n for _, n in frames if (SRC / f"{n:04d}.png").exists()]
 checks.append((len(have) == len(frames), W["c_frames"].format(n=len(have), m=len(frames))))
 toyfrom = FILM_JSON.get("toyFrom")
 checks.append((bool(toyfrom), W["c_toy"].format(x=", ".join(toyfrom)) if toyfrom else W["c_notoy"]))
-digits_ok = float(counter["value"]).is_integer() and counter["unit"] and len(counter["label"]) == 2
-checks.append((bool(digits_ok), W["c_counter" if digits_ok else "c_badcounter"].format(x=FILL["counter"])))
+if counter:
+    digits_ok = float(counter["value"]).is_integer() and counter["unit"] and len(counter["label"]) == 2
+    checks.append((bool(digits_ok), W["c_counter" if digits_ok else "c_badcounter"].format(x=FILL["counter"])))
+else:
+    checks.append((True, W["c_nocounter"]))
 end = [n for _, n in frames if n >= (DUR - 1.5) * FPS and (SRC / f"{n:04d}.png").exists()]
 if end:
     im = Image.open(SRC / f"{end[-1]:04d}.png").convert("RGB")

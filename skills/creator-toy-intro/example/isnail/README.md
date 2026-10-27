@@ -4,8 +4,10 @@ The workspace of 蜗牛King's film (@isnail) in the engine, as a worked
 example of everything an agent writes for one creator: `film.json` (the
 research, the story's wall roles, the end card), `toy.json` (the parts
 kit), and `recipes/`: the two cover recipes (`cover-pinned.py`,
-`cover-retro.py`, `references/cover-wall.md`) and the flat profile picture
-(`avatar.py`, `references/avatar.md`). Its end card's prop is the built-in
+`cover-retro.py`, `references/cover-wall.md`). The profile picture that
+peels is his own, cut to X's circle by the engine's `@avatar`
+(`references/avatar.md`); the released film (`examples/isnail-intro/`) was
+made before that rule, with a redrawn one. Its end card's prop is the built-in
 snail (`templates/isnail-30/props/snail.js`, `references/props.md`) and it
 leaves act 3 by the sticker exit (`references/exits.md`).
 
@@ -18,5 +20,5 @@ leaves act 3 by the sticker exit (`references/exits.md`).
 3. Fetch the 公众号 mark (`assets/gzh-logo.png`) yourself (WeChat's own
    pages) and set the crop in film.json `cta.prop.shape`; it is not kept
    here.
-4. `FILM=<folder> node <skill>/engine/run.mjs lookdev -- --avatar`, then
-   `data`, `storyboard`, `render`, `finish` (SKILL.md).
+4. `FILM=<folder> node <skill>/engine/run.mjs data`, then `storyboard`,
+   `render`, `finish` (SKILL.md).

@@ -60,7 +60,7 @@ export function declare({ add, pack, objects }) {
     add({ name: `label${i}_sheet`, geo: { type: "curve", rings: [L.sheet], depth: 0.0024, bevel: 0.0003 }, mat: { type: "paper", color: paper }, anim: true });
     L.letters.forEach((g, j) => add({ name: `label${i}_l${j}`, geo: glyphGeo(g.key, L.em, 0.004, 0.0005), mat: { type: "type", color: ink, emit: ink === "#161514" ? 0 : 0.12 }, anim: true }));
   });
-  add({ name: "crown", geo: { type: "curve", rings: [A.CROWN.map(([x, y]) => [+((x - 0.5) * A.CROWN_W).toFixed(6), +(y * A.CROWN_W).toFixed(6)])], depth: 0.012, bevel: 0.0018 }, mat: { type: "type", color: "#F2C14E", emit: 0.25 }, anim: true });
+  if (T.CROWN) add({ name: "crown", geo: { type: "curve", rings: [A.CROWN.map(([x, y]) => [+((x - 0.5) * A.CROWN_W).toFixed(6), +(y * A.CROWN_W).toFixed(6)])], depth: 0.012, bevel: 0.0018 }, mat: { type: "type", color: "#F2C14E", emit: 0.25 }, anim: true });
 
   // act 2: the pinned cover as a wall, and its pieces
   add({ name: "wall2", geo: null, anim: true });
@@ -76,8 +76,8 @@ export function declare({ add, pack, objects }) {
     if (!p.rings.length) continue;
     add({ name: `piece_${p.name}`, parent: "wall", geo: { type: "curve", rings: p.rings.map((r) => r.map((uv) => A.coverToWall(uv).map((v) => +v.toFixed(6)))), depth: A.pieceDepth(p) }, mat: { type: "cover" }, anim: true, _piece: p });
   }
-  // the 2D mascot sticker he turns into (a card on the 《自媒体很苦》 wall)
-  add({ name: "sticker2d", parent: "wall", geo: { type: "plane", w: A.STICKER.w, h: A.STICKER.h }, mat: { type: "card2d", image: "assets/sticker2d.png" }, anim: true });
+  // the 2D mascot sticker he turns into (a card on the 《自媒体很苦》 wall): the sticker exit only
+  if (T.EXIT === "sticker") add({ name: "sticker2d", parent: "wall", geo: { type: "plane", w: A.STICKER.w, h: A.STICKER.h }, mat: { type: "card2d", image: "assets/sticker2d.png" }, anim: true });
 
 
   // particles
@@ -120,12 +120,12 @@ export function sample(t, { put, putColor, regular, whole, scalars, hex }) {
     put(`label${i}_sheet`, A.labelSheetAt(i, t));
     L.letters.forEach((_, j) => put(`label${i}_l${j}`, A.labelLetterAt(i, j, t)));
   });
-  put("crown", A.crownAt(t));
+  if (T.CROWN) put("crown", A.crownAt(t));
 
   put("wall2", A.wall2At(t));
   for (const o of pieces2) put(o.name, A.piece2At(o._piece2, t));
   put("wall", A.wallAt(t).tr);
-  put("sticker2d", A.sticker2dAt(t));
+  if (T.EXIT === "sticker") put("sticker2d", A.sticker2dAt(t));
   for (const o of pieces) put(o.name, A.pieceAt(o._piece, t));
 
   for (let i = 0; i < A.FLAKES; i++) { const f = A.flakeAt(i, t); put(`flake_${i}`, f.tr); putColor(`flake_${i}`, f.color); }

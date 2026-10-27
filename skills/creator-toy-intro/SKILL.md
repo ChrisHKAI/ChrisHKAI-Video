@@ -24,12 +24,16 @@ platform's covers, and previews are checked against each app's own
 controls. Steps 0 to 4 (the computer, onboarding, research, the toy in three
 kits, the storyboard page) work. For each creator you also write the
 film's own code, as for isnail (`example/isnail/`): the cover walls'
-recipes, the flat profile picture, the end card's prop (from what they want
-to promote) and the exit; `references/` has the method for each.
+recipes, the end card's prop (from what they want to promote) and the exit;
+`references/` has the method for each. The profile picture is never
+redrawn: the creator's own peels off (`references/avatar.md`).
 
 ## Making a film
 
 Effort stays at xhigh. Each step ends on something the user looks at.
+Every line the user sees is in their language: the replies, the short
+progress lines between tool calls, task lists, questions and the pages
+made for them. Only paths, commands and code stay as they are.
 
 | step | what | how |
 | --- | --- | --- |
@@ -37,19 +41,19 @@ Effort stays at xhigh. Each step ends on something the user looks at.
 | 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
 | 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
 | 3 | the toy from the confirmed picture, in one of three kits; a turnaround beside it to approve | `references/toy.md` |
-| 4 | the film's own code (cover walls, flat profile picture, exit, prop), then the storyboard page: the story, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `storyboard.md` |
+| 4 | the film's own code (cover walls, exit, prop; the profile picture is the creator's own), then the storyboard page: the story, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `storyboard.md` |
 | 5 | how long, the render, the finish: the film, the effects-only cut, each platform's covers, the last look | `references/render.md` |
 
 ## Layout
 
 | path | what it is |
 | --- | --- |
-| `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover and avatar recipes |
+| `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
 | `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md` and `storyboard.md` (step 4), `render.md` (step 5) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
@@ -72,7 +76,7 @@ A folder outside the skill, never committed:
 <film>/
   film.json        content, story numbers, palette (below)
   toy.json         the toy: kit, parts, joints, colours, finishes (references/toy.md)
-  recipes/         the film's own scripts (cover cuts, its flat avatar)
+  recipes/         the film's own scripts (cover cuts)
   assets/          the creator's pictures; the pipeline adds textures here
   build/           everything generated (anim.json, glyphs, frames)
   research/        step 2: facts.json, screenshots, the material table
@@ -83,15 +87,19 @@ A folder outside the skill, never committed:
 
 film.json holds: `template`, `theme`, `language`, `format` (fps, bpm,
 duration, size), `output`, `publish` (where the film goes: ids in
-`engine/lib/platforms.json`; default the stage theme's platform), `toy`, `recipes` (in order; `@sticker2d` and
-`@shape` are engine tools), `branding` (the creator's own copies of platform
-marks, if any), `profile` (name, handle, bio, counts, pictures), `posts`
-(pinned and the second post: date, title, counts, cover), `counter` (value,
-unit, label), `cta` (slogan labels, name and handle labels, the prop;
-positions optional: the template lays the end card out per orientation),
-`sticker2d`, `pop` (confetti colours), `story` (the cover walls' pieces;
-events, places, camera keys and shakes only where they differ from the
-template's own `story.json`), `source` (the creator's link, platform,
+`engine/lib/platforms.json`; default the stage theme's platform), `toy`, `recipes` (in order; `@avatar`,
+`@sticker2d` and `@shape` are engine tools), `branding` (the creator's own
+copies of platform marks, if any), `profile` (name, handle, bio, counts,
+pictures), `avatarRing` (the ring round the profile picture:
+`references/avatar.md`), `posts` (pinned and the second post: date, title,
+counts, cover), `counter` (value, unit, label; `display` for the storyboard
+page, as the platform writes it), `cta` (slogan labels, name and handle
+labels, the prop; positions optional: the template lays the end card out per
+orientation), `sticker2d`, `pop` (confetti and leaf colours; party colours
+without it), `story` (the cover walls' pieces; events, places, camera keys
+and shakes only where they differ from the template's own `story.json`:
+`events` merge one by one, a list such as `camera` or `shakes` replaces the
+template's whole), `source` (the creator's link, platform,
 handle), `toyFrom` (the pictures the user confirmed the toy is made from)
 and `step` (the step a film being made is at).
 
@@ -146,6 +154,8 @@ An animatic: `--engine eevee --samples 4 --scale 33 --out build/eev`.
 ## Rules the films taught
 
 - One toy on screen, ever: the toy and the flat sticker swap, never both.
+- The profile picture is the creator's own, never redrawn: the page has to
+  match their real page.
 - No fade to black: the last frame holds and is the cover.
 - A number rises from the spot on the page where it is shown.
 - Storyboards are real renders from this pipeline, never flat sketches.

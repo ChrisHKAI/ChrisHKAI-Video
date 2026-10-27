@@ -96,13 +96,24 @@ for j in ["body", "head", "armR", "armL", "legR", "legL"]:
         b = bones.get(JOINT_BONE[j])
         joints[j] = {"p": [round(x, 6) for x in (np.array(b["head"]) @ B2T.T).tolist()] if b else [0, 0, 0], "parent": PARENT[j]}
 H = M.get("height_mm", 120) / 1000
-# glasses make the signature move a push of their left hinge (the frame's outermost front at +x, mm)
+# glasses make the signature move a push of their left hinge (the frame's outermost front at +x, mm):
+# the outermost point of the frame's front 4 mm, so temples that flare out round the head don't count
 sig = {"move": "wave"}
 frame = next((p for p in parts if p["finish"] == "gloss" and "glass" in p["name"]), None)
 if frame:
     v = np.load(FILM / frame["file"])["verts"]
-    hinge = v[v[:, 0] > v[:, 0].max() - 0.002]
+    front = v[v[:, 2] > v[:, 2].max() - 0.004]
+    hinge = front[front[:, 0] > front[:, 0].max() - 0.002]
     sig = {"move": "glasses", "at": [round(float(x) * 1000, 1) for x in hinge.mean(0)]}
 toy = {"name": M.get("name", SRC.name), "kit": "sculpt", "signature": sig, "height": H, "center": [0, round(0.44 * H, 4), 0], "colors": {}, "finish": {}, "joints": joints, "parts": parts}
 (FILM / "toy.json").write_text(json.dumps(toy, ensure_ascii=False, indent=1))
 print(f"toy.json: {len(parts)} parts on {', '.join(joints)}; height {H * 1000:.0f} mm")
+# the film plays this toy: film.json "toy" points at it
+FJ = FILM / "film.json"
+film_json = json.loads(FJ.read_text())
+if film_json.get("toy") is None:
+    film_json["toy"] = "toy.json"
+    FJ.write_text(json.dumps(film_json, ensure_ascii=False, indent=2) + "\n")
+    print('film.json: "toy": "toy.json"')
+elif film_json["toy"] != "toy.json":
+    print(f'! film.json "toy" is {film_json["toy"]}; this toy is toy.json')

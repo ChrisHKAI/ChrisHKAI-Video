@@ -2,8 +2,11 @@
 
 Ask as little as possible. Work things out from the link and the profile;
 the user answers one round of questions at most. Never ask who the film is
-for or whether the numbers are real: the user has settled that. Reply in the
-user's language; paths and commands stay as they are.
+for or whether the numbers are real: the user has settled that. Every line
+the user sees is in their language, from the first reply on: answers,
+questions, the short progress lines between tool calls, task lists, command
+descriptions and every page made for them. Paths, commands and code stay as
+they are. Users should never have to ask for this.
 
 ## Step 0: the computer
 

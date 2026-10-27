@@ -12,8 +12,12 @@ import { trs, qId, qEuler, apply, mulT } from "../../engine/lib/quat.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
-// the story's own tuned values (story.json), under whatever film.json "story" pins
-const S = { ...JSON.parse(readFileSync(new URL("./story.json", import.meta.url), "utf8")), ...film.story };
+// the story's own tuned values (story.json), under whatever film.json "story" pins:
+// a table (events) merges key by key, anything else (a list, a number) replaces
+const STORY = JSON.parse(readFileSync(new URL("./story.json", import.meta.url), "utf8"));
+const isTable = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const S = { ...STORY, ...film.story };
+for (const [k, v] of Object.entries(film.story ?? {})) if (isTable(STORY[k]) && isTable(v)) S[k] = { ...STORY[k], ...v };
 const [FW, FH] = film.format.size;
 export const PORTRAIT = FH > FW;
 export const ASPECT = FW / FH;
@@ -61,6 +65,8 @@ export const WALL = S.wall; // act 3 wall pieces (wall mm; box tops are where he
 // on that cover: film.json "sticker2d" says where) or "jump" (out of the top of
 // the frame; it falls onto the end card's prop after the cut)
 export const EXIT = S.exit ?? (film.sticker2d ? "sticker" : "jump");
+// the crown lands on the end card's name only when the creator's own name carries one (蜗牛King's 👑)
+export const CROWN = (film.profile.nameEmoji ?? "").includes("👑");
 // the end card's prop: the film's own module (film.json cta.prop.module, written
 // for this creator) or a built-in one by kind (props/<kind>.js; isnail's snail)
 const PROP_URL = film.cta.prop?.module ? pathToFileURL(fromFilm(film.cta.prop.module)).href : new URL(`./props/${film.cta.prop?.kind ?? "snail"}.js`, import.meta.url).href;
@@ -162,7 +168,9 @@ export function soundCues() {
   const nameLen = [...film.cta.name.text].length;
   for (let i = 0; i < nameLen; i++) add(E.name + 0.05 + 0.05 * i, "namePop", { i });
   add(E.name + 0.22, "namePop", { i: nameLen, handle: true });
-  add(E.crown[1], "crown");
-  add(E.crown[1] + 0.05, "sparkle");
+  if (CROWN) {
+    add(E.crown[1], "crown");
+    add(E.crown[1] + 0.05, "sparkle");
+  }
   return cues.sort((a, b) => a.t - b.t);
 }
