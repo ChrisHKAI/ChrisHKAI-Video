@@ -45,12 +45,43 @@ Before the user sees it, look at every frame and the safe-zone sheet:
 
 Fix what you find and render those frames again before showing the page.
 
+## Notes on the real frames
+
+The user points at what to change on the page itself, on real renders only:
+a click on a spot of a preview frame (Cycles), or on the animatic (EEVEE: it
+pauses there), opens a box under it; they write a line and send it. There is
+no second, drawn-in-the-browser preview: everything the user sees is what
+Blender makes, so nothing on the page misleads about the film's look.
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs studio        # serves the page; runs until stopped
+```
+
+prints the page's address (only this computer reaches it). Give it to the
+user on a line of its own: in a chat, words or punctuation stuck to it (a
+"，" in Chinese) become part of the link. Through it a
+note lands in `build/comments.jsonl` with its time, frame and the spot
+(x, y from the top left, 0–1); opened as a plain file the page copies the
+note instead, to paste into the chat. Read them:
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs comments                         # the open notes
+FILM=<film> node <skill>/engine/run.mjs comments -- --done c3 "the badge holds 2 s longer"
+```
+
+Each note comes with `build/comments/<id>.jpg`: the frame it was written on,
+with a red ring on the spot. Look at it, change only what the note asks,
+render what it touches, and mark it done with a line on what changed (the
+page shows the line under the note). Notes in words or screenshots in the
+chat work as before.
+
 ## The sign-off
 
-Show the page (send the file; publish it too where the agent can), and ask
-the points at its end in one round. The user answers in words: "the 9:16
-end card higher", "a different slogan", "no snail". Change the timeline,
-film.json or toy.json accordingly; then render only what changed:
+Show the page (send the file; publish it too where the agent can; or the
+studio's address), and ask the points at its end in one round. The user
+answers in words or in notes on the frames: "the 9:16 end card higher", "a
+different slogan", "no snail". Change the timeline, film.json or toy.json
+accordingly; then render only what changed:
 
 ```bash
 cp <film>/build/anim.json /tmp/anim-before.json

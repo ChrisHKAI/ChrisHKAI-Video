@@ -44,7 +44,7 @@ made for them. Only paths, commands and code stay as they are.
 | 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
 | 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
 | 3 | the toy from the confirmed picture, in one of three kits; a turnaround beside it to approve | `references/toy.md` |
-| 4 | the film's own code (cover walls, exit, prop, its beats; the profile picture is the creator's own), then the storyboard page: the story, the length, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md`, `storyboard.md` |
+| 4 | the film's own code (cover walls, exit, prop, its beats; the profile picture is the creator's own), then the storyboard page: the story, the length, the beat grid, real preview renders (one to four a row, notes on them; the platforms' controls stay your check, in `safezone`); the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md`, `storyboard.md` |
 | 5 | how long, the render, the finish: the film, the effects-only cut, each platform's covers, the last look | `references/render.md` |
 
 ## Layout
@@ -57,7 +57,7 @@ made for them. Only paths, commands and code stay as they are.
 | `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `page-stand.js` (Kin's opening: the page stands up, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
@@ -174,6 +174,10 @@ buttons column) laid over the previews in `build/safezone-check.jpg`, with
 the safe box clear of all of them; include a frame of the end card's hold to
 have it checked by itself.
 An animatic: `--engine eevee --samples 4 --scale 33 --out build/eev`.
+Notes on the real frames: `studio` serves the storyboard page, where the
+user clicks a spot on a preview frame or the paused animatic and writes
+what to change (into `build/comments.jsonl`); `comments` lists them, each
+with its frame marked (`references/storyboard.md`).
 
 ## Rules the films taught
 

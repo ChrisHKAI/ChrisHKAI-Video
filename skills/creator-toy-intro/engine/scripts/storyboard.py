@@ -1,6 +1,6 @@
 """Step 4's page: the storyboard the user signs off before the full render.
 The story's parts, the beat grid with its hits, the preview frames (real
-renders, the platforms' own controls laid over them), the agent's own checks
+renders, one to four a row, as the viewer picks), the agent's own checks
 and what the user decides. One HTML file with its pictures inside, to open
 locally or publish.
 
@@ -95,9 +95,9 @@ if "--frames" in argv:
 
 # ── the words, filled from film.json ────────────────────────────────────────
 W = {
-    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖；疊住出街平台嘅介面", "zones": "顯示平台介面", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 未跳到數（要整數、單位同兩個字標籤）", "c_nocounter": "呢部片冇計數器", "c_len": "片長 {x} 秒，{p} 最長收 {m} 秒", "c_badlen": "片長 {x} 秒，超過 {p} 嘅 {m} 秒上限：拍子要縮短", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住"},
-    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图；叠着发布平台的界面", "zones": "显示平台界面", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 还不能跳数（要整数、单位和两个字的标签）", "c_nocounter": "这部片没有计数器", "c_len": "片长 {x} 秒，{p} 最长收 {m} 秒", "c_badlen": "片长 {x} 秒，超过 {p} 的 {m} 秒上限：拍子要缩短", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住"},
-    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches; the platforms' controls laid over them", "zones": "Show the platforms' controls", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} cannot count up yet (whole digits, a unit and a two-character label)", "c_nocounter": "this film has no counter", "c_len": "{x} s long; {p} takes up to {m} s", "c_badlen": "{x} s long, past {p}'s {m} s: shorten the beats", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls"},
+    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖", "cols": "每行", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 未跳到數（要整數、單位同兩個字標籤）", "c_nocounter": "呢部片冇計數器", "c_len": "片長 {x} 秒，{p} 最長收 {m} 秒", "c_badlen": "片長 {x} 秒，超過 {p} 嘅 {m} 秒上限：拍子要縮短", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住"},
+    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图", "cols": "每行", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 还不能跳数（要整数、单位和两个字的标签）", "c_nocounter": "这部片没有计数器", "c_len": "片长 {x} 秒，{p} 最长收 {m} 秒", "c_badlen": "片长 {x} 秒，超过 {p} 的 {m} 秒上限：拍子要缩短", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住"},
+    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches", "cols": "Per row", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} cannot count up yet (whole digits, a unit and a two-character label)", "c_nocounter": "this film has no counter", "c_len": "{x} s long; {p} takes up to {m} s", "c_badlen": "{x} s long, past {p}'s {m} s: shorten the beats", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls"},
 }[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
 PROP = {"snail": {"zh-Hant": "蝸牛", "zh-Hans": "蜗牛", "en": "the snail"}}
 toy = json.loads((FILM / FILM_JSON["toy"]).read_text())
@@ -120,6 +120,28 @@ FILL = {
 }
 t = lambda d: (d if isinstance(d, str) else (d.get(LANG) or d.get("zh-Hant") or next(iter(d.values()), ""))).format(**FILL)  # noqa: E731
 e = html.escape
+
+# notes on the real frames (storyboard-notes.js, inlined): through the studio they land in
+# build/comments.jsonl; opened as a file they are copied, to paste into the chat
+NOTE_WORDS = {
+    "zh-Hant": {"title": "意見", "hint": "撳任何一格，或者粗剪片（會停低）嘅畫面，喺要改嘅位置寫一句，寄出。", "hintFile": "撳任何一格或者粗剪片嘅畫面，寫低要改乜：意見會複製，貼返俾 agent。", "at": "{t} 秒 · 第 {n} 格", "send": "寄出", "copy": "複製", "cancel": "取消", "copied": "已複製，貼返俾 agent", "line": "[意見] 第 {n} 格（{t} 秒），位置 ({x}, {y})：", "none": "仲未有意見。", "open": "未處理", "done": "改咗", "frame": "預覽格", "animatic": "粗剪片"},
+    "zh-Hans": {"title": "意见", "hint": "点任何一帧，或粗剪片（会暂停）的画面，在要改的位置写一句，发送。", "hintFile": "点任何一帧或粗剪片的画面，写下要改什么：意见会复制，贴给 agent。", "at": "{t} 秒 · 第 {n} 帧", "send": "发送", "copy": "复制", "cancel": "取消", "copied": "已复制，贴给 agent", "line": "[意见] 第 {n} 帧（{t} 秒），位置 ({x}, {y})：", "none": "还没有意见。", "open": "未处理", "done": "已改", "frame": "预览帧", "animatic": "粗剪片"},
+    "en": {"title": "Notes", "hint": "Click a spot on any frame, or on the animatic (it pauses), write what to change, send.", "hintFile": "Click a spot on any frame or the animatic and write what to change: the note is copied, to paste to the agent.", "at": "{t} s · frame {n}", "send": "Send", "copy": "Copy", "cancel": "Cancel", "copied": "Copied: paste it to the agent", "line": "[note] frame {n} ({t} s), at ({x}, {y}): ", "none": "No notes yet.", "open": "open", "done": "done", "frame": "preview frame", "animatic": "animatic"},
+}[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
+NOTES_JS = (Path(__file__).with_name("storyboard-notes.js")).read_text()
+# frames a row, 1 to 4, kept in this browser (it may refuse: then the page's own default)
+COLS_JS = """(() => {
+  const box = document.querySelector(".frames"), bs = document.querySelectorAll(".cols button");
+  const set = (c) => {
+    box.style.setProperty("--cols", c);
+    box.dataset.cols = c;
+    bs.forEach((b) => b.classList.toggle("on", b.dataset.c === String(c)));
+  };
+  bs.forEach((b) => (b.onclick = () => { set(b.dataset.c); try { localStorage.setItem("storyboard-cols", b.dataset.c); } catch {} }));
+  let c = "%d";
+  try { c = localStorage.getItem("storyboard-cols") || c; } catch {}
+  set(c);
+})();"""
 
 # ── the agent's own checks ──────────────────────────────────────────────────
 checks = []
@@ -149,24 +171,23 @@ if end:
 # ── pictures inside the page ────────────────────────────────────────────────
 def jpeg(path, width):
     im = Image.open(path).convert("RGB")
+    width = min(width, im.width)
     im = im.resize((width, round(im.height * width / im.width)), Image.LANCZOS)
     buf = io.BytesIO()
     im.save(buf, "JPEG", quality=82)
     return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
-TW = 360 if orient == "portrait" else 560
-zones = [(p, z) for p in publish for z in PLATFORMS[p]["zones"][orient]]
-ZC = {"x": "#1D9BF0", "douyin": "#FE2C55", "xhs": "#FF9F0A", "channels": "#07C160", "ig": "#BF5AF2"}
-overlay = "".join(f'<i class="z" style="left:{z["box"][0]*100:.2f}%;top:{z["box"][1]*100:.2f}%;width:{(z["box"][2]-z["box"][0])*100:.2f}%;height:{(z["box"][3]-z["box"][1])*100:.2f}%;border-color:{ZC.get(p, "#fff")}"></i>' for p, z in zones)
-sb = SAFE[orient]
-overlay += f'<i class="safe" style="left:{sb[0]*100:.2f}%;top:{sb[1]*100:.2f}%;width:{(sb[2]-sb[0])*100:.2f}%;height:{(sb[3]-sb[1])*100:.2f}%"></i>'
+# big enough for one frame a row (the preview's own size, at most 1280 px); the
+# platforms' controls are the agent's check (safezone), not drawn over the frames
+TW = 1280
+COLS = 1  # a row, until the viewer picks 1–4
 
 cards = []
 for f, n in frames:
     p = SRC / f"{n:04d}.png"
-    img = f'<div class="shot" style="aspect-ratio:{W_}/{H_}"><img src="{jpeg(p, TW)}" alt="{e(t(f["title"]))}">{overlay}</div>' if p.exists() else f'<div class="shot none" style="aspect-ratio:{W_}/{H_}">{W["missing"]} #{n}</div>'
-    cards.append(f'<figure>{img}<figcaption><code>{(n - 1) / FPS:.1f} s</code><h4>{e(t(f["title"]))}</h4><p>{e(t(f["what"]))}</p></figcaption></figure>')
+    img = f'<div class="shot" style="aspect-ratio:{W_}/{H_}"><img src="{jpeg(p, TW)}" alt="{e(t(f["title"]))}"></div>' if p.exists() else f'<div class="shot none" style="aspect-ratio:{W_}/{H_}">{W["missing"]} #{n}</div>'
+    cards.append(f'<figure data-t="{(n - 1) / FPS:.4f}" data-n="{n}">{img}<figcaption><code>{(n - 1) / FPS:.1f} s</code><h4>{e(t(f["title"]))}</h4><p>{e(t(f["what"]))}</p></figcaption></figure>')
 
 hero_n = end[-1] if end else (have[-1] if have else None)
 hero = f'<img class="hero" src="{jpeg(SRC / f"{hero_n:04d}.png", 720 if orient == "landscape" else 420)}" alt="">' if hero_n else ""
@@ -194,7 +215,7 @@ page = f"""<!doctype html>
 :root {{ --bg:#0c0d10; --panel:#15171c; --ink:#eceae6; --muted:#9a978f; --rule:#2a2d33; --red:#e2463b; --b0:#e2463b; --b1:#3d7bff; --b2:#c9a679; --b3:#43b37a; --b4:#b06ae0; color-scheme: dark; }}
 * {{ box-sizing: border-box; }}
 body {{ margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 "PingFang TC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif; }}
-.wrap {{ max-width:1240px; margin:0 auto; padding:28px 16px 64px; display:grid; gap:40px; }}
+.wrap {{ max-width:1240px; margin:0 auto; padding:28px 16px 64px; display:grid; grid-template-columns:minmax(0,1fr); gap:40px; }}
 header {{ display:grid; gap:16px; grid-template-columns:auto 1fr; align-items:end; }}
 @media (max-width:720px) {{ header {{ grid-template-columns:1fr; }} }}
 .hero {{ max-width:100%; max-height:420px; border-radius:6px; border:1px solid var(--rule); }}
@@ -211,14 +232,16 @@ td:first-child {{ white-space:nowrap; }} code {{ font:12px ui-monospace,Menlo,mo
 .beat span {{ position:absolute; top:28px; left:3px; font-size:11px; color:var(--muted); }}
 .hit {{ grid-row:3; position:relative; height:34px; margin-top:14px; }} .hit.low {{ grid-row:4; }}
 .hit i {{ position:absolute; left:0; top:-58px; bottom:16px; border-left:2px solid var(--red); }} .hit em {{ font-style:normal; font-size:12px; color:#ffb4ad; white-space:nowrap; padding-left:4px; }}
-.frames {{ display:grid; grid-template-columns:repeat(auto-fill,minmax({200 if orient == "portrait" else 300}px,1fr)); gap:18px; }}
+.frames {{ display:grid; grid-template-columns:repeat(var(--cols,{COLS}),minmax(0,1fr)); gap:18px; }}
+@media (max-width:640px) {{ .frames {{ grid-template-columns:1fr; }} }}
+{".frames[data-cols='1'] figure { width:100%; max-width:480px; margin:0 auto; }" if orient == "portrait" else ""}
+.cols {{ display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); margin:0 0 12px; }}
+.cols button {{ background:var(--panel); color:var(--ink); border:1px solid var(--rule); border-radius:6px; min-width:34px; padding:3px 10px; font:inherit; cursor:pointer; }}
+.cols button.on {{ background:#3d7bff; border-color:#3d7bff; }}
 figure {{ margin:0; background:var(--panel); border-radius:8px; overflow:hidden; }}
 .shot {{ position:relative; background:#000; }} .shot img {{ width:100%; height:100%; object-fit:cover; display:block; }}
 .shot.none {{ display:flex; align-items:center; justify-content:center; color:var(--muted); }}
-.z {{ position:absolute; border:1px solid; background:rgba(0,0,0,.28); }} .safe {{ position:absolute; border:1.5px dashed #fff; }}
-body.nozones .z, body.nozones .safe {{ display:none; }}
 figcaption {{ padding:10px 12px 14px; }} figcaption h4 {{ margin:2px 0; font-size:16px; }} figcaption p {{ margin:0; color:var(--muted); font-size:14px; }}
-label.tg {{ font-size:13px; color:var(--muted); cursor:pointer; }}
 ul.checks, ol.ask {{ background:var(--panel); border-radius:8px; padding:16px 16px 16px 36px; margin:0; }}
 ul.checks li {{ margin:4px 0; }} ul.checks b {{ display:inline-block; min-width:56px; margin-right:8px; }} li.ok b {{ color:#43b37a; }} li.warn b {{ color:#ff9f0a; }}
 ol.ask li {{ margin:6px 0; font-size:16px; }} .note {{ color:var(--muted); font-size:13px; }}
@@ -227,11 +250,15 @@ ol.ask li {{ margin:6px 0; font-size:16px; }} .note {{ color:var(--muted); font-
 <header>{hero}<div><h1>{e(title)}</h1><div class="specs">{"".join(f"<span>{e(s)}</span>" for s in specs)}</div></div></header>
 <section><h2>{W["parts"]}</h2><table><tr><td><b>{W["time"]}</b></td><td><b>{W["what"]}</b></td><td><b>{W["uses"]}</b></td></tr>{rows}</table></section>
 <section><h2>{W["grid"]}<small>{W["gridnote"]}</small></h2><div class="gridbox"><div class="grid">{g}</div></div></section>
-<section><h2>{W["frames"]}<small>{W["framesnote"]}</small></h2><p><label class="tg"><input type="checkbox" checked onchange="document.body.classList.toggle('nozones',!this.checked)"> {W["zones"]}</label></p><div class="frames">{"".join(cards)}</div></section>
+<section><h2>{W["frames"]}<small>{W["framesnote"]}</small></h2><p class="cols">{W["cols"]}{"".join(f'<button data-c="{c}">{c}</button>' for c in range(1, 5))}</p><div class="frames">{"".join(cards)}</div></section>
 {animatic}
 <section><h2>{W["checks"]}</h2><ul class="checks">{checks_html}</ul></section>
 <section><h2>{W["decide"]}</h2><ol class="ask">{decide}</ol><p class="note">{W["note"]}</p></section>
-</div></body></html>
+</div>
+<script>{COLS_JS % COLS}</script>
+<script>const NOTES ={json.dumps({"fps": FPS, "words": NOTE_WORDS}, ensure_ascii=False)};</script>
+<script>{NOTES_JS}</script>
+</body></html>
 """
 OUT.mkdir(parents=True, exist_ok=True)
 (OUT / "index.html").write_text(page)

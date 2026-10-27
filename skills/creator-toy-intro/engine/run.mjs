@@ -18,6 +18,11 @@
 //           storyboard  the page to sign off: parts, beat grid, previews, checks → build/storyboard/
 //                    (storyboard -- --frames prints the preview frames to render)
 //           animatic the whole film in EEVEE, small, with its score → build/storyboard/animatic.mp4
+//           studio   the storyboard page on a local server: the user clicks a spot on a real frame or
+//                    the paused animatic and writes a note → build/comments.jsonl
+//                    (studio -- --port 4173; runs until stopped)
+//           comments the user's open notes, each with its frame marked → build/comments/<id>.jpg
+//                    (comments -- --all; comments -- --done c3 "what changed")
 //           own      a copy in the film to change for this film alone (own -- template scene.py):
 //                    template → <film>/template/ (film.json "template": "./template"),
 //                    scene.py → <film>/engine/scene.py (render, estimate and animatic use it)
@@ -102,6 +107,8 @@ for (const [i, step] of steps.entries()) {
       run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `1-${film.format.duration * film.format.fps}`, "--engine", "eevee", "--samples", "4", "--scale", "33", "--out", "build/eev", ...more]));
       run(PY, [fromSkill("engine/scripts/animatic.py")]);
       break;
+    case "studio": run("node", [fromSkill("engine/scripts/studio.mjs"), "--film", FILM, ...more]); break;
+    case "comments": run(PY, [fromSkill("engine/scripts/comments.py"), ...more]); break;
     case "own":
       // what the template or the scene can't do for this film is changed in the film's own copy
       if (!more.length) { console.error("own takes what to copy: own -- template scene.py"); process.exit(1); }
