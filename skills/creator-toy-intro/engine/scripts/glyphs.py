@@ -28,6 +28,11 @@ CHARS = {
     "cjk": F["counter"]["unit"] + F["counter"]["label"],
     "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta["handle"]]),
 }
+# the beats' own lettering (film.json story.segments, each beat's "text": a line or a list of
+# them), in the end card's face
+for s in F.get("story", {}).get("segments", []):
+    text = s.get("text", "")
+    CHARS["heavy"] += "".join(text) if isinstance(text, list) else str(text)
 FONTS = {}
 for role, chars in CHARS.items():
     path, index, name = face(role, lang, prefs.get(role, ()), [str(FILM / "fonts")])

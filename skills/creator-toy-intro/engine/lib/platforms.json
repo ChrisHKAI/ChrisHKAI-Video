@@ -8,6 +8,7 @@
     "x": {
       "name": "X",
       "release": "v1",
+      "maxDuration": 140,
       "themes": ["x-desktop", "x-mobile"],
       "covers": {
         "landscape": [{ "kind": "poster", "aspect": "full" }],

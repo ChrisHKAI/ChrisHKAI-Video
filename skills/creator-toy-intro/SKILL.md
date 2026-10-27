@@ -1,6 +1,6 @@
 ---
 name: creator-toy-intro
-description: Make a 30 s self-introduction film for a creator on X, starring the creator as a smooth 3D vinyl toy that pops out of their profile page, rendered in Blender Cycles. Use when someone asks for a self-intro or intro video, 自我介绍视频, 自我介紹短片, 个人介绍片 or a creator intro with a 3D toy.
+description: Make a self-introduction film for a creator on X (30 s by default, as long as what it says), starring the creator as a smooth 3D vinyl toy that pops out of their profile page, rendered in Blender Cycles. Use when someone asks for a self-intro or intro video, 自我介绍视频, 自我介紹短片, 个人介绍片 or a creator intro with a 3D toy.
 effort: xhigh
 ---
 
@@ -26,7 +26,10 @@ kits, the storyboard page) work. For each creator you also write the
 film's own code, as for isnail (`example/isnail/`): the cover walls'
 recipes, the end card's prop (from what they want to promote) and the exit;
 `references/` has the method for each. The profile picture is never
-redrawn: the creator's own peels off (`references/avatar.md`).
+redrawn: the creator's own peels off (`references/avatar.md`). A film can
+be pieces of the story with beats of its own between them, each on its own
+clock, so it runs as long as what it says (`references/beats.md`; one beat
+so far, `beats/phrase.js`).
 
 ## Making a film
 
@@ -41,7 +44,7 @@ made for them. Only paths, commands and code stay as they are.
 | 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
 | 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
 | 3 | the toy from the confirmed picture, in one of three kits; a turnaround beside it to approve | `references/toy.md` |
-| 4 | the film's own code (cover walls, exit, prop; the profile picture is the creator's own), then the storyboard page: the story, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `storyboard.md` |
+| 4 | the film's own code (cover walls, exit, prop, its beats; the profile picture is the creator's own), then the storyboard page: the story, the length, the beat grid, real preview renders under the platforms' controls; the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md`, `storyboard.md` |
 | 5 | how long, the render, the finish: the film, the effects-only cut, each platform's covers, the last look | `references/render.md` |
 
 ## Layout
@@ -50,9 +53,10 @@ made for them. Only paths, commands and code stay as they are.
 | --- | --- |
 | `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
-| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md` and `storyboard.md` (step 4), `render.md` (step 5) |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `render.md` (step 5) |
+| `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
-| `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
+| `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
 | `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
@@ -118,7 +122,8 @@ orientation), `sticker2d`, `pop` (confetti and leaf colours; party colours
 without it), `story` (the cover walls' pieces; events, places, camera keys
 and shakes only where they differ from the template's own `story.json`:
 `events` merge one by one, a list such as `camera` or `shakes` replaces the
-template's whole), `source` (the creator's link, platform,
+template's whole; `segments`, pieces of the story and beats one after
+another: `references/beats.md`), `source` (the creator's link, platform,
 handle), `toyFrom` (the pictures the user confirmed the toy is made from)
 and `step` (the step a film being made is at).
 
@@ -173,6 +178,8 @@ An animatic: `--engine eevee --samples 4 --scale 33 --out build/eev`.
 ## Rules the films taught
 
 - One toy on screen, ever: the toy and the flat sticker swap, never both.
+- The film is as long as what it says: one beat per point, each as long as
+  its animation needs, on whole bars; 30 s is a default, never a cap.
 - The profile picture is the creator's own, never redrawn: the page has to
   match their real page.
 - No fade to black: the last frame holds and is the cover.

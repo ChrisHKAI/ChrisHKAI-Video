@@ -465,7 +465,7 @@ export function mascotAt(t) {
 // fingers to its glasses at `at` (mm, toy space), or, by default, a wave (a
 // cat's raised paw)
 const SIG = TOY.signature ?? { move: "wave" };
-function signature(o, t, t0, g) {
+export function signature(o, t, t0, g) {
   if (g <= 0) return;
   if (SIG.move === "glasses") { o.aimL = { target: SIG.at, k: smooth(g) }; return; }
   o.armL = [0, 0, lerp(o.armL[2], 2.3 + 0.35 * Math.sin((t - t0) * TAU * 2.5), smooth(g))];
@@ -484,7 +484,9 @@ export const heroCentre = (t) => {
 // 阅读, a blue bar that fills with the count. Group space mm, origin at the
 // middle of the baseline, +z out of the type.
 export const GLYPHS = readFilmJSON("build/glyphs.json", null) ?? {};
-const adv = (k) => (GLYPHS[k] ? GLYPHS[k].advance : 0.6);
+export const adv = (k) => (GLYPHS[k] ? GLYPHS[k].advance : 0.6);
+// a glyph from build/glyphs.json as 3D lettering: em (m) its size, depth and bevel (m)
+export const glyphGeo = (key, em, depth, bevel) => ({ type: "curve", rings: GLYPHS[key].rings.map((r) => r.map(([x, y]) => [+(x * em).toFixed(6), +(y * em).toFixed(6)])), depth, bevel });
 export const STAT_EM = { digit: 70, wan: 62, label: 30 };
 // glyph keys of the counter's unit (万) and its two-character label (阅读)
 export const STAT_KEYS = { unit: `cjk:${film.counter.unit}`, label: [...film.counter.label].map((c) => `cjk:${c}`) };
@@ -675,7 +677,7 @@ function trackerRaw(name, t) {
 const TRACK = {};
 function tracker(name, t) {
   if (name === "wallFront") return wallCentre(Math.max(t, E.stand[1])); // squared up to the cover: not smoothed
-  TRACK[name] ??= smoothTracker((t2) => trackerRaw(name, t2), T.DURATION);
+  TRACK[name] ??= smoothTracker((t2) => trackerRaw(name, t2), T.STORY_DURATION);
   return TRACK[name](t);
 }
 const keyTarget = (k, t) => (typeof k.target === "string" ? tracker(k.target, t) : [wx(k.target[0]), k.target[2] * MM, wz(k.target[1])]);

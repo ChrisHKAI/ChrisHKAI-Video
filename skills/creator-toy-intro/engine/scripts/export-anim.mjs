@@ -9,13 +9,21 @@
 // events and sound cues the template's score reads).
 //
 // usage: FILM=<film folder> node engine/scripts/export-anim.mjs
-import { writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { FILM, importTemplate } from "../lib/film.js";
+import { film, FILM, fromFilm, importTemplate } from "../lib/film.js";
 import { trs } from "../lib/quat.js";
 
 const T = await importTemplate("timeline.js");
 const W = await importTemplate("world.js");
+for (const w of T.SEG?.warnings ?? []) console.log(`! ${w}`);
+// the film is as long as its segments: film.json follows, so render, finish and qa agree
+if (T.DURATION !== film.format.duration) {
+  const f = JSON.parse(readFileSync(fromFilm("film.json"), "utf8"));
+  f.format.duration = +T.DURATION.toFixed(4);
+  writeFileSync(fromFilm("film.json"), JSON.stringify(f, null, 2) + "\n");
+  console.log(`film.json format.duration: ${film.format.duration} → ${f.format.duration} s (the segments together)`);
+}
 const root = FILM;
 const SUB = 2;
 const FRAMES = Math.round(T.DURATION * T.FPS); // 900
@@ -79,7 +87,7 @@ for (const [name, list] of Object.entries(colors)) outColors[name] = compress(li
 
 mkdirSync(join(root, "build"), { recursive: true });
 // the story's numbers for the score (templates/<t>/score.py)
-writeFileSync(join(root, "build/timeline.json"), JSON.stringify({ FPS: T.FPS, DURATION: T.DURATION, BPM: T.BPM, BEAT: T.BEAT, BAR: T.BAR, EV: T.EV, cues: T.soundCues ? T.soundCues() : [] }, null, 1));
+writeFileSync(join(root, "build/timeline.json"), JSON.stringify(W.timeline ? W.timeline() : { FPS: T.FPS, DURATION: T.DURATION, BPM: T.BPM, BEAT: T.BEAT, BAR: T.BAR, EV: T.EV, cues: T.soundCues ? T.soundCues() : [] }, null, 1));
 const out = { fps: T.FPS, frames: FRAMES, sub: SUB, samples: SAMPLES, objects, tracks: outTracks, colors: outColors, scalars };
 mkdirSync(join(root, "build"), { recursive: true });
 writeFileSync(join(root, "build/anim.json"), JSON.stringify(out));

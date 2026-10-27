@@ -31,16 +31,21 @@ def arg(name, default):
 SB = json.loads((TEMPLATE / "storyboard.json").read_text())
 TL = json.loads((FILM / "build/timeline.json").read_text())
 FPS, DUR, BPM = TL["FPS"], TL["DURATION"], TL["BPM"]
-EV = TL["EV"]
+# the film may be pieces of the story between beats (SEGMENTS): the template's parts,
+# frames and hits are on the story's clock and go where the film plays them; each beat
+# adds its own (its module's "storyboard", in its own seconds)
+SEGS = TL.get("SEGMENTS")
+EV = TL["STORY"]["EV"] if SEGS else TL["EV"]
+SDUR = TL["STORY"]["DURATION"] if SEGS else DUR
 LANG = arg("--lang", "zh-Hant")
 SRC = FILM / arg("--in", "build/previs")
 OUT = FILM / "build/storyboard"
 
 
 def when(ref, i=0, dt=0.0):
-    """A time from an event name (its i-th time if it is a span), a number, or "end"."""
+    """A story time from an event name (its i-th time if it is a span), a number, or "end"."""
     if ref == "end":
-        return float(DUR)
+        return float(SDUR)
     if isinstance(ref, (int, float)):
         return float(ref) + dt
     v = EV[ref]
@@ -49,16 +54,50 @@ def when(ref, i=0, dt=0.0):
     return float(v) + dt
 
 
-frames = [(f, max(1, min(round(when(f.get("ev", f.get("at")), f.get("i", 0), f.get("dt", 0)) * FPS) + 1, DUR * FPS))) for f in SB["frames"]]
+def film_t(s):
+    """Where the film plays story time s (None: no piece of the film plays it)."""
+    if not SEGS:
+        return s
+    for g in SEGS:
+        if g["kind"] == "story" and g["s0"] - 1e-6 <= s <= g["s1"] + 1e-6:
+            return s - g["s0"] + g["f0"]
+    return None
+
+
+frame_n = lambda ft: max(1, min(round(ft * FPS) + 1, DUR * FPS))  # noqa: E731
+frames = [(f, frame_n(ft)) for f in SB["frames"] if (ft := film_t(when(f.get("ev", f.get("at")), f.get("i", 0), f.get("dt", 0)))) is not None]
+# the parts in film time: (part, from, to); a part the film cuts into pieces shows once per piece
+PARTS = []
+for pt in SB["parts"]:
+    a, b = when(pt["from"]), when(pt["to"])
+    if not SEGS:
+        PARTS.append((pt, a, b))
+        continue
+    for g in SEGS:
+        lo, hi = max(a, g.get("s0", 0)), min(b, g.get("s1", 0))
+        if g["kind"] == "story" and hi - lo > 1e-6:
+            PARTS.append((pt, lo - g["s0"] + g["f0"], hi - g["s0"] + g["f0"]))
+HITS = [(h, ft) for h in SB["hits"] if (ft := film_t(when(h["ev"]))) is not None]
+for g in SEGS or []:
+    if g["kind"] != "beat":
+        continue
+    sb = g.get("storyboard") or {}
+    PARTS.append((sb.get("part") or {"label": g["beat"], "what": "", "uses": ""}, g["f0"], g["f1"]))
+    frames += [(f, frame_n(g["f0"] + f["at"])) for f in sb.get("frames", [])]
+    HITS += [(h, g["f0"] + h["at"]) for h in sb.get("hits", [])]
+if SEGS:
+    PARTS.sort(key=lambda p: p[1])
+    frames.sort(key=lambda fn: fn[1])
+    HITS.sort(key=lambda h: h[1])
 if "--frames" in argv:
     print(",".join(str(n) for _, n in frames))
     raise SystemExit
 
 # ── the words, filled from film.json ────────────────────────────────────────
 W = {
-    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖；疊住出街平台嘅介面", "zones": "顯示平台介面", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 未跳到數（要整數、單位同兩個字標籤）", "c_nocounter": "呢部片冇計數器", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住"},
-    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图；叠着发布平台的界面", "zones": "显示平台界面", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 还不能跳数（要整数、单位和两个字的标签）", "c_nocounter": "这部片没有计数器", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住"},
-    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches; the platforms' controls laid over them", "zones": "Show the platforms' controls", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} cannot count up yet (whole digits, a unit and a two-character label)", "c_nocounter": "this film has no counter", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls"},
+    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖；疊住出街平台嘅介面", "zones": "顯示平台介面", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 未跳到數（要整數、單位同兩個字標籤）", "c_nocounter": "呢部片冇計數器", "c_len": "片長 {x} 秒，{p} 最長收 {m} 秒", "c_badlen": "片長 {x} 秒，超過 {p} 嘅 {m} 秒上限：拍子要縮短", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住"},
+    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图；叠着发布平台的界面", "zones": "显示平台界面", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 还不能跳数（要整数、单位和两个字的标签）", "c_nocounter": "这部片没有计数器", "c_len": "片长 {x} 秒，{p} 最长收 {m} 秒", "c_badlen": "片长 {x} 秒，超过 {p} 的 {m} 秒上限：拍子要缩短", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住"},
+    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches; the platforms' controls laid over them", "zones": "Show the platforms' controls", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} cannot count up yet (whole digits, a unit and a two-character label)", "c_nocounter": "this film has no counter", "c_len": "{x} s long; {p} takes up to {m} s", "c_badlen": "{x} s long, past {p}'s {m} s: shorten the beats", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls"},
 }[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
 PROP = {"snail": {"zh-Hant": "蝸牛", "zh-Hans": "蜗牛", "en": "the snail"}}
 toy = json.loads((FILM / FILM_JSON["toy"]).read_text())
@@ -79,7 +118,7 @@ FILL = {
     "proof1": "「" + short(posts["pinned"]["title"]) + "」", "proof2": "「" + short(posts["retro"]["title"]) + "」",
     "publish": "、".join(PLATFORMS[p]["name"] for p in publish), "aspect": W[orient],
 }
-t = lambda d: (d.get(LANG) or d.get("zh-Hant") or next(iter(d.values()))).format(**FILL)  # noqa: E731
+t = lambda d: (d if isinstance(d, str) else (d.get(LANG) or d.get("zh-Hant") or next(iter(d.values()), ""))).format(**FILL)  # noqa: E731
 e = html.escape
 
 # ── the agent's own checks ──────────────────────────────────────────────────
@@ -93,6 +132,11 @@ if counter:
     checks.append((bool(digits_ok), W["c_counter" if digits_ok else "c_badcounter"].format(x=FILL["counter"])))
 else:
     checks.append((True, W["c_nocounter"]))
+# the length: what the segments come to, within what every publish platform takes
+for p in publish:
+    cap = PLATFORMS[p].get("maxDuration")
+    if cap:
+        checks.append((DUR <= cap, W["c_len" if DUR <= cap else "c_badlen"].format(x=f"{DUR:g}", p=PLATFORMS[p]["name"], m=cap)))
 end = [n for _, n in frames if n >= (DUR - 1.5) * FPS and (SRC / f"{n:04d}.png").exists()]
 if end:
     im = Image.open(SRC / f"{end[-1]:04d}.png").convert("RGB")
@@ -127,14 +171,14 @@ for f, n in frames:
 hero_n = end[-1] if end else (have[-1] if have else None)
 hero = f'<img class="hero" src="{jpeg(SRC / f"{hero_n:04d}.png", 720 if orient == "landscape" else 420)}" alt="">' if hero_n else ""
 
-rows = "".join(f'<tr><td><b>{e(t(pt["label"]))}</b><br><code>{when(pt["from"]):.1f}–{when(pt["to"]):.1f} s</code></td><td>{e(t(pt["what"]))}</td><td>{e(t(pt["uses"]))}</td></tr>' for pt in SB["parts"])
+rows = "".join(f'<tr><td><b>{e(t(pt["label"]))}</b><br><code>{a:.1f}–{b:.1f} s</code></td><td>{e(t(pt.get("what", "")))}</td><td>{e(t(pt.get("uses", "")))}</td></tr>' for pt, a, b in PARTS)
 
 # the beat grid: a cell a beat, bands for the parts, a red line on each hit
 beats = round(DUR * BPM / 60)
 bt = 60 / BPM
-g = "".join(f'<div class="band b{k % 5}" style="grid-column:{round(when(pt["from"]) / bt) + 1}/{round(when(pt["to"]) / bt) + 1}">{e(t(pt["label"]))}</div>' for k, pt in enumerate(SB["parts"]))
+g = "".join(f'<div class="band b{k % 5}" style="grid-column:{round(a / bt) + 1}/{round(b / bt) + 1}">{e(t(pt["label"]))}</div>' for k, (pt, a, b) in enumerate(PARTS))
 g += "".join(f'<div class="beat{" down" if i % 4 == 0 else ""}" style="grid-column:{i + 1}"><span>{f"{i * bt:g}" if i % 4 == 0 else ""}</span></div>' for i in range(beats))
-g += "".join(f'<div class="hit{" low" if k % 2 else ""}" style="grid-column:{min(beats, round(when(h["ev"]) / bt) + 1)}/span 4"><i></i><em>{when(h["ev"]):.1f}s {e(t(h["label"]))}</em></div>' for k, h in enumerate(SB["hits"]))
+g += "".join(f'<div class="hit{" low" if k % 2 else ""}" style="grid-column:{min(beats, round(ht / bt) + 1)}/span 4"><i></i><em>{ht:.1f}s {e(t(h["label"]))}</em></div>' for k, (h, ht) in enumerate(HITS))
 
 anim = OUT / "animatic.mp4"
 animatic = f'<section><h2>{W["animatic"]}</h2><video controls src="animatic.mp4" style="width:100%;max-width:{720 if orient == "landscape" else 360}px"></video></section>' if anim.exists() else ""

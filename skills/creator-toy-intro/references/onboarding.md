@@ -63,8 +63,8 @@ Without image viewing, say so before starting: the checks cannot be skipped.
      and make the X film (the 9:16 one plays on phones).
    - only when the link is not an X profile: the creator's X handle, if they
      have one; the film's page is the X profile either way.
-   Not asked: the length (30 s is the only template for now), the folder,
-   colours, music.
+   Not asked: the length (it follows what the film says, 30 s by default:
+   `references/beats.md`), the folder, colours, music.
 5. Open the workspace: `node <skill>/engine/scripts/new-film.mjs
    <handle>-intro --link "…" --publish x --aspect 16:9|9:16`,
    in the user's current folder; tell them where it is. It writes

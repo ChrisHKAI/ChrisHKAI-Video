@@ -31,8 +31,11 @@ import synth  # noqa: E402  the synth kit (engine/lib/synth.py)
 
 ROOT = FILM
 TL = json.loads((ROOT / "build/timeline.json").read_text())
-EV = TL["EV"]
-DUR = TL["DURATION"]
+# the film may be pieces of the story between beats (SEGMENTS): the music below is
+# written on the story's own clock, then each piece goes where the film plays it
+SEGS = TL.get("SEGMENTS")
+EV = TL["STORY"]["EV"] if SEGS else TL["EV"]
+DUR = TL["STORY"]["DURATION"] if SEGS else TL["DURATION"]
 BEAT = TL["BEAT"]
 BAR = TL["BAR"]
 synth.setup(DUR, TL["BEAT"])
@@ -162,8 +165,9 @@ drums.add(kick(big=True), FIN)
 kick_times.append(FIN)
 
 
-for cue in TL["cues"]:
-    place(cue, sfx, verb)
+if not SEGS:  # with segments the cues are the film's: placed once the film's buses are made
+    for cue in TL["cues"]:
+        place(cue, sfx, verb)
 
 # ── Mix ─────────────────────────────────────────────────────────────────────
 duck = np.ones(N)
@@ -187,6 +191,57 @@ w = (tt >= EV["flat"][0]) & (tt < EV["flat"][1])
 for b in (music, drums, bass, keys):
     b.x[w] *= np.linspace(1, 0.2, w.sum())[:, None]
 
+# the loudness reference: bars 2–4, the groove under the profile
+L0, L1 = DROP, EV["count"][0]
+if SEGS:
+    # ── the film: each piece of the story where it plays, each beat on its own bars ──
+    story = {"music": music.x, "drums": drums.x, "bass": bass.x, "keys": keys.x}
+    DUR = TL["DURATION"]
+    synth.setup(DUR, BEAT)
+    N = synth.N
+    music, drums, bass, keys, sfx, verb = Bus(), Bus(), Bus(), Bus(), Bus(), Bus()
+    kick_times = []
+    fade = int(0.012 * SR)  # a joint is a cut on a downbeat: no click
+    for k, s in enumerate(SEGS):
+        i0, i1 = int(round(s["f0"] * SR)), min(N, int(round(s["f1"] * SR)))
+        if s["kind"] == "story":
+            j0 = int(round(s["s0"] * SR))
+            n = min(i1 - i0, len(story["music"]) - j0)
+            ramp = np.ones(n)
+            if k > 0:
+                ramp[:fade] = np.linspace(0, 1, fade)
+            if k < len(SEGS) - 1:
+                ramp[-fade:] = np.minimum(ramp[-fade:], np.linspace(1, 0, fade))
+            for name, b in (("music", music), ("drums", drums), ("bass", bass), ("keys", keys)):
+                b.x[i0:i0 + n] += story[name][j0:j0 + n] * ramp[:, None]
+            continue
+        # a beat's music (its module's "music"): a groove, a progression, big kicks on its hits
+        m = s.get("music") or {}
+        f0, f1 = s["f0"], s["f1"]
+        if m.get("groove", "light") != "none":
+            groove(f0, f1 - 0.06, mode=m.get("groove", "light"))
+        harmony(f0, f1, m.get("chords", ["G", "Em", "C", "D"]), bright=m.get("bright", 2200))
+        for h in [0.0, *m.get("hits", [])]:
+            drums.add(kick(big=True), f0 + h)
+            kick_times.append(f0 + h)
+            if h > 1.0:  # a riser into each hit after the first bar
+                rt = t_axis(1.0)
+                riser = sweep_filter(noise(1.0), "highpass", 450, 7000) * (rt / 1.0) ** 2 * 0.35
+                music.add(np.stack([riser, np.roll(riser, 31)], axis=1), f0 + h - 1.0)
+    duck = np.ones(N)
+    for kt in kick_times:
+        i = int(kt * SR)
+        n_ = int(0.2 * SR)
+        seg = 1 - 0.45 * np.exp(-np.arange(n_) / SR / 0.06)
+        duck[i:i + n_] = np.minimum(duck[i:i + n_], seg[: max(0, min(n_, N - i))])
+    for b in (music, bass, keys):
+        b.x *= duck[:, None]
+    for cue in TL["cues"]:
+        place(cue, sfx, verb)
+    tt = np.arange(N) / SR
+    inside = [s for s in SEGS if s["kind"] == "story" and s["s0"] <= L0 and L1 <= s["s1"]]
+    L0, L1 = (L0 - inside[0]["s0"] + inside[0]["f0"], L1 - inside[0]["s0"] + inside[0]["f0"]) if inside else (min(1.0, DUR / 4), DUR - 1.0)
+
 ir_t = t_axis(1.6)
 ir = np.stack([rng.standard_normal(len(ir_t)), rng.standard_normal(len(ir_t))], axis=1)
 ir *= np.exp(-ir_t / 0.4)[:, None]
@@ -201,7 +256,7 @@ mix = signal.sosfilt(sos("highpass", 25), mix, axis=0)
 mix *= np.clip((DUR - tt) / 0.8, 0, 1)[:, None]
 
 
-sec = mix[int(DROP * SR):int(EV["count"][0] * SR)]
+sec = mix[int(L0 * SR):int(L1 * SR)]
 level = 10 ** (-9.0 / 20) / max(np.sqrt((sec ** 2).mean()), 1e-9)
 mix *= level
 mix = limit(compress(mix))

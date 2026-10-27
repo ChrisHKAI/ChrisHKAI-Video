@@ -19,13 +19,15 @@ export const fromSkill = (...p) => join(SKILL, ...p);
 export const OWN_TEMPLATE = /^\.|[\\/]/.test(film.template ?? "");
 export const TEMPLATE = OWN_TEMPLATE ? resolve(FILM, film.template) : join(SKILL, "templates", film.template ?? "");
 export const fromTemplate = (...p) => join(TEMPLATE, ...p);
-// a template's module. Templates reach the engine as "#engine/<file>": inside the
-// skill its package.json maps that; for a film's own copy, engine-hooks.mjs does
+// a module of the template, the skill or the film (a beat, a prop). They reach the
+// engine as "#engine/<file>": inside the skill its package.json maps that; for
+// the film's own modules, engine-hooks.mjs does
 let hooked = false;
-export function importTemplate(...p) {
-  if (OWN_TEMPLATE && !hooked) { register("./engine-hooks.mjs", import.meta.url); hooked = true; }
-  return import(pathToFileURL(fromTemplate(...p)).href);
+export function importFile(path) {
+  if (!hooked) { register("./engine-hooks.mjs", import.meta.url); hooked = true; }
+  return import(pathToFileURL(path).href);
 }
+export const importTemplate = (...p) => importFile(fromTemplate(...p));
 export const readFilmJSON = (rel, fallback) => {
   const f = fromFilm(rel);
   return existsSync(f) ? JSON.parse(readFileSync(f, "utf8")) : fallback;

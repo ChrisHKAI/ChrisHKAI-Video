@@ -1,15 +1,20 @@
 // Every object of the isnail-30 world (geometry, material, parent) and how
 // each one is sampled at film time t: engine/scripts/export-anim.mjs declares
 // them, samples them twice a frame and writes build/anim.json for Blender.
+// Between pieces of the story, a beat (beats.js) has the toy, the camera and
+// the light on its own stage while the story stands still.
 import { film } from "#engine/film.js";
 import { trs, qEuler } from "#engine/quat.js";
 import { MASCOT_PARTS, toyGeo } from "#engine/toy.js";
 import { PAPER } from "#engine/labels.js";
+import { toyFrom } from "#engine/beatkit.js";
 import * as T from "./timeline.js";
 import * as A from "./anim.js";
+import { BEATS, beatAt } from "./beats.js";
 
 const MM = A.MM;
-export const cuts = [T.EV.cut]; // hard cuts: each gets an extra key just before it
+// hard cuts: each gets an extra key just before it (every join between segments, and a beat's own)
+export const cuts = T.SEG.cutsWith([T.EV.cut], BEATS.flatMap((B) => (B.b.cuts ?? []).map((g) => B.f0 + g)));
 export const scalars = () => ({ fov: [], focus: [], fstop: [], glint: [], coverMix: [], coverFlat: [], blob: [], fx_energy: [], fx_color: [] });
 let pieces = [], pieces2 = [];
 
@@ -40,7 +45,7 @@ export function declare({ add, pack, objects }) {
   // act 2: the selected post's outline (the theme's accent), and the count in 3D lettering
   A.GLOW_BARS.forEach((b, i) => add({ name: `glow_${i}`, geo: { type: "roundBox", size: b.size.map((v) => v * MM), radius: 1.1 * MM }, mat: { type: "glow", color: T.ACCENT, strength: 3 }, anim: true }));
   add({ name: "stat_lid", geo: { type: "roundBox", size: [0.072, 0.0006, 0.024], radius: 0.0002 }, mat: { type: "glass" }, anim: true });
-  const glyphGeo = (key, em, depth, bevel) => ({ type: "curve", rings: A.GLYPHS[key].rings.map((r) => r.map(([x, y]) => [+(x * em).toFixed(6), +(y * em).toFixed(6)])), depth, bevel });
+  const glyphGeo = A.glyphGeo;
   const SE = A.STAT_EM;
   for (let i = 0; i < A.STAT.slots.length; i++) for (let d = 0; d <= 9; d++) {
     add({ name: `stat_${i}_${d}`, geo: glyphGeo(`latin:${d}`, SE.digit * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
@@ -84,6 +89,8 @@ export function declare({ add, pack, objects }) {
   for (let i = 0; i < A.FLAKES; i++) add({ name: `flake_${i}`, geo: i < 2 ? { type: "ellipsoid", r: [0.007, 0.0012, 0.0032] } : { type: "box", size: [0.0042, 0.0006, 0.0042] }, mat: { type: "flake" }, anim: true, colorAnim: true });
   for (let i = 0; i < A.SPARKS; i++) add({ name: `spark_${i}`, geo: { type: "octa", r: 0.0018 }, mat: { type: "spark", strength: 6 }, anim: true, colorAnim: true });
   for (let i = 0; i < A.BITS; i++) add({ name: `bit_${i}`, geo: { type: "box", size: [0.006, 0.0006, 0.0045] }, mat: { type: "flake" }, anim: true, colorAnim: true });
+  // the beats' own objects, each on its stage (names and parents get the beat's prefix)
+  for (const B of BEATS) B.b.declare?.((o) => add({ ...o, name: B.prefix + o.name, ...(o.parent ? { parent: B.prefix + o.parent } : {}) }));
   add({ name: "fx", geo: null, light: true, anim: true });
   add({ name: "camera", geo: null, camera: true, anim: true });
   pieces = objects.filter((o) => o._piece);
@@ -91,9 +98,13 @@ export function declare({ add, pack, objects }) {
 }
 
 // put(name, transform) every sample; putColor(name, hex) and the scalars on
-// whole frames (`whole`); camera scalars on every regular sample
-export function sample(t, { put, putColor, regular, whole, scalars, hex }) {
-  const cam = A.cameraAt(t);
+// whole frames (`whole`); camera scalars on every regular sample. During a
+// beat its camera, toy and light play (g: the beat's own seconds) and the
+// story stands still at t.
+export function sample(ft, { put, putColor, regular, whole, scalars, hex }) {
+  const B = beatAt(ft), g = B ? ft - B.f0 : 0;
+  const t = T.SEG.storyTime(ft);
+  const cam = B ? B.b.camera(g) : A.cameraAt(t);
   put("camera", cam.tr);
   if (regular) {
     scalars.fov.push(cam.fov);
@@ -105,10 +116,11 @@ export function sample(t, { put, putColor, regular, whole, scalars, hex }) {
   put("panel_retroPost", A.retroAt(t));
   for (let i = 0; i < A.STRIPS; i++) put(`strip_${String(i).padStart(2, "0")}`, A.stripAt(i, t));
 
-  const { hero } = A.mascotAt(t);
+  const m = B ? toyFrom(B.b.pose?.(g) ?? null, B.stage) : null; // the toy on the beat's stage
+  const { hero } = m ?? A.mascotAt(t);
   put("hero", hero);
-  A.mascotParts(t).forEach((tr, i) => put(`hero_${MASCOT_PARTS[i].name}`, tr));
-  const b = A.blobAt(t);
+  (m ? m.parts : A.mascotParts(t)).forEach((tr, i) => put(`hero_${MASCOT_PARTS[i].name}`, tr));
+  const b = m ? m.blob : A.blobAt(t);
   put("blob", b.tr);
 
   A.GLOW_BARS.forEach((_, i) => put(`glow_${i}`, A.glowBarAt(i, t)));
@@ -132,14 +144,35 @@ export function sample(t, { put, putColor, regular, whole, scalars, hex }) {
   for (let i = 0; i < A.SPARKS; i++) { const f = A.sparkAt(i, t); put(`spark_${i}`, f.tr); putColor(`spark_${i}`, f.color); }
   for (let i = 0; i < A.BITS; i++) { const f = A.bitAt(i, t); put(`bit_${i}`, f.tr); putColor(`bit_${i}`, f.color); }
 
-  const fx = A.fxAt(t);
+  for (const Bk of BEATS) Bk.b.sample?.((name, tr) => put(Bk.prefix + name, tr), ft - Bk.f0, (name, color) => putColor(Bk.prefix + name, color));
+
+  const fx = B ? (B.b.light?.(g) ?? { p: [B.stage[0], 0.15, 0.15], energy: 0.3, color: "#FFF1E6" }) : A.fxAt(t);
   put("fx", trs(fx.p));
   if (whole) {
-    scalars.glint.push(+A.glintAt(t).toFixed(3));
+    scalars.glint.push(+(m ? m.glint : A.glintAt(t)).toFixed(3));
     scalars.coverMix.push(+A.coverMix(t).toFixed(4));
     scalars.coverFlat.push(+A.coverFlat(t).toFixed(4));
     scalars.blob.push(+b.opacity.toFixed(3));
     scalars.fx_energy.push(+fx.energy.toFixed(4));
     scalars.fx_color.push(hex(fx.color).map((v) => +v.toFixed(3)));
   }
+}
+
+// build/timeline.json: the film's clock for the score, the storyboard and the
+// last look. With segments, the story's events and cues where the film plays
+// them, the beats' cues in film time, the story's own clock (STORY) for the
+// score, and each segment with its beat's music and storyboard
+export function timeline() {
+  const base = { FPS: T.FPS, DURATION: T.DURATION, BPM: T.BPM, BEAT: T.BEAT, BAR: T.BAR };
+  if (!T.SEG.on) return { ...base, EV: T.EV, cues: T.soundCues() };
+  const cues = T.SEG.cues(T.soundCues());
+  for (const B of BEATS) B.b.cues?.((g, kind, extra = {}) => cues.push({ t: +(B.f0 + g).toFixed(4), kind, ...extra }));
+  cues.sort((a, b) => a.t - b.t);
+  const r4 = (v) => +v.toFixed(4);
+  const SEGMENTS = T.SEG.list.map((s) => {
+    if (s.kind === "story") return { kind: "story", f0: r4(s.f0), f1: r4(s.f1), s0: s.s0, s1: s.s1 };
+    const B = BEATS.find((x) => x.i === s.i);
+    return { kind: "beat", beat: s.entry.beat, f0: r4(s.f0), f1: r4(s.f1), music: B.b.music ?? {}, storyboard: B.b.storyboard ?? {} };
+  });
+  return { ...base, EV: T.SEG.events(T.EV), cues, STORY: { DURATION: T.STORY_DURATION, EV: T.EV }, SEGMENTS };
 }

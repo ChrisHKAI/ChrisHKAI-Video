@@ -1,6 +1,7 @@
 {
-  "_about": "The isnail-30 story's own tuned values: beat times (seconds), the cover walls' width (mm), the CTA stage's place, the lens's vertical field (deg) and the camera shakes on hits. film.json \"story\" overrides any of them; the cover walls' pieces (wall, wall2) are each film's own.",
+  "_about": "The isnail-30 story's own tuned values: its length and beat times (seconds), the cover walls' width (mm), the CTA stage's place, the lens's vertical field (deg) and the camera shakes on hits. film.json \"story\" overrides any of them; the cover walls' pieces (wall, wall2) are each film's own.",
   "events": { "glint": 0.6, "peel": [1, 1.9], "pop": 2, "land": 2.4, "push": [2.75, 3.7], "lensGlint": 3.25, "hops": [[4, 4.5], [4.55, 5.2]], "click": 6, "focus": [6, 6.8], "stand2": [6.05, 6.75], "hopOff": [6.08, 6.45], "walk": [6.9, 7.45], "point": 7.5, "count": [8, 9.75], "lock": 10, "cheer": [10.1, 10.8], "retroIn": [10.6, 11.4], "leap": [11.45, 12.25], "sink2": [11.6, 12.3], "stand": [12, 12.8], "slam": 13, "rise9": [14, 15.6], "climb9": [15.55, 15.95], "rise46": [16, 17.2], "climb46": [17.45, 17.95], "point7": 18.4, "rise7": [18.5, 19], "arrow": [19, 19.35], "peak": 20, "settle": [20, 21.8], "tagGlint": 20.6, "toSticker": [21.35, 21.7], "flat": [22, 22.6], "flatLand": 22.45, "peel2": [23.8, 24], "repop": 24, "cut": 24.383333333333333, "logo": [24.39, 24.7], "snail": [24.7, 25], "eyes": [24.9, 25.1], "ride": 25.15, "push2": [25.25, 25.75], "glint2": 25.5, "glide": [25.9, 27.9], "letters": 26, "final": 28, "name": 28, "crown": [28.36, 28.62] },
+  "duration": 30,
   "coverMM": 640,
   "stage": [100, 0, 0],
   "fov": 30,

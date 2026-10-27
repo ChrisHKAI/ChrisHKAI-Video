@@ -2,13 +2,16 @@
 // page's layout comes from the theme, the creator's content and the story's
 // tuned events, places and camera keys from film.json. Three readers use
 // them: the UI builder, the motion (anim.js → Blender) and the score (through
-// build/timeline.json). Every time is film seconds; at 120 BPM a beat is
-// 0.5 s and a bar 2 s, and every big hit sits on a downbeat.
+// build/timeline.json). Every time here is the story's own seconds (the
+// film's, unless film.json "story.segments" cuts it into pieces between beats:
+// engine/lib/segments.js); at 120 BPM a beat is 0.5 s and a bar 2 s, and every
+// big hit sits on a downbeat.
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { film, fromFilm, fromSkill, readFilmJSON } from "#engine/film.js";
 import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "#engine/math.js";
 import { trs, qId, qEuler, apply, mulT } from "#engine/quat.js";
+import { makeSegments } from "#engine/segments.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
@@ -34,8 +37,12 @@ export const FPS = film.format.fps;
 export const BPM = film.format.bpm;
 export const BEAT = 60 / BPM;
 export const BAR = BEAT * 4;
-export const DURATION = film.format.duration;
 export const bar = (n, beat = 0) => +(n * BAR + beat * BEAT).toFixed(4);
+// the film: the story whole, or pieces of it between beats (film.json "story.segments");
+// the story's own length is story.json "duration" when it is cut up, the film's otherwise
+export const STORY_DURATION = S.segments?.length ? S.duration : film.format.duration;
+export const SEG = makeSegments({ list: S.segments, storyDuration: STORY_DURATION, bar: BAR });
+export const DURATION = SEG.on ? SEG.duration : film.format.duration;
 
 // ── The page (theme contract: themes/<theme>/layout.js) ─────────────────────
 export const { UI_W, UI_H, UI_SCALE, PANELS, AVATAR, ACCENT } = L;
