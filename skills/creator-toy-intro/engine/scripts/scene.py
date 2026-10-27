@@ -9,7 +9,7 @@ in the wall's space. Keys go straight into the F-curves.
 
 usage:
   blender -b --factory-startup -P scripts/scene.py -- \
-      [--frames 1-720 | 13,49,121 | 1-20,45] [--samples 128] [--scale 100] \
+      [--frames 1-720 | 13,49,121 | 1-20,45] [--samples 48] [--scale 100] \
       [--out build/render] [--save build/scene.blend] [--engine cycles|eevee] [--resume]
 """
 import json
@@ -37,7 +37,7 @@ def arg(name, default):
 
 
 DATA = json.loads((ROOT / "build/anim.json").read_text())
-SAMPLES = int(arg("--samples", 128))
+SAMPLES = int(arg("--samples", 48))  # with the denoiser, 48 looks the same as 128 (references/render.md)
 SCALE = int(arg("--scale", 100))
 OUT = ROOT / arg("--out", "build/render")
 ENGINE = arg("--engine", "cycles")

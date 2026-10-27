@@ -62,17 +62,22 @@ for (const [i, step] of steps.entries()) {
       run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
       if (!more.includes("--avatar")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);
       break;
-    case "render": run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/scene.py"), "--", ...more])); break;
+    case "render": {
+      // no --frames: the whole film, its frame count from film.json (duration × fps)
+      const all = more.includes("--frames") ? [] : ["--frames", `1-${film.format.duration * film.format.fps}`];
+      run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/scene.py"), "--", ...all, ...more]));
+      break;
+    }
     case "estimate": {
       // three frames at the final settings: how long the full render takes, before committing to it
       const n = film.format.duration * film.format.fps, at = [0.3, 0.55, 0.85].map((k) => Math.round(n * k));
-      const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/scene.py"), "--", "--frames", at.join(","), "--samples", "128", "--scale", "100", "--out", "build/estimate", ...more]);
+      const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/scene.py"), "--", "--frames", at.join(","), "--samples", "48", "--scale", "100", "--out", "build/estimate", ...more]);
       console.log(`\n▶ ${cmd} ${args.join(" ")}`);
       const r = spawnSync(cmd, args, { cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), encoding: "utf8", maxBuffer: 1 << 26 });
       const secs = [...(r.stdout ?? "").matchAll(/rendered frame \d+ in ([\d.]+)s/g)].map((m) => +m[1]);
       if (r.status !== 0 || !secs.length) { console.error((r.stderr || r.stdout || "").slice(-2000)); process.exit(r.status || 1); }
       const per = secs.reduce((x, y) => x + y, 0) / secs.length;
-      console.log(`about ${per.toFixed(0)} s a frame at 128 samples, full size: the film's ${n} frames ≈ ${(per * n / 3600).toFixed(1)} h; previews (32 samples, half size) ≈ ${(per / 16).toFixed(1)} s a frame`);
+      console.log(`about ${per.toFixed(0)} s a frame at 48 samples, full size: the film's ${n} frames ≈ ${(per * n / 3600).toFixed(1)} h; previews (32 samples, half size) ≈ ${(per / 16).toFixed(1)} s a frame`);
       break;
     }
     case "finish":

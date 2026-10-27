@@ -9,17 +9,25 @@ long first, then let it run in the background.
 FILM=<film> node <skill>/engine/run.mjs estimate
 ```
 
-renders three frames at the final settings (Cycles, 128 samples, full size)
-and says how long the whole film takes (isnail on an Apple M-series GPU:
-about 6–7 s a frame, 1.5–2 h for 30 s). Tell the user. On a slow computer
-(hours more, no GPU) offer a lighter render: 64 samples (`--samples 64`)
-looks nearly the same; the EEVEE animatic is the draft.
+renders three frames at the final settings (Cycles, 48 samples, full size)
+and says how long the whole film takes (an Apple M3 Max: about 4 s a frame,
+about 40 min for 30 s). Tell the user. 48 samples is the final quality:
+the denoiser (OpenImageDenoise) and adaptive sampling are on, and side by
+side with 128 samples it looks the same (the Tim and 铁柱AGI films: under
+1/255 mean difference) at half the time. Render 128 only when the user asks
+for it. On a slow computer (hours more, no GPU) offer 32 samples
+(`--samples 32`); the EEVEE animatic is the draft.
 
 ## Render
 
 ```bash
-FILM=<film> node <skill>/engine/run.mjs render -- --frames 1-900 --samples 128 --scale 100 --resume
+FILM=<film> node <skill>/engine/run.mjs render -- --samples 48 --scale 100 --resume
 ```
+
+With no `--frames` it renders the whole film: its frame count is film.json's
+`format.duration` × `format.fps` (30 s is 900 frames, a 38 s film 1,140), so
+a film whose length follows its content needs no other change. `--frames`
+renders a part (`--frames 300-420`, `--frames 13,49,121`).
 
 Run it in the background. It keeps a Mac awake while it runs, prints each
 frame with the time left, and `--resume` picks up from the frames already

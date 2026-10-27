@@ -135,7 +135,7 @@ way the app writes them (`5.5万`, `1,380`), and taken as the creator gives them
 ```bash
 FILM=<film> node engine/run.mjs data      # recipes glyphs hero ui anim sound
 FILM=<film> node engine/run.mjs lookdev   # the toy's turnaround → build/lookdev/
-FILM=<film> node engine/run.mjs render -- --frames 1-900 --samples 128 --scale 100
+FILM=<film> node engine/run.mjs render -- --samples 48 --scale 100 --resume   # the whole film: duration × fps from film.json
 FILM=<film> node engine/run.mjs finish    # → out/ (+ the effects-only cut), covers → out/covers/, the last look → build/qa.txt
 ```
 
