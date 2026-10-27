@@ -28,8 +28,8 @@ recipes, the end card's prop (from what they want to promote) and the exit;
 `references/` has the method for each. The profile picture is never
 redrawn: the creator's own peels off (`references/avatar.md`). A film can
 be pieces of the story with beats of its own between them, each on its own
-clock, so it runs as long as what it says (`references/beats.md`; one beat
-so far, `beats/phrase.js`).
+clock, so it runs as long as what it says (`references/beats.md`; four
+beats so far in `beats/`).
 
 ## Making a film
 
@@ -54,7 +54,7 @@ made for them. Only paths, commands and code stay as they are.
 | `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
 | `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `render.md` (step 5) |
-| `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `phrase.js` (a line of big type rises a letter at a time) |
+| `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `page-stand.js` (Kin's opening: the page stands up, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
 | `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |

@@ -11,14 +11,18 @@
 // plus s0, s1 (story seconds) for a story piece or the film.json entry for a beat.
 const EPS = 1e-4;
 
-export function makeSegments({ list, storyDuration, bar }) {
+// pieces: the template's own names for parts of its story ({ "endCard": [24.383, "end"] }),
+// so an entry may say { "story": "endCard" }
+export function makeSegments({ list, storyDuration, bar, pieces = {} }) {
   const on = Array.isArray(list) && list.length > 0;
   const warnings = [];
   let f = 0;
   const segs = (on ? list : [{ story: [0, storyDuration] }]).map((entry, i) => {
     let s;
     if (entry.story) {
-      const [a, b] = entry.story.map((v) => (v === "end" ? storyDuration : v));
+      const range = typeof entry.story === "string" ? pieces[entry.story] : entry.story;
+      if (!range) throw new Error(`story.segments[${i}]: the story has no piece "${entry.story}" (it has ${Object.keys(pieces).join(", ") || "none"})`);
+      const [a, b] = range.map((v) => (v === "end" ? storyDuration : v));
       if (!(a >= 0 && b > a && b <= storyDuration + 1e-6)) throw new Error(`story.segments[${i}]: story [${entry.story}] is not inside the story's 0–${storyDuration} s`);
       s = { i, kind: "story", s0: a, s1: b, len: b - a, entry };
     } else if (entry.beat) {

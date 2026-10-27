@@ -41,7 +41,7 @@ export const bar = (n, beat = 0) => +(n * BAR + beat * BEAT).toFixed(4);
 // the film: the story whole, or pieces of it between beats (film.json "story.segments");
 // the story's own length is story.json "duration" when it is cut up, the film's otherwise
 export const STORY_DURATION = S.segments?.length ? S.duration : film.format.duration;
-export const SEG = makeSegments({ list: S.segments, storyDuration: STORY_DURATION, bar: BAR });
+export const SEG = makeSegments({ list: S.segments, storyDuration: STORY_DURATION, bar: BAR, pieces: S.pieces });
 export const DURATION = SEG.on ? SEG.duration : film.format.duration;
 
 // ── The page (theme contract: themes/<theme>/layout.js) ─────────────────────

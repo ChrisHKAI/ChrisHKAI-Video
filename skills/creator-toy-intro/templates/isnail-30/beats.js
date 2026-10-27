@@ -27,6 +27,10 @@ for (const s of T.SEG.list.filter((x) => x.kind === "beat")) {
     at: (x, y, z) => [stage[0] + x, stage[1] + y, stage[2] + z],
     fov: T.FOV, aspect: T.ASPECT,
     glyph: { adv: A.adv, geo: A.glyphGeo, has: (key) => !!A.GLYPHS[key] },
+    // the theme's accent, the confetti's colours, and the page (its picture, panels in UI px, the profile picture's place)
+    accent: T.ACCENT,
+    pop: film.pop ?? { confetti: ["#F6C445", "#4E7BEF", "#7FC86B", "#F59A3B", "#FFFFFF", "#B44CC8"] },
+    page: { image: "assets/ui.png", w: T.UI_W, h: T.UI_H, panels: T.PANELS, avatar: T.AVATAR, slab: A.SLAB_T },
     signature: A.signature,
     kit, math, quat, mulberry32, readFilmJSON,
   });

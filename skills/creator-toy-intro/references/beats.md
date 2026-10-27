@@ -18,7 +18,14 @@ as its animation needs, on whole bars.
 
 - `{ "story": [from, to] }` plays that piece of the template's story (story
   seconds; `"end"` for its last), on the story's own clock: its moves,
-  camera, sounds and music, as the template tuned them.
+  camera, sounds and music, as the template tuned them. The template names
+  its pieces (story.json `pieces`): isnail-30 has `opening` (0–6: the page,
+  the sticker peel, the pop), `act2` (6–12: the pinned cover as a wall, the
+  counter), `act3` (12–20.383: the second cover as a wall, the climb),
+  `exit` (20.383–24.383) and `endCard` (24.383–end), so `{ "story":
+  "endCard" }` will do. When a beat comes before the end card, set film.json
+  `story.exit` to `"jump"`: the toy then drops onto the prop from above, as
+  it would after a beat's leap.
 - `{ "beat": <name or path>, "bars": n, … }` plays a beat for n bars (or
   `"len"` seconds). A name is one of the skill's (`beats/<name>.js`); a path
   is the film's own (`"beats/calendar.js"`, in the film). The rest of the
@@ -29,6 +36,23 @@ as its animation needs, on whole bars.
 to, so `render`, `finish` and `qa` agree; the storyboard page shows the
 length and checks it against each publish platform's longest
 (`platforms.json` `maxDuration`: X takes 140 s).
+
+## The skill's beats
+
+Each is a worked answer to "how does this become an animation"; take one
+when it fits the point, change it or write the film's own when it doesn't.
+Their options are at the top of each file.
+
+| beat | for | entry |
+| --- | --- | --- |
+| `page-stand` | an opening: the page fills the frame like a screen, turns and parts into slabs, the toy puffs out of the picture on the 2.0 s downbeat (Kin's; the story's own `opening` is the other) | `{ "beat": "page-stand", "bars": 2, "turn": "right" }` |
+| `count` | a number: counts up in 3D as the platform writes it (`10,000`, `1.5万`, `380+`), a label of any length, locks on a downbeat | `{ "beat": "count", "bars": 3, "to": 10000, "label": "关注者" }` |
+| `calendar` | a span of time, from the idea alone: a flip calendar runs from one day to another, a count beside it, a stamp on the lock | `{ "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24", "count": { "to": 10000, "label": "关注者" }, "stamp": "万粉" }` |
+| `phrase` | the user's own words: a line rises a letter at a time | `{ "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人" }` |
+
+Not here yet (the cgnot996 test made them for its film): chat bubbles from
+a real chat (Kin's), an envelope that opens on an invitation, a post that
+drops in like a notification, and a cover wall as a beat of its own.
 
 ## On the beat
 
@@ -59,8 +83,9 @@ The beat is that answer as code.
 | `len`, `bar`, `beat` | its length, a bar and a beat (s) |
 | `stage`, `at(x, y, z)` | its own place, 50 m from everything else (past the camera's 40 m clip), and stage metres → world |
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
-| `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`; the entry's `text` is cut in the end card's face) |
-| `kit` | `engine/lib/beatkit.js`: `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `cameraFrom(keys, …)`, `HIDDEN` |
+| `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face) |
+| `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
+| `kit` | `engine/lib/beatkit.js`: `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `confetti(…)`; `HIDDEN` |
 | `signature` | the toy's own move (toy.json `signature`) on a pose |
 | `math`, `quat`, `mulberry32`, `readFilmJSON` | the engine's helpers |
 

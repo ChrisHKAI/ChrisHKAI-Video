@@ -28,11 +28,24 @@ CHARS = {
     "cjk": F["counter"]["unit"] + F["counter"]["label"],
     "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta["handle"]]),
 }
-# the beats' own lettering (film.json story.segments, each beat's "text": a line or a list of
-# them), in the end card's face
-for s in F.get("story", {}).get("segments", []):
-    text = s.get("text", "")
-    CHARS["heavy"] += "".join(text) if isinstance(text, list) else str(text)
+# the beats' own lettering, in the end card's face: every word in a beat's entry
+# (film.json story.segments: its text, label, stamp…), and the digits, signs and date
+# words a count or a calendar runs through
+def words(v):
+    if isinstance(v, str):
+        return "" if v.startswith("#") else v  # not a colour
+    if isinstance(v, list):
+        return "".join(words(x) for x in v)
+    if isinstance(v, dict):
+        return "".join(words(x) for x in v.values())
+    return ""
+
+
+BEATS = [s for s in F.get("story", {}).get("segments", []) if "beat" in s]
+for s in BEATS:
+    CHARS["heavy"] += words({k: v for k, v in s.items() if k != "beat"})
+if BEATS:
+    CHARS["heavy"] += "0123456789,.+%月日"
 FONTS = {}
 for role, chars in CHARS.items():
     path, index, name = face(role, lang, prefs.get(role, ()), [str(FILM / "fonts")])
