@@ -11,13 +11,11 @@
 // usage: FILM=<film folder> node engine/scripts/export-anim.mjs
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { film, FILM, fromSkill } from "../lib/film.js";
+import { FILM, importTemplate } from "../lib/film.js";
 import { trs } from "../lib/quat.js";
 
-const template = (f) => import(pathToFileURL(fromSkill("templates", film.template, f)).href);
-const T = await template("timeline.js");
-const W = await template("world.js");
+const T = await importTemplate("timeline.js");
+const W = await importTemplate("world.js");
 const root = FILM;
 const SUB = 2;
 const FRAMES = Math.round(T.DURATION * T.FPS); // 900

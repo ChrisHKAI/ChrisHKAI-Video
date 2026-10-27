@@ -54,7 +54,7 @@ made for them. Only paths, commands and code stay as they are.
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
 | `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard, animatic and diff-anim (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
-| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix) |
+| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
 ## Requirements
@@ -81,11 +81,30 @@ A folder outside the skill, never committed:
   build/           everything generated (anim.json, glyphs, frames)
   research/        step 2: facts.json, screenshots, the material table
   out/             the finished film; out/covers/ the platforms' covers
+  template/        only if the film has its own copy of the story (below)
+  engine/scene.py  only if the film has its own copy of the Blender scene (below)
 ```
 
 `engine/scripts/new-film.mjs` opens one (step 1).
 
-film.json holds: `template`, `theme`, `language`, `format` (fps, bpm,
+When this film needs what the template or the Blender scene can't do (a
+story told in another order, a beat of its own, its own look), change a
+copy in the film, never the skill:
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs own -- template scene.py
+```
+
+copies `templates/<template>/` to `<film>/template/` (film.json `template`
+becomes `"./template"`, `templateFrom` keeps the original's name) and
+`engine/scripts/scene.py` to `<film>/engine/scene.py`; every step then runs
+the film's copies (`render`, `estimate` and `animatic` say so). The copies
+find the engine of the skill that runs them: the template as
+`#engine/<file>`, Python through the `SKILL` variable `run.mjs` sets. Take
+only what you change: a copy no longer follows the skill's fixes.
+
+film.json holds: `template` (a template's name, or `./template` for the
+film's own copy), `theme`, `language`, `format` (fps, bpm,
 duration, size), `output`, `publish` (where the film goes: ids in
 `engine/lib/platforms.json`; default the stage theme's platform), `toy`, `recipes` (in order; `@avatar`,
 `@sticker2d` and `@shape` are engine tools), `branding` (the creator's own

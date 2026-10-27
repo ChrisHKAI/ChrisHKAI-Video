@@ -8,13 +8,13 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { film, FILM, fromFilm, fromSkill } from "../lib/film.js";
+import { film, FILM, fromFilm, fromSkill, importTemplate } from "../lib/film.js";
 import { findChrome } from "../lib/tools.js";
 
 const load = (...p) => import(pathToFileURL(fromSkill(...p)).href);
 const theme = await load("themes", film.theme, "page.js");
 const L = await load("themes", film.theme, "layout.js");
-const { default: pages } = await load("templates", film.template, "ui.js");
+const { default: pages } = await importTemplate("ui.js");
 
 for (const d of ["ui", "assets", "build"]) mkdirSync(fromFilm(d), { recursive: true });
 const asset = (f) => `'file://${encodeURI(fromFilm(f))}'`; // for url(...) inside double-quoted attributes

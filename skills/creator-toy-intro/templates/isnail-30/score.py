@@ -15,6 +15,7 @@ synth kit (engine/lib/synth.py), the arrangement and the mix are this story's.
 usage: FILM=<film folder> python3 templates/isnail-30/score.py   (writes assets/audio/score.wav and score-sfx.wav, the effects alone)
 """
 import json
+import os
 import sys
 import wave
 from pathlib import Path
@@ -22,7 +23,9 @@ from pathlib import Path
 import numpy as np
 from scipy import signal
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "engine" / "lib"))
+# the engine: the skill running this (SKILL, set by engine/run.mjs), else the one this file sits in,
+# so a film's own copy of the template (film.json "template": "./template") finds it too
+sys.path.insert(0, str(Path(os.environ.get("SKILL") or Path(__file__).resolve().parents[2]) / "engine" / "lib"))
 from film import FILM  # noqa: E402  the film workspace (FILM env var)
 import synth  # noqa: E402  the synth kit (engine/lib/synth.py)
 

@@ -18,7 +18,7 @@ from pathlib import Path
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
-from film import FILM, FILM_JSON, SKILL  # noqa: E402  the film workspace (FILM env var)
+from film import FILM, FILM_JSON, TEMPLATE  # noqa: E402  the film workspace (FILM env var)
 from publish import PLATFORMS, SAFE, platforms, orientation, content_box, past  # noqa: E402
 
 argv = sys.argv[1:]
@@ -28,7 +28,7 @@ def arg(name, default):
     return argv[argv.index(name) + 1] if name in argv else default
 
 
-SB = json.loads((SKILL / "templates" / FILM_JSON["template"] / "storyboard.json").read_text())
+SB = json.loads((TEMPLATE / "storyboard.json").read_text())
 TL = json.loads((FILM / "build/timeline.json").read_text())
 FPS, DUR, BPM = TL["FPS"], TL["DURATION"], TL["BPM"]
 EV = TL["EV"]

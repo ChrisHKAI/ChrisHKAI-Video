@@ -5,18 +5,18 @@
 // Three.js-style: metres, +y up, +z toward the viewer's (south) edge of the
 // page; 1 UI px = 1 mm, UI centre at the origin, slab tops at y = 0.
 // Transforms are { p, q, s }.
-import { film, readFilmJSON } from "../../engine/lib/film.js";
+import { film, readFilmJSON } from "#engine/film.js";
 import * as T from "./timeline.js";
-import { TOY, CENTER } from "../../engine/lib/toy.js";
-import { clamp01, seg, smooth, lerp, easeOut, easeIn, easeInOut, backOut, TAU, v3, lerpAngle, yawTo } from "../../engine/lib/math.js";
-import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "../../engine/lib/rig.js";
-import { makeCamera, smoothTracker } from "../../engine/lib/camera.js";
-import { makeLabel, tear, labelT, rimT, letterT } from "../../engine/lib/labels.js";
-import { ballistic } from "../../engine/lib/particles.js";
-import { makePeel } from "../../engine/lib/peel.js";
-import { counterLayout, countEase, counterGlyphs } from "../../engine/lib/counter.js";
-import { mulberry32 } from "../../engine/lib/rng.js";
-import { qId, qMul, qAxis, qEuler, qRot, trs, apply, mulT } from "../../engine/lib/quat.js";
+import { TOY, CENTER } from "#engine/toy.js";
+import { clamp01, seg, smooth, lerp, easeOut, easeIn, easeInOut, backOut, TAU, v3, lerpAngle, yawTo } from "#engine/math.js";
+import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "#engine/rig.js";
+import { makeCamera, smoothTracker } from "#engine/camera.js";
+import { makeLabel, tear, labelT, rimT, letterT } from "#engine/labels.js";
+import { ballistic } from "#engine/particles.js";
+import { makePeel } from "#engine/peel.js";
+import { counterLayout, countEase, counterGlyphs } from "#engine/counter.js";
+import { mulberry32 } from "#engine/rng.js";
+import { qId, qMul, qAxis, qEuler, qRot, trs, apply, mulT } from "#engine/quat.js";
 
 export const MM = 0.001;
 export const SLAB_T = 0.008;

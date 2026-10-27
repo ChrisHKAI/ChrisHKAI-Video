@@ -14,6 +14,7 @@ usage:
 """
 import json
 import math
+import os
 import sys
 import time
 from pathlib import Path
@@ -24,7 +25,9 @@ import numpy as np
 from bpy_extras import anim_utils
 from mathutils import Vector
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
+# the engine: the skill running this (SKILL, set by engine/run.mjs), else the one this file sits in,
+# so a film's own copy (<film>/engine/scene.py, `run.mjs own -- scene.py`) finds it too
+sys.path.insert(0, str(Path(os.environ.get("SKILL") or Path(__file__).resolve().parents[2]) / "engine" / "lib"))
 from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
 import toyblend  # noqa: E402  the pet and sculpt kits' shapes and paint
 

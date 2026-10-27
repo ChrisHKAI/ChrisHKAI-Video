@@ -6,9 +6,9 @@
 // 0.5 s and a bar 2 s, and every big hit sits on a downbeat.
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { film, fromFilm, fromSkill, readFilmJSON } from "../../engine/lib/film.js";
-import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "../../engine/lib/math.js";
-import { trs, qId, qEuler, apply, mulT } from "../../engine/lib/quat.js";
+import { film, fromFilm, fromSkill, readFilmJSON } from "#engine/film.js";
+import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "#engine/math.js";
+import { trs, qId, qEuler, apply, mulT } from "#engine/quat.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);

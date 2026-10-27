@@ -1,10 +1,10 @@
 // Every object of the isnail-30 world (geometry, material, parent) and how
 // each one is sampled at film time t: engine/scripts/export-anim.mjs declares
 // them, samples them twice a frame and writes build/anim.json for Blender.
-import { film } from "../../engine/lib/film.js";
-import { trs, qEuler } from "../../engine/lib/quat.js";
-import { MASCOT_PARTS, toyGeo } from "../../engine/lib/toy.js";
-import { PAPER } from "../../engine/lib/labels.js";
+import { film } from "#engine/film.js";
+import { trs, qEuler } from "#engine/quat.js";
+import { MASCOT_PARTS, toyGeo } from "#engine/toy.js";
+import { PAPER } from "#engine/labels.js";
 import * as T from "./timeline.js";
 import * as A from "./anim.js";
 
