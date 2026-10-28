@@ -9,6 +9,11 @@ if not os.environ.get("FILM"):
 FILM = Path(os.environ["FILM"]).resolve()
 SKILL = Path(__file__).resolve().parent.parent.parent
 FILM_JSON = json.loads((FILM / "film.json").read_text())
-# the story template: the skill's (templates/<name>) or the film's own copy (a path: "./template")
+# the story template: the skill's (templates/<name>) or the film's own copy (a path: "./template";
+# a film made before this took its path from the skill's templates folder, "../../../films/<id>/template":
+# where the film has no such folder, that still works)
 _template = FILM_JSON.get("template", "")
-TEMPLATE = (FILM / _template).resolve() if _template.startswith(".") or "/" in _template or "\\" in _template else SKILL / "templates" / _template
+TEMPLATE = SKILL / "templates" / _template
+if _template.startswith(".") or "/" in _template or "\\" in _template:
+    _in_film, _before = (FILM / _template).resolve(), (SKILL / "templates" / _template).resolve()
+    TEMPLATE = _in_film if _in_film.exists() or not _before.exists() else _before

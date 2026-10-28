@@ -16,8 +16,11 @@ export const fromSkill = (...p) => join(SKILL, ...p);
 
 // the story template: one of the skill's (film.json "template": "isnail-30") or the
 // film's own copy, a path in the film ("./template", made by `run.mjs own -- template`)
+// (a film made before this took its path from the skill's templates folder,
+// "../../../films/<id>/template": where the film has no such folder, that still works)
 export const OWN_TEMPLATE = /^\.|[\\/]/.test(film.template ?? "");
-export const TEMPLATE = OWN_TEMPLATE ? resolve(FILM, film.template) : join(SKILL, "templates", film.template ?? "");
+const inFilm = resolve(FILM, film.template ?? ""), before = resolve(SKILL, "templates", film.template ?? "");
+export const TEMPLATE = !OWN_TEMPLATE ? join(SKILL, "templates", film.template ?? "") : existsSync(inFilm) || !existsSync(before) ? inFilm : before;
 export const fromTemplate = (...p) => join(TEMPLATE, ...p);
 // a module of the template, the skill or the film (a beat, a prop). They reach the
 // engine as "#engine/<file>": inside the skill its package.json maps that; for
