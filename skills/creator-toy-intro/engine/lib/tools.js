@@ -41,6 +41,13 @@ export function findPython() {
 }
 export const anyPython = () => [WIN ? "python" : "python3", "python"].find((p) => runs(p)) ?? null;
 
+// Grok Build (xAI's agent CLI), where the user has it: step 2 asks it to search X
+export function findGrok() {
+  if (process.env.GROK) return process.env.GROK;
+  const home = join(homedir(), ".grok/bin", WIN ? "grok.exe" : "grok");
+  return existsSync(home) ? home : onPath("grok") ? "grok" : null;
+}
+
 export function findChrome() {
   if (process.env.CHROME) return process.env.CHROME;
   const base = join(homedir(), ".cache/puppeteer/chrome-headless-shell");

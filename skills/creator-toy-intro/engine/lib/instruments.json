@@ -1,0 +1,32 @@
+{
+  "_about": "The real instruments' sample libraries, as lemo-opuscar packs them (lossless FLAC, an index.json of every sample's pitch, velocity layer, onset and level, each library's own LICENSE/README kept), from its GitHub release. Pinned here by size and SHA-256: engine/scripts/instruments.mjs downloads them into ~/.chrishkai-video/instruments/, and engine/vendor/lemo/sampler.py plays them. credit: what the film's credits must say when an instrument of the library is used (null: CC0, nothing required).",
+  "repo": "lemomo-ai/lemo-opuscar",
+  "tag": "assets",
+  "packs": {
+    "vsco2ce": {
+      "file": "instruments-vsco2ce.tar", "size": 413911040, "sha256": "231297103cb4a3123707ddb7b284e5ea3aed0b8d77c0b891360b4d3efe8b586f",
+      "what": "strings, harp, celesta, glockenspiel, timpani, brass, woodwinds (Versilian Studios, VS Chamber Orchestra Community Edition)",
+      "licence": "CC0 1.0"
+    },
+    "salamander": {
+      "file": "instruments-salamander.tar", "size": 229150720, "sha256": "7c6a543de04daf6fdd7337ae08bf0484bec2a78b902ca80748bca927f42e189c",
+      "what": "grand piano (Salamander Grand Piano V3, five of its sixteen velocity layers)",
+      "licence": "CC BY 3.0"
+    },
+    "vcsl": {
+      "file": "instruments-vcsl.tar", "size": 284682240, "sha256": "3ed8f753500e629485e323fc7f883b35aca6a77a1ab04522d1d47037d503f6e1",
+      "what": "more percussion and instruments (Versilian Community Sample Library)",
+      "licence": "CC0 1.0"
+    },
+    "freepats": {
+      "file": "instruments-freepats.tar", "size": 415959040, "sha256": "ae73707a7c88c8b985cedead751ff52ff8bfcaa3a48fa07ca6f45c0c6da00c83",
+      "what": "drum kit (MuldjordKit), guitars, electric bass, kalimba, accordion, world percussion (FreePats)",
+      "licence": "CC0 1.0; the drum kit CC BY 4.0"
+    },
+    "karoryfer": {
+      "file": "instruments-karoryfer.tar", "size": 77772800, "sha256": "b72822ac2f6569ed33b376448784d542bf039478fbf521db0c4bdc7ee766cac4",
+      "what": "erhu, jazz double bass, alto sax (Karoryfer Samples)",
+      "licence": "CC0 1.0"
+    }
+  }
+}

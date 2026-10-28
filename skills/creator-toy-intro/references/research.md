@@ -15,8 +15,20 @@ Read only, always: never like, follow, comment or message.
   computer use on Chrome). A login page or a QR code: the user logs in or
   scans themselves; never type a password.
 - X: the profile; the pinned post; the most-viewed posts (each post shows
-  its views). An agent that searches X (grok, for one) can rank the
-  creator's posts by engagement first; then open each.
+  its views).
+- With Grok Build (step 0), start Grok first, in the background:
+  `node <skill>/engine/scripts/grok-search.mjs <film>`. Grok's X search
+  reaches what a browser hardly can: X's own post search with its
+  operators, each post's thread and numbers. The run takes minutes and
+  about a dollar, on the user's Grok account. It writes
+  `research/grok.json` with:
+  - the pinned post;
+  - the posts with the most views or engagement;
+  - the milestones they posted about, with dates and numbers;
+  - ideas for the film.
+  These are leads: open each post on the page and take its numbers from
+  there, as the page writes them. Grok's milestones and ideas become rows
+  of the material table (`ideas`, below).
 - 抖音, 小红书, Instagram: the profile page in the logged-in browser.
 - 视频号, 公众号 counts: desktop WeChat through computer use, where the agent
   has it; otherwise the user's screenshots.
@@ -70,6 +82,7 @@ goes to `extra`; in the film it rises from the name at the top.
   ],
   "toy": { "images": ["assets/avatar.jpg"], "confirmed": true },
   "extra": [{ "label": "总播放", "display": "1200万", "source": "research/shots/dashboard.png" }],
+  "ideas": [{ "text": "7月10日到10月24日，由 0 做到一万粉", "becomes": [{ "anim": "calendar", "why": "…" }] }],
   "slots": { "proof1": [], "proof2": [], "cta": [] },
   "picks": {}
 }
@@ -106,8 +119,30 @@ post, number and one line of why:
   "why": "…" }`. The question asks what they want to promote as much as
   which line: "other" lets them say it in their own words.
 
+### Material → animation
+
+The film is the creator's material turned into animation, so say what each
+piece becomes. `beats/catalog.json` lists every animation the skill has:
+- what it fits, in the user's words;
+- what it needs;
+- a film that used it;
+- how it goes into film.json.
+
+Give each post a `becomes` list: `[{ "anim": "act3", "why": "its cover's big
+words push out into the wall" }]`. Put each idea with no picture in
+`ideas`, with its own `becomes`. Ideas come from three places:
+- the user's own words;
+- Grok's ideas and milestones;
+- a date span, a number reached, a line they wrote.
+
+An idea is material too: "7月10日 → 10月24日, 10,000 关注者" became the
+calendar beat. Name one or two animations each, the best first. Say why in
+one line, as the user would see it on screen.
+
 Then `node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
-language>` writes `research/materials.png` (and `.html`). Show it, and ask
+language>` writes `research/materials.png` (and `.html`). Below the slots it
+shows each material with what it becomes, then the whole menu of
+animations, so the user can ask for another. Show it, and ask
 in one round: one question per slot, A / B / C and "other" (AskUserQuestion
 where the agent has it, else one message). Write the answers into `picks`
 (the chosen candidate objects, or the user's own words in the same shape).

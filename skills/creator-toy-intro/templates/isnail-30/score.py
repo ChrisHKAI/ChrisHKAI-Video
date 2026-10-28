@@ -12,11 +12,24 @@ letters play a tune up to the last chord (28.0 s).
 Every effect cue lands on its frame; instruments and effects come from the
 synth kit (engine/lib/synth.py), the arrangement and the mix are this story's.
 
-That is the song (film.json "sound": "song", and a film.json without "sound").
-New films start with "bed": the effects over one quiet layer of long chords,
-14 dB under them, at -13 LUFS; G at the start, a part coming in moves away, its
-big moment comes home to G, D into the end card (what a creator chose after
-hearing both: the song was "好唔順").
+That is the song: film.json "sound": "song", and a film.json without "sound".
+The other sounds leave the arrangement out:
+- "bed", which new films start with: the effects over one quiet layer of long
+  chords, 14 dB under them. G at the start; a part coming in moves away, its
+  big moment comes home to G; D into the end card. A creator chose it after
+  hearing them all: the song was "好唔順".
+- "strings": the same chords on a real string section, a piano touching each
+  change (engine/lib/real.py: sampled instruments).
+- "fx": the effects alone.
+"band" keeps the arrangement and plays it on real instruments, each as loud
+as the synthesized one it replaces. The real instruments' credits go to
+build/credits.txt.
+- "own": the creator's own song (film.json "music", engine/lib/music.py),
+  stretched to the film's tempo and set so a beat lands on the first hit,
+  giving way under each loud effect.
+These three come out at -13 LUFS. `run.mjs listen` lays each one under the
+animatic, so the user chooses by ear. SOUND and SCORE_OUT, set in the
+environment, write one version without touching the film's own sound.
 
 usage: FILM=<film folder> python3 templates/isnail-30/score.py   (writes assets/audio/score.wav and score-sfx.wav, the effects alone)
 """
@@ -28,6 +41,7 @@ from pathlib import Path
 
 import numpy as np
 from scipy import signal
+from scipy.ndimage import maximum_filter1d, uniform_filter1d
 
 # the engine: the skill running this (SKILL, set by engine/run.mjs), else the one this file sits in,
 # so a film's own copy of the template (film.json "template": "./template") finds it too
@@ -36,9 +50,12 @@ from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var
 import synth  # noqa: E402  the synth kit (engine/lib/synth.py)
 
 ROOT = FILM
-SOUND = FILM_JSON.get("sound", "song")
-if SOUND not in ("song", "bed"):
-    raise SystemExit(f'film.json "sound" is "song" or "bed", not "{SOUND}"')
+# the sound: film.json "sound", or SOUND for one version of a listening test (run.mjs listen)
+SOUND = os.environ.get("SOUND") or FILM_JSON.get("sound", "song")
+if SOUND not in ("song", "band", "bed", "strings", "fx", "own"):
+    raise SystemExit(f'film.json "sound" is "song", "band", "bed", "strings", "fx" or "own", not "{SOUND}"')
+if SOUND == "own" and not (FILM_JSON.get("music") or {}).get("file"):
+    raise SystemExit('"sound": "own" needs film.json "music": {"file": "assets/<their song>"}')
 TL = json.loads((ROOT / "build/timeline.json").read_text())
 # the film may be pieces of the story between beats (SEGMENTS): the music below is
 # written on the story's own clock, then each piece goes where the film plays it
@@ -49,6 +66,9 @@ BEAT = TL["BEAT"]
 BAR = TL["BAR"]
 synth.setup(DUR, TL["BEAT"])
 from synth import *  # noqa: E402,F401,F403
+if SOUND == "band":  # the arrangement below on real instruments, each as loud as the synthesized one it replaces
+    import real
+    globals().update(real.band(synth))
 
 
 music, drums, bass, keys, sfx, verb = Bus(), Bus(), Bus(), Bus(), Bus(), Bus()
@@ -251,8 +271,15 @@ if SEGS:
     inside = [s for s in SEGS if s["kind"] == "story" and s["s0"] <= L0 and L1 <= s["s1"]]
     L0, L1 = (L0 - inside[0]["s0"] + inside[0]["f0"], L1 - inside[0]["s0"] + inside[0]["f0"]) if inside else (min(1.0, DUR / 4), DUR - 1.0)
 
-# ── the bed ("sound": "bed"): the song above left out, long chords under the effects ──
-if SOUND == "bed":
+# ── the bed, the effects alone or their own song: the arrangement above left out ──
+if SOUND not in ("song", "band"):
+    for b in (music, drums, bass, keys):
+        b.x[:] = 0
+    # levels are measured over the film but its first and last two seconds, which is also the loudness reference
+    B0, B1 = min(2.0, DUR / 4), max(DUR - 2.0, DUR * 3 / 4)
+    rms = lambda x: np.sqrt((x[int(B0 * SR):int(B1 * SR)] ** 2).mean())  # noqa: E731
+    L0, L1 = B0, B1
+if SOUND in ("bed", "strings"):  # long chords, synthesized or on strings and a piano, 14 dB under the effects
     # the story's changes on its own clock: away as a part comes in, home on its big moment, D into the end card
     STORY_BED = [(0.0, "G"), (EV["click"], "C"), (EV["lock"], "G"), (EV["slam"], "Em"), (EV["point7"], "C"),
                  (EV["peak"], "G"), (EV["flat"][0], "D"), (EV["cut"], "G")]
@@ -280,15 +307,23 @@ if SOUND == "bed":
         if not plan or plan[-1][1] != ch:
             plan.append((t, ch))
     plan[0] = (0.0, plan[0][1])
-    for b in (music, drums, bass, keys):
-        b.x[:] = 0
-    bed(music, plan, DUR)
+    if SOUND == "bed":
+        bed(music, plan, DUR)
+    else:
+        import real
+        played = real.strings_bed(plan, DUR, BED_CHORDS)
+        music.x[:min(N, len(played))] += played[:N]
     print("bed", " ".join(f"{t:.2f}s {ch}" for t, ch in plan))
-    # 14 dB under the effects, over the film but its first and last two seconds
-    B0, B1 = min(2.0, DUR / 4), max(DUR - 2.0, DUR * 3 / 4)
-    rms = lambda x: np.sqrt((x[int(B0 * SR):int(B1 * SR)] ** 2).mean())  # noqa: E731
     music.x *= rms(sfx.x * 0.95) * 10 ** (-14 / 20) / max(rms(music.x * 0.85), 1e-9)
-    L0, L1 = B0, B1  # the loudness reference: the whole film
+elif SOUND == "own":  # their song on the film's grid (engine/lib/music.py), giving way a little under each loud effect
+    from music import prepare as prepare_song
+    hits = [c["t"] for c in TL["cues"] if c["kind"] in ("pop", "lock", "slam", "tower") or c.get("big")]
+    song, line = prepare_song(FILM_JSON["music"], ROOT, DUR, TL["BPM"], min(hits) if hits else 2.0)
+    n = min(N, len(song))
+    loud = uniform_filter1d(maximum_filter1d(np.abs(sfx.x).max(axis=1), int(0.06 * SR)), int(0.12 * SR))
+    music.x[:n] += song[:n] * (1 - 0.35 * loud[:n] / max(loud.max(), 1e-9))[:, None]
+    music.x *= rms(sfx.x * 0.95) * 10 ** (float(FILM_JSON["music"].get("gain", -8)) / 20) / max(rms(music.x * 0.85), 1e-9)
+    print(line)
 
 ir_t = t_axis(1.6)
 ir = np.stack([rng.standard_normal(len(ir_t)), rng.standard_normal(len(ir_t))], axis=1)
@@ -330,11 +365,20 @@ def write(path, x):
         w.writeframes((np.clip(x, -1, 1) * 32767).astype(np.int16).tobytes())
 
 
-out = ROOT / "assets/audio/score.wav"
+out = ROOT / os.environ.get("SCORE_OUT", "assets/audio/score.wav")
 write(out, mix)
-if SOUND == "bed":
+if SOUND != "song":
     print("loudness", loudnorm(out), "-> -13 LUFS")
-write(ROOT / "assets/audio/score-sfx.wav", fx)
+if "SCORE_OUT" not in os.environ:  # a listening test's version leaves the film's own effects-only cut and credits alone
+    write(ROOT / "assets/audio/score-sfx.wav", fx)
+    # the real instruments' credits (the Salamander piano and the MuldjordKit drums require them): with the film's post
+    credits = ROOT / "build/credits.txt"
+    if SOUND in ("strings", "band"):
+        credits.parent.mkdir(exist_ok=True)
+        credits.write_text(real.credits() + "\n")
+        print("credits → build/credits.txt:", real.credits().replace("\n", " | "))
+    else:
+        credits.unlink(missing_ok=True)
 for s0 in np.arange(0, DUR - 1e-6, BAR):
     seg = mix[int(s0 * SR):int((s0 + BAR) * SR)]
     print(f"bar {s0:5.1f}s {20 * np.log10(np.sqrt((seg ** 2).mean()) + 1e-12):6.1f} dB")

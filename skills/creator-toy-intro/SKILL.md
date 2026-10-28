@@ -15,8 +15,19 @@ list, the page is HTML, the score is synthesized, Blender renders.
 
 The sound of a new film (film.json `"sound": "bed"`, which `new-film` writes)
 is the effects over one quiet layer of long chords, 14 dB under them, at -13
-LUFS: a creator chose it over the full song (`"sound": "song"`, also what a
-film.json without the key gets) after hearing both.
+LUFS: a creator chose it over the full song after hearing both. The full song
+is `"sound": "song"`, also what a film.json without the key gets.
+
+The other sounds are:
+- `"band"`: the song on real instruments;
+- `"strings"`: the bed on a real string section and a piano (both need the
+  sample libraries, `engine/scripts/instruments.mjs`, about 1.4 GB, on the
+  user's yes);
+- `"fx"`: the effects alone;
+- `"own"`: their own song, put on the film's beat (film.json `"music"`).
+
+`run.mjs listen` lays every sound under the animatic, so the user chooses by
+ear (`references/storyboard.md`).
 
 **This release publishes on X** (16:9 or 9:16). The phone themes for 抖音,
 小红书, 视频号 and Instagram are here and work, and come out one platform per
@@ -61,8 +72,8 @@ made for them. Only paths, commands and code stay as they are.
 | `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `review.md` (the independent review, steps 4 and 5), `render.md` (step 5) |
 | `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `page-stand.js` (Kin's opening: the page stands up, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
-| `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `look.py` (the light, shared by the film and the toy's look-dev); `pacing.py` and `colors.py` (the page's checks); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace, palette and review (step 4; `engine/lib/pacing.py`, `engine/lib/colors.py`), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
+| `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `look.py` (the light, shared by the film and the toy's look-dev); `music.py` (their own song on the film's beat); `real.py` and `instruments.json` (the real instruments: lemo-opuscar's sampler, vendored in `engine/vendor/lemo/` under MIT, and the sample libraries it plays); `pacing.py` and `colors.py` (the page's checks); `sdf.py` (the sculpt kit's signed distance fields) |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials, grok-search (X search, with Grok Build) and apply-research (step 2), instruments (the real instruments' samples), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace, palette and review (step 4; `engine/lib/pacing.py`, `engine/lib/colors.py`), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 

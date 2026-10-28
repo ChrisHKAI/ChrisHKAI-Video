@@ -7,7 +7,9 @@
 //           hero     the toy's parts → build/hero.json (look-dev reads it)
 //           ui       the platform page as HTML → assets/ui.png …, build/timeline.json
 //           anim     every object at every half frame → build/anim.json
-//           sound    the synthesized score → assets/audio/score.wav
+//           sound    the synthesized score → assets/audio/score.wav (film.json "sound": song | band | bed | strings | fx | own)
+//           listen   each sound under the animatic, to choose by ear → build/storyboard/sound-<sound>.mp4
+//                    (listen -- bed own: just those)
 //           lookdev  Blender turnaround of the toy → build/lookdev/, beside its picture: compare.jpg
 //           estimate three frames at the final settings → how long the full render takes
 //           render   Blender Cycles frames → build/render/ (args after -- go to scene.py; --resume skips frames on disk)
@@ -36,7 +38,7 @@ import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { film, FILM, fromFilm, fromSkill, fromTemplate, OWN_TEMPLATE } from "./lib/film.js";
-import { findBlender, findPython, toolEnv } from "./lib/tools.js";
+import { HOME, findBlender, findPython, toolEnv } from "./lib/tools.js";
 
 const argv = process.argv.slice(2);
 const dash = argv.indexOf("--");
@@ -60,9 +62,9 @@ const scene = () => {
 };
 // long renders keep a Mac awake (caffeinate -i: while the command runs)
 const awake = (cmd, args) => (process.platform === "darwin" ? ["caffeinate", ["-i", cmd, ...args]] : [cmd, args]);
-const run = (cmd, args) => {
+const run = (cmd, args, env = {}) => {
   console.log(`\n▶ ${cmd} ${args.join(" ")}`);
-  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
+  const r = spawnSync(cmd, args, { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill(), ...env }) });
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
@@ -78,6 +80,22 @@ for (const [i, step] of steps.entries()) {
     case "ui": run("node", [fromSkill("engine/scripts/build-ui.mjs"), ...more]); break;
     case "anim": run("node", [fromSkill("engine/scripts/export-anim.mjs")]); break;
     case "sound": run(PY, [fromTemplate("score.py")]); break;
+    case "listen": {
+      // the same picture under each sound, to choose by ear: the song, the bed, the effects alone, and their
+      // own song when film.json has "music" → build/listen/<sound>.wav, under the animatic as
+      // build/storyboard/sound-<sound>.mp4 (the storyboard page plays them side by side)
+      // (and on real instruments, the band and the strings, where the samples are: engine/scripts/instruments.mjs)
+      const real = existsSync(join(HOME, "instruments", "vsco2ce"));
+      const sounds = more.length ? more : ["song", ...(real ? ["band"] : []), "bed", ...(real ? ["strings"] : []), "fx", ...(film.music?.file ? ["own"] : [])];
+      mkdirSync(fromFilm("build/listen"), { recursive: true });
+      const animatic = fromFilm("build/storyboard/animatic.mp4");
+      for (const s of sounds) {
+        run(PY, [fromTemplate("score.py")], { SOUND: s, SCORE_OUT: `build/listen/${s}.wav` });
+        if (existsSync(animatic)) run("ffmpeg", ["-v", "error", "-y", "-i", animatic, "-i", fromFilm(`build/listen/${s}.wav`), "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", fromFilm(`build/storyboard/sound-${s}.mp4`)]);
+      }
+      if (!existsSync(animatic)) console.log("no animatic yet: the versions are in build/listen/ (run.mjs animatic, then listen again to see them under the picture)");
+      break;
+    }
     case "lookdev":
       run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
       if (!more.includes("--avatar")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);

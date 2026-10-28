@@ -11,11 +11,11 @@
 //        node engine/scripts/doctor.mjs --install [id…]     install the plan (or those items)
 //        node engine/scripts/doctor.mjs --install --dry-run print the commands only
 import { spawnSync } from "node:child_process";
-import { cpSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statfsSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, statfsSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HOME, VENV, FONTS, WIN, PY_MODULES, findBlender, findPython, anyPython, findChrome, onPath } from "../lib/tools.js";
+import { HOME, VENV, FONTS, WIN, PY_MODULES, findBlender, findPython, anyPython, findChrome, findGrok, onPath } from "../lib/tools.js";
 
 const SKILL = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const argv = process.argv.slice(2);
@@ -50,6 +50,16 @@ check("ffmpeg", "ffmpeg + ffprobe", ff, ff ? sh("ffmpeg", ["-version"]).stdout.s
 
 const chrome = findChrome();
 check("chrome", "headless Chrome", Boolean(chrome), chrome ?? "not found");
+
+// optional: with Grok Build, step 2 asks Grok to search X for the creator's best posts and milestones
+// (it signs in with the user's own Grok account, so it is never installed unasked: references/onboarding.md)
+const grok = findGrok();
+check("grok", "Grok Build (optional: searches X in step 2)", true, grok ? `${sh(grok, ["--version"]).stdout.trim().split(" (")[0]} (${grok})` : "not installed", grok ? "" : "ask whether they use Grok (references/onboarding.md)");
+
+// optional: the real instruments' samples, for the sounds "strings" and "band" (about 1.4 GB, only on a yes)
+const instDir = join(HOME, "instruments");
+const libs = existsSync(instDir) ? readdirSync(instDir).filter((d) => !d.startsWith(".") && d !== "index.json") : [];
+check("instruments", "real instruments (optional: the sounds strings and band)", true, libs.length ? `${libs.join(", ")} (${instDir})` : "not downloaded", libs.length ? "" : "node engine/scripts/instruments.mjs --list: what, how big, which licence");
 
 // the lettering faces, through the pipeline's own lookup (engine/lib/fonts.py)
 let fontsOk = false, fontsFound = "needs Python first", fontsNote = "";

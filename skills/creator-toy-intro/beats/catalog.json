@@ -1,0 +1,69 @@
+{
+  "_about": "What each animation can show, for step 2's material table: material → animation. Each one: what it fits (the user reads this), what it needs, a film that used it, and how it goes into film.json. kind: story (a piece of the template's story) or beat (beats/<id>.js, its own clock). A material with no picture (an idea, a date, a line) still has animations: calendar, count, phrase.",
+  "animations": [
+    {
+      "id": "opening", "kind": "story",
+      "label": { "zh-Hant": "開場：主頁同頭像貼紙", "zh-Hans": "开场：主页和头像贴纸", "en": "Opening: the page and the sticker" },
+      "fits": { "zh-Hant": "佢嘅主頁浮喺半空，頭像好似貼紙咁撕起，彈出變公仔", "zh-Hans": "他的主页浮在半空，头像像贴纸一样撕起，弹出变公仔", "en": "Their page floats as glass; the picture peels off like a sticker and pops into the toy" },
+      "needs": "the profile page and picture (always there)",
+      "example": "isnail: 0–6 s",
+      "film": { "story": "opening" }
+    },
+    {
+      "id": "page-stand", "kind": "beat",
+      "label": { "zh-Hant": "開場：主頁企起", "zh-Hans": "开场：主页立起", "en": "Opening: the page stands" },
+      "fits": { "zh-Hant": "主頁好似螢幕咁平放，轉身拆開做企起嘅板，頭像鼓起變公仔", "zh-Hans": "主页像屏幕一样平放，转身拆开成立起的板，头像鼓起变公仔", "en": "The page lies flat like a screen, turns and parts into standing slabs; the picture puffs out into the toy" },
+      "needs": "the profile page and picture",
+      "example": "cgnot996 (铁柱AGI): the opening",
+      "film": { "beat": "page-stand", "bars": 2 }
+    },
+    {
+      "id": "act2", "kind": "story", "slot": "proof1",
+      "label": { "zh-Hant": "數字由頁面升起", "zh-Hans": "数字从页面升起", "en": "The number rises from the page" },
+      "fits": { "zh-Hant": "一篇帖嘅大數字（閱讀、播放、讚好），由頁面上原本嗰個位升起跳數；置頂帖最好", "zh-Hans": "一篇帖子的大数字（阅读、播放、点赞），从页面上原来的位置升起跳数；置顶帖最好", "en": "A post's big number (views, plays, likes) rises from its own spot on the page and counts up; a pinned post is best" },
+      "needs": "a post on the page with a number: whole digits, a unit, a two-character label (304万 阅读)",
+      "example": "isnail: 304万 阅读, 6–12 s",
+      "film": { "story": "act2" }
+    },
+    {
+      "id": "act3", "kind": "story", "slot": "proof2",
+      "label": { "zh-Hant": "封面企起做牆", "zh-Hans": "封面立起做墙", "en": "The cover becomes a wall" },
+      "fits": { "zh-Hant": "一篇帖嘅封面企起做 3D 牆，大字逐件推出嚟，公仔爬上去；封面有大字或者數字最好", "zh-Hans": "一篇帖子的封面立起做 3D 墙，大字逐块推出来，公仔爬上去；封面有大字或数字最好", "en": "A post's cover stands up as a 3D wall, its big words pushing out piece by piece; the toy climbs it. A cover with big lettering or numbers works best" },
+      "needs": "a post whose cover has big lettering (its pieces are cut from it: references/cover-wall.md)",
+      "example": "isnail: 自媒体很苦 / 46K粉, 12–24 s; cgnot996: 5天 380+ star",
+      "film": { "story": "act3" }
+    },
+    {
+      "id": "count", "kind": "beat",
+      "label": { "zh-Hant": "數字跳升", "zh-Hans": "数字跳升", "en": "A number counts up" },
+      "fits": { "zh-Hant": "任何一個數字：粉絲里程碑、star、播放、日數。數字喺佢自己嘅舞台跳升、鎖定，公仔跳起慶祝", "zh-Hans": "任何一个数字：粉丝里程碑、star、播放、天数。数字在自己的舞台上跳升、锁定，公仔跳起庆祝", "en": "Any number: a follower milestone, stars, plays, days. It counts up on its own stage and locks; the toy jumps for joy" },
+      "needs": "the number and its label, written the platform's way (10,000 关注者, 1,500 star)",
+      "example": "cgnot996: 1,500 star",
+      "film": { "beat": "count", "bars": 3, "to": 10000, "label": "关注者" }
+    },
+    {
+      "id": "calendar", "kind": "beat",
+      "label": { "zh-Hant": "日曆越翻越快", "zh-Hans": "日历越翻越快", "en": "A calendar flips" },
+      "fits": { "zh-Hant": "冇圖都得嘅想法：由某日到某日做到某件事。日曆越翻越快，數字跟住升，停低蓋印", "zh-Hans": "没有图也行的想法：从某天到某天做到某件事。日历越翻越快，数字跟着升，停下盖章", "en": "An idea with no picture: from one day to another they got somewhere. The pages fly faster, a count climbs beside them, a stamp lands" },
+      "needs": "two dates; optionally a count and a stamp of one or two words",
+      "example": "cgnot996: 7月10日 → 10月24日, 10,000 关注者, 万粉",
+      "film": { "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24", "count": { "to": 10000, "label": "关注者" }, "stamp": "万粉" }
+    },
+    {
+      "id": "phrase", "kind": "beat",
+      "label": { "zh-Hant": "一句說話", "zh-Hans": "一句话", "en": "A line" },
+      "fits": { "zh-Hant": "佢嘅原話：自我介紹嗰句、金句、一篇帖嘅標題。字逐個由地下彈出，最後一個字落喺重拍", "zh-Hans": "他的原话：自我介绍那句、金句、一篇帖子的标题。字逐个从地下弹出，最后一个字落在重拍", "en": "Their own words: a bio line, a quote, a post's title. It rises a letter at a time, the last on a downbeat" },
+      "needs": "the line, short (a 3-bar beat holds about nine characters)",
+      "example": "cgnot996: 马斯克得不到的男人",
+      "film": { "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人" }
+    },
+    {
+      "id": "endCard", "kind": "story", "slot": "cta",
+      "label": { "zh-Hant": "結尾卡：名同口號", "zh-Hans": "结尾卡：名字和口号", "en": "The end card: name and line" },
+      "fits": { "zh-Hant": "佢個名、帳號同一句口號貼喺撕紙上，公仔坐喺一件代表佢嘅道具上面", "zh-Hans": "他的名字、账号和一句口号贴在撕纸上，公仔坐在一件代表他的道具上", "en": "Their name, handle and a line slap down on torn paper; the toy rides a prop that stands for them" },
+      "needs": "the line (one or two short parts) and the prop (references/props.md)",
+      "example": "isnail: 公众号变现 / 找蜗牛, the snail",
+      "film": { "story": "endCard" }
+    }
+  ]
+}

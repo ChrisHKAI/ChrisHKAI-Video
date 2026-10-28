@@ -116,6 +116,55 @@ render what it touches, and mark it done with a line on what changed (the
 page shows the line under the note). Notes in words or screenshots in the
 chat work as before.
 
+## The sound, chosen by ear
+
+Users judge the sound by ear, and often cannot say what is wrong. The
+cgnot996 test went through two synthesized scores ("好唔順", twice) before a
+listening test settled it in one round. So once the animatic is in, lay
+every sound under it and let the user choose:
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs listen   # → build/storyboard/sound-<sound>.mp4, on the page
+```
+
+The page plays them side by side:
+- **the whole score** (`song`): the template's synthesized arrangement;
+- **the whole score on real instruments** (`band`): the same arrangement on
+  sampled drums, double bass, strings, piano and horns. Each one is as loud
+  as the synthesized instrument it replaces, so the mix keeps its balance;
+- **effects over a bed** (`bed`, what new films start with): long chords
+  14 dB under the effects;
+- **effects over strings and piano** (`strings`): the same chords on a real
+  string section, with a piano touching each change;
+- **the effects alone** (`fx`);
+- **their own song** (`own`).
+
+The two real-instrument sounds need the sample libraries:
+`node <skill>/engine/scripts/instruments.mjs --list` shows each library,
+how big it is and its licence. Download them only on the user's yes
+(`… instruments.mjs all`, about 1.4 GB, into `~/.chrishkai-video/`); they
+come from lemo-opuscar's release, checked against pinned SHA-256s. Two of
+them need credit when used: the Salamander piano (CC BY 3.0) and the
+MuldjordKit drums (CC BY 4.0). `sound` then writes `build/credits.txt`;
+those lines go with the film's post (references/render.md).
+
+Write the choice into film.json `"sound"`, run `sound`, and the animatic's
+picture keeps its place.
+
+Their own song: put the file in `assets/` and add film.json
+`"music": { "file": "assets/<song>.mp3" }`:
+- `start`: the second of the song the film starts at (otherwise found);
+- `skip`: seconds of intro to leave out when finding it;
+- `match: false`: keep the song's own tempo;
+- `gain`: dB under the effects, -8 by default.
+
+`engine/lib/music.py` finds the song's tempo and stretches it to the film's
+BPM without changing its pitch (when they are within a quarter of each
+other). It starts the song so a beat (its kick, its bass) lands on the
+film's first hit, and lets the song give way a little under each loud
+effect. Check that the creator has the rights to the song: the platforms
+check.
+
 ## The sign-off
 
 Show the page (send the file; publish it too where the agent can; or the

@@ -26,9 +26,20 @@ Quiet unless something is missing.
    type a password and never ask for one.
 5. No: print `doctor.mjs --install --dry-run` so they have the commands,
    and stop.
-6. Notes, said once: no GPU means Cycles renders take hours (the EEVEE draft
-   stays quick); the end-card face falls back to Source Han Sans Heavy when
-   Lantinghei SC is not on the Mac (Font Book can add it).
+6. Notes, said once:
+   - With no GPU, Cycles renders take hours (the EEVEE draft stays quick).
+   - The end-card face falls back to Source Han Sans Heavy when Lantinghei
+     SC is not on the Mac (Font Book can add it).
+7. Grok Build is optional; doctor shows it either way. When the creator is
+   on X and it says "not installed", ask once whether they use Grok. With
+   it, step 2 asks Grok to search X for their best posts, milestones and
+   ideas.
+   - Yes: offer to install it (xAI's own installer,
+     `curl -fsSL https://x.ai/cli/install.sh | bash`, a few MB). Run it
+     only on their yes. They sign in themselves with `grok login`, in their
+     own Terminal.
+   - No: step 2 uses the browser alone. They may also ask @grok on X and
+     paste its answer.
 
 What is installed goes user-level: Blender into `~/Applications`, the
 Python modules into `~/.chrishkai-video/venv`, headless Chrome into
