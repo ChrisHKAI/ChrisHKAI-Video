@@ -1,12 +1,14 @@
 """Finishes the Cycles frames and encodes the film.
 
-Bloom on the brightest light (glints, sparks, the lock flash; Cycles does not glow by itself), a soft vignette,
+Bloom on the brightest light only (glints, sparks, the lock flash; Cycles does not glow by itself): over 0.85 of
+white, at 0.3, so a white page or white lettering on the dark stage stays sharp (a first film bloomed from 0.55
+at 0.5 and every white surface glowed: "點解成條片都咁光既，睇唔清"), a soft vignette,
 fine seeded grain, every core at once; then H.264 High CRF 17, 30 fps, the WAV muxed as AAC 320k,
 +faststart. Where a publish platform asks for it (platforms.json "sfxCut": 抖音, whose creators lay
 their own music under a film), also the same picture with the sound effects alone (score-sfx.wav).
 
 usage: FILM=<film folder> python3 engine/scripts/finish.py [--in build/render] [--out out/<name>.mp4]  (default: film.json "output")
-       [--sfx-cut] (always write the effects-only cut) [--workers N]
+       [--sfx-cut] (always write the effects-only cut) [--workers N] [--bloom-from 0.85] [--bloom 0.3]
 """
 import os
 import subprocess
@@ -32,6 +34,7 @@ def arg(name, default):
 SRC = ROOT / arg("--in", "build/render")
 FIN = ROOT / "build/final"
 OUT = ROOT / arg("--out", FILM_JSON.get("output", "out/film.mp4"))
+BLOOM = (float(arg("--bloom-from", 0.85)), float(arg("--bloom", 0.3)))  # from what brightness, how strong
 _vignette = {}
 
 
@@ -46,11 +49,11 @@ def look(job):
         _vignette[(H, W)] = (1 - 0.22 * np.clip((r - 0.45) / 0.9, 0, 1) ** 1.6)[..., None]
     lin = srgb ** 2.2
     lum = lin @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
-    bright = lin * (np.clip((lum - 0.55) / 0.45, 0, 1)[..., None])
+    bright = lin * (np.clip((lum - BLOOM[0]) / (1 - BLOOM[0]), 0, 1)[..., None])
     small = bright[::2, ::2]
     glow = gaussian_filter(small, sigma=(6, 6, 0)) * 0.55 + gaussian_filter(small, sigma=(22, 22, 0)) * 0.35
     glow = np.repeat(np.repeat(glow, 2, axis=0), 2, axis=1)[:H, :W]
-    lin = lin + glow * 0.5
+    lin = lin + glow * BLOOM[1]
     lin *= _vignette[(H, W)]
     out = np.clip(lin, 0, 1) ** (1 / 2.2)
     rng = np.random.default_rng(1000 + i)

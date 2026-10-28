@@ -12,6 +12,12 @@ letters play a tune up to the last chord (28.0 s).
 Every effect cue lands on its frame; instruments and effects come from the
 synth kit (engine/lib/synth.py), the arrangement and the mix are this story's.
 
+That is the song (film.json "sound": "song", and a film.json without "sound").
+New films start with "bed": the effects over one quiet layer of long chords,
+14 dB under them, at -13 LUFS; G at the start, a part coming in moves away, its
+big moment comes home to G, D into the end card (what a creator chose after
+hearing both: the song was "好唔順").
+
 usage: FILM=<film folder> python3 templates/isnail-30/score.py   (writes assets/audio/score.wav and score-sfx.wav, the effects alone)
 """
 import json
@@ -26,10 +32,13 @@ from scipy import signal
 # the engine: the skill running this (SKILL, set by engine/run.mjs), else the one this file sits in,
 # so a film's own copy of the template (film.json "template": "./template") finds it too
 sys.path.insert(0, str(Path(os.environ.get("SKILL") or Path(__file__).resolve().parents[2]) / "engine" / "lib"))
-from film import FILM  # noqa: E402  the film workspace (FILM env var)
+from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
 import synth  # noqa: E402  the synth kit (engine/lib/synth.py)
 
 ROOT = FILM
+SOUND = FILM_JSON.get("sound", "song")
+if SOUND not in ("song", "bed"):
+    raise SystemExit(f'film.json "sound" is "song" or "bed", not "{SOUND}"')
 TL = json.loads((ROOT / "build/timeline.json").read_text())
 # the film may be pieces of the story between beats (SEGMENTS): the music below is
 # written on the story's own clock, then each piece goes where the film plays it
@@ -242,12 +251,53 @@ if SEGS:
     inside = [s for s in SEGS if s["kind"] == "story" and s["s0"] <= L0 and L1 <= s["s1"]]
     L0, L1 = (L0 - inside[0]["s0"] + inside[0]["f0"], L1 - inside[0]["s0"] + inside[0]["f0"]) if inside else (min(1.0, DUR / 4), DUR - 1.0)
 
+# ── the bed ("sound": "bed"): the song above left out, long chords under the effects ──
+if SOUND == "bed":
+    # the story's changes on its own clock: away as a part comes in, home on its big moment, D into the end card
+    STORY_BED = [(0.0, "G"), (EV["click"], "C"), (EV["lock"], "G"), (EV["slam"], "Em"), (EV["point7"], "C"),
+                 (EV["peak"], "G"), (EV["flat"][0], "D"), (EV["cut"], "G")]
+    if SEGS:  # each piece of the story with its changes where it plays; a beat moves away as it comes in, home on its hits
+        away = ["C", "Am", "Em"]
+        changes, beats_in = [], 0
+        for s in SEGS:
+            if s["kind"] == "story":
+                changes.append((s["f0"], [ch for t, ch in STORY_BED if t <= s["s0"]][-1]))
+                changes += [(s["f0"] + t - s["s0"], ch) for t, ch in STORY_BED if s["s0"] < t < s["s1"]]
+            else:
+                changes.append((s["f0"], "G" if s["f0"] == 0 else away[beats_in % len(away)]))
+                changes += [(s["f0"] + h, "G") for h in (s.get("music") or {}).get("hits", []) if h > 0]
+                beats_in += 1
+        if len(changes) > 1 and changes[-1][1] == "G" and changes[-2][1] != "D" and changes[-1][0] - BAR > changes[-2][0] + BEAT:
+            changes.insert(-1, (changes[-1][0] - BAR, "D"))  # a bar of D into the end card's G
+    else:
+        changes = STORY_BED
+    plan = []
+    for t, ch in sorted(changes, key=lambda c: c[0]):
+        if t >= DUR or (plan and plan[-1][1] == ch):
+            continue  # the same chord holds from where it came in
+        if plan and t - plan[-1][0] < BEAT:
+            plan.pop()  # two changes within a beat: the later one
+        if not plan or plan[-1][1] != ch:
+            plan.append((t, ch))
+    plan[0] = (0.0, plan[0][1])
+    for b in (music, drums, bass, keys):
+        b.x[:] = 0
+    bed(music, plan, DUR)
+    print("bed", " ".join(f"{t:.2f}s {ch}" for t, ch in plan))
+    # 14 dB under the effects, over the film but its first and last two seconds
+    B0, B1 = min(2.0, DUR / 4), max(DUR - 2.0, DUR * 3 / 4)
+    rms = lambda x: np.sqrt((x[int(B0 * SR):int(B1 * SR)] ** 2).mean())  # noqa: E731
+    music.x *= rms(sfx.x * 0.95) * 10 ** (-14 / 20) / max(rms(music.x * 0.85), 1e-9)
+    L0, L1 = B0, B1  # the loudness reference: the whole film
+
 ir_t = t_axis(1.6)
 ir = np.stack([rng.standard_normal(len(ir_t)), rng.standard_normal(len(ir_t))], axis=1)
 ir *= np.exp(-ir_t / 0.4)[:, None]
 ir = signal.sosfilt(sos("lowpass", 6000), ir, axis=0)
 ir /= np.sqrt((ir ** 2).sum(axis=0))
 send = keys.x * 0.35 + verb.x
+if SOUND == "bed":
+    send = send + music.x * 0.15
 wet = np.stack([signal.fftconvolve(send[:, c], ir[:, c])[:N] for c in range(2)], axis=1) * 0.5
 
 mix = drums.x * 0.85 + bass.x * 0.9 + keys.x * 0.7 + music.x * 0.85 + sfx.x * 0.95 + wet
@@ -282,6 +332,8 @@ def write(path, x):
 
 out = ROOT / "assets/audio/score.wav"
 write(out, mix)
+if SOUND == "bed":
+    print("loudness", loudnorm(out), "-> -13 LUFS")
 write(ROOT / "assets/audio/score-sfx.wav", fx)
 for s0 in np.arange(0, DUR - 1e-6, BAR):
     seg = mix[int(s0 * SR):int((s0 + BAR) * SR)]

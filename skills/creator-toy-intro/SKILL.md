@@ -13,6 +13,11 @@ spots where the page shows them; the end card slaps their name and call to
 action up on torn paper. Everything is code: the toy is built from a part
 list, the page is HTML, the score is synthesized, Blender renders.
 
+The sound of a new film (film.json `"sound": "bed"`, which `new-film` writes)
+is the effects over one quiet layer of long chords, 14 dB under them, at -13
+LUFS: a creator chose it over the full song (`"sound": "song"`, also what a
+film.json without the key gets) after hearing both.
+
 **This release publishes on X** (16:9 or 9:16). The phone themes for 抖音,
 小红书, 视频号 and Instagram are here and work, and come out one platform per
 later release.

@@ -1,7 +1,8 @@
 """Glyph outlines for the 3D lettering, flattened to polygons: the counter's
 digits, unit and label (act 2) and the call to action's torn-paper labels.
 Each role takes its face from engine/lib/fonts.py (isnail's type design, with
-free fallbacks) and its characters from film.json. A character the face does
+free fallbacks) and its characters from film.json (the beats' words, and "glyphs":
+whatever a film's own template adds, by face). A character the face does
 not have stops the build here, before anything renders.
 Rings are in em units (y up, baseline 0); Blender extrudes them as curves.
 
@@ -46,6 +47,12 @@ for s in BEATS:
     CHARS["heavy"] += words({k: v for k, v in s.items() if k != "beat"})
 if BEATS:
     CHARS["heavy"] += "0123456789,.+%月日"
+# what a film's own template or scene shows beyond these: film.json "glyphs" adds characters
+# to a face ({"latin": ",", "heavy": "官方认证"}: a count written 10,000, a film-local scene's words)
+for role, chars in F.get("glyphs", {}).items():
+    if role not in CHARS:
+        raise SystemExit(f'film.json "glyphs": no face "{role}" (the faces: {", ".join(CHARS)})')
+    CHARS[role] += chars
 FONTS = {}
 for role, chars in CHARS.items():
     path, index, name = face(role, lang, prefs.get(role, ()), [str(FILM / "fonts")])

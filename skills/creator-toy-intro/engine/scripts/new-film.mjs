@@ -54,6 +54,8 @@ const film = {
   step: "research",
   // the profile picture that peels: the creator's own, cut to the app's circle (references/avatar.md)
   recipes: ["@avatar"],
+  // the effects over a quiet bed of long chords ("song": the template's full arrangement)
+  sound: "bed",
   story: {},
 };
 if (argv.includes("--dry-run")) { console.log(JSON.stringify(film, null, 2)); process.exit(0); }

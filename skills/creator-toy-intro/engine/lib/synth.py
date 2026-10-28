@@ -637,3 +637,49 @@ def limit(x, ceiling_db=-1.0, look=0.004, release=0.06):
         cur = g[i] if g[i] < cur else r * cur + (1 - r) * g[i]
         out[i] = cur
     return np.clip(x * out[:, None], -ceil, ceil)
+
+
+# ── The bed: the effects over long chords ───────────────────────────────────
+# What a real creator's film chose in a listening test (the song / one steady
+# groove / the effects alone / the effects over a bed): the effects carry the
+# picture and one quiet layer of long chords holds it together. No drums, no
+# plucks, no bass line; a chord changes with the picture, under an effect.
+BED_CHORDS = {"G": ["G2", "D3", "B3", "F#4"], "C": ["C3", "G3", "B3", "E4"], "Em": ["E2", "B2", "G3", "D4"],
+              "Am": ["A2", "E3", "G3", "C4"], "D": ["D3", "A3", "F#4", "A4"]}
+
+
+def bed(bus, changes, dur, xf=0.8):
+    """Long chords on a bus from (time, chord) changes to dur: each change an equal-power
+    crossfade of xf s centred on it, the first fading in over 1.2 s, every chord as loud as
+    the next (the mix sets the bed's level), two detuned voices left and right."""
+    for i, (t0, ch) in enumerate(changes):
+        t1 = changes[i + 1][0] if i + 1 < len(changes) else dur
+        start = max(0.0, t0 - xf / 2)
+        d = min(dur, t1 + xf / 2) - start
+        tt = t_axis(d)
+        fade = np.sin(np.pi / 2 * np.clip(tt / (1.2 if t0 == 0 else xf), 0, 1))
+        if t1 < dur:
+            fade *= np.cos(np.pi / 2 * np.clip((tt - (d - xf)) / xf, 0, 1))
+        freqs = [note(n) for n in BED_CHORDS[ch]]
+        for pan, det in ((-0.35, 1.0), (0.35, 1.003)):
+            p = pad([f * det for f in freqs], d + 0.4, bright=1300, a=0.01)[: len(tt)]
+            p *= 0.03 / max(np.sqrt((p[len(p) // 4: -len(p) // 4] ** 2).mean()), 1e-9)
+            bus.add(p * fade, start, pan=pan)
+
+
+def loudnorm(path, lufs=-13, tp=-1.5):
+    """A WAV to lufs integrated and tp true peak in one linear gain (ffmpeg's loudnorm,
+    measured first, then applied). Returns the loudness it measured."""
+    import json
+    import subprocess
+    tmp = path.with_suffix(".raw.wav")
+    path.replace(tmp)
+    target = f"loudnorm=I={lufs}:TP={tp}:LRA=11"
+    err = subprocess.run(["ffmpeg", "-v", "info", "-i", str(tmp), "-af", target + ":print_format=json", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    m = json.loads(err[err.rfind("{"):err.find("}", err.rfind("{")) + 1])  # the measurement block ffmpeg prints last
+    ln = (f"{target}:measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
+          f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true,aresample={SR}")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(tmp), "-af", ln, "-c:a", "pcm_s16le", str(path)], check=True)
+    tmp.unlink()
+    return float(m["input_i"])

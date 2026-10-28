@@ -83,7 +83,7 @@ The beat is that answer as code.
 | `len`, `bar`, `beat` | its length, a bar and a beat (s) |
 | `stage`, `at(x, y, z)` | its own place, 50 m from everything else (past the camera's 40 m clip), and stage metres → world |
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
-| `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face) |
+| `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face; anything else, in any face, through film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }`) |
 | `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
 | `kit` | `engine/lib/beatkit.js`: `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `confetti(…)`; `HIDDEN` |
 | `signature` | the toy's own move (toy.json `signature`) on a pose |
@@ -99,7 +99,7 @@ It returns, every time in the beat's own seconds `g` (0 to `len`):
 | `camera` | `g → { tr, fov, focus, fstop }`: `kit.cameraFrom([{ t, target, dist, elev, az, fstop? }…], { fov, aspect, shakes })` |
 | `light(g)` | optional: `{ p, energy, color }`, the one moving light |
 | `cues(add)` | its sounds, `add(g, kind, options)`, the synth's kinds (`whooshDown`, `pomf`, `push` with a `note`, `lock`, `sparkle`, `boing`, `whooshUp`, `ding`, `slam`…) |
-| `music` | `{ groove: "light" \| "normal" \| "half" \| "double" \| "none", chords: ["Em", "C", "G", "D"], hits: [g…] }`: the score's bed under it, a big kick on each hit |
+| `music` | `{ groove: "light" \| "normal" \| "half" \| "double" \| "none", chords: ["Em", "C", "G", "D"], hits: [g…] }`: the song's groove under it, a big kick on each hit; with `"sound": "bed"` the long chords move away from G as the beat comes in and come home on its hits |
 | `cuts` | optional: its own hard cuts `[g…]` (a beat in two shots) |
 | `storyboard` | `{ part: { label, what, uses }, frames: [{ at, title, what }], hits: [{ at, label }] }`, each text per language (`zh-Hant`, `zh-Hans`, `en`) |
 
