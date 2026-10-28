@@ -14,12 +14,14 @@ a JSON file; `build/glyphs.json` may be a subset of the reference's.
 Rendered frames:
 
 ```bash
-FILM=films/isnail node skills/creator-toy-intro/engine/run.mjs render -- --frames 1,151,391,661 --samples 128 --scale 100 --out build/render-check
+FILM=films/isnail node skills/creator-toy-intro/engine/run.mjs render -- --frames 1,151,391,661 --samples 128 --scale 100 --out build/render-check --look classic
 python3 tests/framediff.py films/isnail/build/render-check <reference frames folder> --sheet diff.jpg
 ```
 
 Cycles on the GPU differs by at most a level or two between runs of the same
 scene; more than that means the scene changed.
+The reference frames were made before the PBR Neutral look, so they are
+compared with `--look classic` (which reproduces them to within a level).
 
 Step 2 (research) round trip: writes the research the film's own film.json
 implies, opens a new workspace, builds the material table, applies the picks

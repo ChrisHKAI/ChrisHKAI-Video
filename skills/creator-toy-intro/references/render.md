@@ -36,6 +36,37 @@ then (`build/render/`): stop early if something is wrong rather than an
 hour later. After a late change, render only the frames `diff-anim.py`
 lists (`references/storyboard.md`).
 
+### The light
+
+The stage is dark and the light goes to the toy. This was measured on
+before-and-after previews of two films.
+
+The colour transform is **Khronos PBR Neutral**. It keeps the paint's and the
+skin's own colours, which Standard greyed.
+
+The **rim light falls on the toy alone** (Cycles light linking). It follows
+the camera, from behind the toy and above, and the vinyl reflects it. That
+outlines dark hair against the dark stage in every shot, and it lights
+nothing else.
+
+The **sky splits in two**. What reflects sees a bright softbox overhead, so
+vinyl keeps its highlights. What is lit sees a dim sky, so floors and walls
+stay dark: the end card's floor was a flat grey before.
+
+film.json `"look"` changes the defaults:
+
+| key | default | what |
+| --- | --- | --- |
+| `rim` | 4 | the rim's strength: more for very dark hair or a black prop |
+| `rimOn` | `["hero"]` | the objects the rim falls on, by name (`"cta_prop"` adds a dark prop) |
+| `sky` | 0.22 | what the dim sky lends to what is lit |
+| `softbox` | 1.4 | how bright the reflected softbox is |
+| `view` | `"Khronos PBR Neutral"` | the colour transform |
+| `light` | | `"classic"`: the first films' look (Standard, a rim on everything, one even sky) |
+
+`-- --look classic` and `-- --rim 6` try a look on a few frames first
+(`--frames … --samples 24 --scale 50`).
+
 ## Finish and export
 
 ```bash

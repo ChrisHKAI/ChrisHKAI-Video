@@ -11,6 +11,7 @@ usage:
   blender -b --factory-startup -P scripts/scene.py -- \
       [--frames 1-720 | 13,49,121 | 1-20,45] [--samples 48] [--scale 100] \
       [--out build/render] [--save build/scene.blend] [--engine cycles|eevee] [--resume]
+      [--look classic] [--rim 4]   (film.json "look" otherwise: references/render.md)
 """
 import json
 import math
@@ -108,7 +109,20 @@ scene.render.motion_blur_position = "CENTER"
 scene.render.film_transparent = False
 scene.render.image_settings.file_format = "PNG"
 scene.render.image_settings.color_depth = "8"
-scene.view_settings.view_transform = "Standard"
+# the look (film.json "look"): how light becomes colour, and where the light goes. "light": "classic"
+# (or --look classic) keeps the first films' look: Standard, a rim light on everything, one even sky.
+# The default follows what other Cycles films found:
+#  - Khronos PBR Neutral keeps a material's own colour (the toy's paint, skin) where Standard greys it;
+#  - the rim light falls on the toy alone (light linking): it lifts dark hair off the dark stage
+#    without lighting the world (look.rim, its strength; look.rimOn, the names it falls on);
+#  - what reflects sees a bright softbox sky, what is lit sees a dim one (look.softbox, look.sky):
+#    vinyl keeps its highlights, the world stays dark
+LOOK = FILM_JSON.get("look", {})
+CLASSIC = arg("--look", LOOK.get("light", "")) == "classic"
+try:
+    scene.view_settings.view_transform = "Standard" if CLASSIC else LOOK.get("view", "Khronos PBR Neutral")
+except TypeError:  # a Blender before 4.2 has no PBR Neutral
+    scene.view_settings.view_transform = "Standard"
 scene.view_settings.look = "None"
 scene.view_settings.exposure = float(arg("--exposure", 0.0))
 scene.render.use_persistent_data = True
@@ -122,14 +136,36 @@ w_out = wn.new("ShaderNodeOutputWorld")
 w_mix = wn.new("ShaderNodeMixShader")
 w_light = wn.new("ShaderNodeBackground")
 w_light.inputs["Color"].default_value = rgba("#dfe6ff")
-w_light.inputs["Strength"].default_value = 0.32
+w_light.inputs["Strength"].default_value = 0.32 if CLASSIC else float(LOOK.get("sky", 0.22))
 w_cam = wn.new("ShaderNodeBackground")
 w_cam.inputs["Color"].default_value = rgba("#0b0c10")
 w_path = wn.new("ShaderNodeLightPath")
 wl.new(w_path.outputs["Is Camera Ray"], w_mix.inputs["Fac"])
-wl.new(w_light.outputs["Background"], w_mix.inputs[1])
 wl.new(w_cam.outputs["Background"], w_mix.inputs[2])
 wl.new(w_mix.outputs["Shader"], w_out.inputs["Surface"])
+if CLASSIC:
+    wl.new(w_light.outputs["Background"], w_mix.inputs[1])
+else:
+    # reflections see a softbox: bright overhead, falling off to a dark horizon
+    w_dir = wn.new("ShaderNodeTexCoord")
+    w_xyz = wn.new("ShaderNodeSeparateXYZ")
+    w_up = wn.new("ShaderNodeMapRange")
+    w_up.inputs["From Min"].default_value, w_up.inputs["From Max"].default_value = 0.15, 0.85
+    w_box = wn.new("ShaderNodeMix")
+    w_box.data_type = "RGBA"
+    w_box.inputs["A"].default_value = rgba("#1a1d24")
+    w_box.inputs["B"].default_value = rgba("#ffffff")
+    w_gloss = wn.new("ShaderNodeBackground")
+    w_gloss.inputs["Strength"].default_value = float(LOOK.get("softbox", 1.4))
+    w_ray = wn.new("ShaderNodeMixShader")
+    wl.new(w_dir.outputs["Generated"], w_xyz.inputs["Vector"])
+    wl.new(w_xyz.outputs["Z"], w_up.inputs["Value"])
+    wl.new(w_up.outputs["Result"], w_box.inputs["Factor"])
+    wl.new(w_box.outputs["Result"], w_gloss.inputs["Color"])
+    wl.new(w_path.outputs["Is Glossy Ray"], w_ray.inputs["Fac"])
+    wl.new(w_light.outputs["Background"], w_ray.inputs[1])
+    wl.new(w_gloss.outputs["Background"], w_ray.inputs[2])
+    wl.new(w_ray.outputs["Shader"], w_mix.inputs[1])
 
 root = bpy.data.objects.new("THREE", None)
 scene.collection.objects.link(root)
@@ -150,7 +186,7 @@ def sun(name, energy, color, direction, size_deg):
 
 
 sun("Key", 2.5, "#fff3ea", (-1.2, 2.2, 1.6), 14)
-sun("Rim", 2.0, "#d6e2ff", (1.4, 1.1, -1.8), 10)
+RIM = sun("Rim", float(arg("--rim", LOOK.get("rim", 2.0 if CLASSIC else 4.0))), "#d6e2ff", (1.4, 1.1, -1.8), 10)
 sun("Fill", 0.55, "#ffe2d0", (1.6, 0.8, 1.4), 30)
 
 # ── Materials ───────────────────────────────────────────────────────────────
@@ -855,6 +891,24 @@ for name, keys in DATA["tracks"].items():
         curve(cb, "color", 3, cf, ck[:, 4])
 print(f"object keys in {time.time() - t0:.1f}s", flush=True)
 
+# the rim follows the camera (not in the classic look): it comes from behind the toy as the camera sees it,
+# and from above, so it outlines the head and shoulders in every shot, whichever way the camera turns
+if not CLASSIC and "camera" in DATA["tracks"]:
+    k = np.asarray(DATA["tracks"]["camera"], dtype=np.float64)
+    x, y, z, w = k[:, 4:8].T
+    away = -np.stack([2 * (x * z + w * y), 2 * (y * z - w * x), 1 - 2 * (x * x + y * y)], axis=1)  # the camera's -z
+    rots, prev = [], None
+    for d in away + [0, 0.8, 0]:
+        r = Vector(d).normalized().to_track_quat("Z", "Y")
+        if prev is not None and r.dot(prev) < 0:
+            r.negate()  # the shorter way between keys
+        rots.append(r)
+        prev = r
+    RIM.rotation_mode = "QUATERNION"
+    cb = channelbag(RIM)
+    for i in range(4):  # w x y z
+        curve(cb, "rotation_quaternion", i, 1 + k[:, 0] / SUB, np.array([r[i] for r in rots]))
+
 cam = objs["camera"].data
 cb = channelbag(cam)
 fr = 1 + np.arange(DATA["samples"]) / SUB
@@ -880,6 +934,15 @@ for prefix in arg("--hide", "").split(","):
         for name, ob in objs.items():
             if name.startswith(prefix):
                 ob.hide_render = True
+# the rim light falls on the toy alone (and what look.rimOn names: a dark prop, say)
+if not CLASSIC:
+    lit = bpy.data.collections.new("rim_receivers")
+    for name, ob in objs.items():
+        if any(name == p or name.startswith(p + "_") for p in LOOK.get("rimOn", ["hero"])):
+            lit.objects.link(ob)
+    RIM.light_linking.receiver_collection = lit
+    RIM.visible_glossy = True  # dark hair is outlined by what the vinyl reflects, not by what it scatters
+    print(f"rim light on {len(lit.objects)} objects ({', '.join(LOOK.get('rimOn', ['hero']))})", flush=True)
 print(f"built: {len(objs)} objects, {len(DATA['tracks'])} animated", flush=True)
 if "--save" in argv:
     bpy.ops.wm.save_as_mainfile(filepath=str(ROOT / arg("--save", "build/scene.blend")))

@@ -206,6 +206,8 @@ film and names the three biggest problems with their times
   and everything reads on the dark stage: lettering 3:1 or more, and no
   big part of the toy under 1.6:1 (a creator's dark hair melted into the
   dark stage until a rim light lifted it).
+- The light goes to the toy, not the world. The rim falls on the toy alone and
+  follows the camera; the stage stays dark (`references/render.md`, "The light").
 - A number rises from the spot on the page where it is shown.
 - Storyboards are real renders from this pipeline, never flat sketches.
 - After a change, re-render only the frames it touches; keep the old frames
