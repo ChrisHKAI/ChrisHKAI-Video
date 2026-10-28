@@ -181,6 +181,8 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, kit, math, qu
       add(LEAP[0], "boing", { long: true });
       add(LEAP[0] + 0.05, "whooshUp", { dur: 0.45 });
     },
+    // what the viewer reads (engine/lib/pacing.py): the last day, the count and the stamp, from when the label comes in
+    reads: [{ text: [date(opts.to), C ? kit.formatCount(C.to, FMT) + (LABEL.length ? ` ${LABEL.join("")}` : "") : "", STAMP.join("")].filter(Boolean).join(" "), at: [LABEL_IN, len] }],
     music: { groove: "light", chords: ["Em", "C", "G", "D"], hits: [LOCK] },
     storyboard: {
       part: {

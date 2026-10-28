@@ -45,6 +45,27 @@ Before the user sees it, look at every frame and the safe-zone sheet:
 
 Fix what you find and render those frames again before showing the page.
 
+Then the numbers, and a pair of eyes that has not seen the film being made:
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs pace     # from build/anim.json: nothing rendered
+FILM=<film> node <skill>/engine/run.mjs review   # the independent review's brief (references/review.md)
+```
+
+`pace` reports, and the page's "checked first" list shows:
+- any stretch of more than two bars with nothing new (a cue, a cut, or a
+  thing other than the toy starting to move);
+- the toy hopping with nothing else going on ("公仔跳左幾下，其實唔使");
+- a film with no hit in its first 3 s;
+- a line the viewer reads that goes before it can be read (4.5 Chinese
+  characters a second, three Latin words a second, plus 1.5 s).
+
+The template and each beat say what the viewer reads, and when
+(`build/reads.json`, written with `anim`).
+
+Mend those first. Then run the review: fix the three things it ranks first,
+and render again only what they touch.
+
 ## Notes on the real frames
 
 The user points at what to change on the page itself, on real renders only:

@@ -6,10 +6,11 @@
 // (+y up); Blender parents everything to an empty that turns it z-up.
 // A track only keeps the samples where something changes, so Blender's linear
 // keys reproduce every sample exactly. Also writes build/timeline.json (the
-// events and sound cues the template's score reads).
+// events and sound cues the template's score reads) and build/reads.json (the
+// lines the viewer reads, and when).
 //
 // usage: FILM=<film folder> node engine/scripts/export-anim.mjs
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { film, FILM, fromFilm, importTemplate } from "../lib/film.js";
 import { trs } from "../lib/quat.js";
@@ -88,6 +89,9 @@ for (const [name, list] of Object.entries(colors)) outColors[name] = compress(li
 mkdirSync(join(root, "build"), { recursive: true });
 // the story's numbers for the score (templates/<t>/score.py)
 writeFileSync(join(root, "build/timeline.json"), JSON.stringify(W.timeline ? W.timeline() : { FPS: T.FPS, DURATION: T.DURATION, BPM: T.BPM, BEAT: T.BEAT, BAR: T.BAR, EV: T.EV, cues: T.soundCues ? T.soundCues() : [] }, null, 1));
+// what the viewer reads, and when (engine/lib/pacing.py); a template that does not say leaves none
+if (W.reads) writeFileSync(join(root, "build/reads.json"), JSON.stringify(W.reads(), null, 1));
+else rmSync(join(root, "build/reads.json"), { force: true });
 const out = { fps: T.FPS, frames: FRAMES, sub: SUB, samples: SAMPLES, objects, tracks: outTracks, colors: outColors, scalars };
 mkdirSync(join(root, "build"), { recursive: true });
 writeFileSync(join(root, "build/anim.json"), JSON.stringify(out));

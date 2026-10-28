@@ -15,6 +15,10 @@
 //           covers   each platform's covers cut from the last frame → out/covers/
 //           qa       the finished film's file, loudness, hits, exports → build/qa.txt, build/qa-sheet.jpg
 //           safezone the platforms' controls over preview frames → build/safezone-check.jpg
+//           pace     quiet stretches, the toy hopping alone, the first hit, reading time (from anim;
+//                    the storyboard page shows the same)
+//           review   the independent review's brief: the film, what to watch, the checks, the
+//                    rubric → build/review.md (references/review.md)
 //           storyboard  the page to sign off: parts, beat grid, previews, checks → build/storyboard/
 //                    (storyboard -- --frames prints the preview frames to render)
 //           animatic the whole film in EEVEE, small, with its score → build/storyboard/animatic.mp4
@@ -109,6 +113,8 @@ for (const [i, step] of steps.entries()) {
       break;
     case "studio": run("node", [fromSkill("engine/scripts/studio.mjs"), "--film", FILM, ...more]); break;
     case "comments": run(PY, [fromSkill("engine/scripts/comments.py"), ...more]); break;
+    case "pace": run(PY, [fromSkill("engine/scripts/pace.py"), ...more]); break;
+    case "review": run(PY, [fromSkill("engine/scripts/review.py"), ...more]); break;
     case "own":
       // what the template or the scene can't do for this film is changed in the film's own copy
       if (!more.length) { console.error("own takes what to copy: own -- template scene.py"); process.exit(1); }

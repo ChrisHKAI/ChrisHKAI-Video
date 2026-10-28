@@ -90,6 +90,19 @@ export const CAMERA2 = S.camera2 ?? D.camera2;
 export const FOV = S.fov;
 export const SHAKES = S.shakes; // 2–3 frame shakes on hits: [t, strength]
 
+// ── What the viewer reads, and when (story time) ────────────────────────────
+// engine/lib/pacing.py checks each stays long enough to read (build/reads.json).
+// The covers' own words are pictures, seen rather than read: not listed
+export function reads() {
+  const E = EV, END = STORY_DURATION;
+  return [
+    { text: film.profile.name, at: [0, E.hops[0][0]] }, // the page, before he hops onto it
+    { text: `${VIEWS_COUNT}${film.counter.unit} ${film.counter.label}`, at: [E.count[0], E.leap[0]] },
+    { text: SLOGAN, at: [E.letters, END] },
+    { text: `${film.cta.name.text} ${film.cta.handle.text}`, at: [E.name, END] },
+  ];
+}
+
 // ── Sound cues derived from the same numbers ────────────────────────────────
 export function soundCues() {
   const cues = [];

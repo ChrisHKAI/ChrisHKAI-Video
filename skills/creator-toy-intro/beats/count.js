@@ -118,6 +118,8 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, signature, ki
       add(LEAP[0], "boing", { long: true });
       add(LEAP[0] + 0.05, "whooshUp", { dur: 0.45 });
     },
+    // what the viewer reads (engine/lib/pacing.py): the number and its label, from when they rise
+    reads: [{ text: kit.formatCount(TO, FMT) + (LABEL.length ? ` ${LABEL.join("")}` : ""), at: [RISE[0], len] }],
     music: { groove: "light", chords: ["G", "Em", "C", "D"], hits: [LOCK] },
     storyboard: {
       part: {

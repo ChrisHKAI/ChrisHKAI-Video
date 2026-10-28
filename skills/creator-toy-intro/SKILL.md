@@ -58,11 +58,11 @@ made for them. Only paths, commands and code stay as they are.
 | --- | --- |
 | `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
-| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `render.md` (step 5) |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `review.md` (the independent review, steps 4 and 5), `render.md` (step 5) |
 | `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `page-stand.js` (Kin's opening: the page stands up, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments (step 4), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace and review (step 4; `engine/lib/pacing.py`), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
@@ -183,6 +183,16 @@ Notes on the real frames: `studio` serves the storyboard page, where the
 user clicks a spot on a preview frame or the paused animatic and writes
 what to change (into `build/comments.jsonl`); `comments` lists them, each
 with its frame marked (`references/storyboard.md`).
+Before the user sees the page: `pace` reads the film's numbers, with
+nothing rendered. It reports:
+- quiet stretches of more than two bars;
+- the toy hopping with nothing else new;
+- no hit in the first 3 s;
+- a line gone before it can be read.
+
+Then `review` writes the brief for an independent reviewer, who scores the
+film and names the three biggest problems with their times
+(`references/review.md`).
 
 ## Rules the films taught
 

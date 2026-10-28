@@ -92,6 +92,8 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
       add(LEAP[0], "boing", { long: true });
       add(LEAP[0] + 0.05, "whooshUp", { dur: 0.45 });
     },
+    // what the viewer reads (engine/lib/pacing.py checks it stays long enough): the line, from its first letter
+    reads: [{ text: TEXT.join(""), at: [T0[0], len] }],
     music: { groove: "light", chords: ["Em", "C", "G", "D"], hits: [LOCK] },
     storyboard: {
       part: {

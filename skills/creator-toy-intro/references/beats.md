@@ -99,6 +99,7 @@ It returns, every time in the beat's own seconds `g` (0 to `len`):
 | `camera` | `g → { tr, fov, focus, fstop }`: `kit.cameraFrom([{ t, target, dist, elev, az, fstop? }…], { fov, aspect, shakes })` |
 | `light(g)` | optional: `{ p, energy, color }`, the one moving light |
 | `cues(add)` | its sounds, `add(g, kind, options)`, the synth's kinds (`whooshDown`, `pomf`, `push` with a `note`, `lock`, `sparkle`, `boing`, `whooshUp`, `ding`, `slam`…) |
+| `reads` | `[{ text, at: [g0, g1] }]`: each line the viewer reads, from when it comes in to when it goes (the beat's clock). The pace check holds each to how long it takes to read, so a word beat says its words here |
 | `music` | `{ groove: "light" \| "normal" \| "half" \| "double" \| "none", chords: ["Em", "C", "G", "D"], hits: [g…] }`: the song's groove under it, a big kick on each hit; with `"sound": "bed"` the long chords move away from G as the beat comes in and come home on its hits |
 | `cuts` | optional: its own hard cuts `[g…]` (a beat in two shots) |
 | `storyboard` | `{ part: { label, what, uses }, frames: [{ at, title, what }], hits: [{ at, label }] }`, each text per language (`zh-Hant`, `zh-Hans`, `en`) |

@@ -158,6 +158,26 @@ export function sample(ft, { put, putColor, regular, whole, scalars, hex }) {
   }
 }
 
+// build/reads.json: what the viewer reads, in film time (engine/lib/pacing.py
+// checks each stays long enough): the story's lines where its pieces play them
+// (the longest stretch one piece plays), the beats' on their own clocks
+export function reads() {
+  const r4 = (v) => +v.toFixed(4);
+  const story = T.reads();
+  if (!T.SEG.on) return story.map((r) => ({ ...r, at: r.at.map(r4) }));
+  const out = [];
+  for (const r of story) {
+    let best = null;
+    for (const s of T.SEG.list.filter((x) => x.kind === "story")) {
+      const a = Math.max(r.at[0], s.s0), b = Math.min(r.at[1], s.s1);
+      if (b - a > 1e-6 && (!best || b - a > best[1] - best[0])) best = [a - s.s0 + s.f0, b - s.s0 + s.f0];
+    }
+    if (best) out.push({ ...r, at: best.map(r4) });
+  }
+  for (const B of BEATS) for (const r of B.b.reads ?? []) out.push({ ...r, at: r.at.map((g) => r4(B.f0 + g)) });
+  return out.sort((a, b) => a.at[0] - b.at[0]);
+}
+
 // build/timeline.json: the film's clock for the score, the storyboard and the
 // last look. With segments, the story's events and cues where the film plays
 // them, the beats' cues in film time, the story's own clock (STORY) for the

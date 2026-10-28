@@ -58,7 +58,11 @@ does, in one go:
   export there, and `build/qa-sheet.jpg`, the film in twelve frames.
 
 Read `build/qa.txt` and look at both sheets before you hand anything over.
-Then watch the film yourself once, start to end, with sound.
+Then watch the film yourself once, start to end, with sound. Run the
+independent review on the finished film too
+(`FILM=<film> node <skill>/engine/run.mjs review -- --final`,
+references/review.md). Fix what it ranks first only if the fix is small and
+safe at this stage. Otherwise tell the user what it found, and let them choose.
 
 ## Handing it over
 
