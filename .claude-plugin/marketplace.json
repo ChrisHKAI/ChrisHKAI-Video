@@ -9,7 +9,7 @@
       "name": "chrishkai-video",
       "displayName": "ChrisHKAI-Video",
       "source": "./",
-      "description": "Video skills by ChrisHKAI. First skill: creator-toy-intro, a 30 s self-introduction film for a creator, starring their 3D vinyl toy."
+      "description": "Video skills by ChrisHKAI. First skill, creator-toy-intro: paste a creator's X link, get a short self-introduction film (30 s by default) starring them as a 3D vinyl toy."
     }
   ]
 }

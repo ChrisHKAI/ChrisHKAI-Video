@@ -1,34 +1,208 @@
+<div align="center">
+
 # ChrisHKAI-Video
 
-ChrisHKAI 的视频 Skill 合集：用代码做视频，主角是创作者自己的 3D 搪胶公仔。
+**Paste a creator's X link, get a short film starring them as a 3D vinyl toy.**<br>
+Their profile picture peels off the page and puffs into a toy of them; their best posts stand up as walls; their numbers rise out of the page.<br>
+<sub>A video skill for coding agents, made entirely in code · 🇨🇳 中文用户请看 <a href="README.zh-CN.md">简体中文说明</a></sub>
 
-## Skill
+<a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films"><img alt="Watch the films" src="https://img.shields.io/badge/-%E2%96%B6%20Watch%20the%20films-D7263D?style=for-the-badge"></a> <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-555?style=for-the-badge"></a> <a href="#help-test-it"><img alt="Testers wanted" src="https://img.shields.io/badge/status-testers%20wanted-8A2BE2?style=for-the-badge"></a> <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ChrisHKAI/ChrisHKAI-Video?style=for-the-badge&color=F5B700&label=stars"></a> <a href="#licence"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-2EA44F?style=for-the-badge"></a>
 
-| Skill | 做什么 | 状态 |
-| --- | --- | --- |
-| `creator-toy-intro` | 自媒体 3D 公仔介绍片：贴一条 X 主页链接，做出一条 30 秒、主角是你自己 3D 搪胶公仔的自我介绍片（第一版只出 X；抖音、小红书、视频号、Instagram 之后每次更新加一个平台） | 开发中（第四阶段：实测） |
+⚠️ **Built for Claude.** The skill is tuned for Claude Opus 5.5 at xhigh effort;<br>
+other models and agents are untested, so use them with care.
 
-## 作品
+🧪 **2026-10-28 · Open for testing**: the first film for a real creator is done and approved. Now I'd like to see it run on your computer. [How to help ↓](#help-test-it)<br>
+🆕 **2026-10-28 · Sound by ear**: hear six sounds under the animatic and pick one, put the creator's own song on the film's beat, or play it on real sampled instruments. [See how ↓](#the-sound)<br>
+🆕 **2026-10-28 · Material first**: with Grok Build it searches X for the creator's best posts and milestones, then shows a table of material → animation to pick from. [See how ↓](#what-happens)
 
-`examples/` 收录了做这个 Skill 之前和期间做过的每一条片：简介、代码和素材图，供大家参考；成片放在本仓库的 Releases（标签 `films`），不放进仓库，安装 Skill 时就不用一起下载。目录见 [examples/README.md](examples/README.md)；公仔设计（isnail 吉祥物、Kin 的三花猫、Tim、Steve Jobs、Chris）另在 `skills/creator-toy-intro/characters/`。
+<sub>Official repo: [github.com/ChrisHKAI/ChrisHKAI-Video](https://github.com/ChrisHKAI/ChrisHKAI-Video) · by Chris ([@ChrisHKAI](https://x.com/ChrisHKAI))</sub>
 
-## 安装（Claude Code）
+</div>
 
-```bash
+## 🎬 Feature presentation
+
+<table><tr>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/isnail-intro.mp4"><img src="docs/isnail-intro.jpg" alt="蜗牛King's vinyl mascot on a wall of his posts"></a><br><b>▶ 蜗牛King</b> · @isnail · 0:30<br><sub>His avatar peels off and pops into his vinyl mascot; his posts stand up as walls and 304万 reads rise out of the page. The film the skill was extracted from.</sub></td>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/kingao-intro.mp4"><img src="docs/kingao-intro.jpg" alt="Kin's calico cat on top of a follower chart"></a><br><b>▶ Kin</b> · @KinGao476942 · 0:30<br><sub>Starring his calico cat as a vinyl toy, climbing from 50 followers on day 3 to 10,000 on day 48.</sub></td>
+</tr></table>
+
+<div align="center">
+
+Both films are code from the first frame to the last note: Blender renders the picture, Python writes the sound.<br>
+[**▶ All films**](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films) · [**How each was made**](examples/README.md)
+
+</div>
+
+## 👋 About me
+
+I'm **Chris** ([@ChrisHKAI](https://x.com/ChrisHKAI)), from Hong Kong. I share what I build with AI on X.
+
+> **Not a template pack.** Every film here was made by me with a coding agent, in code.<br>
+> The skill is tuned for Claude Opus 5.5; other models may not get there.
+
+Every film is directed, built, scored and rendered by an agent writing code:
+
+- 🧸 **Toy**: built from a part list, a pet kit or a sculpt of signed distance fields, from a picture you confirm
+- 🎨 **Picture**: the profile page is HTML; the scene is Blender Cycles, rendered frame by frame
+- 🎵 **Sound**: synthesized in Python, played on free sampled instruments, or the creator's own song cut to the film's beat
+
+No video generation, no image generation, no stock footage. The profile picture, the posts and the numbers are the creator's own.
+
+## How to use
+
+Two ways in; the plugin is the easiest.
+
+### Option 1: install the skill (recommended)
+
+In your terminal:
+
+```sh
 claude plugin marketplace add ChrisHKAI/ChrisHKAI-Video
 claude plugin install chrishkai-video@chrishkai-video
 ```
 
-其他 agent：把 `skills/creator-toy-intro/` 整个文件夹复制到它的 skills 目录。
+Then use it from any folder.
 
-## 实测过的 agent 和模型
+- Each film gets its own workspace, `<handle>-intro/`, in the folder you started from.
+- Blender, the Python modules and headless Chrome go in user-level folders (`~/Applications`, `~/.chrishkai-video`, `~/.cache/puppeteer`), and only after you say yes.
+- For other agents, copy [`skills/creator-toy-intro/`](skills/creator-toy-intro/) into their skills folder.
 
-第四阶段用真实创作者实测后填写：哪个 agent、哪个模型、什么思考强度、什么电脑，做出来的片怎样。
+### Option 2: clone the repo
 
-| agent | 模型 | 强度 | 电脑 | 结果 |
-| --- | --- | --- | --- | --- |
-| — | — | — | — | 待实测 |
+```sh
+git clone https://github.com/ChrisHKAI/ChrisHKAI-Video.git
+mkdir my-films && cd my-films
+claude --plugin-dir ../ChrisHKAI-Video
+```
 
-## 授权
+Films go into `my-films/`, outside the repo.
 
-代码以 MIT 授权发布。`examples/` 里创作者的头像、封面等图片属于各自的创作者。仓库不含任何字体文件：兰亭黑等系统字体的商业用途，需要另行向字体厂商购买授权。
+### Then just say what you want
+
+> Make a self-intro film for https://x.com/yourhandle
+
+> 帮我做一条自我介绍片：https://x.com/yourhandle
+
+> 幫我整條自我介紹片，主角係我個公仔：https://x.com/yourhandle
+
+A link, a share message pasted from the app or a few screenshots all work. Not sure yet? Type `/chrishkai-video:creator-toy-intro` and nothing else; it asks for the link.
+
+It answers in your language and asks you one thing up front: 16:9 (the X desktop page, recommended) or 9:16 (the X phone page). The rest it works out from the profile.
+
+### What happens
+
+Six steps, and each ends on something you look at.
+
+| step | what it does | where it stops for you |
+|---|---|---|
+| **0 · the computer** | checks Blender, Node, Python, ffmpeg and Chrome; one yes installs what is missing | the install list, if anything is missing |
+| **1 · your link** | reads the link and opens the film's workspace | 16:9 or 9:16 |
+| **2 · research** | the profile, the pinned and best posts, the numbers; with Grok Build it also searches X | which picture the toy is made from, and a table of material → animation to pick from |
+| **3 · the toy** | builds the toy in one of three kits: a part list, a pet, a sculpt | a turnaround to approve |
+| **4 · the storyboard** | the story, the length, the beat grid, real preview renders | the storyboard page: leave notes on the frames, hear the sounds, sign off |
+| **5 · the render** | the film, an effects-only cut, covers for each platform, a last look | the finished film |
+
+Before you sign off, the storyboard page checks the film for you:
+
+- **Pace**: quiet stretches, the toy left alone too long, the first three seconds, and whether every line stays up long enough to read.
+- **Colour**: every word must read on the dark stage; the palette comes from the creator's own pictures.
+- **Not the last film again**: each film you deliver is kept in a ledger, and a new one must differ from every one of them in at least four of six things (the opening, the structure, the signature move, the colours, the sound, the ending).
+- **A second opinion**: a fresh reviewer reads the brief and the frames. Where it disagrees, you get its view as one more option, not a rule.
+
+### The sound
+
+You pick the sound by ear: `run.mjs listen` lays each one under the animatic.
+
+| sound | what it is |
+|---|---|
+| `bed` (default) | the effects over a quiet layer of long chords |
+| `song` | the template's full synthesized song |
+| `band` | the song on real instruments |
+| `strings` | the bed on a real string section and a piano |
+| `fx` | the effects alone |
+| `own` | the creator's own song, put on the film's beat |
+
+`band` and `strings` need the sample libraries, about 1.4 GB, downloaded only on your yes.
+
+### Before you start
+
+- **It takes a while, and a lot of tokens.** A film is hours of work, not minutes: research, a toy, a storyboard you sign off, then a Cycles render that runs for an hour or more in the background. Effort stays at xhigh.
+- **Tested on a Mac with Apple silicon**, in Claude Code with Claude Opus 5.5. Windows and Linux are not tested yet; Intel Macs can't run Blender 5.2.
+- **You need** Blender 5.2+, Node 22+, Python 3.9+, ffmpeg and headless Chrome. The skill checks them and installs what is missing on your yes; anything that needs your password, you paste into Terminal yourself. If `node` itself is missing, install Node 22 first.
+- About **10 GB free** for each film, and a **GPU**: without one, Cycles takes hours.
+- The agent must be able to **look at images** (every check is a picture) and use a **browser** for the research.
+- **Optional**: [Grok Build](https://x.ai) to search X (a search costs roughly US$1–1.4), and the real instruments (about 1.4 GB).
+- **Output**: 1920×1080 or 1080×1920 at 30 fps; 30 s by default, longer when there is more to say. This release publishes on X; 抖音, 小红书, 视频号 and Instagram come one per later release.
+
+### Update or uninstall
+
+Update, then restart Claude Code:
+
+```sh
+claude plugin marketplace update chrishkai-video && claude plugin update chrishkai-video@chrishkai-video
+```
+
+Uninstall:
+
+```sh
+claude plugin uninstall chrishkai-video@chrishkai-video
+```
+
+Then delete `~/.chrishkai-video` (the Python modules, fonts, instruments and the ledger of your films) if you don't want it. Blender in `~/Applications` and Chrome in `~/.cache/puppeteer` are yours to keep or remove. Your film workspaces stay where they are.
+
+If a step stays stuck, [open an issue](https://github.com/ChrisHKAI/ChrisHKAI-Video/issues).
+
+## Help test it
+
+The skill is in its testing stage: one film for a real creator is done. I can't try every computer and every model myself, so I'd love to hear how it runs for you. [Open an issue](https://github.com/ChrisHKAI/ChrisHKAI-Video/issues) with:
+
+- the agent, the model and the effort;
+- your computer (chip, system, GPU);
+- where it got stuck or what looked wrong (a frame or a screenshot of the storyboard page helps);
+- the film, if you're happy to share it.
+
+Tested so far:
+
+| agent | model | effort | computer | result |
+|---|---|---|---|---|
+| Claude Code | Claude Opus 5.5 | xhigh | Mac, Apple silicon | a 42 s film for a real creator, approved |
+
+## The films
+
+Every film made before and alongside the skill. Click a frame to watch; each film's brief and code are in [`examples/`](examples/README.md).
+
+<table><tr>
+<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4"><img src="docs/chris-outro.jpg" alt="Chris HKAI in white 3D letters, with the Chris toy"></a><br><b>▶ Chris HKAI</b> · 0:23<br><sub>An end tag: me as my own sculpted vinyl toy.</sub></td>
+<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/merge-conflict.mp4"><img src="docs/merge-conflict.jpg" alt="MERGED, with Clawd and a DeepSeek whale"></a><br><b>▶ Merge Conflict</b> · 0:19<br><sub>A voxel fight in a code editor: Clawd against a DeepSeek whale.</sub></td>
+<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/made-with-deepseek.mp4"><img src="docs/made-with-deepseek.jpg" alt="Made with DeepSeek, on an After Effects screen"></a><br><b>▶ Made with DeepSeek</b> · 0:12<br><sub>A whale over a tilted After Effects screen, made in HTML by DeepSeek.</sub></td>
+</tr></table>
+
+The Tim film (2:23) is not published: it carries keynote footage and a song that belong to others. Its code is in [`examples/tim-intro/`](examples/tim-intro/).
+
+## Licence
+
+Made by **ChrisHKAI × Claude**.
+
+- **Code and docs**: [MIT](LICENSE).
+- **Films you make with the skill**: yours.
+- **The creators in the demo films** (the Releases, `docs/` and `examples/`): their profile pictures, posts, names and mascots belong to them.
+- **Real instruments**: the sampler is [lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar)'s, under MIT, in [`engine/vendor/lemo/`](skills/creator-toy-intro/engine/vendor/lemo/). The sample libraries keep their own licences: CC0, except the Salamander Grand Piano (CC BY 3.0) and the MuldjordKit drums (CC BY 4.0). A film that uses them gets a `credits.txt` for its description.
+- **No font files**: the end card uses system faces (Lantinghei, PingFang, Helvetica Neue) or the free Source Han Sans. Commercial use of a system face may need a licence from its foundry.
+
+You are responsible for the material you use in your films.
+
+## Thanks
+
+- 🍋 **[lemo-opuscar](https://github.com/lemomo-ai/lemo-opuscar)** by Lemomo: the sampler and sample packs behind the real instruments, and the shape of this page.
+
+---
+
+<div align="center">
+
+⭐ **Star this repo**<br>
+👀 **Watch → Custom → Releases** to hear about new versions<br>
+𝕏 Follow [@ChrisHKAI](https://x.com/ChrisHKAI)
+
+<sub>ChrisHKAI-Video · by Chris</sub>
+
+</div>
