@@ -1,0 +1,462 @@
+{
+ "name": "铁柱AGI",
+ "kit": "sculpt",
+ "signature": {
+  "move": "glasses",
+  "at": [
+   26.4,
+   80.0,
+   -3.5
+  ]
+ },
+ "height": 0.12,
+ "center": [
+  0,
+  0.0528,
+  0
+ ],
+ "colors": {},
+ "finish": {},
+ "joints": {
+  "body": {
+   "p": [
+    0.0,
+    0.027,
+    -0.0005
+   ],
+   "parent": null
+  },
+  "head": {
+   "p": [
+    0.0,
+    0.053,
+    -0.0025
+   ],
+   "parent": "body"
+  },
+  "armR": {
+   "p": [
+    -0.0134,
+    0.05,
+    -0.0008
+   ],
+   "parent": "body"
+  },
+  "armL": {
+   "p": [
+    0.0134,
+    0.05,
+    -0.0008
+   ],
+   "parent": "body"
+  },
+  "legR": {
+   "p": [
+    -0.007,
+    0.0255,
+    -0.0006
+   ],
+   "parent": null
+  },
+  "legL": {
+   "p": [
+    0.007,
+    0.0255,
+    -0.0006
+   ],
+   "parent": null
+  }
+ },
+ "parts": [
+  {
+   "name": "head",
+   "shape": "mesh",
+   "file": "build/toy/head.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "skin",
+   "group": "head"
+  },
+  {
+   "name": "hair",
+   "shape": "mesh",
+   "file": "build/toy/hair.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "head"
+  },
+  {
+   "name": "teeth",
+   "shape": "mesh",
+   "file": "build/toy/teeth.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "gloss",
+   "group": "head"
+  },
+  {
+   "name": "tongue",
+   "shape": "mesh",
+   "file": "build/toy/tongue.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "head"
+  },
+  {
+   "name": "glasses",
+   "shape": "mesh",
+   "file": "build/toy/glasses.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "gloss",
+   "group": "head"
+  },
+  {
+   "name": "pads",
+   "shape": "mesh",
+   "file": "build/toy/pads.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "glass",
+   "group": "head"
+  },
+  {
+   "name": "torso",
+   "shape": "mesh",
+   "file": "build/toy/torso.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "body"
+  },
+  {
+   "name": "zip",
+   "shape": "mesh",
+   "file": "build/toy/zip.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "body"
+  },
+  {
+   "name": "strings",
+   "shape": "mesh",
+   "file": "build/toy/strings.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "body"
+  },
+  {
+   "name": "hips",
+   "shape": "mesh",
+   "file": "build/toy/hips.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "body"
+  },
+  {
+   "name": "browR",
+   "shape": "mesh",
+   "file": "build/toy/browR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "head"
+  },
+  {
+   "name": "eyeR",
+   "shape": "mesh",
+   "file": "build/toy/eyeR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "gloss",
+   "group": "head"
+  },
+  {
+   "name": "legR",
+   "shape": "mesh",
+   "file": "build/toy/legR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legR"
+  },
+  {
+   "name": "shoeR",
+   "shape": "mesh",
+   "file": "build/toy/shoeR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legR"
+  },
+  {
+   "name": "lacesR",
+   "shape": "mesh",
+   "file": "build/toy/lacesR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legR"
+  },
+  {
+   "name": "heelTabR",
+   "shape": "mesh",
+   "file": "build/toy/heelTabR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legR"
+  },
+  {
+   "name": "sleeveR",
+   "shape": "mesh",
+   "file": "build/toy/sleeveR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "armR"
+  },
+  {
+   "name": "upperArmR",
+   "shape": "mesh",
+   "file": "build/toy/upperArmR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "armR"
+  },
+  {
+   "name": "forearmR",
+   "shape": "mesh",
+   "file": "build/toy/forearmR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "armR"
+  },
+  {
+   "name": "handR",
+   "shape": "mesh",
+   "file": "build/toy/handR.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "skin",
+   "group": "armR"
+  },
+  {
+   "name": "browL",
+   "shape": "mesh",
+   "file": "build/toy/browL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "head"
+  },
+  {
+   "name": "eyeL",
+   "shape": "mesh",
+   "file": "build/toy/eyeL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "gloss",
+   "group": "head"
+  },
+  {
+   "name": "legL",
+   "shape": "mesh",
+   "file": "build/toy/legL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legL"
+  },
+  {
+   "name": "shoeL",
+   "shape": "mesh",
+   "file": "build/toy/shoeL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legL"
+  },
+  {
+   "name": "lacesL",
+   "shape": "mesh",
+   "file": "build/toy/lacesL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legL"
+  },
+  {
+   "name": "heelTabL",
+   "shape": "mesh",
+   "file": "build/toy/heelTabL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "legL"
+  },
+  {
+   "name": "sleeveL",
+   "shape": "mesh",
+   "file": "build/toy/sleeveL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "armL"
+  },
+  {
+   "name": "upperArmL",
+   "shape": "mesh",
+   "file": "build/toy/upperArmL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "armL"
+  },
+  {
+   "name": "forearmL",
+   "shape": "mesh",
+   "file": "build/toy/forearmL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "vinyl",
+   "group": "armL"
+  },
+  {
+   "name": "handL",
+   "shape": "mesh",
+   "file": "build/toy/handL.npz",
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "mat": "paint",
+   "finish": "skin",
+   "group": "armL"
+  }
+ ]
+}

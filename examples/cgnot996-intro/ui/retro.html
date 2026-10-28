@@ -1,0 +1,52 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1440px; background: #FFFFFF; overflow: hidden; }
+body { font-family: "PingFang SC", -apple-system, "Helvetica Neue", Helvetica, sans-serif; color: #0F1419; -webkit-font-smoothing: antialiased; }
+.panel { position: absolute; overflow: hidden; background: #FFFFFF; }
+.emo { font-family: "Apple Color Emoji"; font-size: .9em; }
+.grey { color: #536471; }
+.b { font-weight: 700; }
+.row { display: flex; align-items: center; }
+.socket { position: absolute; border-radius: 50%; background: radial-gradient(circle at 50% 42%, #E3E7EA 0 58%, #D3D8DC 72%); box-shadow: inset 0 10px 22px rgba(0,0,0,.18), 0 0 0 2px #FFFFFF; }
+/* nav */
+.nav-item { position: absolute; left: 12px; display: flex; align-items: center; gap: 20px; font-size: 20px; height: 50px; padding: 0 12px; }
+.nav-item.on { font-weight: 700; }
+.post-btn { position: absolute; left: 12px; width: 226px; height: 52px; border-radius: 26px; background: #0F1419; color: #FFFFFF; font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; }
+/* profile */
+.hdr { position: absolute; left: 16px; top: 4px; display: flex; align-items: center; gap: 30px; }
+.hdr .t { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.hdr .s { font-size: 13px; color: #536471; margin-top: 1px; }
+.btn { position: absolute; top: 12px; height: 36px; border-radius: 18px; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.name { position: absolute; left: 16px; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 4px; }
+.line { position: absolute; left: 16px; font-size: 15px; line-height: 20px; }
+.meta { position: absolute; left: 16px; display: flex; gap: 14px; font-size: 15px; color: #536471; }
+.meta span { display: flex; align-items: center; gap: 4px; }
+.tabs { display: flex; height: 54px; }
+.tab { flex: 1; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #536471; position: relative; font-weight: 500; }
+.tab.on { color: #0F1419; font-weight: 700; }
+.tab.on::after { content: ""; position: absolute; bottom: 0; width: 56px; height: 4px; border-radius: 2px; background: #1D9BF0; }
+/* posts */
+.post-top { position: absolute; left: 16px; font-size: 13px; color: #536471; font-weight: 700; display: flex; align-items: center; gap: 12px; }
+.av { position: absolute; left: 16px; top: 34px; width: 40px; height: 40px; border-radius: 50%; background: url('file:///Users/chris/Developer/ChrisHKAI-Video/films/cgnot996-intro/assets/avatar.jpg') center/cover; }
+.who { position: absolute; left: 68px; top: 34px; font-size: 15px; display: flex; align-items: center; gap: 4px; }
+.card { position: absolute; left: 68px; top: 66px; width: 516px; border: 1px solid #EFF3F4; border-radius: 16px; overflow: hidden; }
+.cover { width: 100%; height: 206px; position: relative; }
+.card .tt { padding: 12px 14px 4px; font-size: 17px; font-weight: 700; line-height: 23px; min-height: 62px; }
+.card .chip { margin: 6px 14px 12px; display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: #536471; }
+.acts { position: absolute; top: 384px; left: 68px; width: 516px; height: 24px; font-size: 13px; color: #536471; }
+.acts span { position: absolute; display: flex; align-items: center; gap: 6px; height: 24px; }
+.sep { position: absolute; left: 0; width: 100%; height: 1px; background: #EFF3F4; }
+/* sidebar skeletons */
+.search { position: absolute; left: 0; top: 8px; width: 350px; height: 44px; border-radius: 22px; background: #EFF3F4; display: flex; align-items: center; gap: 12px; padding-left: 18px; color: #536471; font-size: 15px; }
+.box { position: absolute; left: 0; width: 350px; border: 1px solid #EFF3F4; border-radius: 16px; padding: 12px 16px; }
+.box h4 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.sk { display: flex; align-items: center; gap: 12px; height: 64px; }
+.sk i { display: block; background: #EFF3F4; border-radius: 6px; }
+ html, body { width: 600px; height: 424px; }</style></head><body>
+<section class="panel" style="left:0;top:0;width:600px;height:424px">
+    <div class="av"></div>
+    <div class="who"><b>铁柱AGI</b><span class="grey">@cgnot996 · 7月30日</span><span style="margin-left:auto"></span></div>
+    <div class="card"><div class="cover" style="background:#E9ECEF;box-shadow:inset 0 8px 24px rgba(0,0,0,.12)"></div><div class="tt">5 天 380+ star：我让 Grok Build 自己写了个桌面客户端</div><div class="chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>文章</div></div>
+    <div class="acts"><span style="left:0px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5C4 7.4 7.6 4.5 12 4.5s8 2.9 8 7-3.6 7-8 7c-1 0-2-.1-2.9-.4L5 20l.9-3.6C4.7 15.1 4 13.4 4 11.5z"/></svg>13</span><span style="left:132px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V7h12l-3-3M20 15v2H8l3 3"/><path d="M16 4l3 3-3 3M8 20l-3-3 3-3"/></svg>2</span><span style="left:264px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.5-4.6-8.6-9.6C2.7 7 5 4.5 7.8 4.5c1.8 0 3.2 1 4.2 2.5 1-1.5 2.4-2.5 4.2-2.5 2.8 0 5.1 2.5 4.4 5.9C19.5 15.4 12 20 12 20z"/></svg>28</span><span style="left:384px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V12M10 20V5M15 20v-9M20 20V8"/></svg>8,188</span>
+    <span style="right:34px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span><span style="right:0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#536471" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg></span></div></section>
+</body></html>

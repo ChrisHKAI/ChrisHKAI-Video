@@ -165,19 +165,21 @@ claude plugin uninstall chrishkai-video@chrishkai-video
 
 | agent | 模型 | 强度 | 电脑 | 结果 |
 |---|---|---|---|---|
-| Claude Code | Claude Opus 5.5 | xhigh | Mac（Apple 芯片） | 给一位真实创作者做了 42 秒的片，已通过 |
+| Claude Code | Claude Opus 5.5 | xhigh | Mac（Apple 芯片） | [铁柱AGI 的 42 秒片](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4)，已通过 |
 
 ## 全部作品
 
 做这个 Skill 之前和期间做过的每一条片。点画面就能看；每条片的简介和代码在 [`examples/`](examples/README.md)。
 
 <table><tr>
-<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4"><img src="docs/chris-outro.jpg" alt="白色 3D 字 Chris HKAI 和 Chris 公仔"></a><br><b>▶ Chris HKAI</b> · 0:23<br><sub>片尾标识：我自己的雕塑搪胶公仔。</sub></td>
-<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/merge-conflict.mp4"><img src="docs/merge-conflict.jpg" alt="MERGED 字样、Clawd 和 DeepSeek 鲸鱼"></a><br><b>▶ Merge Conflict</b> · 0:19<br><sub>代码编辑器里的体素大战：Clawd 对 DeepSeek 鲸鱼。</sub></td>
-<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/made-with-deepseek.mp4"><img src="docs/made-with-deepseek.jpg" alt="After Effects 画面上的 Made with DeepSeek"></a><br><b>▶ Made with DeepSeek</b> · 0:12<br><sub>鲸鱼在倾斜的 After Effects 界面上跑，由 DeepSeek 用 HTML 做。</sub></td>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4"><img src="docs/cgnot996-intro.jpg" alt="铁柱AGI 的公仔和 1,500 颗金色星星"></a><br><b>▶ 铁柱AGI</b> · @cgnot996 · 0:42<br><sub>Skill 给真实创作者做的第一条片：日历一路翻到万粉、Grok App 拿到 1,500 star、盖上「官方认证」章。</sub></td>
+<td width="50%" valign="top"><a href="examples/tim-intro/"><img src="docs/tim-intro-steve.jpg" alt="2007 年发布会舞台上的 Steve Jobs 搪胶公仔"></a><br><b>Steve</b> · 出自 Tim 那条片<br><sub>Steve Jobs 搪胶公仔站在 2007 年发布会舞台上，旁边是 Tim 的公仔。整条片（2:23）不公开：里面有属于别人的发布会画面和歌曲。点图看它的代码。</sub></td>
+</tr><tr>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/isnail-intro.mp4"><img src="docs/isnail-endcard.jpg" alt="蜗牛King 的结尾卡：吉祥物骑着蜗牛"></a><br><b>▶ 蜗牛King</b> · 结尾卡<br><sub>吉祥物骑着从公众号标志长出来的蜗牛，撕纸标签一张张拍下来：公众号变现 | 找蜗牛。</sub></td>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4"><img src="docs/chris-outro.jpg" alt="白色 3D 字 Chris HKAI 和 Chris 公仔"></a><br><b>▶ Chris HKAI</b> · 0:23<br><sub>片尾标识：我自己的雕塑搪胶公仔。</sub></td>
 </tr></table>
 
-Tim 那条片（2:23）不公开：里面有属于别人的发布会画面和歌曲。它的代码在 [`examples/tim-intro/`](examples/tim-intro/)。
+另外两条，Merge Conflict 和 Made with DeepSeek，在 [Releases 页面](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films)。
 
 ## 授权
 

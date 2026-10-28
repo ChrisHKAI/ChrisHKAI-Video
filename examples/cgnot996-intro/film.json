@@ -1,0 +1,754 @@
+{
+  "id": "cgnot996",
+  "template": "../../../films/cgnot996-intro/template",
+  "theme": "../../../films/cgnot996-intro/theme",
+  "language": "zh-Hans",
+  "format": {
+    "fps": 30,
+    "bpm": 120,
+    "duration": 42,
+    "size": [
+      1920,
+      1080
+    ]
+  },
+  "output": "out/cgnot996.mp4",
+  "publish": [
+    "x"
+  ],
+  "source": {
+    "link": "https://x.com/cgnot996",
+    "platform": "x",
+    "handle": "cgnot996",
+    "read": "2026-10-26"
+  },
+  "step": "render",
+  "story": {
+    "counter": "followers",
+    "aim2": {
+      "piece": "tip",
+      "hop2": [
+        760,
+        1015
+      ],
+      "stand": [
+        680,
+        1004
+      ],
+      "yaw": 0.55
+    },
+    "events": {
+      "letters": 25.5,
+      "point7": 16.4,
+      "rise7": [
+        16.5,
+        17.0
+      ],
+      "arrow": [
+        17.0,
+        17.35
+      ],
+      "peak": 18.0,
+      "settle": [
+        18.0,
+        19.8
+      ],
+      "tagGlint": 18.6,
+      "toSticker": [
+        19.35,
+        19.7
+      ],
+      "flat": [
+        20.0,
+        20.6
+      ],
+      "flatLand": 20.45,
+      "climb9": [
+        14.3,
+        14.3
+      ],
+      "climb46": [
+        14.3,
+        14.3
+      ]
+    },
+    "wall2": {
+      "n0": [
+        6.75,
+        45,
+        {
+          "note": "G4"
+        }
+      ],
+      "n1": [
+        6.875,
+        45,
+        {
+          "note": "A4"
+        }
+      ],
+      "n2": [
+        7.0,
+        45,
+        {
+          "note": "B4"
+        }
+      ],
+      "badge": [
+        7.125,
+        40,
+        {
+          "note": "D5"
+        }
+      ],
+      "handle": [
+        7.25,
+        24
+      ],
+      "tags": [
+        7.3125,
+        20
+      ],
+      "b_spacexai": [
+        7.5,
+        40,
+        {
+          "note": "E5"
+        }
+      ],
+      "b_dashi": [
+        7.625,
+        40,
+        {
+          "note": "G5"
+        }
+      ],
+      "b_maske": [
+        7.75,
+        40,
+        {
+          "note": "A5"
+        }
+      ],
+      "b_grokapp": [
+        8.0,
+        32
+      ],
+      "b_author": [
+        8.0625,
+        32
+      ],
+      "b_heavy": [
+        8.125,
+        30
+      ],
+      "b_fde": [
+        8.25,
+        30
+      ],
+      "meta": [
+        8.375,
+        18
+      ],
+      "following": [
+        8.5,
+        26
+      ],
+      "followers": [
+        7.875,
+        40,
+        {
+          "tower": "big"
+        }
+      ],
+      "subs": [
+        9.0,
+        22
+      ],
+      "kol": [
+        9.125,
+        22
+      ],
+      "kol118": [
+        9.25,
+        22
+      ],
+      "rank": [
+        9.375,
+        20
+      ],
+      "rank2": [
+        9.5,
+        20
+      ],
+      "tip": [
+        9.5,
+        24
+      ],
+      "tip_ink": [
+        9.5,
+        28
+      ]
+    },
+    "wall": {
+      "ledge": {
+        "piece": "ledge",
+        "depth": 18,
+        "at": [
+          278,
+          70
+        ]
+      },
+      "box9": {
+        "piece": "none",
+        "depth": 0,
+        "at": [
+          278,
+          70
+        ],
+        "clunks": 1
+      },
+      "box46": {
+        "piece": "none",
+        "depth": 0,
+        "at": [
+          278,
+          70
+        ]
+      },
+      "box7": {
+        "piece": "box7",
+        "depth": 60
+      },
+      "title": {
+        "piece": "title",
+        "depth": 34
+      },
+      "arrow": {
+        "piece": "arrow",
+        "depth": 22
+      }
+    },
+    "wallPop": {
+      "tian": [
+        13.25,
+        26,
+        {
+          "note": "E5"
+        }
+      ],
+      "plus": [
+        13.5,
+        24,
+        {
+          "note": "G5"
+        }
+      ],
+      "star": [
+        13.625,
+        24,
+        {
+          "note": "A5"
+        }
+      ],
+      "sub0": [
+        14.0,
+        16,
+        {
+          "note": "G4"
+        }
+      ],
+      "sub1": [
+        14.25,
+        16,
+        {
+          "note": "A4"
+        }
+      ],
+      "sub2": [
+        14.5,
+        16,
+        {
+          "note": "B4"
+        }
+      ],
+      "tag0": [
+        15.0,
+        12,
+        {
+          "note": "D5"
+        }
+      ],
+      "tag1": [
+        15.25,
+        12,
+        {
+          "note": "E5"
+        }
+      ],
+      "tag2": [
+        15.5,
+        12,
+        {
+          "note": "G5"
+        }
+      ],
+      "app": [
+        15.75,
+        16
+      ]
+    },
+    "countFrom": "followers",
+    "countAt": [
+      905,
+      700,
+      75
+    ],
+    "act3Floor": true,
+    "countB": {
+      "from": 380,
+      "to": 1500,
+      "swap": 16.75,
+      "count": [
+        17.0,
+        17.95
+      ],
+      "back": [
+        18.4,
+        18.9
+      ],
+      "out": [
+        40,
+        45,
+        200
+      ],
+      "em": 90,
+      "knock": 18.72
+    },
+    "bits": [
+      "#C9D2DC",
+      "#E8B23A"
+    ],
+    "act2Flat": true,
+    "act3Still": true,
+    "camera": [
+      {
+        "t": 0,
+        "target": [
+          880,
+          560,
+          0
+        ],
+        "dist": 1.55,
+        "elev": 44,
+        "az": -24,
+        "fstop": 8
+      },
+      {
+        "t": 1,
+        "target": [
+          693,
+          276,
+          20
+        ],
+        "dist": 0.75,
+        "elev": 28,
+        "az": -10,
+        "fstop": 5
+      },
+      {
+        "t": 1.9,
+        "target": [
+          693,
+          266,
+          50
+        ],
+        "dist": 0.55,
+        "elev": 16,
+        "az": -4,
+        "fstop": 4
+      },
+      {
+        "t": 2.4,
+        "target": "hero",
+        "dist": 0.5,
+        "elev": 14,
+        "az": 6,
+        "fstop": 3.5
+      },
+      {
+        "t": 3.5,
+        "target": "hero",
+        "dist": 0.38,
+        "elev": 12,
+        "az": 14,
+        "fstop": 3.2
+      },
+      {
+        "t": 4,
+        "target": "hero",
+        "dist": 0.5,
+        "elev": 24,
+        "az": 4,
+        "fstop": 4
+      },
+      {
+        "t": 5.2,
+        "target": "hero",
+        "dist": 0.6,
+        "elev": 32,
+        "az": -14,
+        "fstop": 4.5
+      },
+      {
+        "t": 6,
+        "target": "hero",
+        "dist": 0.52,
+        "elev": 30,
+        "az": -18,
+        "fstop": 4.5
+      },
+      {
+        "t": 6.8,
+        "target": [
+          926,
+          900,
+          60
+        ],
+        "dist": 0.95,
+        "elev": 22,
+        "az": -24,
+        "fstop": 7
+      },
+      {
+        "t": 7.6,
+        "target": [
+          920,
+          880,
+          60
+        ],
+        "dist": 0.88,
+        "elev": 20,
+        "az": -14,
+        "fstop": 7
+      },
+      {
+        "t": 8.3,
+        "target": [
+          910,
+          820,
+          90
+        ],
+        "dist": 0.9,
+        "elev": 16,
+        "az": -6,
+        "fstop": 7.5
+      },
+      {
+        "t": 9.2,
+        "target": [
+          905,
+          800,
+          100
+        ],
+        "dist": 0.86,
+        "elev": 14,
+        "az": 0,
+        "fstop": 7.5
+      },
+      {
+        "t": 9.8,
+        "target": [
+          905,
+          790,
+          100
+        ],
+        "dist": 0.8,
+        "elev": 13,
+        "az": 5,
+        "fstop": 7
+      },
+      {
+        "t": 10.2,
+        "target": [
+          905,
+          790,
+          100
+        ],
+        "dist": 0.78,
+        "elev": 13,
+        "az": 9,
+        "fstop": 7
+      },
+      {
+        "t": 10.9,
+        "target": [
+          960,
+          1120,
+          40
+        ],
+        "dist": 0.9,
+        "elev": 30,
+        "az": 10,
+        "fstop": 6
+      },
+      {
+        "t": 11.7,
+        "target": "wall",
+        "dist": 0.95,
+        "elev": 22,
+        "az": 14,
+        "fstop": 6
+      },
+      {
+        "t": 12.8,
+        "target": "wall",
+        "dist": 0.82,
+        "elev": 12,
+        "az": 18,
+        "fstop": 5.6
+      },
+      {
+        "t": 13.4,
+        "target": "wall",
+        "dist": 0.8,
+        "elev": 10,
+        "az": 14,
+        "fstop": 6
+      },
+      {
+        "t": 14.2,
+        "target": "wall",
+        "dist": 0.78,
+        "elev": 9,
+        "az": 10,
+        "fstop": 6
+      },
+      {
+        "t": 15.2,
+        "target": "wall",
+        "dist": 0.76,
+        "elev": 8,
+        "az": 6,
+        "fstop": 6
+      },
+      {
+        "t": 15.9,
+        "target": "wall",
+        "dist": 0.76,
+        "elev": 8,
+        "az": 2,
+        "fstop": 6
+      },
+      {
+        "t": 16.4,
+        "target": "wall",
+        "dist": 0.78,
+        "elev": 9,
+        "az": 0,
+        "fstop": 6
+      },
+      {
+        "t": 17.2,
+        "target": "wall",
+        "dist": 0.82,
+        "elev": 10,
+        "az": -16,
+        "fstop": 5.6
+      },
+      {
+        "t": 18.4,
+        "target": "wall",
+        "dist": 0.92,
+        "elev": 4,
+        "az": -6,
+        "fstop": 8
+      },
+      {
+        "t": 19.8,
+        "target": "wallFront",
+        "dist": 0.8,
+        "elev": 0,
+        "az": 0,
+        "fstop": 11
+      },
+      {
+        "t": 20.6,
+        "target": "wallFront",
+        "dist": 0.8,
+        "elev": 0,
+        "az": 0,
+        "fstop": 11
+      }
+    ],
+    "segments": [
+      {
+        "beat": "O",
+        "len": 4.5
+      },
+      {
+        "beat": "W",
+        "len": 7.8
+      },
+      {
+        "story": [
+          12.3,
+          20.383
+        ]
+      },
+      {
+        "beat": "G",
+        "len": 16
+      },
+      {
+        "story": [
+          24.383,
+          30
+        ]
+      }
+    ]
+  },
+  "profile": {
+    "name": "铁柱AGI",
+    "handle": "cgnot996",
+    "bio": [
+      "SpaceXSI 官方认证大使（原马斯克得不到的男人）",
+      "开源 Grok App / Grok Bot 浏览器插件 作者",
+      "Grok Bot 重度用户，持续分享使用技巧"
+    ],
+    "avatar": "assets/avatar.jpg",
+    "banner": "assets/banner.jpg",
+    "verified": true,
+    "meta": {
+      "topic": "科技",
+      "link": "bot.fmcat.top",
+      "joined": "2025年12月加入"
+    },
+    "followers": "1万",
+    "following": "1,490",
+    "postsCount": "6,254 帖子"
+  },
+  "posts": {
+    "pinned": {
+      "date": "10月24日",
+      "title": "🎉🎉🎉我曹铁柱终于万粉啦！",
+      "counts": [
+        "108",
+        "11",
+        "145",
+        "1.7万"
+      ],
+      "count": "1.7万",
+      "cover": "assets/p10k-cover.png"
+    },
+    "retro": {
+      "date": "7月30日",
+      "title": "5 天 380+ star：我让 Grok Build 自己写了个桌面客户端",
+      "counts": [
+        "13",
+        "2",
+        "28",
+        "8,188"
+      ],
+      "count": "8,188",
+      "cover": "assets/p1-cover.png"
+    }
+  },
+  "counter": {
+    "value": 10000,
+    "unit": ",",
+    "label": "关注者"
+  },
+  "grid": [
+    {
+      "cover": "assets/p-quota.jpg",
+      "count": "21万"
+    },
+    {
+      "cover": "assets/p-grokapp.jpg",
+      "count": "8,188"
+    },
+    {
+      "cover": "assets/p-guide.jpg",
+      "count": "6.2万"
+    },
+    {
+      "cover": "assets/p-esp32.jpg",
+      "count": "12万"
+    }
+  ],
+  "cta": {
+    "prop": {
+      "idea": "佢封面成日出現嘅 Grok Bot 白波波（佢封面係黑色，黑舞台上面改白色）：跌落嚟、開眼，公仔企喺頂踩住佢碌，碌出口號（推 Grok Bot 教程同答疑群）",
+      "module": "recipes/prop.js",
+      "colors": {
+        "blob": "#F4F2EE",
+        "blobEye": "#16171B"
+      },
+      "kind": "Grok Bot 白波波"
+    },
+    "slogan": [
+      {
+        "text": "万粉快乐",
+        "paper": "cream",
+        "em": 0.07,
+        "at": [
+          -0.42,
+          0.06,
+          -0.06
+        ],
+        "tilt": -0.012
+      },
+      {
+        "text": "SpaceXAI大使",
+        "paper": "red",
+        "em": 0.07,
+        "at": [
+          0.075,
+          0.066,
+          -0.058
+        ],
+        "tilt": 0.02
+      }
+    ],
+    "name": {
+      "text": "铁柱AGI",
+      "paper": "cream",
+      "at": [
+        -0.2,
+        0.322,
+        -0.09
+      ]
+    },
+    "handle": {
+      "text": "@cgnot996",
+      "paper": "blue"
+    }
+  },
+  "toyFrom": [
+    "assets/avatar.jpg"
+  ],
+  "toy": "toy.json",
+  "recipes": [
+    "cover-retro.py",
+    "cover-pinned.py",
+    "avatar.py"
+  ],
+  "pop": {
+    "confetti": [
+      "#1D9BF0",
+      "#FFFFFF",
+      "#F26B1D",
+      "#9AA3AD",
+      "#F6C445",
+      "#16171B"
+    ],
+    "leaf": "#7EC0E8"
+  },
+  "look": {
+    "background": "dark",
+    "rim": 4,
+    "counter": {}
+  },
+  "glyphExtra": "1,500star野生大使官方认证马斯克得不到的男人GrokBot新手指南月"
+}

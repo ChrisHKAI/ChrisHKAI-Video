@@ -165,19 +165,21 @@ Tested so far:
 
 | agent | model | effort | computer | result |
 |---|---|---|---|---|
-| Claude Code | Claude Opus 5.5 | xhigh | Mac, Apple silicon | a 42 s film for a real creator, approved |
+| Claude Code | Claude Opus 5.5 | xhigh | Mac, Apple silicon | [铁柱AGI's 42 s film](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4), approved |
 
 ## The films
 
 Every film made before and alongside the skill. Click a frame to watch; each film's brief and code are in [`examples/`](examples/README.md).
 
 <table><tr>
-<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4"><img src="docs/chris-outro.jpg" alt="Chris HKAI in white 3D letters, with the Chris toy"></a><br><b>▶ Chris HKAI</b> · 0:23<br><sub>An end tag: me as my own sculpted vinyl toy.</sub></td>
-<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/merge-conflict.mp4"><img src="docs/merge-conflict.jpg" alt="MERGED, with Clawd and a DeepSeek whale"></a><br><b>▶ Merge Conflict</b> · 0:19<br><sub>A voxel fight in a code editor: Clawd against a DeepSeek whale.</sub></td>
-<td width="33%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/made-with-deepseek.mp4"><img src="docs/made-with-deepseek.jpg" alt="Made with DeepSeek, on an After Effects screen"></a><br><b>▶ Made with DeepSeek</b> · 0:12<br><sub>A whale over a tilted After Effects screen, made in HTML by DeepSeek.</sub></td>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4"><img src="docs/cgnot996-intro.jpg" alt="铁柱AGI's toy beside 1,500 gold stars"></a><br><b>▶ 铁柱AGI</b> · @cgnot996 · 0:42<br><sub>The first film the skill made for a real creator: a flip calendar to 10,000 followers, 1,500 stars for his Grok App, a 官方认证 seal.</sub></td>
+<td width="50%" valign="top"><a href="examples/tim-intro/"><img src="docs/tim-intro-steve.jpg" alt="Steve Jobs as a vinyl toy on the 2007 keynote stage"></a><br><b>Steve</b> · from the Tim film<br><sub>Steve Jobs as a vinyl toy on the 2007 keynote stage, beside Tim's toy. The film (2:23) is not published: it carries keynote footage and a song that belong to others. Click for its code.</sub></td>
+</tr><tr>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/isnail-intro.mp4"><img src="docs/isnail-endcard.jpg" alt="蜗牛King's end card: his mascot rides a snail"></a><br><b>▶ 蜗牛King</b> · the end card<br><sub>His mascot rides a snail grown out of the 公众号 mark, while torn-paper labels slap down: 公众号变现 | 找蜗牛.</sub></td>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4"><img src="docs/chris-outro.jpg" alt="Chris HKAI in white 3D letters, with the Chris toy"></a><br><b>▶ Chris HKAI</b> · 0:23<br><sub>An end tag: me as my own sculpted vinyl toy.</sub></td>
 </tr></table>
 
-The Tim film (2:23) is not published: it carries keynote footage and a song that belong to others. Its code is in [`examples/tim-intro/`](examples/tim-intro/).
+Two more, Merge Conflict and Made with DeepSeek, are on the [Releases page](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films).
 
 ## Licence
 
