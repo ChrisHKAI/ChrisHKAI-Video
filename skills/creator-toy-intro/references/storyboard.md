@@ -65,6 +65,24 @@ toy under 1.6:1 (dark hair, a black hoodie) melts into the stage. Light it
 with a rim, or lift the colour a little in toy.json; tell the user which.
 The page's "checked first" list shows the same.
 
+Not the last film again: `FILM=<film> node <skill>/engine/run.mjs ledger`
+compares this film with every film delivered before (`~/.chrishkai-video/
+ledger.json`) in six things:
+- the opening;
+- the structure (its pieces and beats in order);
+- the toy's signature move;
+- the colours;
+- the sound;
+- the ending.
+
+It should differ from each earlier film in at least four of the six. A
+film built from the template's defaults comes out as isnail again (it
+differs from isnail in one of the six). When it is too close, change what
+costs least and suits the creator: another opening (`page-stand`), a beat
+built from their material, their own colours, another sound, another prop.
+Tell the user in a line what changed and why. The page's "checked first"
+list shows the same.
+
 Then the numbers, and a pair of eyes that has not seen the film being made:
 
 ```bash

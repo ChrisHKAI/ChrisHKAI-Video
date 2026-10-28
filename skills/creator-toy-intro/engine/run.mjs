@@ -21,6 +21,8 @@
 //                    the storyboard page shows the same)
 //           palette  the creator's colours from their own pictures, and the toy's, the lettering's and
 //                    the confetti's against the stage → build/palette.json, build/palette-check.jpg
+//           ledger   how this film differs from each delivered one (opening, structure, signature, colours,
+//                    sound, ending: four of six at least); ledger -- --add keeps it once delivered
 //           review   the independent review's brief: the film, what to watch, the checks, the
 //                    rubric → build/review.md (references/review.md)
 //           storyboard  the page to sign off: parts, beat grid, previews, checks → build/storyboard/
@@ -135,6 +137,7 @@ for (const [i, step] of steps.entries()) {
     case "comments": run(PY, [fromSkill("engine/scripts/comments.py"), ...more]); break;
     case "pace": run(PY, [fromSkill("engine/scripts/pace.py"), ...more]); break;
     case "palette": run(PY, [fromSkill("engine/scripts/palette.py"), ...more]); break;
+    case "ledger": run(PY, [fromSkill("engine/scripts/ledger.py"), ...more]); break;
     case "review": run(PY, [fromSkill("engine/scripts/review.py"), ...more]); break;
     case "own":
       // what the template or the scene can't do for this film is changed in the film's own copy

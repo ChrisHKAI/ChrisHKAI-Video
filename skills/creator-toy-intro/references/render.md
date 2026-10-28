@@ -106,6 +106,13 @@ unless they have Premium; 小红书: a title of at most 20 characters). Never
 add a credit for this skill to the picture; at most suggest a hashtag in
 the caption.
 
+Once the user takes the film, keep it in the ledger:
+`FILM=<film> node <skill>/engine/run.mjs ledger -- --add`. It records the
+film's opening, structure, signature move, colours, sound and ending. The
+next film is compared with them (references/storyboard.md). Where
+film.json does not say what the film did, set it: `-- --add --set
+sound=bed`.
+
 When the film's sound is on real instruments (`strings`, `band`),
 `build/credits.txt` holds the credits their licences require: the
 Salamander piano (CC BY 3.0), the MuldjordKit drums (CC BY 4.0). Give the
