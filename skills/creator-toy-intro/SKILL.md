@@ -62,7 +62,7 @@ made for them. Only paths, commands and code stay as they are.
 | `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `page-stand.js` (Kin's opening: the page stands up, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace and review (step 4; `engine/lib/pacing.py`), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
+| `engine/scripts/` | doctor (step 0), new-film (step 1), materials and apply-research (step 2), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace, palette and review (step 4; `engine/lib/pacing.py`, `engine/lib/colors.py`), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
@@ -202,6 +202,10 @@ film and names the three biggest problems with their times
 - The profile picture is the creator's own, never redrawn: the page has to
   match their real page.
 - No fade to black: the last frame holds and is the cover.
+- Colours come from the creator's own pictures, never from memory (`palette`),
+  and everything reads on the dark stage: lettering 3:1 or more, and no
+  big part of the toy under 1.6:1 (a creator's dark hair melted into the
+  dark stage until a rim light lifted it).
 - A number rises from the spot on the page where it is shown.
 - Storyboards are real renders from this pipeline, never flat sketches.
 - After a change, re-render only the frames it touches; keep the old frames

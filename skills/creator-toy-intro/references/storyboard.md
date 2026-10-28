@@ -45,6 +45,26 @@ Before the user sees it, look at every frame and the safe-zone sheet:
 
 Fix what you find and render those frames again before showing the page.
 
+The colours come from the creator's own pictures, never from memory:
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs palette  # → build/palette-check.jpg
+```
+
+The sheet shows their colours (the profile picture, the photos the toy came
+from, the banner, the covers) and the accents to choose from. Below them it
+shows the film's own colours, each with its contrast on the dark stage:
+- the toy's, by how much of it each covers;
+- the lettering's (dark ink on a paper of its own is read against the
+  paper);
+- the confetti's.
+
+Take the confetti (film.json `pop.confetti`) and a beat's lettering
+(`color`) from their accents; lettering wants 3:1 or more. A big part of the
+toy under 1.6:1 (dark hair, a black hoodie) melts into the stage. Light it
+with a rim, or lift the colour a little in toy.json; tell the user which.
+The page's "checked first" list shows the same.
+
 Then the numbers, and a pair of eyes that has not seen the film being made:
 
 ```bash

@@ -38,9 +38,11 @@ Then:
 - **Fix only the three problems the reviewer ranks first**, and render again
   only what they touch (`diff-anim`, storyboard.md).
 - **Run the review again**, once at most.
-- **The user's word wins.** When the reviewer argues with something the user
-  decided ("no snail", the slogan, the length), keep what the user said. Tell
-  the user about the disagreement only if it matters.
+- **The user's word wins, and they hear the other side.** When the reviewer
+  argues with something the user decided ("no snail", the slogan, how a
+  number is written), leave it as the user had it. Offer the reviewer's view
+  to the user as one more choice, in a line: "the reviewer would write it 1万;
+  keep 10,000?"
 - **Tell the user, in one line each, what the review changed.**
 
 <!-- rubric -->

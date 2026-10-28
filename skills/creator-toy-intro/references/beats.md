@@ -79,7 +79,7 @@ The beat is that answer as code.
 
 | field | what |
 | --- | --- |
-| `opts` | the beat's entry in film.json (`text`, `color`, anything it reads) |
+| `opts` | the beat's entry in film.json (`text`, `color`, anything it reads; a colour from the creator's own, `run.mjs palette`, at 3:1 or more on the stage) |
 | `len`, `bar`, `beat` | its length, a bar and a beat (s) |
 | `stage`, `at(x, y, z)` | its own place, 50 m from everything else (past the camera's 40 m clip), and stage metres → world |
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
