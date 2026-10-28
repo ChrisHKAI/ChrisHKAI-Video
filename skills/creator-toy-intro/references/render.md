@@ -65,7 +65,8 @@ film.json `"look"` changes the defaults:
 | `light` | | `"classic"`: the first films' look (Standard, a rim on everything, one even sky) |
 
 `-- --look classic` and `-- --rim 6` try a look on a few frames first
-(`--frames … --samples 24 --scale 50`).
+(`--frames … --samples 24 --scale 50`). The toy's look-dev (step 3) shares
+this light (`engine/lib/look.py`), so a change here shows there too.
 
 ## Finish and export
 

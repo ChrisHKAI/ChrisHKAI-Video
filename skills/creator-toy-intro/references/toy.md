@@ -103,7 +103,11 @@ FILM=<film> node <skill>/engine/run.mjs hero lookdev
 
 renders five views (front, three-quarter pointing, side, back cheering, the
 face), framed by the toy's height, and `build/lookdev/compare.jpg`: the
-confirmed picture(s) beside them. Look at it first yourself: likeness,
+confirmed picture(s) beside them. They are lit as the film lights the toy
+(`engine/lib/look.py`, film.json `"look"`, references/render.md "The
+light"), so what the user approves here is what the film shows. The back
+view keeps the rim on the toy's back, so the back of the head and the hood
+can be seen. Look at it first yourself: likeness,
 proportions, nothing floating or sunk, the colours. Then show the user and
 change it from their words, a round at a time (about a minute each). Once
 they say it is right, keep a copy for the next film:

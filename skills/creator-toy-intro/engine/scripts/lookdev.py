@@ -1,10 +1,12 @@
 """Look-dev turnaround of the toy: builds it from build/hero.json (any kit:
 rounded parts, the pet kit's blobs and tubes with painted markings, the
 sculpt kit's meshes) and renders a few posed views in Cycles on the studio
-floor. The views scale with the toy's height.
+floor. The views scale with the toy's height. It is lit the way the film is
+lit (engine/lib/look.py, film.json "look"), so the toy the user signs off
+here is the toy the film shows.
 
 usage:
-  blender -b --factory-startup -P scripts/lookdev.py -- [--samples 64] [--out build/lookdev]
+  blender -b --factory-startup -P scripts/lookdev.py -- [--samples 64] [--out build/lookdev] [--look classic] [--rim 4]
 """
 import json
 import math
@@ -16,8 +18,9 @@ import bpy
 from mathutils import Euler, Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
-from film import FILM  # noqa: E402  the film workspace (FILM env var)
+from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
 import toyblend  # noqa: E402  the pet and sculpt kits' shapes and paint
+import look as lighting  # noqa: E402  the film's light (film.json "look"), so the toy is lit as the film lights it
 
 ROOT = FILM
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -57,47 +60,16 @@ scene.cycles.samples = int(arg("--samples", 64))
 scene.cycles.use_denoising = True
 scene.render.resolution_x = 960
 scene.render.resolution_y = 540
-scene.view_settings.view_transform = "Standard"
+LOOK = lighting.Look(FILM_JSON, arg)
+lighting.view(scene, LOOK)
 scene.render.image_settings.file_format = "PNG"
-
-world = bpy.data.worlds.new("Studio")
-scene.world = world
-world.use_nodes = True
-wn, wl = world.node_tree.nodes, world.node_tree.links
-wn.clear()
-w_out = wn.new("ShaderNodeOutputWorld")
-w_mix = wn.new("ShaderNodeMixShader")
-w_light = wn.new("ShaderNodeBackground")
-w_light.inputs["Color"].default_value = rgba("#dfe6ff")
-w_light.inputs["Strength"].default_value = 0.35
-w_cam = wn.new("ShaderNodeBackground")
-w_cam.inputs["Color"].default_value = rgba("#14161b")
-w_path = wn.new("ShaderNodeLightPath")
-wl.new(w_path.outputs["Is Camera Ray"], w_mix.inputs["Fac"])
-wl.new(w_light.outputs["Background"], w_mix.inputs[1])
-wl.new(w_cam.outputs["Background"], w_mix.inputs[2])
-wl.new(w_mix.outputs["Shader"], w_out.inputs["Surface"])
+# the film's light; the classic one keeps the look-dev's own lighter backdrop and suns
+lighting.world(bpy, scene, LOOK, sky=0.35, camera="#14161b" if LOOK.classic else lighting.STAGE)
 
 root = bpy.data.objects.new("THREE", None)
 scene.collection.objects.link(root)
 root.rotation_euler = (math.pi / 2, 0, 0)
-
-
-def sun(name, energy, color, direction, size_deg):
-    data = bpy.data.lights.new(name, "SUN")
-    data.energy = energy
-    data.color = rgba(color)[:3]
-    data.angle = math.radians(size_deg)
-    ob = bpy.data.objects.new(name, data)
-    scene.collection.objects.link(ob)
-    ob.parent = root
-    ob.matrix_basis = Vector(direction).normalized().to_track_quat("Z", "Y").to_matrix().to_4x4()
-    return ob
-
-
-sun("Key", 2.6, "#fff3ea", (-1.2, 2.2, 1.6), 14)
-sun("Rim", 2.0, "#d6e2ff", (1.4, 1.1, -1.8), 10)
-sun("Fill", 0.6, "#ffe2d0", (1.6, 0.8, 1.4), 30)
+RIM = lighting.suns(bpy, scene, root, LOOK, key=2.6, fill=0.6, glossy=True)
 
 mats = {}
 
@@ -247,6 +219,7 @@ fp.inputs["Roughness"].default_value = 0.45
 floor_me.materials.append(fm)
 
 hero, J = build_hero("mascot")
+lighting.rim_on(bpy, RIM, [ob for ob in scene.objects if ob.name.startswith("mascot")], LOOK)
 
 cam_data = bpy.data.cameras.new("Camera")
 cam_data.sensor_fit = "VERTICAL"
@@ -271,6 +244,11 @@ def look(target, az, el, dist):
     cam.matrix_basis = Matrix((x, y, z)).transposed().to_4x4()
     cam.location = pos
     cam_data.dof.focus_distance = dist
+    if not LOOK.classic:
+        # the rim from behind the toy as this view sees it, and above, as in the film; a view from behind
+        # keeps it on the toy's back instead, so the back of the head and the hood read
+        RIM.rotation_mode = "QUATERNION"
+        RIM.rotation_quaternion = lighting.rim_behind(t - pos) if abs(az) < 120 else Vector(lighting.RIM_DIR).normalized().to_track_quat("Z", "Y")
 
 
 def pose(p):
@@ -286,6 +264,7 @@ CHEER = {"armR": (0, 0, -2.4), "armL": (0, 0, 2.4), "head": (-0.08, 0, 0), "ears
 if "--avatar" in argv:
     # the flat profile picture: flat colours and an inked outline (inverted hull)
     scene.render.film_transparent = True
+    scene.view_settings.view_transform = "Standard"  # flat colours, exactly
     scene.render.resolution_x = scene.render.resolution_y = 1024
     scene.render.use_freestyle = False
     floor.hide_render = True
