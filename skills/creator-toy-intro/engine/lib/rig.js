@@ -80,6 +80,33 @@ function slerpBetween(a, b, k) {
   const th = Math.acos(d), s = Math.sin(th);
   return a.map((v, i) => v * Math.sin((1 - k) * th) / s + bb[i] * Math.sin(k * th) / s);
 }
+// the body's turn for a toy with no arms: the arms' moves in the pose become the body's
+function bodyMoves(o, hero, JOINTS) {
+  let pitch = o.body[0], roll = o.body[2];
+  // pointing: lean the top towards the target (+x about x leans to +z, the toy's front)
+  const aim = [o.aimR, o.aimL].find((a) => a && a.k > 0);
+  if (aim) {
+    const c = JOINTS.body.p;
+    let local;
+    if (aim.target) local = aim.target.map((v) => v * MM);
+    else {
+      const r = qRot(qConj(hero.q), v3.sub(aim.world, hero.p));
+      local = [r[0] / hero.s[0], r[1] / hero.s[1], r[2] / hero.s[2]];
+    }
+    const d = v3.sub(local, c), h = Math.hypot(d[0], d[2]) || 1;
+    const lean = 0.28 * aim.k;
+    pitch += lean * (d[2] / h);
+    roll -= lean * (d[0] / h);
+  }
+  // a raised arm (a wave, the signature) tips the body to that side and its swing wobbles it;
+  // both up (a cheer) cancel to a lean back
+  const up = (v, rest) => v - rest;
+  const r = up(-o.armR[2], 0.12), l = up(o.armL[2], 0.12);
+  roll += 0.07 * (l - r);
+  pitch -= 0.05 * Math.min(Math.max(r, 0), Math.max(l, 0));
+  return qEuler(pitch, o.body[1], roll);
+}
+
 const ORDER = ["body", "head", "ears", "armR", "armL", "finger", "fingerL", "legR", "legL"];
 // every part's transform (hero-local) from the toy's transform and the pose
 export function partsAt(hero, o, toy) {
@@ -91,9 +118,12 @@ export function partsAt(hero, o, toy) {
     ...Object.fromEntries(Object.keys(o.extra ?? {}).map((j) => [j, eul(o.extra[j])])),
   };
   const reach = { armR: o.reachR, armL: o.reachL };
+  // a toy with no arms (a fruit, a logo, a ball: references/toy.md) plays the same story with its
+  // whole body: it leans towards what it points at, a wave is a wobble, a cheer a stretch
+  if (!JOINTS.armR && !JOINTS.armL && JOINTS.body) rot.body = bodyMoves(o, hero, JOINTS);
   for (const side of ["armR", "armL"]) {
     const aim = side === "armL" ? o.aimL : o.aimR;
-    if (aim && aim.k > 0) {
+    if (aim && aim.k > 0 && JOINTS[side]) {
       const [q, r] = aimArm(side, o, hero, aim, JOINTS, R);
       // blend from the rest swing to the aim
       rot[side] = slerpBetween(rot[side], q, aim.k);

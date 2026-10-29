@@ -58,6 +58,62 @@ def motion(anim):
     return sorted(starts), sorted(cuts)
 
 
+def track(anim, name):
+    """An object's transform at every sample: (S, 10) position, quaternion (x, y, z, w), scale."""
+    S = anim["samples"]
+    k = np.array(sorted(anim["tracks"][name], key=lambda x: x[0]), dtype=float)
+    return np.stack([np.interp(np.arange(S), k[:, 0], k[:, j]) for j in range(1, k.shape[1])], axis=1)
+
+
+def rotate_inv(q, v):
+    """v (S, 3) by the inverse of the quaternions q (S, 4: x, y, z, w)."""
+    u, w = -q[:, :3], q[:, 3:4]
+    t = 2 * np.cross(u, v)
+    return v + w * t + np.cross(u, t)
+
+
+SMALL = 0.08  # the toy under this share of the frame's height reads as a speck
+LONG = 1.5  # s: a stretch that long counts
+
+
+def toy_on_screen(film, anim):
+    """How big the toy stands in the frame at every sample: (share of the frame's height, on screen), from the
+    camera's and the toy's tracks (Three.js space: the camera looks down its -z, fov is vertical degrees)."""
+    F = json.loads((Path(film) / "film.json").read_text())
+    toy = json.loads((Path(film) / F.get("toy", "toy.json")).read_text())
+    if "camera" not in anim["tracks"] or TOY not in anim["tracks"]:
+        return None
+    cam, hero = track(anim, "camera"), track(anim, TOY)
+    fov = np.array(anim["scalars"].get("fov") or [35.0], dtype=float)
+    fov = np.interp(np.arange(len(cam)), np.linspace(0, len(cam) - 1, len(fov)), fov) if len(fov) > 1 else np.full(len(cam), fov[0])
+    w, h = F["format"]["size"]
+    c = np.array(toy.get("center", [0, toy.get("height", 0.1) / 2, 0]), dtype=float)
+    centre = hero[:, :3] + c * hero[:, 7:10]
+    v = rotate_inv(cam[:, 3:7], centre - cam[:, :3])
+    depth = -v[:, 2]
+    half = np.tan(np.radians(fov) / 2)
+    share = np.where(depth > 1e-3, toy.get("height", 0.1) * hero[:, 8] / np.maximum(depth, 1e-3) / (2 * half), 0)
+    x, y = v[:, 0] / np.maximum(depth, 1e-3) / (half * w / h), v[:, 1] / np.maximum(depth, 1e-3) / half
+    shown = (hero[:, 8] > 1e-2) & (depth > 1e-3)
+    return share, shown & (np.abs(x) < 1) & (np.abs(y) < 1), shown
+
+
+def stretches(mask, rate, at_least=LONG):
+    """[(t0, t1)] where mask holds for at least `at_least` seconds."""
+    out, i, n = [], 0, len(mask)
+    while i < n:
+        if not mask[i]:
+            i += 1
+            continue
+        j = i
+        while j < n and mask[j]:
+            j += 1
+        if (j - i) / rate >= at_least:
+            out.append((round(i / rate, 2), round(j / rate, 2)))
+        i = j
+    return out
+
+
 def check(film):
     """Everything the page and the review report, for one film folder."""
     b = Path(film) / "build"
@@ -104,5 +160,13 @@ def check(film):
             n = need(r["text"])
             lines.append({"text": r["text"], "at": [t0, t1], "shown": round(t1 - t0, 2), "need": round(n, 2),
                           "ok": t1 - t0 >= n - 0.05, "toEnd": t1 >= dur - 0.05})
+    # the toy as a speck, or out of the frame while it is meant to be in it
+    small, off = [], []
+    seen = toy_on_screen(film, anim)
+    if seen is not None:
+        share, on, shown = seen
+        rate = anim["fps"] * anim["sub"]
+        small = [(a, z, round(float(np.median(share[int(a * rate):int(z * rate)])), 3)) for a, z in stretches(on & (share < SMALL), rate)]
+        off = stretches(shown & ~on, rate, 2 * LONG)
     return {"duration": dur, "bar": bar, "dead": dead, "alone": alone, "hook": hits[0] if hits else None,
-            "mid": mid[0] if mid else None, "reads": lines, "cuts": cuts, "starts": len(starts)}
+            "mid": mid[0] if mid else None, "reads": lines, "cuts": cuts, "starts": len(starts), "small": small, "off": off}

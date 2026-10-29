@@ -25,6 +25,10 @@ for a, z in p["dead"]:
     print(f"  ! {a}–{z} s: {z - a:.1f} s with nothing new (two bars: {2 * bar:g} s): add a move, or cut it shorter")
 for a, z, n in p["alone"]:
     print(f"  ! {a}–{z} s: only the toy hopping ({n} hops), nothing else new: does it need them?")
+for a, z, k in p["small"]:
+    print(f"  ! {a}–{z} s: the toy is a speck, {k * 100:.0f}% of the frame's height ({pacing.SMALL * 100:.0f}% at least): bring the camera in, or the toy forward")
+for a, z in p["off"]:
+    print(f"  ! {a}–{z} s: the toy is out of the frame while it is in the scene: is that meant?")
 if p["reads"] is None:
     print("  ! the template does not say what the viewer reads (build/reads.json): reading time not checked")
 else:

@@ -9,6 +9,8 @@ if not os.environ.get("FILM"):
 FILM = Path(os.environ["FILM"]).resolve()
 SKILL = Path(__file__).resolve().parent.parent.parent
 FILM_JSON = json.loads((FILM / "film.json").read_text())
+# the toy lives in toy.json unless film.json names another file
+FILM_JSON.setdefault("toy", "toy.json")
 # the story template: the skill's (templates/<name>) or the film's own copy (a path: "./template";
 # a film made before this took its path from the skill's templates folder, "../../../films/<id>/template":
 # where the film has no such folder, that still works)

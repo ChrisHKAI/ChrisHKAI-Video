@@ -51,3 +51,13 @@ for i, (name, path) in enumerate(views):
 out = SRC / "compare.jpg"
 sheet.save(out, quality=90)
 print(f"compare sheet → {out.relative_to(FILM)} ({len(refs)} reference, {len(views)} views)")
+
+# the toy's colours on the film's dark stage, now, while the user is approving it: a big part that melts
+# into the stage (dark hair, a black hoodie) is lifted here, so what they approve is what the film shows
+import colors  # noqa: E402
+
+for r in colors.toy_colours(FILM):
+    if r["share"] >= 0.1 and r["contrast"] < colors.MELT:
+        print(f"! the toy's {r['key']} ({r['hex']}, {r['share'] * 100:.0f}% of it) melts into the dark stage "
+              f"({r['contrast']:.2f}:1, {colors.MELT}:1 reads): lift the colour a little in toy.json, or the film "
+              "keeps its rim light on it; show the user the change on this sheet")

@@ -55,14 +55,15 @@ writeFileSync(join(out, "research/facts.json"), JSON.stringify(facts, null, 2));
 execFileSync("node", [join(S, "apply-research.mjs"), out], { stdio: "inherit" });
 
 const g = JSON.parse(readFileSync(join(out, "film.json"), "utf8"));
-const strip = (p) => { const { cover, count, ...rest } = p; return rest; }; // the film's own posts may carry no cover / tile count
+const strip = (p) => { const { cover, count, pinned, ...rest } = p; return rest; }; // the film's own posts may carry no cover / tile count (or pinned: false on the second)
 const checks = {
   "stops until the toy's picture is confirmed": [stopped, true],
   toyFrom: [g.toyFrom, [pr.avatar]],
   profile: [g.profile, pr],
   pinned: [strip(g.posts.pinned), strip(f.posts.pinned)],
   retro: [strip(g.posts.retro), strip(f.posts.retro)],
-  counter: [g.counter, f.counter],
+  // (the counter keeps the platform's own writing too: 304万)
+  counter: [g.counter, { display: `${f.counter.value}${f.counter.unit}`, ...f.counter }],
   name: [g.cta.name.text, f.cta.name.text],
   handle: [g.cta.handle.text, f.cta.handle.text],
   slogan: [g.cta.slogan.map((s) => s.text), f.cta.slogan.map((s) => s.text)],

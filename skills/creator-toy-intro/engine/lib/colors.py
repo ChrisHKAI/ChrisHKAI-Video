@@ -47,13 +47,28 @@ def oklab(c):
                            [-0.0040720468, 0.4505937099, -0.8086757660]])
 
 
-def film_colours(film):
-    """The film's colours as the viewer meets them on the stage: the toy's (by how much of it each covers),
-    the lettering's (from build/anim.json's type materials) and the confetti's (film.json pop)."""
+def part_area(p):
+    """About how much of the toy's surface a part covers (m²): boxes by their size, round parts by their radii,
+    tubes by their length."""
+    if "size" in p:
+        x, y, z = (list(p["size"]) + [0, 0, 0])[:3]
+        return 2 * (x * y + y * z + z * x)
+    if "r" in p and isinstance(p["r"], list):
+        a, b, c = (list(p["r"]) + p["r"][-1:] * 3)[:3]
+        q = 1.6075
+        return 4 * np.pi * (((a * b) ** q + (a * c) ** q + (b * c) ** q) / 3) ** (1 / q)
+    if p.get("shape") == "tube" and p.get("pts"):
+        pts, r = np.array(p["pts"], float), float(np.mean(p.get("radii", [0.002])))
+        return float(np.linalg.norm(np.diff(pts, axis=0), axis=1).sum()) * 2 * np.pi * r
+    return 0.0
+
+
+def toy_colours(film):
+    """The toy's colours on the stage, by how much of it each covers (largest first)."""
     film = Path(film)
     F = json.loads((film / "film.json").read_text())
-    anim = json.loads((film / "build/anim.json").read_text())
-    toy = json.loads((film / F["toy"]).read_text()) if F.get("toy") and (film / F["toy"]).exists() else {}
+    toy_file = F.get("toy", "toy.json")
+    toy = json.loads((film / toy_file).read_text()) if (film / toy_file).exists() else {}
     palette = dict(toy.get("colors", {}))
     area = {}
     for p in toy.get("parts", []):
@@ -66,12 +81,20 @@ def film_colours(film):
             palette[p["name"]] = hexof(np.where(lin <= 0.0031308, lin * 12.92, 1.055 * np.power(np.maximum(lin, 0), 1 / 2.4) - 0.055))
             area[p["name"]] = float(a.sum())
             continue
-        x, y, z = (list(p.get("size", [0, 0, 0])) + [0, 0, 0])[:3]
         key = p.get("mat")
         if key in palette:
-            area[key] = area.get(key, 0) + 2 * (x * y + y * z + z * x)
+            area[key] = area.get(key, 0) + part_area(p)
     total = sum(area.values()) or 1
-    toy_rows = sorted(({"key": k, "hex": palette[k], "share": a / total, "contrast": contrast(palette[k], STAGE)} for k, a in area.items()), key=lambda r: -r["share"])
+    return sorted(({"key": k, "hex": palette[k], "share": a / total, "contrast": contrast(palette[k], STAGE)} for k, a in area.items()), key=lambda r: -r["share"])
+
+
+def film_colours(film):
+    """The film's colours as the viewer meets them on the stage: the toy's (by how much of it each covers),
+    the lettering's (from build/anim.json's type materials) and the confetti's (film.json pop)."""
+    film = Path(film)
+    F = json.loads((film / "film.json").read_text())
+    anim = json.loads((film / "build/anim.json").read_text())
+    toy_rows = toy_colours(film)
     # dark lettering printed on a paper of its own group (label0_l0 on label0_sheet, a calendar's day on its
     # page) is read against the paper; the rest against the stage
     group = lambda name: name.split("_")[0]  # noqa: E731

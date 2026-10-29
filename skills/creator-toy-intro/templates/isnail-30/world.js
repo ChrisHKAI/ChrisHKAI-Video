@@ -47,12 +47,21 @@ export function declare({ add, pack, objects }) {
   add({ name: "stat_lid", geo: { type: "roundBox", size: [0.072, 0.0006, 0.024], radius: 0.0002 }, mat: { type: "glass" }, anim: true });
   const glyphGeo = A.glyphGeo;
   const SE = A.STAT_EM;
-  for (let i = 0; i < A.STAT.slots.length; i++) for (let d = 0; d <= 9; d++) {
-    add({ name: `stat_${i}_${d}`, geo: glyphGeo(`latin:${d}`, SE.digit * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
+  if (A.STAT_TEXT) {
+    // the count as the platform writes it (6.5万, 7,253, 46K), its label after it
+    for (const n of A.STAT_TEXT.names) {
+      add(n.label
+        ? { name: n.name, geo: glyphGeo(n.key, n.em, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true }
+        : { name: n.name, geo: glyphGeo(n.key, n.em, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
+    }
+  } else {
+    for (let i = 0; i < A.STAT.slots.length; i++) for (let d = 0; d <= 9; d++) {
+      add({ name: `stat_${i}_${d}`, geo: glyphGeo(`latin:${d}`, SE.digit * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
+    }
+    add({ name: "stat_wan", geo: glyphGeo(A.STAT_KEYS.unit, SE.wan * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true });
+    add({ name: "stat_yue", geo: glyphGeo(A.STAT_KEYS.label[0], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
+    add({ name: "stat_du", geo: glyphGeo(A.STAT_KEYS.label[1], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
   }
-  add({ name: "stat_wan", geo: glyphGeo(A.STAT_KEYS.unit, SE.wan * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true });
-  add({ name: "stat_yue", geo: glyphGeo(A.STAT_KEYS.label[0], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
-  add({ name: "stat_du", geo: glyphGeo(A.STAT_KEYS.label[1], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
   add({ name: "stat_bar", geo: { type: "roundBox", size: [A.STAT.width * MM, 0.005, 0.005], radius: 0.0022 }, mat: { type: "glow", color: T.ACCENT, strength: 3 }, anim: true, step: true });
 
   // the call to action
@@ -76,8 +85,8 @@ export function declare({ add, pack, objects }) {
 
   // the cover wall and its pieces
   add({ name: "wall", geo: null, anim: true });
-  add({ name: "wall_slab", parent: "wall", geo: { type: "wallSlab", w: A.WALL_W, h: A.WALL_H, d: 0.01 }, mat: { type: "cover" } });
-  for (const p of A.COVER.pieces) {
+  if (T.PLAYS_ACT3) add({ name: "wall_slab", parent: "wall", geo: { type: "wallSlab", w: A.WALL_W, h: A.WALL_H, d: 0.01 }, mat: { type: "cover" } });
+  for (const p of T.PLAYS_ACT3 ? A.COVER.pieces : []) {
     if (!p.rings.length) continue;
     add({ name: `piece_${p.name}`, parent: "wall", geo: { type: "curve", rings: p.rings.map((r) => r.map((uv) => A.coverToWall(uv).map((v) => +v.toFixed(6)))), depth: A.pieceDepth(p) }, mat: { type: "cover" }, anim: true, _piece: p });
   }

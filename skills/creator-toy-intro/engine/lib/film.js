@@ -11,6 +11,8 @@ if (!process.env.FILM) throw new Error("FILM is not set: point it at a film work
 export const FILM = resolve(process.env.FILM);
 export const SKILL = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 export const film = JSON.parse(readFileSync(join(FILM, "film.json"), "utf8"));
+// the toy lives in toy.json unless film.json names another file
+film.toy ??= "toy.json";
 export const fromFilm = (...p) => join(FILM, ...p);
 export const fromSkill = (...p) => join(SKILL, ...p);
 

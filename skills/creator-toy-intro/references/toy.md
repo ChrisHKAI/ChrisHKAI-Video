@@ -7,16 +7,39 @@ it is right.
 
 ## The toy line
 
-Every toy belongs to one line, whatever it is made of:
+Every toy belongs to one line in its finish, whatever it is made of:
 
-- smooth designer vinyl, about three heads tall, mitten hands; soft coat,
-  no photo textures, no real fabric or hair strands (a toy, never a likeness
-  pasted on);
+- smooth designer vinyl; soft coat, no photo textures, no real fabric or
+  hair strands (a toy, never a likeness pasted on);
 - the finish of the isnail mascot is the bar: full, solid, polished;
-- the face carries the likeness: hair shape, glasses, the smile, a mark the
-  creator is known by; then two or three colours that say who it is;
-- about 90 to 120 mm tall (`height`, metres); origin between the feet on
-  the floor, +y up, the face towards +z, the toy's right (R) at −x.
+- the likeness first: the shape the original is known by, then the face
+  (hair shape, glasses, the smile, a mark), then two or three colours that
+  say who it is;
+- about 90 to 120 mm tall (`height`, metres); origin at the bottom on the
+  floor, +y up, the face towards +z, the toy's right (R) at −x.
+
+## The body follows the original
+
+The toy has the body its original has, no more, no less (toy.json `body`):
+
+| the original | `body` | the toy |
+| --- | --- | --- |
+| a person, a chibi, a mascot drawn with arms and legs | `person` | about three heads tall, mitten hands, its own legs |
+| an animal | `animal` | its own body: four paws, a tail, ears, as the picture has them |
+| a fruit, a ball, a logo, an object, a face drawn with no limbs | `object` | its own shape alone: no arms, no legs. A lemon is a lemon with a face. |
+
+Never add a limb the original does not have, and never leave out one it has.
+Something in between (a mascot with stubby feet and no arms) gets exactly
+what it shows. When the picture leaves it open, show the user both and let
+them pick.
+
+A toy without arms plays the same story with its whole body (the rig does
+it, engine/lib/rig.js): where the story points, it leans towards what it
+points at; a wave tips and wobbles it; a cheer is a lean back. A toy without
+legs still hops: the hops, squashes and landings are the body's. If a move
+of the story still reads wrong on this toy, write the toy's own move into the
+film (a spin, a roll, a bounce: a beat or the film's own copy of that piece)
+rather than giving it limbs.
 
 ## Three kits
 
@@ -24,7 +47,7 @@ Pick from the picture; parts of one kit may sit on another's toy.
 
 | the picture shows | kit | how it is made |
 | --- | --- | --- |
-| a mascot, a logo, a drawn character | parts | toy.json lists rounded boxes, balls, arcs: the isnail mascot |
+| a mascot, a logo, a drawn character, an object | parts | toy.json lists rounded boxes, balls, blobs, arcs: the isnail mascot; a lemon is one blob, a leaf and a face |
 | a pet or another animal | pet | toy.json adds blobs (superellipsoids), tubes (tails, whiskers, eyelids), loops and plates (glasses), and markings painted on in soft blobs |
 | a real person, a chibi drawing | sculpt | a sculpt script shapes signed distance fields (`engine/lib/sdf.py`), meshes them and paints them per vertex; `import-sculpt.py` brings them in |
 | nothing that can be a character | — | offer two or three mascot ideas from the name or brand, and build the one picked |
@@ -83,17 +106,23 @@ Right after it lands, and again on the end card's prop, the toy does its own
 move (toy.json `signature`): `{ "move": "glasses", "at": [x, y, z] }` puts
 its left fingers to its glasses at that point (mm, toy space: the hinge of
 the frame), anything else a wave of the left arm, a cat's raised paw. Without
-the field it waves. `import-sculpt.py` and `characters/build.mjs` find the
-hinge of a toy's glasses by themselves.
+the field it waves (an `object` toy wobbles to its side). `import-sculpt.py`
+and `characters/build.mjs` find the hinge of a toy's glasses by themselves.
+The move should be the creator's own: what they do in their pictures, their
+catchphrase as a gesture. When none of these fits, write it: a film's own
+move goes in the film's code (references/beats.md, "A beat of your own").
 
 ## The rig contract
 
-The story poses these joints; a toy has the ones it needs:
+The story poses these joints; a toy has only the ones its body has:
 `body`; `head` (`parent` body); `armR`, `armL` (body; a pet's front legs);
 `legR`, `legL` (no parent; a pet's hind legs); optional `ears` (head; both
-ears), `finger` / `fingerL` (on the arm: grows when the toy points). Any
-other joint (a tail) keeps its rest pose under its parent. Parts whose name
-starts with `sleeve` stretch when an arm reaches.
+ears), `finger` / `fingerL` (on the arm: grows when the toy points). An
+`object` toy has `body` and `head` alone (the head: what turns to look, the
+top of a lemon, a logo's face). Any other joint (a tail, a leaf) keeps its
+rest pose under its parent. Parts whose name starts with `sleeve` stretch
+when an arm reaches. A part with no `pos` sits at the toy's origin (a tube's
+points already say where it goes).
 
 ## The checkpoint
 

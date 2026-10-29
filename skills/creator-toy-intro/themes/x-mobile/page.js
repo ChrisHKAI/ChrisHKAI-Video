@@ -71,10 +71,10 @@ function postBody({ film, L, post, pinned, cover }) {
   const names = ["reply", "repost", "like", "views"];
   const actions = `<div class="acts">${names.map((n, i) => `<span style="left:${L.ACTION_X[i]}px">${icon(n, 28, "#71767B", 1.7)}${post.counts[i]}</span>`).join("")}
     </div>`;
-  return `${pinned ? `<div class="post-top">${icon("pin", 22, "#71767B", 2)}${S.pinned}</div>` : ""}
+  return `${pinned && post.pinned !== false ? `<div class="post-top">${icon("pin", 22, "#71767B", 2)}${S.pinned}</div>` : ""}
     <div class="av"></div>
     <div class="who"><b>${NAME}</b>${badge(26)}<span class="grey">@${pr.handle} · ${post.date}</span></div>
-    <div class="card">${cover}<div class="tt">${post.title}</div><div class="chip">${icon("mail", 22, "#71767B")}${S.article}</div></div>
+    <div class="card">${cover}<div class="tt">${post.title}</div>${(post.kind ?? "article") === "article" ? `<div class="chip">${icon("mail", 22, "#71767B")}${S.article}</div>` : ""}</div>
     ${actions}`;
 }
 
@@ -100,7 +100,7 @@ export function profilePage({ film, L, asset, pinned }) {
   <div class="name">${NAME}${badge(34)}</div>
   <div class="line grey" style="top:124px">@${pr.handle}</div>
   <div class="line" style="top:162px">${pr.bio.join("<br>")}</div>
-  <div class="meta"><span>${icon("globe", 26, "#71767B")}${pr.meta.topic}</span><span>${icon("link", 26, "#71767B")}<b style="color:#1D9BF0;font-weight:400">${pr.meta.link}</b></span></div>
+  <div class="meta">${[pr.meta?.location ? `<span>${icon("place", 26, "#71767B")}${pr.meta.location}</span>` : pr.meta?.topic ? `<span>${icon("globe", 26, "#71767B")}${pr.meta.topic}</span>` : "", pr.meta?.link ? `<span>${icon("link", 26, "#71767B")}<b style="color:#1D9BF0;font-weight:400">${pr.meta.link}</b></span>` : ""].join("")}</div>
   <div class="line" style="top:308px"><b>${pr.following}</b> <span class="grey">${S.following}</span>&nbsp;&nbsp;&nbsp;<b>${pr.followers}</b> <span class="grey">${S.followers}</span></div>
 </section>
 <section class="panel" style="${px(P.tabs)}"><div class="tabs">${S.tabs.map((t, i) => `<div class="tab${i ? "" : " on"}">${t}</div>`).join("")}</div><div class="sep" style="bottom:0"></div></section>

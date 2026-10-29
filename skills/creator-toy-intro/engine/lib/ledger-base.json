@@ -1,0 +1,74 @@
+[
+ {
+  "id": "isnail",
+  "name": "蜗牛King",
+  "date": "2026-10-28",
+  "opening": "opening",
+  "structure": [
+   "opening",
+   "act2",
+   "act3",
+   "exit",
+   "endCard"
+  ],
+  "signature": "glasses",
+  "colours": [
+   "#4E7BEF",
+   "#7FC86B",
+   "#B44CC8",
+   "#F59A3B",
+   "#F6C445",
+   "#FFFFFF"
+  ],
+  "sound": "song",
+  "ending": "snail"
+ },
+ {
+  "id": "kingao",
+  "name": "Kin",
+  "date": "2026-10-20",
+  "opening": "page-stand",
+  "structure": [
+   "page-stand",
+   "ambassador",
+   "chat",
+   "count",
+   "endCard"
+  ],
+  "signature": "wave",
+  "colours": [
+   "#4FD8E6",
+   "#E8432E",
+   "#F2A33A",
+   "#7A5CF0",
+   "#16171B",
+   "#FFFFFF"
+  ],
+  "sound": "song",
+  "ending": "Grok bot balls"
+ },
+ {
+  "id": "cgnot996",
+  "name": "铁柱AGI",
+  "date": "2026-10-28",
+  "opening": "O",
+  "structure": [
+   "O",
+   "W",
+   "story 12.3–20.383",
+   "G",
+   "story 24.383–30"
+  ],
+  "signature": "glasses",
+  "colours": [
+   "#16171B",
+   "#1D9BF0",
+   "#9AA3AD",
+   "#F26B1D",
+   "#F6C445",
+   "#FFFFFF"
+  ],
+  "sound": "bed",
+  "ending": "Grok Bot 白波波"
+ }
+]

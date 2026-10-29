@@ -66,8 +66,10 @@ with a rim, or lift the colour a little in toy.json; tell the user which.
 The page's "checked first" list shows the same.
 
 Not the last film again: `FILM=<film> node <skill>/engine/run.mjs ledger`
-compares this film with every film delivered before (`~/.chrishkai-video/
-ledger.json`) in six things:
+compares this film with every film delivered before: the skill's own
+(isnail, Kin, 铁柱: `engine/lib/ledger-base.json`, so even a first film on a
+new computer is compared) and this computer's (`~/.chrishkai-video/
+ledger.json`), in six things:
 - the opening;
 - the structure (its pieces and beats in order);
 - the toy's signature move;
@@ -78,7 +80,7 @@ ledger.json`) in six things:
 It should differ from each earlier film in at least four of the six. A
 film built from the template's defaults comes out as isnail again (it
 differs from isnail in one of the six). When it is too close, change what
-costs least and suits the creator: another opening (`page-stand`), a beat
+costs least and suits the creator: another of the three openings, a beat
 built from their material, their own colours, another sound, another prop.
 Tell the user in a line what changed and why. The page's "checked first"
 list shows the same.
@@ -86,7 +88,8 @@ list shows the same.
 Then the numbers, and a pair of eyes that has not seen the film being made:
 
 ```bash
-FILM=<film> node <skill>/engine/run.mjs pace     # from build/anim.json: nothing rendered
+FILM=<film> node <skill>/engine/run.mjs check    # before Blender: what will break, in plain words
+FILM=<film> node <skill>/engine/run.mjs pace     # from build/anim.json: nothing rendered (the toy's size on screen too)
 FILM=<film> node <skill>/engine/run.mjs review   # the independent review's brief (references/review.md)
 ```
 
@@ -145,6 +148,9 @@ every sound under it and let the user choose:
 FILM=<film> node <skill>/engine/run.mjs listen   # → build/storyboard/sound-<sound>.mp4, on the page
 ```
 
+`run.mjs storyboard` makes them by itself when the animatic is there and
+they are not: the sound is never skipped.
+
 The page plays them side by side:
 - **the whole score** (`song`): the template's synthesized arrangement;
 - **the whole score on real instruments** (`band`): the same arrangement on
@@ -197,6 +203,11 @@ FILM=<film> node <skill>/engine/run.mjs anim
 python3 <skill>/engine/scripts/diff-anim.py /tmp/anim-before.json <film>/build/anim.json   # e.g. 73-121,755-778
 ```
 
-Re-render the preview frames inside those ranges, rebuild the page, show it
-again. Keep the old frames until the new ones are looked at. When the user
-says yes, film.json `step` moves on to `render`.
+`diff-anim` lists the frames where anything moved differently and, for an
+object added, removed or rebuilt (a new prop, a longer bar), only the frames
+where it shows. Re-render the preview frames inside those ranges, rebuild
+the page, show it again. Keep the old frames until the new ones are looked
+at. When the user says yes, film.json `step` moves on to `render`: the full
+render starts only then, and only with the page's checks clean (`run.mjs
+render` runs `check --render`; `-- --force` when the user knowingly keeps
+one, said in a line).

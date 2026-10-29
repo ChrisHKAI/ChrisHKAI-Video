@@ -14,7 +14,7 @@ import { makeCamera, smoothTracker } from "#engine/camera.js";
 import { makeLabel, tear, labelT, rimT, letterT } from "#engine/labels.js";
 import { ballistic } from "#engine/particles.js";
 import { makePeel } from "#engine/peel.js";
-import { counterLayout, countEase, counterGlyphs } from "#engine/counter.js";
+import { counterLayout, countEase, counterGlyphs, counterText, slotCount } from "#engine/counter.js";
 import { mulberry32 } from "#engine/rng.js";
 import { qId, qMul, qAxis, qEuler, qRot, trs, apply, mulT } from "#engine/quat.js";
 
@@ -127,9 +127,9 @@ const onWall = (t, x, y, z) => apply(wallAt(t).tr, [x * MM, y * MM, z * MM]);
 // climbs it), box7 (the third: punches out, he points at it from `aim`), title
 // (flies out and slams back at 13.0 s), arrow (a last accent). Pieces are the
 // cover recipe's (build/cover.json) by name.
-const ROLE = Object.fromEntries(Object.entries(T.WALL).map(([role, w]) => [w.piece, role]));
-const PIECE = (role) => T.WALL[role].piece;
-export const CLUNKS = T.WALL.box9.clunks ?? 9;
+const ROLE = Object.fromEntries(Object.entries(T.WALL ?? {}).map(([role, w]) => [w.piece, role]));
+const PIECE = (role) => T.WALL?.[role]?.piece;
+export const CLUNKS = T.WALL?.box9?.clunks ?? 9;
 // how far each piece stands out of the wall (mm, the front face)
 export function protrudeAt(name, t) {
   const W = T.WALL;
@@ -157,15 +157,17 @@ export function protrudeAt(name, t) {
 }
 // a piece's wall-local transform: pushed out along z, the title swinging
 // about its own middle as it flies out and slams back
-const PIECE_DEPTH = Object.fromEntries(Object.values(T.WALL).map((w) => [w.piece, w.depth]));
+const PIECE_DEPTH = Object.fromEntries(Object.values(T.WALL ?? {}).map((w) => [w.piece, w.depth]));
 export const pieceDepth = (p) => (p.kind === "ink" ? PIECE_DEPTH[p.of] + 5 : PIECE_DEPTH[p.name]) * MM;
 const centroid = (p) => {
   const pts = p.rings.flat().map(coverToWall);
   return [pts.reduce((s, q) => s + q[0], 0) / pts.length, pts.reduce((s, q) => s + q[1], 0) / pts.length, 0];
 };
 const PIVOT = Object.fromEntries(COVER.pieces.map((p) => [p.name, centroid(p)]));
+// where the toy stands on a role's piece (wall mm across): film.json's "at", else the middle of the piece
+const standX = (role) => T.WALL[role].at?.[0] ?? (PIVOT[PIECE(role)] ? PIVOT[PIECE(role)][0] / MM : 0);
 // where he points on the third proof (wall mm): film.json's, or the middle of its face
-const BOX7_AIM = T.WALL.box7.aim ?? (PIVOT[PIECE("box7")] ? [PIVOT[PIECE("box7")][0] / MM, PIVOT[PIECE("box7")][1] / MM, T.WALL.box7.depth] : [0, 0, 0]);
+const BOX7_AIM = T.WALL?.box7?.aim ?? (PIVOT[PIECE("box7")] ? [PIVOT[PIECE("box7")][0] / MM, PIVOT[PIECE("box7")][1] / MM, T.WALL.box7.depth] : [0, 0, 0]);
 // the peak's sparks and light burst from the payoff, a little above and in front of where he points
 const PEAK_AT = [BOX7_AIM[0] - 10, BOX7_AIM[1] + 25, BOX7_AIM[2] + 40];
 const PEAK_LIGHT = [BOX7_AIM[0], BOX7_AIM[1] + 30, BOX7_AIM[2] + 70];
@@ -289,8 +291,10 @@ export function mascotPose(t) {
     o.yaw = lerpAngle(yawTo(onPinned(V, E.leap[0]), FRONT), Math.PI, seg(t, E.leap[0] + 0.3, E.stand[0]));
     return o;
   }
+  // a film that does not play act 3 has no wall to climb: the toy is off stage until the end card
+  if (!T.WALL) { if (t >= E.repop) return ctaPose(o, t); o.show = false; return o; }
   const W = T.WALL;
-  const ledge = (t2) => { const x = W.ledge.at[0]; return onWall(t2, x, topAt(PIECE("ledge"), x), protrudeAt(PIECE("ledge"), t2) * 0.5); };
+  const ledge = (t2) => { const x = standX("ledge"); return onWall(t2, x, topAt(PIECE("ledge"), x), protrudeAt(PIECE("ledge"), t2) * 0.5); };
   if (t < 12.7) {
     o.pos = FRONT.slice();
     o.yaw = Math.PI - 0.5 * smooth(seg(t, 12.1, 12.5)); // watches the wall go up behind him… then turns to it
@@ -300,8 +304,8 @@ export function mascotPose(t) {
     return o;
   }
   if (t < 12.95) { hop(o, t, FRONT, ledge(12.95), 12.7, 12.95, 0.05); o.yaw = lerpAngle(Math.PI - 0.5, 0.5, seg(t, 12.7, 12.95)); return o; }
-  const box9 = (t2) => { const x = W.box9.at[0]; return onWall(t2, x, topAt(PIECE("box9"), x), protrudeAt(PIECE("box9"), t2) * 0.5); };
-  const box46 = (t2) => { const x = W.box46.at[0]; return onWall(t2, x, topAt(PIECE("box46"), x), protrudeAt(PIECE("box46"), t2) * 0.5); };
+  const box9 = (t2) => { const x = standX("box9"); return onWall(t2, x, topAt(PIECE("box9"), x), protrudeAt(PIECE("box9"), t2) * 0.5); };
+  const box46 = (t2) => { const x = standX("box46"); return onWall(t2, x, topAt(PIECE("box46"), x), protrudeAt(PIECE("box46"), t2) * 0.5); };
   if (t < E.climb9[0]) {
     o.pos = ledge(t);
     o.ground = o.pos[1];
@@ -485,12 +489,20 @@ export const heroCentre = (t) => {
 // middle of the baseline, +z out of the type.
 export const GLYPHS = readFilmJSON("build/glyphs.json", null) ?? {};
 export const adv = (k) => (GLYPHS[k] ? GLYPHS[k].advance : 0.6);
+function noGlyph(key) {
+  throw new Error(`no lettering for "${key}" in build/glyphs.json: run the glyph step (run.mjs glyphs); a character only this film's own template shows goes in film.json "glyphs" ({ "${key.split(":")[0]}": "${key.split(":").slice(1).join(":")}" })`);
+}
 // a glyph from build/glyphs.json as 3D lettering: em (m) its size, depth and bevel (m)
-export const glyphGeo = (key, em, depth, bevel) => ({ type: "curve", rings: GLYPHS[key].rings.map((r) => r.map(([x, y]) => [+(x * em).toFixed(6), +(y * em).toFixed(6)])), depth, bevel });
+export const glyphGeo = (key, em, depth, bevel) => ({ type: "curve", rings: (GLYPHS[key] ?? noGlyph(key)).rings.map((r) => r.map(([x, y]) => [+(x * em).toFixed(6), +(y * em).toFixed(6)])), depth, bevel });
 export const STAT_EM = { digit: 70, wan: 62, label: 30 };
 // glyph keys of the counter's unit (万) and its two-character label (阅读)
-export const STAT_KEYS = { unit: `cjk:${film.counter.unit}`, label: [...film.counter.label].map((c) => `cjk:${c}`) };
-export const STAT = counterLayout({ value: T.VIEWS_COUNT, adv, em: STAT_EM, keys: STAT_KEYS });
+export const STAT_KEYS = { unit: `cjk:${film.counter.unit}`, label: [...film.counter.label].slice(0, 2).map((c) => `cjk:${c}`) };
+export const STAT_SLOTS = !film.counter.display || slotCount(film.counter.display, film.counter.label);
+// anything else (6.5万, 7,253, 46K, a label like "star") is set as text, as the platform writes it:
+// latin characters in the digits' face, the rest in the unit's
+const statKey = (c) => (c.codePointAt(0) < 0x2e80 ? `latin:${c}` : `cjk:${c}`);
+export const STAT_TEXT = STAT_SLOTS ? null : counterText({ display: film.counter.display, label: film.counter.label, adv, em: { digit: STAT_EM.digit * 0.001, label: STAT_EM.label * 0.001 }, key: statKey });
+export const STAT = STAT_SLOTS ? counterLayout({ value: T.VIEWS_COUNT, adv, em: STAT_EM, keys: STAT_KEYS }) : { width: STAT_TEXT.width * 1000 };
 // it floats just past the post's bottom edge, so the post's title stays clear above it
 const STAT_HOME = [wx(T.VIEWS[0] - 40), 0, wz(T.PANELS.pinned[1] + T.PANELS.pinned[3]) + 0.016];
 function statGroup(t) {
@@ -504,11 +516,12 @@ function statGroup(t) {
 }
 export function countAt(t) {
   if (t < E.count[0] + 0.12) return 0;
+  if (STAT_TEXT) return STAT_TEXT.to * (1 - Math.pow(1 - seg(t, E.count[0] + 0.12, E.count[1]), 3));
   return countEase(T.VIEWS_COUNT, seg(t, E.count[0] + 0.12, E.count[1]));
 }
 // every glyph of the stat, group-local; digits not showing are parked
 const STAT_NAMES = { digit: (i, d) => `stat_${i}_${d}`, unit: "stat_wan", label: ["stat_yue", "stat_du"], bar: "stat_bar" };
-export const statAt = (t) => counterGlyphs(countAt(t), T.VIEWS_COUNT, STAT, statGroup(t), STAT_NAMES);
+export const statAt = (t) => (STAT_TEXT ? STAT_TEXT.at(countAt(t), statGroup(t), "stat_bar") : counterGlyphs(countAt(t), T.VIEWS_COUNT, STAT, statGroup(t), STAT_NAMES));
 export function statCentre(t) {
   return apply(statGroup(Math.max(t, E.count[0] + 0.38)), [0, 0.03, 0]);
 }
@@ -547,13 +560,40 @@ export const SLOGAN_LETTER = (i) => E.letters + i * BEAT8;
 // the slogan's labels run on from one another, a letter per 8th note; the name
 // and the handle are slapped up together at E.name
 const CTA_TEXT = film.cta;
-let sloganAt = 0;
-const sloganLabels = CTA_TEXT.slogan.map((p, k) => {
-  const first = sloganAt;
-  sloganAt += [...p.text].length;
-  const d = T.CTA_LAYOUT.slogan[k] ?? { ...T.CTA_LAYOUT.slogan.at(-1), at: T.CTA_LAYOUT.slogan.at(-1).at.map((v, j) => v + T.CTA_LAYOUT.sloganStep[j] * (k - T.CTA_LAYOUT.slogan.length + 1)) };
-  return label(`slogan${k}`, p.text, p.em ?? d.em, p.paper, ...(p.at ?? d.at), p.tilt ?? d.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
-});
+const sloganPlaces = (scale = 1, xs = null) => {
+  let sloganAt = 0;
+  return CTA_TEXT.slogan.map((p, k) => {
+    const first = sloganAt;
+    sloganAt += [...p.text].length;
+    const d = T.CTA_LAYOUT.slogan[k] ?? { ...T.CTA_LAYOUT.slogan.at(-1), at: T.CTA_LAYOUT.slogan.at(-1).at.map((v, j) => v + T.CTA_LAYOUT.sloganStep[j] * (k - T.CTA_LAYOUT.slogan.length + 1)) };
+    const at = p.at ?? (xs ? [xs[k], d.at[1], d.at[2]] : d.at);
+    return label(`slogan${k}`, p.text, (p.em ?? d.em) * scale, p.paper, ...at, p.tilt ?? d.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
+  });
+};
+// the template's places hold a short slogan (公众号变现 / 找蜗牛); a longer one, which would run into the next
+// label or past its space (places.js cta.sloganSpan, side by side; sloganWidth, stacked), is laid out to fit:
+// the labels side by side with a small gap, centred in the span, smaller only if they must be
+function fitSlogan() {
+  const L = T.CTA_LAYOUT, gap = 0.03;
+  const ls = sloganPlaces();
+  if (CTA_TEXT.slogan.some((p) => p.at || p.em)) return ls; // film.json places them itself
+  if (L.sloganSpan) {
+    const [x0, x1] = L.sloganSpan;
+    const fits = ls.every((l, k) => l.c[0] - l.W / 2 >= x0 - 1e-6 && l.c[0] + l.W / 2 <= x1 + 1e-6 && (k === 0 || ls[k - 1].c[0] + ls[k - 1].W / 2 + gap / 2 <= l.c[0] - l.W / 2));
+    if (fits) return ls;
+    const total = ls.reduce((w, l) => w + l.W, 0) + gap * (ls.length - 1);
+    const scale = Math.min(1, (x1 - x0) / total);
+    let x = x0 + ((x1 - x0) - total * scale) / 2;
+    const xs = ls.map((l) => { const c = x + (l.W * scale) / 2; x += l.W * scale + gap * scale; return c; });
+    return sloganPlaces(scale, xs);
+  }
+  if (L.sloganWidth) {
+    const widest = Math.max(...ls.map((l) => l.W));
+    return widest <= L.sloganWidth ? ls : sloganPlaces(L.sloganWidth / widest);
+  }
+  return ls;
+}
+const sloganLabels = fitSlogan();
 const N = { ...T.CTA_LAYOUT.name, ...CTA_TEXT.name }, HD = { ...T.CTA_LAYOUT.handle, ...CTA_TEXT.handle };
 export const LABELS = [
   ...sloganLabels,

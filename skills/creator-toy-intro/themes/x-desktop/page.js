@@ -29,6 +29,7 @@ export const ICON = {
   more: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="12" r=".8"/><circle cx="12" cy="12" r=".8"/><circle cx="16" cy="12" r=".8"/>',
   back: '<path d="M20 12H5M11 5l-7 7 7 7"/>',
   dots: '<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>',
+  place: '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
   pin: '<path d="M9 3h6l-1 6 3 3v2H7v-2l3-3zM12 14v7"/>',
   reply: '<path d="M4 11.5C4 7.4 7.6 4.5 12 4.5s8 2.9 8 7-3.6 7-8 7c-1 0-2-.1-2.9-.4L5 20l.9-3.6C4.7 15.1 4 13.4 4 11.5z"/>',
   repost: '<path d="M4 9V7h12l-3-3M20 15v2H8l3 3"/><path d="M16 4l3 3-3 3M8 20l-3-3 3-3"/>',
@@ -103,12 +104,27 @@ function postBody({ film, L, post, pinned, cover }) {
   const names = ["reply", "repost", "like", "views"];
   const actions = `<div class="acts">${names.map((n, i) => `<span style="left:${L.ACTION_X[i]}px">${icon(n, 19, "#71767B", 1.7)}${post.counts[i]}</span>`).join("")}
     <span style="right:34px">${icon("bookmark", 19, "#71767B", 1.7)}</span><span style="right:0">${icon("share", 19, "#71767B", 1.7)}</span></div>`;
-  return `${pinned ? `<div class="post-top" style="top:12px;left:40px">${icon("pin", 14, "#71767B", 2)}${S.pinned}</div>` : ""}
+  // the post as X shows it: "已置顶" only on a pinned one; an article (the default) with its chip, a video with a
+  // play mark on its picture, a picture post with its picture alone
+  const kind = post.kind ?? "article";
+  const chip = kind === "article" ? `<div class="chip">${icon("mail", 15, "#71767B")}${S.article}</div>` : "";
+  const play = kind === "video" ? `<div style="position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(29,155,240,.92);display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="#fff"/></svg></div>` : "";
+  return `${pinned && post.pinned !== false ? `<div class="post-top" style="top:12px;left:40px">${icon("pin", 14, "#71767B", 2)}${S.pinned}</div>` : ""}
     <div class="av"></div>
     <div class="who"><b>${NAME}</b>${badge(18)}<span class="grey">@${pr.handle} · ${post.date}</span><span style="margin-left:auto"></span></div>
-    <div class="card">${cover}<div class="tt">${post.title}</div><div class="chip">${icon("mail", 15, "#71767B")}${S.article}</div></div>
+    <div class="card">${cover}${play}<div class="tt">${post.title}</div>${chip}</div>
     ${actions}`;
 }
+
+// the bio takes three lines' room (60 px): a longer one is set smaller to fit it, never cut
+const bioFit = (bio) => (bio.length > 3 ? `;font-size:${(15 * 3 / bio.length).toFixed(2)}px;line-height:${(60 / bio.length).toFixed(2)}px` : "");
+// the fields under the bio, as the page shows them: where they are (X's location) or the topic, the link, the
+// date they joined; only those the profile has
+export const metaSpans = (m, icon, s) => [
+  m.location ? `<span>${icon("place", s, "#71767B")}${m.location}</span>` : m.topic ? `<span>${icon("globe", s, "#71767B")}${m.topic}</span>` : "",
+  m.link ? `<span>${icon("link", s, "#71767B")}<b style="color:#1D9BF0;font-weight:400">${m.link}</b></span>` : "",
+  m.joined ? `<span>${icon("cal", s, "#71767B")}${m.joined}</span>` : "",
+].join("");
 
 // the empty socket a 3D object stands in (the profile picture, a cover wall)
 export const SOCKET_COVER = `<div class="cover" style="background:#050506;box-shadow:inset 0 8px 24px #000"></div>`;
@@ -137,8 +153,8 @@ export function profilePage({ film, L, asset, pinned, below }) {
   <div class="btn" style="right:16px;width:92px;background:#EFF3F4;color:#0F1419">${S.follow}</div>
   <div class="name" style="top:84px">${NAME}${badge(22)}</div>
   <div class="line grey" style="top:114px">@${pr.handle}</div>
-  <div class="line" style="top:148px">${pr.bio.join("<br>")}</div>
-  <div class="meta" style="top:222px"><span>${icon("globe", 18, "#71767B")}${pr.meta.topic}</span><span>${icon("link", 18, "#71767B")}<b style="color:#1D9BF0;font-weight:400">${pr.meta.link}</b></span><span>${icon("cal", 18, "#71767B")}${pr.meta.joined}</span></div>
+  <div class="line" style="top:148px${bioFit(pr.bio)}">${pr.bio.join("<br>")}</div>
+  <div class="meta" style="top:222px">${metaSpans(pr.meta ?? {}, icon, 18)}</div>
   <div class="line" style="top:258px"><b>${pr.following}</b> <span class="grey">${S.following}</span>&nbsp;&nbsp;&nbsp;&nbsp;<b>${pr.followers}</b> <span class="grey">${S.followers}</span></div>
 </section>
 <section class="panel" style="${px(P.tabs)}"><div class="tabs">${S.tabs.map((t, i) => `<div class="tab${i ? "" : " on"}">${t}</div>`).join("")}</div><div class="sep" style="bottom:0"></div></section>

@@ -93,6 +93,7 @@ def main():
         "-c:a", "aac", "-b:a", "320k", "-shortest", "-movflags", "+faststart",
         str(OUT),
     ], check=True)
+    hold_peak(OUT)
     print("wrote", OUT)
     fx = ROOT / "assets/audio/score-sfx.wav"
     if sfx_cut_wanted():
@@ -104,7 +105,29 @@ def main():
             "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-af", "volume=-0.3dB", "-c:a", "aac", "-b:a", "320k", "-shortest", "-movflags", "+faststart",
             str(cut),
         ], check=True)
+        hold_peak(cut)
         print("wrote", cut, "(sound effects only)")
+
+
+def true_peak(path):
+    """The file's true peak (dBTP), as qa measures it."""
+    err = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-af", "ebur128=peak=true", "-f", "null", "-"],
+                         capture_output=True, text=True).stderr
+    tail = err[err.rfind("True peak:"):]
+    return float(tail.split("Peak:")[1].split("dBFS")[0]) if "Peak:" in tail else None
+
+
+def hold_peak(path, aim=-1.1):
+    """AAC can overshoot what the mix held (a loud score came out at -0.8 dBTP): over -1 dBTP, the sound is
+    turned down by the difference and encoded again, the picture copied as it is."""
+    tp = true_peak(path)
+    if tp is None or tp <= aim + 0.1:
+        return
+    tmp = path.with_name(path.stem + ".peak" + path.suffix)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(path), "-map", "0:v", "-map", "0:a", "-c:v", "copy",
+                    "-af", f"volume={aim - tp:.2f}dB", "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart", str(tmp)], check=True)
+    tmp.replace(path)
+    print(f"true peak {tp:.1f} dBTP → {true_peak(path):.1f} (the sound {aim - tp:.1f} dB down)")
 
 
 if __name__ == "__main__":

@@ -11,7 +11,13 @@ FILM=<film> node <skill>/engine/run.mjs estimate
 
 renders three frames at the final settings (Cycles, 48 samples, full size)
 and says how long the whole film takes (an Apple M3 Max: about 4 s a frame,
-about 40 min for 30 s). Tell the user. 48 samples is the final quality:
+about 40 min for 30 s; an M4 Pro or an M5, about 5 s a frame, 1.5 h for 32 s).
+Tell the user, and offer two ways:
+- **the quick version first** (about a quarter of the time): the whole film
+  at half size and 16 samples, to watch before committing the hours:
+  `run.mjs render -- --samples 16 --scale 50 --out build/quick`, then
+  `run.mjs finish -- --in build/quick --out out/<id>-quick.mp4`;
+- **the final version** straight away (below). 48 samples is the final quality:
 the denoiser (OpenImageDenoise) and adaptive sampling are on, and side by
 side with 128 samples it looks the same (the Tim and 铁柱AGI films: under
 1/255 mean difference) at half the time. Render 128 only when the user asks

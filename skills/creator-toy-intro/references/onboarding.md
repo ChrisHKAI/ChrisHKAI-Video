@@ -81,11 +81,19 @@ Without image viewing, say so before starting: the checks cannot be skipped.
    in the user's current folder; tell them where it is. It writes
    `film.json` (`step: "research"`) and the empty `research/`, `assets/`,
    `recipes/`.
-6. A share link (`v.douyin.com`, `xhslink.com`) only names the platform:
+6. Tell the user, once, how long it all takes and where it stops for
+   them, so the wait is never a surprise: the research about 10–20 min
+   (then they pick the story), the toy 10–20 min (they approve it), the
+   storyboard 30–60 min (they sign it off), then the render, about 1.5 h on
+   an M4 Pro or an M5 (an exact figure comes from `run.mjs estimate` before
+   it starts), on its own in the background. While a long step runs, send a
+   small picture each time a piece is done (a cover cut, the prop, a preview
+   frame), so they see it moving.
+7. A share link (`v.douyin.com`, `xhslink.com`) only names the platform:
    step 2 opens it in the browser to reach the profile.
-7. Both orientations wanted (an X 16:9 film besides the phone one): make one
+8. Both orientations wanted (an X 16:9 film besides the phone one): make one
    first; the second is another workspace with `--aspect 16:9 --theme
    x-desktop` that reuses the research and the toy.
 
 Next is step 2, the research: the profile, the pinned and best posts, their
-numbers, and a material table for the user to pick from.
+numbers, then the story page: what they are known for, the opening and the ending, for the user to pick.

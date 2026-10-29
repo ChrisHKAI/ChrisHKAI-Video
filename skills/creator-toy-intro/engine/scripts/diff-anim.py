@@ -4,7 +4,8 @@ differ, as a --frames list for the render step. Keep the old frames until the
 new ones are looked at.
 
 usage: python3 engine/scripts/diff-anim.py <old anim.json> <new anim.json>
-prints e.g. 46-71,370-394 (or "all" when objects, shapes or materials changed)
+prints e.g. 46-71,370-394: where anything moved differently, and where an object that was added, removed
+or rebuilt (its shape, material, parent) shows, before or after
 """
 import json
 import sys
@@ -17,16 +18,6 @@ if old["frames"] != new["frames"] or old["sub"] != new["sub"]:
 F, SUB = new["frames"], new["sub"]
 N = F * SUB - 1  # samples
 
-# a new, removed or rebuilt object (shape, material, parent) can show anywhere
-ob = lambda a: {o["name"]: json.dumps({k: o.get(k) for k in ("parent", "geo", "mat", "tr")}, sort_keys=True) for o in a["objects"]}  # noqa: E731
-oo, no = ob(old), ob(new)
-if oo != no:
-    changed = sorted(k for k in set(oo) | set(no) if oo.get(k) != no.get(k))
-    print("all", file=sys.stdout)
-    print(f"  objects changed: {', '.join(changed[:12])}{' …' if len(changed) > 12 else ''}", file=sys.stderr)
-    raise SystemExit
-
-
 def curve(keys, n):
     """Keyed rows [index, values…] → every index's values (linear between keys)."""
     k = np.asarray(keys, dtype=np.float64)
@@ -34,16 +25,42 @@ def curve(keys, n):
     return np.stack([np.interp(x, k[:, 0], k[:, c]) for c in range(1, k.shape[1])], axis=1)
 
 
+def visible(anim, name):
+    """The samples where an object can be seen: its own scale and its parents' not parked (scale ~0)."""
+    objs = {o["name"]: o for o in anim["objects"]}
+    v = np.ones(N, bool)
+    while name in objs:
+        tr = anim["tracks"].get(name)
+        if tr is not None:
+            v &= np.abs(curve(tr, N)[:, 7:10]).min(axis=1) > 1e-3
+        elif objs[name].get("tr") and min(abs(x) for x in objs[name]["tr"][7:10]) <= 1e-3:
+            v[:] = False
+        name = objs[name].get("parent")
+    return v
+
+
 hit = np.zeros(F, bool)
+
+
+def mark(samples):
+    i = np.flatnonzero(samples)
+    hit[i // SUB] = True
+    hit[np.minimum((i + 1) // SUB, F - 1)] = True  # a half-frame sample blurs into the next frame
+
+
+# a new, removed or rebuilt object (shape, material, parent): the frames where it shows, before or after
+ob = lambda a: {o["name"]: json.dumps({k: o.get(k) for k in ("parent", "geo", "mat", "tr")}, sort_keys=True) for o in a["objects"]}  # noqa: E731
+oo, no = ob(old), ob(new)
+changed = sorted(k for k in set(oo) | set(no) if oo.get(k) != no.get(k))
+for name in changed:
+    mark((visible(old, name) if name in oo else False) | (visible(new, name) if name in no else False))
+if changed:
+    print(f"  objects changed: {', '.join(changed[:12])}{' …' if len(changed) > 12 else ''}", file=sys.stderr)
 for name in set(old["tracks"]) | set(new["tracks"]):
     a, b = old["tracks"].get(name), new["tracks"].get(name)
     if a is None or b is None:
-        hit[:] = True
-        break
-    d = np.abs(curve(a, N) - curve(b, N)).max(axis=1) > 1e-6
-    i = np.flatnonzero(d)
-    hit[i // SUB] = True
-    hit[np.minimum((i + 1) // SUB, F - 1)] = True  # a half-frame sample blurs into the next frame
+        continue  # a new or removed object: counted above, where it shows
+    mark(np.abs(curve(a, N) - curve(b, N)).max(axis=1) > 1e-6)
 for name in set(old["colors"]) | set(new["colors"]):
     a, b = old["colors"].get(name), new["colors"].get(name)
     if a is None or b is None or np.abs(curve(a, F) - curve(b, F)).max() > 1e-6:

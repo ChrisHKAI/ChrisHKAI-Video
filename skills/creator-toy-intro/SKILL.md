@@ -6,62 +6,79 @@ effort: xhigh
 
 # creator-toy-intro
 
-A creator's profile page floats as glass slabs; their profile picture peels
-off like a sticker and puffs into a 3D vinyl toy of them; the toy stomps their
-best posts, whose covers stand up as walls while the numbers lift out of the
-spots where the page shows them; the end card slaps their name and call to
-action up on torn paper. Everything is code: the toy is built from a part
-list, the page is HTML, the score is synthesized, Blender renders.
+A self-introduction film for a creator, made from their own material: their
+profile page, the posts and numbers they are known for, their own words.
+They star in it as a smooth 3D vinyl toy with the body their picture has (a
+person, an animal, or an object: a lemon stays a lemon), which pops out of
+their profile picture and acts out their story, then rides a prop that says
+what they want people to come for while their line slaps up on torn paper.
+Everything is code: the toy is built from a part list or sculpted, the page
+is HTML, the score is synthesized, Blender renders.
+
+**This skill is a floor, not a fence.** It holds what earlier films learned:
+tools, worked examples, checks. Whatever a film needs that it lacks (an
+animation for this creator's material, a move for this toy, a number written
+another way, a prop), build it in the film's own code (a beat, a prop, a
+recipe: `references/beats.md`, `props.md`), say so to the user in a line,
+and note it so it can come back into the skill. Never make a film worse to
+fit the skill: a template piece that does not fit the material is left out,
+not forced. What stays fixed, whatever is built:
+- numbers are true, current and sourced (where and when each was read);
+- the profile picture is the creator's own, never redrawn;
+- the user picks the toy's picture, the story and the ending, and signs off
+  the storyboard; nothing renders for hours before they have seen previews.
+
+A film is pieces, each its own animation (film.json `story.segments`): one
+of three openings (isnail's glass page and peeling sticker, Kin's page
+turning right, 铁柱's turning left), the story points the user picked, each
+as the animation that fits its material (a number rising from its spot on
+the page, a cover standing up as a wall the toy climbs, a count, a flip
+calendar, a line rising letter by letter, or one written for this film),
+and the end card. It runs as long as what it says: about 22 s for two
+points, 30 s or more for three.
 
 The sound of a new film (film.json `"sound": "bed"`, which `new-film` writes)
 is the effects over one quiet layer of long chords, 14 dB under them, at -13
-LUFS: a creator chose it over the full song after hearing both. The full song
-is `"sound": "song"`, also what a film.json without the key gets.
-
-The other sounds are:
-- `"band"`: the song on real instruments;
-- `"strings"`: the bed on a real string section and a piano (both need the
-  sample libraries, `engine/scripts/instruments.mjs`, about 1.4 GB, on the
-  user's yes);
-- `"fx"`: the effects alone;
-- `"own"`: their own song, put on the film's beat (film.json `"music"`).
-
-`run.mjs listen` lays every sound under the animatic, so the user chooses by
-ear (`references/storyboard.md`).
+LUFS: a creator chose it over the full song after hearing both. The others:
+`"song"` (the template's full score), `"band"` (the song on real
+instruments), `"strings"` (the bed on a real string section and a piano;
+both need the sample libraries, `engine/scripts/instruments.mjs`, about 1.4
+GB, on the user's yes), `"fx"` (the effects alone), `"own"` (their own song
+on the film's beat, film.json `"music"`). The storyboard page plays each
+under the animatic, so the user chooses by ear.
 
 **This release publishes on X** (16:9 or 9:16). The phone themes for 抖音,
 小红书, 视频号 and Instagram are here and work, and come out one platform per
 later release.
 
-**Status: development stage 4 of 4 (testing with new creators).** The
-engine, one story template (`isnail-30`) and six platform themes work in
-16:9 and 9:16, and rebuild the reference film exactly; finish cuts each
-platform's covers, and previews are checked against each app's own
-controls. Steps 0 to 4 (the computer, onboarding, research, the toy in three
-kits, the storyboard page) work. For each creator you also write the
-film's own code, as for isnail (`example/isnail/`): the cover walls'
-recipes, the end card's prop (from what they want to promote) and the exit;
-`references/` has the method for each. The profile picture is never
-redrawn: the creator's own peels off (`references/avatar.md`). A film can
-be pieces of the story with beats of its own between them, each on its own
-clock, so it runs as long as what it says (`references/beats.md`; four
-beats so far in `beats/`).
+**Status: testing with new creators.** Three films were made with the skill
+by outside testers (Opus and Sonnet at high effort, unattended; Opus with
+Haiku): their lessons are in this version. `run.mjs next` says where a film
+stands and what comes next; `run.mjs check` says, before Blender, what will
+break.
 
 ## Making a film
 
-Effort stays at xhigh. Each step ends on something the user looks at.
-Every line the user sees is in their language: the replies, the short
-progress lines between tool calls, task lists, questions and the pages
-made for them. Only paths, commands and code stay as they are.
+Effort xhigh does best; high works (Opus and Sonnet both finished films at
+high). Each step ends on something the user looks at. Every line the user
+sees is in their language: the replies, the short progress lines between
+tool calls, task lists, questions and the pages made for them. Only paths,
+commands and code stay as they are. At any point, `FILM=<film> node
+<skill>/engine/run.mjs next` says what the film's step still lacks and the
+commands to run.
 
-| step | what | how |
-| --- | --- | --- |
-| 0 | the computer: check, then one yes installs what is missing | `references/onboarding.md` |
-| 1 | onboarding: the creator's link, where the film goes, a workspace | `references/onboarding.md` |
-| 2 | research: profile, pinned and best posts, numbers; the user confirms the toy's picture and picks from a material table | `references/research.md` |
-| 3 | the toy from the confirmed picture, in one of three kits; a turnaround beside it to approve | `references/toy.md` |
-| 4 | the film's own code (cover walls, exit, prop, its beats; the profile picture is the creator's own), then the storyboard page: the story, the length, the beat grid, real preview renders (one to four a row, notes on them; the platforms' controls stay your check, in `safezone`); the user signs off | `references/cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md`, `storyboard.md` |
-| 5 | how long, the render, the finish: the film, the effects-only cut, each platform's covers, the last look | `references/render.md` |
+| step | what | where it stops for the user | how |
+| --- | --- | --- | --- |
+| 0 | the computer: check, then one yes installs what is missing | the install list, if anything is missing | `references/onboarding.md` |
+| 1 | onboarding: the creator's link, a workspace; how long it all takes, said once | 16:9 or 9:16 | `references/onboarding.md` |
+| 2 | research, story first: what the creator is known for and proud of, each with its material, numbers (current, sourced) and the animation it becomes; `apply-research` turns the picks into the film's pieces | the toy's picture; the story page (`materials.png`): the story points, one of three openings, the ending, each with a preview | `references/research.md` |
+| 3 | the toy, with the body its picture has (person, animal, object), in one of three kits; its colours checked on the dark stage | the turnaround beside the picture | `references/toy.md` |
+| 4 | the film's own code (what its pieces need: cover cuts, a beat of its own, the prop), `check`, then the storyboard page: the story, the beat grid, real preview renders, every sound under the animatic, the checks (pace, the toy's size, reading time, colours, not the last film again, a second opinion) | the storyboard page: notes on the frames, the sound, sign-off | `references/storyboard.md`, `beats.md`, `cover-wall.md`, `props.md`, `avatar.md`, `exits.md` |
+| 5 | how long (a quick half-size version first, if they like), the render, the finish: the film, the effects-only cut, each platform's covers, the last look | the finished film | `references/render.md` |
+
+The full render starts only when `check` passes and the storyboard page's
+checks are clean and signed off (`run.mjs render` runs it; `-- --force` when
+the user knowingly keeps something, said in a line).
 
 ## Layout
 
@@ -70,11 +87,11 @@ made for them. Only paths, commands and code stay as they are.
 | `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
 | `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `review.md` (the independent review, steps 4 and 5), `render.md` (step 5) |
-| `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `page-stand.js` (Kin's opening: the page stands up, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
+| `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `catalog.json` (every animation, what it fits, a preview strip in `previews/`, its film.json entry: the story page's menu), `page-stand.js` (Kin's and 铁柱's opening: the page stands up turning right or left, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
-| `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `look.py` (the light, shared by the film and the toy's look-dev); `music.py` (their own song on the film's beat); `real.py` and `instruments.json` (the real instruments: lemo-opuscar's sampler, vendored in `engine/vendor/lemo/` under MIT, and the sample libraries it plays); `pacing.py`, `colors.py` and `ledger.py` (the page's checks; the ledger of delivered films in `~/.chrishkai-video/ledger.json`); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | doctor (step 0), new-film (step 1), materials, grok-search (X search, with Grok Build) and apply-research (step 2), instruments (the real instruments' samples), import-sculpt and toysheet (step 3), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace, palette, ledger and review (step 4; `engine/lib/pacing.py`, `engine/lib/colors.py`), finish, covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
-| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
+| `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `look.py` (the light, shared by the film and the toy's look-dev); `music.py` (their own song on the film's beat); `real.py` and `instruments.json` (the real instruments: lemo-opuscar's sampler, vendored in `engine/vendor/lemo/` under MIT, and the sample libraries it plays); `pacing.py`, `colors.py` and `ledger.py` (the page's checks: the pace and the toy's size on screen, the colours, the ledger of delivered films: the skill's own in `ledger-base.json`, this machine's in `~/.chrishkai-video/ledger.json`); `sdf.py` (the sculpt kit's signed distance fields) |
+| `engine/scripts/` | next (where a film stands), check (what will break, before Blender), doctor (step 0), new-film (step 1), materials (the story page), grok-search (X search, with Grok Build) and apply-research (step 2), instruments (the real instruments' samples), import-sculpt and toysheet (step 3: with the toy's colours on the stage), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace, palette, ledger and review (step 4; `engine/lib/pacing.py`, `engine/lib/colors.py`), regions (a cover's blocks and lines of lettering, numbered), finish (holds the true peak under -1 dBTP), covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev, scene (Blender), safezone, sheet |
+| `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`, isnail's; `plinth.js`, a ready-made plinth or star in the creator's colours), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
 ## Requirements
@@ -99,7 +116,7 @@ A folder outside the skill, never committed:
   recipes/         the film's own scripts (cover cuts)
   assets/          the creator's pictures; the pipeline adds textures here
   build/           everything generated (anim.json, glyphs, frames)
-  research/        step 2: facts.json, screenshots, the material table
+  research/        step 2: facts.json, screenshots, the story page
   out/             the finished film; out/covers/ the platforms' covers
   template/        only if the film has its own copy of the story (below)
   engine/scene.py  only if the film has its own copy of the Blender scene (below)
@@ -107,9 +124,11 @@ A folder outside the skill, never committed:
 
 `engine/scripts/new-film.mjs` opens one (step 1).
 
-When this film needs what the template or the Blender scene can't do (a
-story told in another order, a beat of its own, its own look), change a
-copy in the film, never the skill:
+What this film needs that the skill lacks goes in the film first, in the
+smallest piece that does it: a beat of its own (`beats/<name>.js`), a prop
+(`cta.prop.module`), a recipe. They follow every fix the skill gets. Only
+when a piece of the story itself must change (its own look, a move inside
+act 2), change a copy in the film, never the skill:
 
 ```bash
 FILM=<film> node <skill>/engine/run.mjs own -- template scene.py
@@ -130,12 +149,15 @@ duration, size), `output`, `publish` (where the film goes: ids in
 `@sticker2d` and `@shape` are engine tools), `branding` (the creator's own
 copies of platform marks, if any), `profile` (name, handle, bio, counts,
 pictures), `avatarRing` (the ring round the profile picture:
-`references/avatar.md`), `posts` (pinned and the second post: date, title,
-counts, cover), `counter` (value, unit, label; `display` for the storyboard
-page, as the platform writes it), `cta` (slogan labels, name and handle
-labels, the prop; positions optional: the template lays the end card out per
-orientation), `sticker2d`, `pop` (confetti and leaf colours; party colours
-without it), `story` (the cover walls' pieces; events, places, camera keys
+`references/avatar.md`), `posts` (the two posts the page shows: date, title,
+counts, cover; `kind` article, video or image; `pinned: false` when the first
+is not pinned), `counter` (value, unit, label, and `display`: the count as the
+platform writes it, 304万, 6.5万, 7,253, 46K; it counts up just so), `cta` (slogan labels, name and handle
+labels, the prop: `module`, or `kind` snail or plinth; positions optional:
+the template lays the end card out per orientation and fits a long slogan
+to its space), `sticker2d`, `pop` (confetti and leaf colours; party colours
+without it), `story` (the cover walls' pieces, only when the film plays
+act 3; events, places, camera keys
 and shakes only where they differ from the template's own `story.json`:
 `events` merge one by one, a list such as `camera` or `shakes` replaces the
 template's whole; `segments`, pieces of the story and beats one after
@@ -153,8 +175,8 @@ shows `profile.name` and `profile.bio`, a list of lines):
 
 | theme | the page | from `profile` | a grid tile's number |
 | --- | --- | --- | --- |
-| `x-desktop` | X on the web, dark | `nameEmoji`, `handle`, `banner`, `postsCount`, `meta` (`topic`, `link`, `joined`), `following`, `followers` | no grid: both posts show `counts` (replies, reposts, likes, views) |
-| `x-mobile` | the X app | `nameEmoji`, `handle`, `banner`, `meta` (`topic`, `link`), `following`, `followers` | no grid: as above |
+| `x-desktop` | X on the web, dark | `nameEmoji`, `handle`, `banner`, `postsCount`, `meta` (`location` or `topic`, `link`, `joined`), `following`, `followers`; a bio of any length (more than three lines is set smaller) | no grid: both posts show `counts` (replies, reposts, likes, views) |
+| `x-mobile` | the X app | `nameEmoji`, `handle`, `banner`, `meta` (`location` or `topic`, `link`), `following`, `followers` | no grid: as above |
 | `douyin-mobile` | 抖音 | `handle`, `banner`, `likes`, `following`, `followers`, `ip`, `tags`, `posts`, `collections` | likes |
 | `xhs-mobile` | 小红书 | `handle`, `banner`, `ip`, `following`, `followers`, `likes`, `tags`, `collections` | likes |
 | `channels-mobile` | 视频号 | `title` (with a verified mark), `ip`, `posts`, `collections` | likes |
@@ -194,12 +216,15 @@ Notes on the real frames: `studio` serves the storyboard page, where the
 user clicks a spot on a preview frame or the paused animatic and writes
 what to change (into `build/comments.jsonl`); `comments` lists them, each
 with its frame marked (`references/storyboard.md`).
-Before the user sees the page: `pace` reads the film's numbers, with
-nothing rendered. It reports:
+Before the user sees the page: `check` (what will break), then `pace`
+reads the film's numbers, with nothing rendered. It reports:
 - quiet stretches of more than two bars;
 - the toy hopping with nothing else new;
+- the toy a speck (under 8% of the frame's height) or out of the frame;
 - no hit in the first 3 s;
 - a line gone before it can be read.
+The page shows the same, and the full render waits until they are fixed or
+the user keeps them knowingly.
 
 Then `review` writes the brief for an independent reviewer, who scores the
 film and names the three biggest problems with their times
@@ -207,6 +232,15 @@ film and names the three biggest problems with their times
 
 ## Rules the films taught
 
+- The film is the creator's story, not a template filled in: material is
+  picked for what it says about them, and each piece is the animation that
+  fits it; a piece that does not fit is left out, never forced (a lemon's
+  illustrations are not a cover wall; a cloud is not a number).
+- The toy has the body its original has: a lemon gets no arms or legs.
+- What the skill lacks, the film builds; the skill never makes a film worse
+  than the model would make it without it.
+- Numbers are today's, read from the page or an API with where and when;
+  never a round figure from an old post (3,000 when the repo has 8,904).
 - One toy on screen, ever: the toy and the flat sticker swap, never both.
 - The film is as long as what it says: one beat per point, each as long as
   its animation needs, on whole bars; 30 s is a default, never a cap.
@@ -228,3 +262,6 @@ film and names the three biggest problems with their times
 - Look before spending GPU time: check the UI texture, cover-piece check
   images, a contact sheet of previews and the safe-zone sheet before the
   full render. Counters, labels and the end card's text stay inside the safe box.
+- The toy is the star: on screen it stands at least 8% of the frame's height
+  (`pace`), never a speck beside a wall.
+- Small lettering stays printed: pushed out of a wall it smears.

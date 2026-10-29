@@ -28,16 +28,26 @@ def path():
 
 
 def read():
+    """The films delivered so far: the skill's own (isnail, Kin, 铁柱: engine/lib/ledger-base.json, so even the
+    first film on a new machine is compared with them), then this machine's, which win on the same id."""
+    base = json.loads((Path(__file__).with_name("ledger-base.json")).read_text())
     p = path()
-    return json.loads(p.read_text()) if p.exists() else []
+    mine = json.loads(p.read_text()) if p.exists() else []
+    ids = {e.get("id") for e in mine}
+    return [e for e in base if e.get("id") not in ids] + mine
 
 
 def piece(s):
     """A segment's name: its beat, its named story piece, or the story's seconds it plays."""
     if s.get("beat"):
-        return s["beat"]
+        # the page standing up turns right (Kin's) or left (铁柱's): two openings
+        return "page-stand-left" if s["beat"] == "page-stand" and s.get("turn") == "left" else s["beat"]
     st = s.get("story")
-    return st if isinstance(st, str) else f"story {st[0]:g}–{st[1]:g}"
+    if isinstance(st, str):
+        return st
+    # seconds, or a piece's name ("end": the story's last second)
+    at = [f"{x:g}" if isinstance(x, (int, float)) else str(x) for x in st]
+    return f"story {at[0]}–{at[1]}"
 
 
 def describe(film):
@@ -83,7 +93,7 @@ def compare(desc, ledger=None):
 
 def add(desc):
     """Keep this film in the ledger (replacing its earlier entry)."""
-    entries = [e for e in read() if e.get("id") != desc["id"]] + [desc]
+    entries = [e for e in (json.loads(path().read_text()) if path().exists() else []) if e.get("id") != desc["id"]] + [desc]
     path().parent.mkdir(parents=True, exist_ok=True)
     path().write_text(json.dumps(entries, ensure_ascii=False, indent=1) + "\n")
     return len(entries)

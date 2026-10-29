@@ -3,10 +3,15 @@ masks, outline rings in UV (0..1, v down), and patching the paper where a
 piece leaves a hole. A film's cover recipe (films/<f>/recipes/cover-*.py)
 names its pieces with these; the wall in Blender extrudes the rings.
 """
-import contourpy
-import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
-from scipy import ndimage
+try:
+    import contourpy
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFilter
+    from scipy import ndimage
+except ImportError as e:  # a recipe run with the system's python3, not the skill's
+    raise SystemExit(f"{e.name} is missing: the pipeline's modules are in ~/.chrishkai-video/venv. "
+                     "Run recipes with `FILM=<film> node <skill>/engine/run.mjs recipes`, "
+                     "or with ~/.chrishkai-video/venv/bin/python") from e
 
 
 def hsv(img):

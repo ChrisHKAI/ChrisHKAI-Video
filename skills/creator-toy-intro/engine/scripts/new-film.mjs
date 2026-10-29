@@ -52,6 +52,8 @@ const film = {
   publish,
   ...(link ? { source: Object.fromEntries(Object.entries({ link: link.url, platform: link.platform, handle: link.handle, id: link.id, short: link.short || undefined }).filter(([, v]) => v !== undefined)) } : {}),
   step: "research",
+  // the toy, built in step 3 (references/toy.md)
+  toy: "toy.json",
   // the profile picture that peels: the creator's own, cut to the app's circle (references/avatar.md)
   recipes: ["@avatar"],
   // the effects over a quiet bed of long chords ("song": the template's full arrangement)

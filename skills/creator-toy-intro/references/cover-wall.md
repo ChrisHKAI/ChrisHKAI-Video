@@ -1,9 +1,17 @@
 # The cover walls
 
-The two proof posts' covers stand up as walls and come apart: their words,
-numbers and pictures push out as 3D pieces. Every cover is different, so
-you write a recipe for each one: a short Python script that cuts that
-cover into pieces. This is the craft of the film; take the time.
+A post's cover can stand up as a wall and come apart: its words, numbers
+and pictures push out as 3D pieces (act 2, the post whose number rises;
+act 3, a cover the toy climbs). Every cover is different, so you write a
+recipe for each one: a short Python script that cuts that cover into
+pieces. This is the craft of the film; take the time.
+
+A wall is for a cover with big lettering: headlines, numbers, claims.
+Lettering under about 20 mm on the wall (a line of small text, a caption)
+smears as it pushes out and doubles the print under it (check warns): leave
+it printed. An illustration, a photo or a screenshot of small text makes a
+poor wall; it becomes another animation (beats/catalog.json, or one written
+for it: references/beats.md).
 
 Worked example: `example/isnail/recipes/cover-pinned.py` (act 2) and
 `cover-retro.py` (act 3), on `engine/lib/cutlib.py`.
@@ -17,7 +25,10 @@ Worked example: `example/isnail/recipes/cover-pinned.py` (act 2) and
    .93) & sat > .45`, `DARK = val < .33`, `LIGHT = val > .8 & sat < .25`.
    Pick thresholds by sampling the cover's own colours.
 3. Cuts pieces, each `{ name, kind, rings }` with rings in cover UV
-   (0..1, v down):
+   (0..1, v down). To see what is there first, `engine/scripts/regions.py
+   <film> assets/<cover>` numbers the cover's colour blocks and lines of
+   lettering on a picture (`build/regions-<cover>.png`, and their outlines
+   in `.json`): pick pieces by number instead of guessing pixels.
    - a box: a hand-placed face (four or more corners, clockwise from top
      left), pushed out as one solid: `uv(points, W, H)`;
    - ink: a colour mask inside a region, traced: `rings(mask & region(...),
@@ -61,11 +72,13 @@ for the roles in film.json `story.wall`:
 | `box7` | the third: punches out at 18.5 s; the toy points at it from the second (`aim`: wall mm, else the middle of its face) | the biggest number, the payoff |
 | `arrow` | an accent at 19.0 s | an arrow, a mark, an underline |
 
-Each role is `{ "piece": "<name in cover.json>", "depth": mm, … }`. A
-cover with fewer elements still needs all six: make them from what is
-there (a caption strip as the ledge, a subject cut out of a photo as a
-proof, a word of the title as the arrow). The words on a box come with it
-as its ink piece.
+Each role is `{ "piece": "<name in cover.json>", "depth": mm, … }`. Wall mm
+are measured from the middle of the wall's bottom edge, x to the right and y
+up; `at` (where the toy stands on a piece) defaults to the middle of that
+piece. The climb needs the ledge and the three boxes; a cover without three
+claims to climb is not an act-3 cover: give its point another animation, or
+write the climb this cover wants as a beat (references/beats.md). The words
+on a box come with it as its ink piece (`"of"`: the box's piece).
 
 The toy leaves at the end of act 3 by becoming the drawing of itself on
 this cover when there is one (`references/exits.md`).

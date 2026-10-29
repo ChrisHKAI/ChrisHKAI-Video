@@ -68,42 +68,8 @@ export function cameraFrom(keys, { fov, aspect, shakes = [] }) {
   return makeCamera({ shots: [{ start: -Infinity, keys: ks, target: (k) => k.target }], fov, shakes, aspect });
 }
 
-// a number as the platform writes it: thousands separators, decimals, a unit after it
-// (10,000 · 1.5万 · 380+)
-export function formatCount(v, { decimals = 0, sep = ",", unit = "" } = {}) {
-  const [i, d] = Math.abs(v).toFixed(decimals).split(".");
-  return (v < 0 ? "-" : "") + (sep ? i.replace(/\B(?=(\d{3})+(?!\d))/g, sep) : i) + (d ? `.${d}` : "") + unit;
-}
-
-// text that changes as something counts, as 3D lettering: every place from the
-// right holds one object per character it shows on the way (only one shows at a
-// time, so a change never smears). fmt(v) is the text for v; it is sampled
-// `steps` times from `from` to `to` to learn each place's characters. Right-
-// aligned on x = 0 of the group it is put in; em its size (m).
-export function readout({ fmt, from, to, em, adv, key = (c) => `heavy:${c}`, steps = 400 }) {
-  const places = [];
-  for (let i = 0; i <= steps; i++) [...fmt(from + ((to - from) * i) / steps)].reverse().forEach((c, k) => (places[k] ??= new Set()).add(c));
-  [...fmt(to)].reverse().forEach((c, k) => (places[k] ??= new Set()).add(c));
-  // a place that shows a digit may show any of them on the way
-  for (const set of places) if ([...set].some((c) => /\d/.test(c))) for (const d of "0123456789") set.add(d);
-  const id = (k, c) => `n${k}_${c.codePointAt(0)}`;
-  return {
-    // the objects to declare: { name, key (the glyph), c }
-    names: places.flatMap((set, k) => [...set].map((c) => ({ name: id(k, c), key: key(c), c }))),
-    width: (v) => [...fmt(v)].reduce((w, c) => w + adv(key(c)) * em, 0),
-    // every object's transform for v, in the group's frame
-    at(v, group) {
-      const out = {};
-      places.forEach((set, k) => set.forEach((c) => (out[id(k, c)] = mulT(group, trs([0, 0, 0], qId(), HIDDEN)))));
-      let x = 0;
-      [...fmt(v)].reverse().forEach((c, k) => {
-        x -= adv(key(c)) * em;
-        if (out[id(k, c)]) out[id(k, c)] = mulT(group, trs([x, 0, 0]));
-      });
-      return out;
-    },
-  };
-}
+// a number as the platform writes it, and text that changes as it counts (engine/lib/counter.js)
+export { formatCount, readout } from "./counter.js";
 
 // one confetti flake bursting from p0 (world) at t0: { tr, color } at g
 export function confetti(i, g, t0, p0, colors, rand) {

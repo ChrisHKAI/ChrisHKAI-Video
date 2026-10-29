@@ -261,6 +261,10 @@ def pose(p):
 REST = {"armR": (0, 0, -0.12), "armL": (0, 0, 0.12)}
 POINT = {"point": True, "armR": (-1.25, 0, -0.75), "armL": (0.1, 0, 0.35), "head": (0.06, -0.12, 0.05), "legR": (0.25, 0, 0), "legL": (-0.2, 0, 0)}
 CHEER = {"armR": (0, 0, -2.4), "armL": (0, 0, 2.4), "head": (-0.08, 0, 0), "ears": (0, 0, 0.12)}
+if "armR" not in J and "armL" not in J and "body" in J:
+    # a toy with no arms (a fruit, a logo, a ball) points and cheers with its whole body
+    POINT["body"] = (0.18, 0, -0.22)
+    CHEER["body"] = (-0.14, 0, 0)
 if "--avatar" in argv:
     # the flat profile picture: flat colours and an inked outline (inverted hull)
     scene.render.film_transparent = True

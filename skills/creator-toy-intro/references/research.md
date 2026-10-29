@@ -1,11 +1,16 @@
 # Step 2: research
 
-Find the creator's profile, pinned post and three to five best posts, with
-every number exactly as the page writes it and the spot where it sits; keep
-the pictures as originals; then show a material table and let the user pick.
-Two questions only: which picture the toy is made from (as soon as the
-profile picture is in), and the picks. Never ask who the film is for or
-whether a number is true: use the numbers the user gives as they are.
+Find out who the creator is: what they are known for and proud of, with
+the material that shows it (their posts, pictures, numbers, their own
+words). Every number exactly as the platform writes it, current, with where
+and when it was read; the pictures as originals. Then show the user the
+story page and let them pick. Two questions only: which picture the toy is
+made from (as soon as the profile picture is in), and the picks. Never ask
+who the film is for or whether a number is true: use the numbers the user
+gives as they are.
+
+The film is their story turned into animation, not a template filled in.
+Pick material for what it says about them, never for the slot it fits.
 
 ## Where to look
 
@@ -27,15 +32,25 @@ Read only, always: never like, follow, comment or message.
   - the milestones they posted about, with dates and numbers;
   - ideas for the film.
   These are leads: open each post on the page and take its numbers from
-  there, as the page writes them. Grok's milestones and ideas become rows
-  of the material table (`ideas`, below).
+  there, as the page writes them. Grok's milestones and ideas become story
+  points (`story`, below).
 - 抖音, 小红书, Instagram: the profile page in the logged-in browser.
 - 视频号, 公众号 counts: desktop WeChat through computer use, where the agent
   has it; otherwise the user's screenshots.
 - YouTube, B站: public pages.
 - A share link (`v.douyin.com`, `xhslink.com`): open it to reach the profile.
-- No browser tool at all: ask once for screenshots of the profile and the
-  best posts, and read everything from them.
+- A browser that is not logged in: X hides the counts behind a login wall
+  and shows only a few posts. Ask the user to log in in that browser
+  themselves (never type a password), or to send screenshots.
+- No browser to use (or the user is away): the public sources, read only:
+  - X: `https://api.fxtwitter.com/<handle>` (the profile and its counts)
+    and `https://api.fxtwitter.com/<handle>/status/<id>` (a post, its
+    numbers, its media);
+  - GitHub: `https://api.github.com/repos/<owner>/<repo>` (stars, forks,
+    when it was made), `…/stargazers` with `Accept:
+    application/vnd.github.star+json` for when the stars came;
+  - YouTube, B站: their public pages.
+  Ask once for screenshots of what none of these reaches.
 
 The user may add screenshots of their own any time (total plays, follower
 growth from the app's dashboard). A number with no spot on the profile page
@@ -56,11 +71,15 @@ goes to `extra`; in the film it rises from the name at the top.
   media: `?name=orig`), in `assets/`.
 - Screenshots of the profile and each post in `research/shots/` (on a Mac
   `screencapture -x -R x,y,w,h <file>`, or the browser tool where it saves
-  files). They are for the material table only and never go into the film:
+  files). They are for the story page only and never go into the film:
   the page is rebuilt by the theme, the pictures are the originals.
 - Each number: the platform's own writing (`304万`, `1.1萬`, `46K`, `5,018`),
   its label as the app says it (阅读, 粉丝, 获赞), and its spot: a profile field
-  or a post's count.
+  or a post's count. It counts up in the film just as it is written.
+- Numbers are today's: read them from the page or the API now, never from
+  an old post that mentions them ("破 3K star" is a milestone, not the count;
+  the repo has 8,904 today). Each number keeps `source` (the URL it was read
+  from) and `read` (the date).
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.
 
 `research/` stays out of any git repository.
@@ -74,7 +93,7 @@ goes to `extra`; in the film it rises from the name at the top.
     "name": "蜗牛King", "handle": "isnail", "bio": ["…", "…"],
     "avatar": "assets/avatar.jpg", "banner": "assets/banner.jpg", "shot": "research/shots/profile.png",
     "fields": { "nameEmoji": "👑", "verified": true, "meta": { "link": "chuhai.pet" }, "ip": "广东" },
-    "numbers": { "followers": { "label": "关注者", "display": "5.5万" }, "following": { "label": "正在关注", "display": "1,380" }, "posts": { "label": "帖子", "display": "3.5万" } }
+    "numbers": { "followers": { "label": "关注者", "display": "5.5万", "source": "https://x.com/isnail", "read": "2026-10-26" }, "following": { "label": "正在关注", "display": "1,380" }, "posts": { "label": "帖子", "display": "3.5万" } }
   },
   "posts": [
     { "id": "p1", "url": "…", "date": "5月31日", "title": "…", "cover": "assets/p1.jpg", "shot": "research/shots/p1.png", "pinned": true,
@@ -82,8 +101,8 @@ goes to `extra`; in the film it rises from the name at the top.
   ],
   "toy": { "images": ["assets/avatar.jpg"], "confirmed": true },
   "extra": [{ "label": "总播放", "display": "1200万", "source": "research/shots/dashboard.png" }],
-  "ideas": [{ "text": "7月10日到10月24日，由 0 做到一万粉", "becomes": [{ "anim": "calendar", "why": "…" }] }],
-  "slots": { "proof1": [], "proof2": [], "cta": [] },
+  "story": [{ "id": "s1", "line": "…", "posts": ["p1"], "numbers": [], "becomes": [] }],
+  "slots": { "cta": [] },
   "picks": {}
 }
 ```
@@ -96,67 +115,88 @@ theme: `ip`, `title`, `category`, `tags`, `collections`, `highlights`,
 `posts`). A post's numbers are keyed `replies`, `reposts`, `likes`, `views`
 (plays count as `views`).
 
-## Candidates and the material table
+## The story first
 
-For each slot of the 30 s story, three candidates, best first, each with its
-post, number and one line of why:
+Before any animation, write down what the creator is known for and proud
+of: three to five story points in `story`, each a thing a viewer should
+learn about them. Look in:
+- their bio and pinned post: what they say they do;
+- their most-viewed and most-discussed posts: what people come for;
+- milestones they posted about (a number reached, a date, a first);
+- what they made: a project, a product, a style, a channel;
+- a role or a title, a turn in their path, a line they are known for;
+- Grok's milestones and ideas, and the user's own words.
 
-- `proof1`, the post whose number rises from its spot on the page: the
-  biggest number, a pinned post if it has one. `{ "post": "p1", "number":
-  "views", "why": "…" }`. The counter counts whole digits with a unit after
-  them and a two-character label (`304万 阅读`); `1.1万` or a bare `5,018` will
-  not count up yet.
-- `proof2`, the post whose cover stands up as a wall and comes apart: a
-  cover with big lettering or numbers on it works best. `{ "post": "p2",
-  "why": "…" }`.
-- `cta`, what the film ends on: the closing line in one or two short parts
-  and the end card's prop, together. First work out what the creator wants
-  people to come for (a course, a group, a product, a service, a link: their
-  bio, pinned post and links say); each candidate pairs a line with a prop
-  that ties that to who they are, the way isnail's 公众号 mark becomes the
-  shell of a snail because he is 蜗牛King: `{ "slogan": ["公众号变现",
-  "找蜗牛"], "prop": "his 公众号 mark becomes a snail's shell; the toy rides it",
-  "why": "…" }`. The question asks what they want to promote as much as
-  which line: "other" lets them say it in their own words.
+Each story point:
 
-### Material → animation
+```json
+{ "id": "s1", "line": "一个月 8,904 颗 star", "says": "lemo-opuscar, a month old",
+  "posts": ["p3"], "material": ["assets/p3.jpg"],
+  "numbers": [{ "display": "8,904", "label": "star", "source": "https://api.github.com/repos/…", "read": "2026-10-28" }],
+  "becomes": [{ "anim": "calendar", "why": "9月26日 → 10月28日, the stars counting up beside it",
+                "opts": { "from": "2026-09-26", "to": "2026-10-28", "count": { "to": 8904, "label": "star" }, "stamp": "满月" } },
+              { "anim": "count", "opts": { "to": 8904, "label": "star" } }] }
+```
 
-The film is the creator's material turned into animation, so say what each
-piece becomes. `beats/catalog.json` lists every animation the skill has:
-- what it fits, in the user's words;
-- what it needs;
-- a film that used it;
-- how it goes into film.json.
+`line` is what the viewer takes away, in the creator's language; `becomes`
+is one or two animations from `beats/catalog.json`, the best first, with the
+options it needs (`opts`, as the catalog's `film` entry writes them), and why
+in one line, as the user would see it on screen. Fit the animation to the
+material, not the other way round:
+- a number on a post → `act2` (it rises from its spot on the page), or
+  `count` on its own stage;
+- a span of days → `calendar`;
+- their own words → `phrase`;
+- a cover with big lettering and claims to climb → `act3`. Not for an
+  illustration, a photo or small text: those smear as 3D lettering;
+- anything none of these shows well (their illustrations, a product, a page
+  to scroll through, a before and after) → `"anim": "own"`: an animation
+  written for this film (references/beats.md, "A beat of your own"). Say
+  what it will look like in `why`.
 
-Give each post a `becomes` list: `[{ "anim": "act3", "why": "its cover's big
-words push out into the wall" }]`. Put each idea with no picture in
-`ideas`, with its own `becomes`. Ideas come from three places:
-- the user's own words;
-- Grok's ideas and milestones;
-- a date span, a number reached, a line they wrote.
+Also in facts.json: `slots.cta`, two or three endings, each the closing line
+in one or two short parts and the end card's prop, together. First work out
+what the creator wants people to come for (a course, a group, a product, a
+service, a link: their bio, pinned post and links say); each pairs a line
+with a prop that ties that to who they are, the way isnail's 公众号 mark
+becomes the shell of a snail because he is 蜗牛King: `{ "slogan":
+["公众号变现", "找蜗牛"], "prop": "his 公众号 mark becomes a snail's shell; the
+toy rides it", "why": "…" }`.
 
-An idea is material too: "7月10日 → 10月24日, 10,000 关注者" became the
-calendar beat. Name one or two animations each, the best first. Say why in
-one line, as the user would see it on screen.
+## The story page
 
-Then `node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
-language>` writes `research/materials.png` (and `.html`). Below the slots it
-shows each material with what it becomes, then the whole menu of
-animations, so the user can ask for another. Show it, and ask
-in one round: one question per slot, A / B / C and "other" (AskUserQuestion
-where the agent has it, else one message). Write the answers into `picks`
-(the chosen candidate objects, or the user's own words in the same shape).
-If they name something to promote that no candidate covers, propose two or
-three props for it in a follow-up message before going on.
+`node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
+language>` writes `research/materials.png` (the three choices: the story
+points, each with its picture, numbers, sources and a preview strip of what
+it becomes; the three openings with their previews; the endings) and
+`research/materials-posts.png` (every post found, and the menu of
+animations), and `research/materials.html` with both. Show the first, and
+ask in one round (AskUserQuestion where the agent has it, else one message):
+- which story points, in what order (two or three; a 30 s film holds three);
+- which opening (isnail's glass page, Kin's page turning right, 铁柱's
+  turning left);
+- which ending, or their own words.
+Write the answers into `picks`: `{ "story": ["s2", { "id": "s1", "anim":
+"count" }], "opening": "page-stand", "cta": { "slogan": […], "prop": "…" } }`
+(a story point by its id takes its first animation; `{ id, anim }` another).
+If they name something no story point covers, add it as one, with what it
+becomes, and show it again.
+
+When the user is away (an unattended run), pick as they would: the story
+points that say most about who the creator is, an opening and an ending
+the earlier films did not use (`run.mjs ledger` lists them), and say so in
+the hand-over.
 
 ## Into film.json
 
-`node <skill>/engine/scripts/apply-research.mjs <film>` fills `profile`,
-`posts` (`pinned` = proof 1, `retro` = proof 2), `counter`, `grid` (the other
-posts), the end card's name, handle, slogan and prop idea (`cta.prop.idea`,
-built in step 4: `references/props.md`), `toyFrom` (the confirmed
-pictures), and moves `step` to `toy`. It stops while the toy's picture is
-not confirmed.
-It warns when proof 1's number cannot be the counter: pick another, or
-change its label. Set film.json `language` from the profile's own script
-(简 → `zh-Hans`, 繁 → `zh-Hant`).
+`node <skill>/engine/scripts/apply-research.mjs <film>` turns the picks
+into the film: `story.segments` (the opening, each picked story point's
+animation in order, the end card, timed so every hit stays on a downbeat),
+`profile`, `posts` (the two the page shows: the one whose number rises, and
+the next), `counter` (that number as the platform writes it), `grid` (the
+other posts), the end card's name, handle, slogan and prop idea
+(`cta.prop.idea`, built in step 4: `references/props.md`), `toyFrom` (the
+confirmed pictures), and moves `step` to `toy`. It stops while the toy's
+picture is not confirmed, and names each `own` animation still to write.
+Set film.json `language` from the profile's own script (简 → `zh-Hans`, 繁 →
+`zh-Hant`).

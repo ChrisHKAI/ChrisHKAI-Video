@@ -8,12 +8,13 @@ Their profile picture peels off the page and puffs into a toy of them; their bes
 
 <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films"><img alt="Watch the films" src="https://img.shields.io/badge/-%E2%96%B6%20Watch%20the%20films-D7263D?style=for-the-badge"></a> <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-555?style=for-the-badge"></a> <a href="#help-test-it"><img alt="Testers wanted" src="https://img.shields.io/badge/status-testers%20wanted-8A2BE2?style=for-the-badge"></a> <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ChrisHKAI/ChrisHKAI-Video?style=for-the-badge&color=F5B700&label=stars"></a> <a href="#licence"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-2EA44F?style=for-the-badge"></a>
 
-⚠️ **Built for Claude.** The skill is tuned for Claude Opus 5.5 at xhigh effort;<br>
-other models and agents are untested, so use them with care.
+⚠️ **Built for Claude.** Testers ran it with Claude Opus 5.5 and Sonnet 5.5 at high effort; xhigh does better.<br>
+Other models and agents are untested, so use them with care.
 
+🆕 **2026-10-29 · Your story first**: three testers' films taught us a lot. The film now starts from what the creator is known for, the toy keeps the body its picture has (a lemon gets no arms), you pick one of three openings, and a check says what will break before Blender starts. [See how ↓](#what-happens)<br>
 🧪 **2026-10-28 · Open for testing**: the first film for a real creator is done and approved. Now I'd like to see it run on your computer. [How to help ↓](#help-test-it)<br>
 🆕 **2026-10-28 · Sound by ear**: hear six sounds under the animatic and pick one, put the creator's own song on the film's beat, or play it on real sampled instruments. [See how ↓](#the-sound)<br>
-🆕 **2026-10-28 · Material first**: with Grok Build it searches X for the creator's best posts and milestones, then shows a table of material → animation to pick from. [See how ↓](#what-happens)
+
 
 <sub>Official repo: [github.com/ChrisHKAI/ChrisHKAI-Video](https://github.com/ChrisHKAI/ChrisHKAI-Video) · by Chris ([@ChrisHKAI](https://x.com/ChrisHKAI))</sub>
 
@@ -57,7 +58,15 @@ Two ways in; the plugin is the easiest.
 In your terminal:
 
 ```sh
-claude plugin marketplace add ChrisHKAI/ChrisHKAI-Video
+claude plugin marketplace add https://github.com/ChrisHKAI/ChrisHKAI-Video.git
+claude plugin install chrishkai-video@chrishkai-video
+```
+
+The full `https://` address needs no SSH key; the download is about 2 MB. If it still fails (a slow or blocked connection to GitHub), download it yourself and add the folder:
+
+```sh
+git clone --depth 1 https://github.com/ChrisHKAI/ChrisHKAI-Video.git
+claude plugin marketplace add ./ChrisHKAI-Video
 claude plugin install chrishkai-video@chrishkai-video
 ```
 
@@ -97,16 +106,19 @@ Six steps, and each ends on something you look at.
 |---|---|---|
 | **0 · the computer** | checks Blender, Node, Python, ffmpeg and Chrome; one yes installs what is missing | the install list, if anything is missing |
 | **1 · your link** | reads the link and opens the film's workspace | 16:9 or 9:16 |
-| **2 · research** | the profile, the pinned and best posts, the numbers; with Grok Build it also searches X | which picture the toy is made from, and a table of material → animation to pick from |
-| **3 · the toy** | builds the toy in one of three kits: a part list, a pet, a sculpt | a turnaround to approve |
-| **4 · the storyboard** | the story, the length, the beat grid, real preview renders | the storyboard page: leave notes on the frames, hear the sounds, sign off |
-| **5 · the render** | the film, an effects-only cut, covers for each platform, a last look | the finished film |
+| **2 · their story** | what the creator is known for and proud of, each with its pictures, its numbers (today's, with where they were read) and the animation it becomes; with Grok Build it also searches X | which picture the toy is made from; then one page: pick two or three story points, one of three openings, the ending, each with a preview |
+| **3 · the toy** | builds the toy with the body its picture has (a person, an animal, an object) in one of three kits: a part list, a pet, a sculpt | a turnaround to approve, its colours already checked on the dark stage |
+| **4 · the storyboard** | the film's pieces in the order you picked, the beat grid, real preview renders, every sound under the animatic | the storyboard page: leave notes on the frames, pick the sound, sign off |
+| **5 · the render** | a quick half-size version if you like, then the film, an effects-only cut, covers for each platform, a last look | the finished film |
+
+Nothing is a template filled in: when your material wants an animation the skill doesn't have yet (your illustrations as a little 3D world, a page scrolling past), the agent writes it for your film.
 
 Before you sign off, the storyboard page checks the film for you:
 
-- **Pace**: quiet stretches, the toy left alone too long, the first three seconds, and whether every line stays up long enough to read.
+- **Pace**: quiet stretches, the toy left alone too long or too small to see, the first three seconds, and whether every line stays up long enough to read.
+- **It won't break**: `check` reads everything before Blender starts and says what is wrong in plain words; the full render waits until the page is clean and you have signed off.
 - **Colour**: every word must read on the dark stage; the palette comes from the creator's own pictures.
-- **Not the last film again**: each film you deliver is kept in a ledger, and a new one must differ from every one of them in at least four of six things (the opening, the structure, the signature move, the colours, the sound, the ending).
+- **Not the last film again**: each film you deliver is kept in a ledger, with the skill's own films in it from the start, and a new one must differ from every one of them in at least four of six things (the opening, the structure, the signature move, the colours, the sound, the ending).
 - **A second opinion**: a fresh reviewer reads the brief and the frames. Where it disagrees, you get its view as one more option, not a rule.
 
 ### The sound
@@ -126,7 +138,7 @@ You pick the sound by ear: `run.mjs listen` lays each one under the animatic.
 
 ### Before you start
 
-- **It takes a while, and a lot of tokens.** A film is hours of work, not minutes: research, a toy, a storyboard you sign off, then a Cycles render that runs for an hour or more in the background. Effort stays at xhigh.
+- **It takes a while, and a lot of tokens.** A film is hours of work, not minutes: research, a toy, a storyboard you sign off, then a Cycles render that runs for an hour or more in the background (about 1.5 h on an M4 Pro or M5). High effort works; xhigh does better.
 - **Tested on a Mac with Apple silicon**, in Claude Code with Claude Opus 5.5. Windows and Linux are not tested yet; Intel Macs can't run Blender 5.2.
 - **You need** Blender 5.2+, Node 22+, Python 3.9+, ffmpeg and headless Chrome. The skill checks them and installs what is missing on your yes; anything that needs your password, you paste into Terminal yourself. If `node` itself is missing, install Node 22 first.
 - About **10 GB free** for each film, and a **GPU**: without one, Cycles takes hours.
@@ -166,6 +178,9 @@ Tested so far:
 | agent | model | effort | computer | result |
 |---|---|---|---|---|
 | Claude Code | Claude Opus 5.5 | xhigh | Mac, Apple silicon | [铁柱AGI's 42 s film](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4), approved |
+| Claude Code | Claude Opus 5.5 | high | M4 Pro | a 32 s film, unattended, in about 2.5 h; the review found act 3 long and still |
+| Claude Code | Claude Sonnet 5.5 | high | M4 Pro | a 32 s film, unattended, in about 1.5 h; one number from an old post (fixed) |
+| Claude Code | Claude Opus 5.5 + Haiku | high | M5 | a 30 s film; six crashes on the way and a weak film: all fixed since, and the lessons below |
 
 ## The films
 
@@ -173,7 +188,7 @@ Every film made before and alongside the skill. Click a frame to watch; each fil
 
 <table><tr>
 <td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4"><img src="docs/cgnot996-intro.jpg" alt="铁柱AGI's toy beside 1,500 gold stars"></a><br><b>▶ 铁柱AGI</b> · @cgnot996 · 0:42<br><sub>The first film the skill made for a real creator: a flip calendar to 10,000 followers, 1,500 stars for his Grok App, a 官方认证 seal.</sub></td>
-<td width="50%" valign="top"><a href="examples/tim-intro/"><img src="docs/tim-intro-steve.jpg" alt="Steve Jobs as a vinyl toy on the 2007 keynote stage"></a><br><b>Steve</b> · from the Tim film<br><sub>Steve Jobs as a vinyl toy on the 2007 keynote stage, beside Tim's toy. The film (2:23) is not published: it carries keynote footage and a song that belong to others. Click for its code.</sub></td>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/tim-intro"><img src="docs/tim-intro-steve.jpg" alt="Steve Jobs as a vinyl toy on the 2007 keynote stage"></a><br><b>Steve</b> · from the Tim film<br><sub>Steve Jobs as a vinyl toy on the 2007 keynote stage, beside Tim's toy. The film (2:23) is not published: it carries keynote footage and a song that belong to others. Click for its code.</sub></td>
 </tr><tr>
 <td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/isnail-intro.mp4"><img src="docs/isnail-endcard.jpg" alt="蜗牛King's end card: his mascot rides a snail"></a><br><b>▶ 蜗牛King</b> · the end card<br><sub>His mascot rides a snail grown out of the 公众号 mark, while torn-paper labels slap down: 公众号变现 | 找蜗牛.</sub></td>
 <td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4"><img src="docs/chris-outro.jpg" alt="Chris HKAI in white 3D letters, with the Chris toy"></a><br><b>▶ Chris HKAI</b> · 0:23<br><sub>An end tag: me as my own sculpted vinyl toy.</sub></td>

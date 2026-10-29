@@ -1,9 +1,12 @@
 # The films
 
 Every film made before and alongside the skill, as it was made: its brief,
-its code and its pictures, to learn from; the finished films are on the
-repository's Releases page (tag `films`), kept out of the repository so
-installing the skill stays light. Each folder is
+its code and its pictures, to learn from. They live on the repository's
+[`examples` branch](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples)
+and the finished films on its Releases page (tag `films`), both kept off
+`main` so installing the skill downloads about 2 MB instead of 70
+(`git clone -b examples https://github.com/ChrisHKAI/ChrisHKAI-Video.git`
+for all of them). Each folder is
 the film's own project from `videos/<film>/` of the workspace it was made
 in, so paths inside it (`reference/…`, `characters/chris-toy/…`,
 `videos/<other film>/`) point at that workspace; generated folders
@@ -11,15 +14,15 @@ in, so paths inside it (`reference/…`, `characters/chris-toy/…`,
 
 | film | what it is | how it was made | finished |
 | --- | --- | --- | --- |
-| [isnail-intro](isnail-intro/) | 30 s self-intro for 蜗牛King (@isnail): his avatar peels off and pops into his vinyl mascot, his posts stand up as walls, 304万 rises | Node + Blender Cycles; the film `creator-toy-intro` was extracted from | [isnail-intro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/isnail-intro.mp4) |
-| [kingao-intro](kingao-intro/) | 30 s intro for Kin (@KinGao476942), starring his calico cat as a vinyl toy | Node + Blender Cycles; the pet kit's source | [kingao-intro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/kingao-intro.mp4) |
-| [cgnot996-intro](cgnot996-intro/) | 42 s self-intro for 铁柱AGI (@cgnot996), the first film the skill made for a real creator: a flip calendar to 10,000 followers, 1,500 stars, a 官方认证 seal | `creator-toy-intro` (sculpt kit) with the film's own template | [cgnot996-intro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4) |
-| [tim-intro](tim-intro/) | 142.9 s film about Tim (影视飓风): 500 folds and Steve Jobs on the 2007 keynote stage | Node + Blender Cycles; the Tim line of toys | not published (see below) |
-| [chris-outro](chris-outro/) | 23.5 s end tag: Chris (@ChrisHKAI) as his own vinyl toy | Blender Cycles; the sculpted Chris toy | [chris-outro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4) |
-| [chris-toy](chris-toy/) | the Chris toy itself: Blender assembly, look-dev, expressions, sheets | Python signed distance fields + Blender; the sculpt kit's source | `build/chris-toy-turntable.mp4` |
-| [merge-conflict](merge-conflict/) | 19.2 s voxel fight: Clawd vs a DeepSeek whale in a code editor | Node + Blender Cycles | [merge-conflict.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/merge-conflict.mp4) |
-| [made-with-claude](made-with-claude/) | 12 s: "Claude can drive After Effects by itself" | HyperFrames (HTML) | — |
-| [made-with-deepseek](made-with-deepseek/) | the same film made with DeepSeek | HyperFrames (HTML) | [made-with-deepseek.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/made-with-deepseek.mp4) |
+| [isnail-intro](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/isnail-intro) | 30 s self-intro for 蜗牛King (@isnail): his avatar peels off and pops into his vinyl mascot, his posts stand up as walls, 304万 rises | Node + Blender Cycles; the film `creator-toy-intro` was extracted from | [isnail-intro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/isnail-intro.mp4) |
+| [kingao-intro](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/kingao-intro) | 30 s intro for Kin (@KinGao476942), starring his calico cat as a vinyl toy | Node + Blender Cycles; the pet kit's source | [kingao-intro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/kingao-intro.mp4) |
+| [cgnot996-intro](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/cgnot996-intro) | 42 s self-intro for 铁柱AGI (@cgnot996), the first film the skill made for a real creator: a flip calendar to 10,000 followers, 1,500 stars, a 官方认证 seal | `creator-toy-intro` (sculpt kit) with the film's own template | [cgnot996-intro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4) |
+| [tim-intro](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/tim-intro) | 142.9 s film about Tim (影视飓风): 500 folds and Steve Jobs on the 2007 keynote stage | Node + Blender Cycles; the Tim line of toys | not published (see below) |
+| [chris-outro](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/chris-outro) | 23.5 s end tag: Chris (@ChrisHKAI) as his own vinyl toy | Blender Cycles; the sculpted Chris toy | [chris-outro.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4) |
+| [chris-toy](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/chris-toy) | the Chris toy itself: Blender assembly, look-dev, expressions, sheets | Python signed distance fields + Blender; the sculpt kit's source | `build/chris-toy-turntable.mp4` |
+| [merge-conflict](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/merge-conflict) | 19.2 s voxel fight: Clawd vs a DeepSeek whale in a code editor | Node + Blender Cycles | [merge-conflict.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/merge-conflict.mp4) |
+| [made-with-claude](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/made-with-claude) | 12 s: "Claude can drive After Effects by itself" | HyperFrames (HTML) | — |
+| [made-with-deepseek](https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/made-with-deepseek) | the same film made with DeepSeek | HyperFrames (HTML) | [made-with-deepseek.mp4](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/made-with-deepseek.mp4) |
 
 The sound in every film is synthesized by its own `scripts/sound.py` (or
 `score.py`), so `assets/audio/score.wav` is the film's own.

@@ -8,12 +8,12 @@
 
 <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films"><img alt="看成片" src="https://img.shields.io/badge/-%E2%96%B6%20%E7%9C%8B%E6%88%90%E7%89%87-D7263D?style=for-the-badge"></a> <a href="README.md"><img alt="English" src="https://img.shields.io/badge/README-English-555?style=for-the-badge"></a> <a href="#帮忙测试"><img alt="招募测试" src="https://img.shields.io/badge/%E7%8A%B6%E6%80%81-%E6%8B%9B%E5%8B%9F%E6%B5%8B%E8%AF%95-8A2BE2?style=for-the-badge"></a> <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ChrisHKAI/ChrisHKAI-Video?style=for-the-badge&color=F5B700&label=stars"></a> <a href="#授权"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-2EA44F?style=for-the-badge"></a>
 
-⚠️ **为 Claude 而做。** 这个 Skill 按 Claude Opus 5.5（xhigh 思考强度）调校；<br>
+⚠️ **为 Claude 而做。** 测试者用 Claude Opus 5.5 和 Sonnet 5.5（high 思考强度）都跑通了，xhigh 效果更好；<br>
 其他模型和 agent 还没测过，请谨慎使用。
 
+🆕 **2026-10-29 · 先讲你的故事**：三位测试者的片教会了我们很多。现在片子从创作者最出名的事情出发；公仔照原图的身体来做（柠檬不会长手脚）；开场有三款可选；Blender 开工前先检查哪里会出错。[看看 ↓](#会发生什么)<br>
 🧪 **2026-10-28 · 开放测试**：第一条给真实创作者做的片已经完成、通过。现在想看看它在你的电脑上跑得怎样。[怎样帮忙 ↓](#帮忙测试)<br>
-🆕 **2026-10-28 · 用耳朵选声音**：六种声音铺在动态分镜下面听完再选；也可以用创作者自己的歌对上影片的节拍，或者用真实乐器采样来演奏。[看看 ↓](#声音)<br>
-🆕 **2026-10-28 · 素材先行**：装了 Grok Build，它会在 X 上搜创作者最好的帖子和里程碑，再列一张「素材 → 动画」表给你挑。[看看 ↓](#会发生什么)
+🆕 **2026-10-28 · 用耳朵选声音**：六种声音铺在动态分镜下面听完再选；也可以用创作者自己的歌对上影片的节拍，或者用真实乐器采样来演奏。[看看 ↓](#声音)
 
 <sub>官方仓库：[github.com/ChrisHKAI/ChrisHKAI-Video](https://github.com/ChrisHKAI/ChrisHKAI-Video) · 作者 Chris（[@ChrisHKAI](https://x.com/ChrisHKAI)）</sub>
 
@@ -57,7 +57,15 @@
 在终端里：
 
 ```sh
-claude plugin marketplace add ChrisHKAI/ChrisHKAI-Video
+claude plugin marketplace add https://github.com/ChrisHKAI/ChrisHKAI-Video.git
+claude plugin install chrishkai-video@chrishkai-video
+```
+
+完整的 `https://` 地址不需要 SSH key，下载约 2 MB。如果还是失败（连 GitHub 很慢或者连不上），就自己先下载，再加入那个文件夹：
+
+```sh
+git clone --depth 1 https://github.com/ChrisHKAI/ChrisHKAI-Video.git
+claude plugin marketplace add ./ChrisHKAI-Video
 claude plugin install chrishkai-video@chrishkai-video
 ```
 
@@ -97,16 +105,19 @@ claude --plugin-dir ../ChrisHKAI-Video
 |---|---|---|
 | **0 · 电脑** | 检查 Blender、Node、Python、ffmpeg 和 Chrome；你说一次好，就装齐缺的 | 缺东西时的安装清单 |
 | **1 · 你的链接** | 读链接，开这条片的工作区 | 16:9 还是 9:16 |
-| **2 · 资料** | 主页、置顶和最好的帖子、数字；装了 Grok Build 还会搜 X | 公仔用哪张图做，以及一张「素材 → 动画」表给你挑 |
-| **3 · 公仔** | 用三种套件之一做公仔：零件表、宠物、雕塑 | 一张转身图给你确认 |
-| **4 · 分镜** | 故事、长度、节拍网格、真实的预览渲染 | 分镜页：在画面上留意见、听声音、签字确认 |
-| **5 · 渲染** | 成片、只有音效的版本、各平台封面、最后检查 | 成片 |
+| **2 · 他的故事** | 创作者最出名、最自豪的几件事，每件配上图片、数字（今天的数字，注明从哪里读到）和它会变成的动画；装了 Grok Build 还会搜 X | 公仔用哪张图做；然后一页选完：两三件故事、三款开场之一、收尾，每个选项都有预览图 |
+| **3 · 公仔** | 照原图的身体来做（人、动物、物件），用三种套件之一：零件表、宠物、雕塑 | 一张转身图给你确认，颜色已经在深色舞台上检查过 |
+| **4 · 分镜** | 按你选的顺序排好每一段、节拍网格、真实的预览渲染、每种声音铺在动态分镜下面 | 分镜页：在画面上留意见、选声音、签字确认 |
+| **5 · 渲染** | 想先看的话有半尺寸快速版，然后是成片、只有音效的版本、各平台封面、最后检查 | 成片 |
+
+片子不是套模板：你的素材需要 Skill 还没有的动画时（比如插画拼成一个立体小世界、网页慢慢滚过），agent 会为你的片专门写出来。
 
 你签字之前，分镜页会先帮你检查：
 
-- **节奏**：冷场、公仔独自站太久、头三秒，以及每行字停留的时间够不够读完。
+- **节奏**：冷场、公仔独自站太久或者小得看不见、头三秒，以及每行字停留的时间够不够读完。
+- **不会中途崩**：`check` 在 Blender 开工前读一遍所有设定，用白话讲哪里错；分镜页全部通过、你签字之后，才开始正式渲染。
 - **颜色**：每个字在深色舞台上都要看得清；配色取自创作者自己的图片。
-- **别又是上一条**：交付过的片都记在台账里，新片在六样东西（开场、结构、招牌动作、配色、声音、结尾）里至少要有四样和每一条都不同。
+- **别又是上一条**：交付过的片都记在台账里（Skill 自己的几条片一开始就在里面），新片在六样东西（开场、结构、招牌动作、配色、声音、结尾）里至少要有四样和每一条都不同。
 - **第二意见**：另找一个全新的评审看简报和画面。意见不同时，只当多一个选择给你，不是规定。
 
 ### 声音
@@ -126,7 +137,7 @@ claude --plugin-dir ../ChrisHKAI-Video
 
 ### 开始之前
 
-- **要花时间，也很耗 token。** 一条片要几个小时，不是几分钟：查资料、做公仔、签分镜，最后 Cycles 在后台渲染一个小时以上。思考强度保持 xhigh。
+- **要花时间，也很耗 token。** 一条片要几个小时，不是几分钟：查资料、做公仔、签分镜，最后 Cycles 在后台渲染一个小时以上（M4 Pro、M5 约 1.5 小时）。high 思考强度可以用，xhigh 更好。
 - **在 Apple 芯片的 Mac 上测过**，用的是 Claude Code 和 Claude Opus 5.5。Windows 和 Linux 还没测；Intel Mac 跑不了 Blender 5.2。
 - **需要** Blender 5.2+、Node 22+、Python 3.9+、ffmpeg 和无头 Chrome。Skill 会检查，你说好就装齐缺的；需要密码的那几样，由你自己贴进终端运行。如果连 `node` 都没有，先装 Node 22。
 - 每条片约 **10 GB 空间**，还要有 **GPU**：没有 GPU，Cycles 要渲染好几个小时。
@@ -166,6 +177,9 @@ claude plugin uninstall chrishkai-video@chrishkai-video
 | agent | 模型 | 强度 | 电脑 | 结果 |
 |---|---|---|---|---|
 | Claude Code | Claude Opus 5.5 | xhigh | Mac（Apple 芯片） | [铁柱AGI 的 42 秒片](https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4)，已通过 |
+| Claude Code | Claude Opus 5.5 | high | M4 Pro | 无人值守做出 32 秒片，约 2.5 小时；评审认为第三幕太长太静 |
+| Claude Code | Claude Sonnet 5.5 | high | M4 Pro | 无人值守做出 32 秒片，约 1.5 小时；一个数字用了旧帖的约数（已改） |
+| Claude Code | Claude Opus 5.5 + Haiku | high | M5 | 30 秒片；中途崩了六次，片子也不好看：问题都已修好，教训写进了下一版 |
 
 ## 全部作品
 
@@ -173,7 +187,7 @@ claude plugin uninstall chrishkai-video@chrishkai-video
 
 <table><tr>
 <td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/cgnot996-intro.mp4"><img src="docs/cgnot996-intro.jpg" alt="铁柱AGI 的公仔和 1,500 颗金色星星"></a><br><b>▶ 铁柱AGI</b> · @cgnot996 · 0:42<br><sub>Skill 给真实创作者做的第一条片：日历一路翻到万粉、Grok App 拿到 1,500 star、盖上「官方认证」章。</sub></td>
-<td width="50%" valign="top"><a href="examples/tim-intro/"><img src="docs/tim-intro-steve.jpg" alt="2007 年发布会舞台上的 Steve Jobs 搪胶公仔"></a><br><b>Steve</b> · 出自 Tim 那条片<br><sub>Steve Jobs 搪胶公仔站在 2007 年发布会舞台上，旁边是 Tim 的公仔。整条片（2:23）不公开：里面有属于别人的发布会画面和歌曲。点图看它的代码。</sub></td>
+<td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/tree/examples/examples/tim-intro"><img src="docs/tim-intro-steve.jpg" alt="2007 年发布会舞台上的 Steve Jobs 搪胶公仔"></a><br><b>Steve</b> · 出自 Tim 那条片<br><sub>Steve Jobs 搪胶公仔站在 2007 年发布会舞台上，旁边是 Tim 的公仔。整条片（2:23）不公开：里面有属于别人的发布会画面和歌曲。点图看它的代码。</sub></td>
 </tr><tr>
 <td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/isnail-intro.mp4"><img src="docs/isnail-endcard.jpg" alt="蜗牛King 的结尾卡：吉祥物骑着蜗牛"></a><br><b>▶ 蜗牛King</b> · 结尾卡<br><sub>吉祥物骑着从公众号标志长出来的蜗牛，撕纸标签一张张拍下来：公众号变现 | 找蜗牛。</sub></td>
 <td width="50%" valign="top"><a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/download/films/chris-outro.mp4"><img src="docs/chris-outro.jpg" alt="白色 3D 字 Chris HKAI 和 Chris 公仔"></a><br><b>▶ Chris HKAI</b> · 0:23<br><sub>片尾标识：我自己的雕塑搪胶公仔。</sub></td>

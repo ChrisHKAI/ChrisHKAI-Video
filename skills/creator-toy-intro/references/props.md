@@ -22,6 +22,17 @@ with the closing line). You build it here, as code, for this creator.
 | 25.90–27.90 | it travels along the floor path while the line slaps down letter by letter | `glide`, `letters` |
 | 28.00 | the toy points at the camera; name and handle slap up | `final`, `name` |
 
+## Ready-made, to fill in
+
+When no idea of the creator's own comes up, or to show one quickly, the
+built-in plinth takes the creator's colours and mark: film.json
+`cta.prop`: `{ "kind": "plinth", "shape": "round" | "square" | "star",
+"colors": { "plinth": "#…", "plinthTop": "#…" }, "logo": true }` (their mark
+from `build/logo.json`, cut by the `@shape` recipe, on its front; a star
+lies flat and the toy rides it). It drops in spinning on the cut, the toy
+lands on it and it glides along the line. A prop that says who they are
+(the snail) is still better: write it.
+
 ## Writing it
 
 A prop is a module in the film's workspace, set in film.json

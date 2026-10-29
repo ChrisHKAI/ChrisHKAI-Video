@@ -77,6 +77,8 @@ function landscape({ spots, K, A, P, R, cx, cb }) {
     pointAt: [0.03, 0.15 + 1.5 * Math.sin(0.157), 1.5 * Math.cos(0.157)],
     slogan: [{ em: 0.1, at: [-0.36, 0.064, -0.06], tilt: -0.012 }, { em: 0.1, at: [0.1, 0.07, -0.058], tilt: 0.02 }],
     sloganStep: [0.46, 0, 0],
+    // where the slogan's labels may run, left to right (m): a longer slogan is laid out to fit (anim.js fitSlogan)
+    sloganSpan: [-0.66, 0.3],
     name: { em: 0.105, at: [-0.2, 0.322, -0.09], tilt: -0.03 },
     handle: { em: 0.062, at: [-0.16, 0.2, -0.085], tilt: 0.022 },
   };
@@ -153,6 +155,8 @@ function portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) {
     pointAt,
     slogan: [{ em: 0.065, at: [0, 0.555, -0.06], tilt: -0.012 }, { em: 0.065, at: [0, 0.455, -0.058], tilt: 0.02 }],
     sloganStep: [0, -0.1, 0],
+    // the widest a stacked label may be (m): a longer one is set smaller
+    sloganWidth: 0.5,
     name: { em: 0.09, at: [0, 0.78, -0.09], tilt: -0.03 },
     handle: { em: 0.055, at: [0, 0.67, -0.085], tilt: 0.022 },
   };

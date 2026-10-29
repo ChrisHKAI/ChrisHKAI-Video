@@ -43,6 +43,10 @@ export const bar = (n, beat = 0) => +(n * BAR + beat * BEAT).toFixed(4);
 export const STORY_DURATION = S.segments?.length ? S.duration : film.format.duration;
 export const SEG = makeSegments({ list: S.segments, storyDuration: STORY_DURATION, bar: BAR, pieces: S.pieces });
 export const DURATION = SEG.on ? SEG.duration : film.format.duration;
+// act 3 (the second cover as a wall the toy climbs) is optional: a film whose segments never play it
+// needs no cover cut for it and no roles (film.json story.wall)
+const ACT3 = S.pieces.act3;
+export const PLAYS_ACT3 = !SEG.on || SEG.list.some((s) => s.kind === "story" && s.s0 < ACT3[1] - 1e-6 && s.s1 > ACT3[0] + 1e-6);
 
 // ── The page (theme contract: themes/<theme>/layout.js) ─────────────────────
 export const { UI_W, UI_H, UI_SCALE, PANELS, AVATAR, ACCENT } = L;
@@ -61,17 +65,24 @@ export const RETRO_RECT = L.ANCHORS.second;
 export const RETRO_COVER = L.ANCHORS.secondCover;
 
 // ── Story (film.json "story") ───────────────────────────────────────────────
-export const EV = S.events;
+// an end card played from the downbeat before its cut (when what comes before it adds up to whole bars,
+// apply-research writes { "story": [24, "end"] }) cuts to its stage on that downbeat, so its hits stay on
+// the film's downbeats and nothing of the story before the cut shows
+const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < S.events.cut - 1e-6 && s.s0 > S.events.cut - BAR && s.s1 > S.events.cut)?.s0;
+export const EV = END_FROM !== undefined ? { ...S.events, cut: END_FROM } : S.events;
 export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
 export const SLOGAN_RED = film.cta.slogan[0].text.length; // the second label's letters are red
 export const CTA = S.stage; // the CTA stage: far beyond every other shot's clip distance
 export const SPOT = S.spots ?? D.spots; // places in UI px
 export const WALL2 = S.wall2; // act 2 cover pieces: [push-out time, depth mm]
-export const WALL = S.wall; // act 3 wall pieces (wall mm; box tops are where he can stand)
+export const WALL = S.wall ?? (PLAYS_ACT3 ? noWall() : null); // act 3 wall pieces (wall mm; box tops are where he can stand)
+function noWall() {
+  throw new Error('the film plays act 3 (the second cover as a wall), but film.json story.wall names none of its pieces: cut the cover and name the roles (references/cover-wall.md), or leave act 3 out of story.segments');
+}
 // how the toy leaves the act 3 wall: "sticker" (it becomes the drawing of itself
 // on that cover: film.json "sticker2d" says where) or "jump" (out of the top of
 // the frame; it falls onto the end card's prop after the cut)
-export const EXIT = S.exit ?? (film.sticker2d ? "sticker" : "jump");
+export const EXIT = S.exit ?? (film.sticker2d && PLAYS_ACT3 ? "sticker" : "jump");
 // the crown lands on the end card's name only when the creator's own name carries one (蜗牛King's 👑)
 export const CROWN = (film.profile.nameEmoji ?? "").includes("👑");
 // the end card's prop: the film's own module (film.json cta.prop.module, written
@@ -97,7 +108,7 @@ export function reads() {
   const E = EV, END = STORY_DURATION;
   return [
     { text: film.profile.name, at: [0, E.hops[0][0]] }, // the page, before he hops onto it
-    { text: `${VIEWS_COUNT}${film.counter.unit} ${film.counter.label}`, at: [E.count[0], E.leap[0]] },
+    { text: `${film.counter.display ?? `${VIEWS_COUNT}${film.counter.unit}`} ${film.counter.label}`, at: [E.count[0], E.leap[0]] },
     { text: SLOGAN, at: [E.letters, END] },
     { text: `${film.cta.name.text} ${film.cta.handle.text}`, at: [E.name, END] },
   ];
@@ -147,7 +158,7 @@ export function soundCues() {
   add(12.72, "whoosh", { dur: 0.28 });
   add(E.slam, "slam");
   add(E.slam + 0.03, "debris", { dur: 1.1 });
-  for (let i = 0; i < (WALL.box9.clunks ?? 9); i++) add(E.rise9[0] + i * 0.175 + 0.07, "wood", { i });
+  if (WALL) for (let i = 0; i < (WALL.box9.clunks ?? 9); i++) add(E.rise9[0] + i * 0.175 + 0.07, "wood", { i });
   add(E.climb9[0], "boing"); add(E.climb9[1], "pomf");
   add(E.rise46[0], "slide", { dur: E.rise46[1] - E.rise46[0], long: true });
   add(E.climb46[0], "boing"); add(E.climb46[1], "pomf");
@@ -178,7 +189,10 @@ export function soundCues() {
   add(E.ride, "pomf");
   add(E.glint2, "glint");
   const TUNE = ["G5", "A5", "B5", "D6", "E6", "G6", "A6", "B6"];
-  [...SLOGAN].forEach((_, i) => add(EV.letters + i * BEAT / 2, "letter", { note: TUNE[i], red: i >= SLOGAN_RED }));
+  // a letter a note up the scale; a slogan longer than the scale spreads it over every letter, still rising
+  const n = [...SLOGAN].length;
+  const note = (i) => TUNE[n <= TUNE.length ? i : Math.round((i * (TUNE.length - 1)) / (n - 1))];
+  [...SLOGAN].forEach((_, i) => add(EV.letters + i * BEAT / 2, "letter", { note: note(i), red: i >= SLOGAN_RED }));
   add(E.final, "lock", { big: true });
   add(E.final + 0.02, "sparkle");
   add(E.final + 0.15, "glint");

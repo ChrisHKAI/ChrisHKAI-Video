@@ -50,9 +50,13 @@ Their options are at the top of each file.
 | `calendar` | a span of time, from the idea alone: a flip calendar runs from one day to another, a count beside it, a stamp on the lock | `{ "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24", "count": { "to": 10000, "label": "关注者" }, "stamp": "万粉" }` |
 | `phrase` | the user's own words: a line rises a letter at a time | `{ "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人" }` |
 
-Not here yet (the cgnot996 test made them for its film): chat bubbles from
-a real chat (Kin's), an envelope that opens on an invitation, a post that
-drops in like a notification, and a cover wall as a beat of its own.
+None of these is the limit. The films made their own when the material
+asked for it, and each is worked code to start from: chat bubbles from a
+real chat (Kin's), an envelope that opens on an invitation, a post that
+drops in like a notification and a cover wall as a beat (cgnot996's
+`template/beats.js` on the repository's `examples` branch). Their
+illustrations assembling into a little 3D world, their works flipping by, a
+page scrolling past: write it (below).
 
 ## On the beat
 
@@ -63,11 +67,25 @@ when the story's own cut does: isnail's end card starts at 24.383 s, so the
 piece before it ends at 20.383 s, two bars earlier, and a 3-bar beat
 between them keeps the end card's hits where they were.
 
+A long piece can be played in part. Act 3 is 8.4 s; `{ "story": [14,
+20.383] }` starts at its first climb (14 s is a downbeat, so the hits stay
+on the grid), and a film that wants it tighter still writes its own climb
+as a beat. A film is as short as its picks: an opening, two story points
+and the end card come to about 22 s.
+
 While a beat plays, the story stands still where it was cut away from; its
 places are far from the beat's stage and out of its shots. Every join is a
 hard cut, in the picture and the music.
 
-## Writing a beat
+## A beat of your own
+
+When the material wants something no beat here does, write it for this film:
+a file in the film (`<film>/beats/<name>.js`, entry `{ "beat": "beats/<name>.js",
+"bars": 3, … }`), on the same clock and checks as the skill's. It needs no
+copy of the template, so the film keeps every fix the skill gets. Tell the
+user in a line what you built and why; once it has served a film, it can
+come into the skill.
+
 
 A beat is a module that exports `makeBeat(ctx)`; worked example:
 `beats/phrase.js` (a line of big 3D type rises a letter at a time, the toy
@@ -106,8 +124,10 @@ It returns, every time in the beat's own seconds `g` (0 to `len`):
 
 A beat usually opens with the toy dropping in from above (the cut from
 the last segment's leap) and ends with `kit.leapOut`, so the joins read as
-one toy going from stage to stage. The first and last segments are usually
-the template's opening and end card.
+one toy going from stage to stage. The first segment is the opening the
+user picked (isnail's, Kin's or 铁柱's), the last the template's end card;
+apply-research writes both. A toy with no arms (references/toy.md) plays
+every beat with its whole body: the rig turns a point into a lean.
 
 ## Check
 

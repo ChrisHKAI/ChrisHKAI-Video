@@ -29,6 +29,15 @@ CHARS = {
     "cjk": F["counter"]["unit"] + F["counter"]["label"],
     "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta["handle"]]),
 }
+# a count written as the platform writes it (6.5万, 7,253, 46K, a label like "star"): its latin
+# characters in the digits' face, the rest in the unit's
+_ctr = F["counter"]
+for _c in dict.fromkeys(str(_ctr.get("display", "")) + _ctr["label"]):
+    if _c.isspace():
+        continue
+    _role = "latin" if ord(_c) < 0x2E80 else "cjk"
+    if _c not in CHARS[_role]:
+        CHARS[_role] += _c
 # the beats' own lettering, in the end card's face: every word in a beat's entry
 # (film.json story.segments: its text, label, stamp…), and the digits, signs and date
 # words a count or a calendar runs through

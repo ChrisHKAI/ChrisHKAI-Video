@@ -14,6 +14,8 @@ import { readFileSync } from "node:fs";
 import { film, fromFilm } from "./film.js";
 
 export const TOY = JSON.parse(readFileSync(fromFilm(film.toy), "utf8"));
+// a part without "pos" sits at the toy's origin (a tube's points already say where it goes)
+for (const p of TOY.parts ?? []) p.pos ??= [0, 0, 0];
 export const MASCOT_PARTS = TOY.parts;
 export const JOINTS = TOY.joints;
 export const COLORS = TOY.colors;

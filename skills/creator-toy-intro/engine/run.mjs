@@ -2,7 +2,10 @@
 //
 // usage: FILM=<film folder> node engine/run.mjs <step|group>... [-- extra args for the last step]
 //   groups: data = recipes glyphs hero ui anim sound
-//   steps:  recipes  the film's own recipe scripts (film.json "recipes": cover cuts, stickers, logo…)
+//   steps:  next     where the film stands: what its step still lacks, the commands in order, what to show
+//           check    before Blender, in plain words, what will break (render, estimate and animatic run it
+//                    first; the full render also wants the storyboard page clean and signed off; -- --force)
+//           recipes  the film's own recipe scripts (film.json "recipes": cover cuts, stickers, logo…)
 //           glyphs   3D lettering outlines → build/glyphs.json
 //           hero     the toy's parts → build/hero.json (look-dev reads it)
 //           ui       the platform page as HTML → assets/ui.png …, build/timeline.json
@@ -37,7 +40,7 @@
 //                    template → <film>/template/ (film.json "template": "./template"),
 //                    scene.py → <film>/engine/scene.py (render, estimate and animatic use it)
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { film, FILM, fromFilm, fromSkill, fromTemplate, OWN_TEMPLATE } from "./lib/film.js";
 import { HOME, findBlender, findPython, toolEnv } from "./lib/tools.js";
@@ -70,17 +73,42 @@ const run = (cmd, args, env = {}) => {
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
+// render, estimate and animatic start only once check passes (-- --force: start anyway)
+const force = extra.includes("--force");
+if (force) extra.splice(extra.indexOf("--force"), 1);
+const gate = (full) => {
+  if (force || steps.includes("check")) return;
+  const r = spawnSync("node", [fromSkill("engine/scripts/check.mjs"), "--quiet", ...(full ? ["--render"] : [])], { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
+  if (r.status !== 0) { console.error("\nfix what check says first (or -- --force to start anyway)"); process.exit(1); }
+};
+
 for (const [i, step] of steps.entries()) {
   const more = i === steps.length - 1 ? extra : [];
+  // the animatic is part of making the storyboard; the full render waits for the page and the user's sign-off
+  // (preview frames, the animatic and the estimate need only that nothing breaks)
+  if (step === "animatic" || step === "estimate") gate(false);
+  if (step === "render") gate(!more.includes("--frames") || !more.includes("--samples"));
   switch (step) {
+    case "check": run("node", [fromSkill("engine/scripts/check.mjs"), ...more]); break;
+    case "next": run("node", [fromSkill("engine/scripts/next.mjs")]); break;
     case "recipes":
       // "@tool" is one of the engine's tools (engine/scripts/tool.py); anything else is the film's own recipe
-      for (const r of film.recipes ?? []) run(PY, [r.startsWith("@") ? fromSkill("engine/scripts", `${r.slice(1)}.py`) : join(FILM, "recipes", r)]);
+      // (a film's recipe is named from recipes/: "cover.py"; "recipes/cover.py" works too)
+      for (const r of film.recipes ?? []) run(PY, [r.startsWith("@") ? fromSkill("engine/scripts", `${r.slice(1)}.py`) : join(FILM, "recipes", r.replace(/^(\.\/)?recipes\//, ""))]);
       break;
     case "glyphs": run(PY, [fromSkill("engine/scripts/glyphs.py"), ...more]); break;
     case "hero": run("node", [fromSkill("engine/scripts/dump-hero.mjs")]); break;
     case "ui": run("node", [fromSkill("engine/scripts/build-ui.mjs"), ...more]); break;
-    case "anim": run("node", [fromSkill("engine/scripts/export-anim.mjs")]); break;
+    case "anim": {
+      // the lettering follows film.json: a changed slogan, label or beat word needs its glyphs first
+      const g = fromFilm("build/glyphs.json");
+      if (!steps.slice(0, i).includes("glyphs") && (!existsSync(g) || statSync(g).mtimeMs < statSync(fromFilm("film.json")).mtimeMs)) {
+        console.log("(film.json changed since the lettering was made: glyphs first)");
+        run(PY, [fromSkill("engine/scripts/glyphs.py")]);
+      }
+      run("node", [fromSkill("engine/scripts/export-anim.mjs")]);
+      break;
+    }
     case "sound": run(PY, [fromTemplate("score.py")]); break;
     case "listen": {
       // the same picture under each sound, to choose by ear: the song, the bed, the effects alone, and their
@@ -99,6 +127,8 @@ for (const [i, step] of steps.entries()) {
       break;
     }
     case "lookdev":
+      // the turnaround reads build/hero.json: write it from toy.json first, so a changed toy always shows
+      if (!steps.slice(0, i).includes("hero")) run("node", [fromSkill("engine/scripts/dump-hero.mjs")]);
       run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
       if (!more.includes("--avatar")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);
       break;
@@ -122,13 +152,24 @@ for (const [i, step] of steps.entries()) {
     }
     case "finish":
       run(...awake(PY, [fromSkill("engine/scripts/finish.py"), ...more]));
-      run(PY, [fromSkill("engine/scripts/covers.py")]);
-      run(PY, [fromSkill("engine/scripts/qa.py")]);
+      // a side cut (the quick version: -- --in build/quick --out out/<id>-quick.mp4) gets no covers or qa
+      if (!more.includes("--out")) {
+        run(PY, [fromSkill("engine/scripts/covers.py")]);
+        run(PY, [fromSkill("engine/scripts/qa.py")]);
+      }
       break;
     case "qa": run(PY, [fromSkill("engine/scripts/qa.py"), ...more]); break;
     case "covers": run(PY, [fromSkill("engine/scripts/covers.py"), ...more]); break;
     case "safezone": run(PY, [fromSkill("engine/scripts/safezone.py"), ...more]); break;
-    case "storyboard": run(PY, [fromSkill("engine/scripts/storyboard.py"), ...more]); break;
+    case "storyboard":
+      // the sounds to choose from are part of the page: with an animatic and no versions yet, make them first
+      if (!more.includes("--frames") && existsSync(fromFilm("build/storyboard/animatic.mp4")) && !steps.includes("listen")
+        && !readdirSync(fromFilm("build/storyboard")).some((f) => f.startsWith("sound-"))) {
+        console.log("(the page plays every sound under the animatic: listen first)");
+        run("node", [fromSkill("engine/run.mjs"), "listen"]);
+      }
+      run(PY, [fromSkill("engine/scripts/storyboard.py"), ...more]);
+      break;
     case "animatic":
       run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `1-${film.format.duration * film.format.fps}`, "--engine", "eevee", "--samples", "4", "--scale", "33", "--out", "build/eev", ...more]));
       run(PY, [fromSkill("engine/scripts/animatic.py")]);

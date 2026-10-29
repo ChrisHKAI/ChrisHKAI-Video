@@ -14,6 +14,7 @@ import base64
 import html
 import io
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -81,6 +82,11 @@ for pt in SB["parts"]:
     for g in SEGS:
         lo, hi = max(a, g.get("s0", 0)), min(b, g.get("s1", 0))
         if g["kind"] == "story" and hi - lo > 1e-6:
+            # a piece that plays only the start of a part (the second post rising at the end of act 2) runs
+            # on in the part before it, rather than naming what the film never plays
+            if hi - lo < 0.5 * (b - a) and lo <= a + 1e-6 and PARTS and abs(PARTS[-1][2] - (lo - g["s0"] + g["f0"])) < 1e-6:
+                PARTS[-1] = (PARTS[-1][0], PARTS[-1][1], hi - g["s0"] + g["f0"])
+                continue
             PARTS.append((pt, lo - g["s0"] + g["f0"], hi - g["s0"] + g["f0"]))
 HITS = [(h, ft) for h in SB["hits"] if (ft := film_t(when(h["ev"]))) is not None]
 for g in SEGS or []:
@@ -100,11 +106,12 @@ if "--frames" in argv:
 
 # ── the words, filled from film.json ────────────────────────────────────────
 W = {
-    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖", "cols": "每行", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 未跳到數（要整數、單位同兩個字標籤）", "c_nocounter": "呢部片冇計數器", "c_len": "片長 {x} 秒，{p} 最長收 {m} 秒", "c_badlen": "片長 {x} 秒，超過 {p} 嘅 {m} 秒上限：拍子要縮短", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住", "c_hook": "{t} 秒有第一下重拍（頭 3 秒內有鉤）", "c_nohook": "頭 3 秒冇重拍：第一下喺 {t} 秒，觀眾可能未入戲就碌走", "c_nodead": "冇死位：每兩小節（{m} 秒）內都有新嘢發生", "c_dead": "{a}–{b} 秒有 {n} 秒冇新嘢發生（兩小節 {m} 秒內要有）：加一下動作，或者剪短", "c_alone": "{a}–{b} 秒淨係公仔自己跳 {n} 下，冇其他新嘢：睇吓使唔使", "c_reads": "{n} 段字都停夠時間俾人睇完", "c_readsend": "（結尾 {k} 段停到片尾，播完停喺最後一格）", "c_short": "「{x}」停 {s} 秒，要 {n} 秒先睇得完：慢返 {more} 秒", "c_noreads": "template 冇講邊啲字要讀，閱讀時間未檢查", "c_toycolor": "公仔嘅 {x}（{hex}，佔 {p}%）喺黑舞台上溶埋（對比 {r}:1）：加輪廓光，或者舞台調光啲", "c_textcolor": "{n} 件字用 {hex}，對比得 {r}:1（要 3:1 以上）：換一隻顏色", "c_confetti": "彩紙 {hex} 喺黑舞台上睇唔到（對比 {r}:1）：換一隻", "c_colors": "公仔、字同彩紙喺舞台上都睇得清", "c_ledger": "同 {x} 只有 {d} 樣唔同（一樣：{what}）：最少要 4 樣唔同，換一兩樣", "c_ledger_ok": "同之前 {n} 條片都夠唔同（最似 {x}：{d} 樣唔同）", "c_ledger_none": "未有交咗嘅片可以比較", "dims": {"opening": "開場", "structure": "結構", "signature": "招牌動作", "colours": "顏色", "sound": "聲", "ending": "結尾"}, "sep": "、"},
-    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图", "cols": "每行", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 还不能跳数（要整数、单位和两个字的标签）", "c_nocounter": "这部片没有计数器", "c_len": "片长 {x} 秒，{p} 最长收 {m} 秒", "c_badlen": "片长 {x} 秒，超过 {p} 的 {m} 秒上限：拍子要缩短", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住", "c_hook": "{t} 秒有第一下重拍（头 3 秒内有钩子）", "c_nohook": "头 3 秒没有重拍：第一下在 {t} 秒，观众可能还没入戏就划走", "c_nodead": "没有死位：每两小节（{m} 秒）内都有新东西发生", "c_dead": "{a}–{b} 秒有 {n} 秒没有新东西发生（两小节 {m} 秒内要有）：加一个动作，或者剪短", "c_alone": "{a}–{b} 秒只有公仔自己跳 {n} 下，没有别的新东西：看看要不要", "c_reads": "{n} 段字都停够时间让人看完", "c_readsend": "（结尾 {k} 段停到片尾，播完停在最后一帧）", "c_short": "「{x}」停 {s} 秒，要 {n} 秒才看得完：放慢 {more} 秒", "c_noreads": "模板没说哪些字要读，阅读时间未检查", "c_toycolor": "公仔的 {x}（{hex}，占 {p}%）在黑舞台上融在一起（对比 {r}:1）：加轮廓光，或者把舞台调亮一点", "c_textcolor": "{n} 个字用 {hex}，对比只有 {r}:1（要 3:1 以上）：换一个颜色", "c_confetti": "彩纸 {hex} 在黑舞台上看不见（对比 {r}:1）：换一个", "c_colors": "公仔、字和彩纸在舞台上都看得清", "c_ledger": "和 {x} 只有 {d} 样不同（一样：{what}）：至少要 4 样不同，换一两样", "c_ledger_ok": "和之前 {n} 条片都够不同（最像 {x}：{d} 样不同）", "c_ledger_none": "还没有交付的片可以比较", "dims": {"opening": "开场", "structure": "结构", "signature": "招牌动作", "colours": "颜色", "sound": "声音", "ending": "结尾"}, "sep": "、"},
-    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches", "cols": "Per row", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} cannot count up yet (whole digits, a unit and a two-character label)", "c_nocounter": "this film has no counter", "c_len": "{x} s long; {p} takes up to {m} s", "c_badlen": "{x} s long, past {p}'s {m} s: shorten the beats", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls", "c_hook": "the first hit at {t} s (a hook within 3 s)", "c_nohook": "no hit in the first 3 s: the first is at {t} s; viewers may scroll on before it", "c_nodead": "no quiet stretch: something new at least every two bars ({m} s)", "c_dead": "{a}–{b} s: {n} s with nothing new (two bars: {m} s): add a move, or cut it shorter", "c_alone": "{a}–{b} s: only the toy hopping ({n} hops), nothing else new: does it need them?", "c_reads": "all {n} lines stay long enough to read", "c_readsend": " (the end card's {k} to the last frame, which stays)", "c_short": "\"{x}\" stays {s} s and reads in {n} s: {more} s longer", "c_noreads": "the template does not say what the viewer reads: reading time not checked", "c_toycolor": "the toy's {x} ({hex}, {p}% of it) melts into the dark stage ({r}:1): a rim light, or a lighter stage", "c_textcolor": "{n} letters in {hex} stand at {r}:1 (3:1 or more reads): another colour", "c_confetti": "confetti {hex} vanishes on the dark stage ({r}:1): another colour", "c_colors": "the toy, the lettering and the confetti all read on the stage", "c_ledger": "only {d} of 6 differ from {x} (the same: {what}): four at least; change one or two", "c_ledger_ok": "differs enough from the {n} earlier films (closest, {x}: {d} of 6 differ)", "c_ledger_none": "no delivered film to compare with yet", "dims": {"opening": "opening", "structure": "structure", "signature": "signature move", "colours": "colours", "sound": "sound", "ending": "ending"}, "sep": ", "},
+    "zh-Hant": {"title": "{name} 自我介紹片分鏡", "parts": "故事", "grid": "音樂節拍格", "gridnote": "每格一拍，粗線係每小節第一拍，紅線係重拍事件", "frames": "預覽畫面", "framesnote": "全部係真 3D 渲染（半解像度、低取樣），唔係草圖", "cols": "每行", "checks": "我自己檢查咗", "decide": "開工前要你拍板", "note": "正式渲染會用全解像度同高取樣；改咗邊格就只重渲嗰幾格。", "time": "時間", "what": "發生乜事", "uses": "用咩資料", "missing": "未渲染", "animatic": "粗剪動畫", "glasses": "推眼鏡", "wave": "揮手", "portrait": "9:16 直片", "landscape": "16:9 橫片", "ok": "通過", "warn": "要留意", "c_frames": "{n}/{m} 格預覽渲染好", "c_toy": "公仔用用家確認咗嘅相：{x}", "c_notoy": "公仔用邊張相仲未確認", "c_counter": "數字 {x} 會由頁面升起跳數", "c_badcounter": "數字 {x} 讀唔到做數字：寫返平台原本嘅寫法（304万、6.5万、7,253、46K）", "c_nocounter": "呢部片冇計數器", "c_len": "片長 {x} 秒，{p} 最長收 {m} 秒", "c_badlen": "片長 {x} 秒，超過 {p} 嘅 {m} 秒上限：拍子要縮短", "c_end": "結尾嘅字同公仔喺安全框入面", "c_badend": "結尾內容（字、公仔、道具一齊計）出咗安全框 {x}：睇吓有冇字俾介面遮住", "c_hook": "{t} 秒有第一下重拍（頭 3 秒內有鉤）", "c_nohook": "頭 3 秒冇重拍：第一下喺 {t} 秒，觀眾可能未入戲就碌走", "c_nodead": "冇死位：每兩小節（{m} 秒）內都有新嘢發生", "c_dead": "{a}–{b} 秒有 {n} 秒冇新嘢發生（兩小節 {m} 秒內要有）：加一下動作，或者剪短", "c_alone": "{a}–{b} 秒淨係公仔自己跳 {n} 下，冇其他新嘢：睇吓使唔使", "c_reads": "{n} 段字都停夠時間俾人睇完", "c_readsend": "（結尾 {k} 段停到片尾，播完停喺最後一格）", "c_short": "「{x}」停 {s} 秒，要 {n} 秒先睇得完：慢返 {more} 秒", "c_noreads": "template 冇講邊啲字要讀，閱讀時間未檢查", "c_toycolor": "公仔嘅 {x}（{hex}，佔 {p}%）喺黑舞台上溶埋（對比 {r}:1）：加輪廓光，或者舞台調光啲", "c_textcolor": "{n} 件字用 {hex}，對比得 {r}:1（要 3:1 以上）：換一隻顏色", "c_confetti": "彩紙 {hex} 喺黑舞台上睇唔到（對比 {r}:1）：換一隻", "c_colors": "公仔、字同彩紙喺舞台上都睇得清", "c_ledger": "同 {x} 只有 {d} 樣唔同（一樣：{what}）：最少要 4 樣唔同，換一兩樣", "c_ledger_ok": "同之前 {n} 條片都夠唔同（最似 {x}：{d} 樣唔同）", "c_ledger_none": "未有交咗嘅片可以比較", "c_small": "{a}–{b} 秒公仔得畫面高度嘅 {k}%（最少要 {m}%）：鏡頭行近啲，或者公仔行前啲", "c_off": "{a}–{b} 秒公仔喺場景入面但出咗畫面：係咪特登？", "dims": {"opening": "開場", "structure": "結構", "signature": "招牌動作", "colours": "顏色", "sound": "聲", "ending": "結尾"}, "sep": "、"},
+    "zh-Hans": {"title": "{name} 自我介绍片分镜", "parts": "故事", "grid": "音乐节拍格", "gridnote": "每格一拍，粗线是每小节第一拍，红线是重拍事件", "frames": "预览画面", "framesnote": "全部是真 3D 渲染（半分辨率、低采样），不是草图", "cols": "每行", "checks": "我先检查过", "decide": "开工前请你拍板", "note": "正式渲染用全分辨率和高采样；改了哪几帧就只重渲那几帧。", "time": "时间", "what": "发生什么", "uses": "用什么资料", "missing": "未渲染", "animatic": "粗剪动画", "glasses": "推眼镜", "wave": "挥手", "portrait": "9:16 竖屏", "landscape": "16:9 横屏", "ok": "通过", "warn": "要留意", "c_frames": "{n}/{m} 帧预览已渲染", "c_toy": "公仔用的是用户确认过的图：{x}", "c_notoy": "公仔用哪张图还没确认", "c_counter": "数字 {x} 会从页面升起跳数", "c_badcounter": "数字 {x} 读不出是数字：写回平台原本的写法（304万、6.5万、7,253、46K）", "c_nocounter": "这部片没有计数器", "c_len": "片长 {x} 秒，{p} 最长收 {m} 秒", "c_badlen": "片长 {x} 秒，超过 {p} 的 {m} 秒上限：拍子要缩短", "c_end": "结尾的字和公仔在安全框内", "c_badend": "结尾内容（字、公仔、道具一起算）超出安全框 {x}：看看有没有字被界面挡住", "c_hook": "{t} 秒有第一下重拍（头 3 秒内有钩子）", "c_nohook": "头 3 秒没有重拍：第一下在 {t} 秒，观众可能还没入戏就划走", "c_nodead": "没有死位：每两小节（{m} 秒）内都有新东西发生", "c_dead": "{a}–{b} 秒有 {n} 秒没有新东西发生（两小节 {m} 秒内要有）：加一个动作，或者剪短", "c_alone": "{a}–{b} 秒只有公仔自己跳 {n} 下，没有别的新东西：看看要不要", "c_reads": "{n} 段字都停够时间让人看完", "c_readsend": "（结尾 {k} 段停到片尾，播完停在最后一帧）", "c_short": "「{x}」停 {s} 秒，要 {n} 秒才看得完：放慢 {more} 秒", "c_noreads": "模板没说哪些字要读，阅读时间未检查", "c_toycolor": "公仔的 {x}（{hex}，占 {p}%）在黑舞台上融在一起（对比 {r}:1）：加轮廓光，或者把舞台调亮一点", "c_textcolor": "{n} 个字用 {hex}，对比只有 {r}:1（要 3:1 以上）：换一个颜色", "c_confetti": "彩纸 {hex} 在黑舞台上看不见（对比 {r}:1）：换一个", "c_colors": "公仔、字和彩纸在舞台上都看得清", "c_ledger": "和 {x} 只有 {d} 样不同（一样：{what}）：至少要 4 样不同，换一两样", "c_ledger_ok": "和之前 {n} 条片都够不同（最像 {x}：{d} 样不同）", "c_ledger_none": "还没有交付的片可以比较", "c_small": "{a}–{b} 秒公仔只占画面高度的 {k}%（至少要 {m}%）：镜头拉近一点，或者公仔往前站", "c_off": "{a}–{b} 秒公仔在场景里但出了画面：是故意的吗？", "dims": {"opening": "开场", "structure": "结构", "signature": "招牌动作", "colours": "颜色", "sound": "声音", "ending": "结尾"}, "sep": "、"},
+    "en": {"title": "{name}: storyboard", "parts": "The story", "grid": "Beat grid", "gridnote": "one cell a beat; thick lines start a bar, red lines are the hits", "frames": "Preview frames", "framesnote": "all real 3D renders (half size, few samples), not sketches", "cols": "Per row", "checks": "Checked first", "decide": "Before the full render, please decide", "note": "The final render is full size and fully sampled; a change re-renders only the frames it touches.", "time": "Time", "what": "What happens", "uses": "Uses", "missing": "not rendered", "animatic": "Animatic", "glasses": "pushes its glasses", "wave": "a wave", "portrait": "9:16 portrait", "landscape": "16:9 landscape", "ok": "ok", "warn": "look", "c_frames": "{n}/{m} preview frames rendered", "c_toy": "the toy is made from the picture the user confirmed: {x}", "c_notoy": "the toy's picture is not confirmed yet", "c_counter": "{x} rises from the page and counts up", "c_badcounter": "{x} does not read as a number: write it as the platform does (304万, 6.5万, 7,253, 46K)", "c_nocounter": "this film has no counter", "c_len": "{x} s long; {p} takes up to {m} s", "c_badlen": "{x} s long, past {p}'s {m} s: shorten the beats", "c_end": "the end card's text and toy sit inside the safe box", "c_badend": "the end card (text, toy and prop together) runs past the safe box {x}: check no text is under the controls", "c_hook": "the first hit at {t} s (a hook within 3 s)", "c_nohook": "no hit in the first 3 s: the first is at {t} s; viewers may scroll on before it", "c_nodead": "no quiet stretch: something new at least every two bars ({m} s)", "c_dead": "{a}–{b} s: {n} s with nothing new (two bars: {m} s): add a move, or cut it shorter", "c_alone": "{a}–{b} s: only the toy hopping ({n} hops), nothing else new: does it need them?", "c_reads": "all {n} lines stay long enough to read", "c_readsend": " (the end card's {k} to the last frame, which stays)", "c_short": "\"{x}\" stays {s} s and reads in {n} s: {more} s longer", "c_noreads": "the template does not say what the viewer reads: reading time not checked", "c_toycolor": "the toy's {x} ({hex}, {p}% of it) melts into the dark stage ({r}:1): a rim light, or a lighter stage", "c_textcolor": "{n} letters in {hex} stand at {r}:1 (3:1 or more reads): another colour", "c_confetti": "confetti {hex} vanishes on the dark stage ({r}:1): another colour", "c_colors": "the toy, the lettering and the confetti all read on the stage", "c_ledger": "only {d} of 6 differ from {x} (the same: {what}): four at least; change one or two", "c_ledger_ok": "differs enough from the {n} earlier films (closest, {x}: {d} of 6 differ)", "c_ledger_none": "no delivered film to compare with yet", "c_small": "{a}–{b} s: the toy is {k}% of the frame's height ({m}% at least): bring the camera in, or the toy forward", "c_off": "{a}–{b} s: the toy is in the scene but out of the frame: meant?", "dims": {"opening": "opening", "structure": "structure", "signature": "signature move", "colours": "colours", "sound": "sound", "ending": "ending"}, "sep": ", "},
 }[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
-PROP = {"snail": {"zh-Hant": "蝸牛", "zh-Hans": "蜗牛", "en": "the snail"}}
+PROP = {"snail": {"zh-Hant": "蝸牛", "zh-Hans": "蜗牛", "en": "the snail"}, "plinth": {"zh-Hant": "底座", "zh-Hans": "底座", "en": "the plinth"},
+        None: {"zh-Hant": "道具", "zh-Hans": "道具", "en": "the prop"}}
 toy = json.loads((FILM / FILM_JSON["toy"]).read_text())
 pr, posts, cta = FILM_JSON["profile"], FILM_JSON["posts"], FILM_JSON["cta"]
 # the counter, unless the film has none (no film.json "counter", or story "counter": false)
@@ -118,10 +125,13 @@ FILL = {
     # as the platform writes it when research kept that ("10,000 关注者"), else the digits and the unit
     "counter": f"{counter.get('display') or str(counter['value']) + counter['unit']} {counter['label']}" if counter else "",
     "slogan": "".join(p["text"] for p in cta["slogan"]),
-    "prop": PROP.get(cta.get("prop", {}).get("kind"), {}).get(LANG, cta.get("prop", {}).get("kind", "")),
+    "prop": (PROP.get(cta.get("prop", {}).get("kind")) or PROP[None]).get(LANG, ""),
     "signature": W[(toy.get("signature") or {"move": "wave"})["move"]],
     "proof1": "「" + short(posts["pinned"]["title"]) + "」", "proof2": "「" + short(posts["retro"]["title"]) + "」",
     "publish": "、".join(PLATFORMS[p]["name"] for p in publish), "aspect": W[orient],
+    "exit": {"sticker": {"zh-Hant": "公仔壓返入封面變貼紙", "zh-Hans": "公仔压回封面变贴纸", "en": "the toy presses back into the cover as a sticker"},
+             "jump": {"zh-Hant": "公仔跳出畫面", "zh-Hans": "公仔跳出画面", "en": "the toy leaps out of the frame"}}[
+        FILM_JSON.get("story", {}).get("exit") or ("sticker" if FILM_JSON.get("sticker2d") else "jump")].get(LANG, ""),
 }
 t = lambda d: (d if isinstance(d, str) else (d.get(LANG) or d.get("zh-Hant") or next(iter(d.values()), ""))).format(**FILL)  # noqa: E731
 e = html.escape
@@ -155,7 +165,9 @@ checks.append((len(have) == len(frames), W["c_frames"].format(n=len(have), m=len
 toyfrom = FILM_JSON.get("toyFrom")
 checks.append((bool(toyfrom), W["c_toy"].format(x=", ".join(toyfrom)) if toyfrom else W["c_notoy"]))
 if counter:
-    digits_ok = float(counter["value"]).is_integer() and counter["unit"] and len(counter["label"]) == 2
+    # any count the platform writes counts up (304万, 6.5万, 7,253, 46K, 380+): it only has to read as one
+    shown = counter.get("display") or f"{counter['value']}{counter['unit']}"
+    digits_ok = re.match(r"^\+?\d[\d,]*(\.\d+)?\s*\S{0,2}$", str(shown).strip()) is not None
     checks.append((bool(digits_ok), W["c_counter" if digits_ok else "c_badcounter"].format(x=FILL["counter"])))
 else:
     checks.append((True, W["c_nocounter"]))
@@ -178,6 +190,8 @@ if (FILM / "build/anim.json").exists():
     checks.append((hook is not None and hook <= 3, W["c_hook" if hook is not None and hook <= 3 else "c_nohook"].format(t=f"{hook:g}" if hook is not None else "–")))
     checks += [(False, W["c_dead"].format(a=f"{a:g}", b=f"{z:g}", n=f"{z - a:.1f}", m=two)) for a, z in P["dead"]] or [(True, W["c_nodead"].format(m=two))]
     checks += [(False, W["c_alone"].format(a=f"{a:g}", b=f"{z:g}", n=n)) for a, z, n in P["alone"]]
+    checks += [(False, W["c_small"].format(a=f"{a:g}", b=f"{z:g}", k=f"{k * 100:.0f}", m=f"{pacing.SMALL * 100:.0f}")) for a, z, k in P.get("small", [])]
+    checks += [(False, W["c_off"].format(a=f"{a:g}", b=f"{z:g}")) for a, z in P.get("off", [])]
     if P["reads"] is None:
         checks.append((False, W["c_noreads"]))
     else:
@@ -231,7 +245,16 @@ for f, n in frames:
 hero_n = end[-1] if end else (have[-1] if have else None)
 hero = f'<img class="hero" src="{jpeg(SRC / f"{hero_n:04d}.png", 720 if orient == "landscape" else 420)}" alt="">' if hero_n else ""
 
-rows = "".join(f'<tr><td><b>{e(t(pt["label"]))}</b><br><code>{a:.1f}–{b:.1f} s</code></td><td>{e(t(pt.get("what", "")))}</td><td>{e(t(pt.get("uses", "")))}</td></tr>' for pt, a, b in PARTS)
+# a story part's text names the story's own seconds ("13.0 秒"): in a film of segments, where the film plays them
+def retime(text, story_part):
+    if not SEGS or not story_part:
+        return text
+    def at(m):
+        ft = film_t(float(m.group(1)))
+        return f"{ft:.1f}{m.group(2)}{m.group(3)}" if ft is not None else m.group(0)
+    return re.sub(r"(\d+\.\d)(\s?)(秒|s\b)", at, text)
+STORY_PARTS = {id(pt) for pt in SB["parts"]}
+rows = "".join(f'<tr><td><b>{e(t(pt["label"]))}</b><br><code>{a:.1f}–{b:.1f} s</code></td><td>{e(retime(t(pt.get("what", "")), id(pt) in STORY_PARTS))}</td><td>{e(t(pt.get("uses", "")))}</td></tr>' for pt, a, b in PARTS)
 
 # the beat grid: a cell a beat, bands for the parts, a red line on each hit
 beats = round(DUR * BPM / 60)
@@ -327,3 +350,5 @@ OUT.mkdir(parents=True, exist_ok=True)
 print(f"storyboard → {(OUT / 'index.html').relative_to(FILM)} ({len(have)}/{len(frames)} frames, {len(page) // 1024} KB)")
 for ok, msg in checks:
     print(("  ✓ " if ok else "  ! ") + msg)
+# what the page found, for check (run.mjs render starts only once every one passes, or the user said why not)
+(OUT / "checks.json").write_text(json.dumps([{"ok": bool(ok), "text": msg} for ok, msg in checks], ensure_ascii=False, indent=1))
