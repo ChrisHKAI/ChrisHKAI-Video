@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { resolveDirection, numberProvenanceIssues } from "../skills/creator-toy-intro/engine/lib/research.js";
+import { storyTestSignature, storyTestIssues } from "../skills/creator-toy-intro/engine/lib/story-test.js";
 import { researchPrompt } from "../skills/creator-toy-intro/engine/lib/research-prompt.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -24,7 +25,7 @@ function facts() {
       { id: "s2", line: "Learn the method", posts: ["p2"], becomes: [{ anim: "phrase", opts: { text: "Learn the method" } }] },
     ],
     narrative: { audience: "Editors", goal: "Remember a useful tool", inferred: true },
-    directions: [{ id: "method", title: "Learn by making", premise: "Useful tools for editors", hook: { question: "What can I make?", visual: "Reveal the demo", text: "Make this" }, beats: [{ story: "s1", role: "Show the work" }, { story: "s2", role: "Explain the method", connection: "The tutorial explains the demo" }], payoff: "Know what to learn", why: "Specific work and direct sources", gaps: [], cta: { slogan: ["Build along"], prop: "a tiny tool" } }],
+    directions: [{ id: "method", title: "Learn by making", premise: "Useful tools for editors", hook: { question: "What can I make?", visual: "Reveal the demo", text: "Make this" }, beats: [{ story: "s1", role: "Show the work", action: { does: "Reveal the work", means: "See what the creator makes" } }, { story: "s2", role: "Explain the method", connection: "The tutorial explains the demo", action: { does: "Indicate the tutorial steps", means: "See how the work was made" } }], payoff: "Know what to learn", why: "Specific work and direct sources", gaps: [], cta: { slogan: ["Build along"], prop: "a tiny tool" } }],
     recommendedDirection: "method", picks: { direction: "method", opening: "page-stand" },
   };
 }
@@ -34,7 +35,12 @@ function workspace(t, f = facts()) {
   const created = run(dir, "new-film.mjs", [dir, "--link", "https://x.com/test"]);
   assert.equal(created.status, 0, created.stderr);
   writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  if (f.picks?.direction) writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
   return dir;
+}
+// These are schema/integration fixtures, not an automated judgement of story quality.
+function readyReport(f) {
+  return { signature: storyTestSignature(f), verdict: "ready", takeaway: "A creator of editor tools", continuation: "The tutorial explains the demonstrated work", specificity: "The named demo and its own tutorial", actionMeaning: "Revealing the work and pointing at its steps directs attention to the method", issues: [] };
 }
 function run(dir, name, args = [], env = {}) {
   return spawnSync(process.execPath, [script(name), ...args], { encoding: "utf8", env: { ...process.env, FILM: dir, ...env }, cwd: root });
@@ -165,4 +171,56 @@ test("saved follow-up responses reparse offline without replacing discovery resu
   assert.equal(result.status, 0, result.stderr);
   assert.equal(readFileSync(join(dir, "research/grok.json"), "utf8"), original);
   assert.deepEqual(JSON.parse(readFileSync(join(dir, "research/grok-followup.json"))).gap_answers, answer.gap_answers);
+});
+
+
+test("preproduction story test writes a brief but never approves itself", (t) => {
+  const f = facts(), dir = workspace(t, f);
+  rmSync(join(dir, "research/story-test.json"));
+  const brief = run(dir, "story-test.mjs", [dir]);
+  assert.equal(brief.status, 0, brief.stderr);
+  assert.match(readFileSync(join(dir, "research/story-test.md"), "utf8"), /Specificity: replace the creator/);
+  assert.equal(run(dir, "story-test.mjs", [dir, "--check"]).status, 1);
+  const before = readFileSync(join(dir, "film.json"), "utf8");
+  const applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 1);
+  assert.match(applied.stderr, /no story test/);
+  assert.equal(readFileSync(join(dir, "film.json"), "utf8"), before);
+  const next = run(dir, "next.mjs");
+  assert.match(next.stdout, /story-test.mjs/);
+  assert.doesNotMatch(next.stdout, /apply-research.mjs/);
+});
+
+test("review requires ready answers, resolved issues and purposeful actions", () => {
+  const f = facts();
+  assert.deepEqual(storyTestIssues(f, readyReport(f)), []);
+  for (const mutate of [r => { r.verdict = "revise"; }, r => { r.specificity = " "; }, r => { r.issues = ["s1 is generic"]; }]) {
+    const r = readyReport(f); mutate(r); assert.ok(storyTestIssues(f, r).length);
+  }
+  delete f.directions[0].beats[0].action.means;
+  assert.match(storyTestIssues(f, readyReport(f)).join("\n"), /s1 needs action/);
+});
+
+test("review goes stale after action, source, ending or order changes but not JSON key ordering", () => {
+  const f = facts(), r = readyReport(f);
+  const reordered = Object.fromEntries(Object.entries(f).reverse());
+  assert.equal(storyTestSignature(reordered), r.signature);
+  for (const mutate of [
+    x => { x.directions[0].beats[0].action.does = "Spin around"; },
+    x => { x.posts[0].title = "Different work"; },
+    x => { x.picks.cta = { slogan: ["Changed promise"] }; },
+    x => { x.directions[0].beats.reverse(); x.directions[0].beats[1].connection = "Another progression"; },
+  ]) {
+    const changed = structuredClone(f); mutate(changed);
+    assert.match(storyTestIssues(changed, r).join("\n"), /stale/);
+  }
+});
+
+test("current review passes check and action meanings appear in the choice page", (t) => {
+  const dir = workspace(t);
+  assert.equal(run(dir, "story-test.mjs", [dir, "--check"]).status, 0);
+  assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]).status, 0);
+  const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /公仔做乜/);
+  assert.match(html, /See how the work was made/);
 });

@@ -9,6 +9,9 @@ Nothing is rendered in full before they say yes.
 Read `film.story.direction` when present. Implement its first-frame visual and
 short on-screen hook using the film's own code; metadata does not draw them.
 Each segment must advance its stated role and relationship to the previous one.
+Implement each beat's `action.does`; judge `action.means` from the actual frames
+without relying on the written explanation. Remove empty gestures. Read
+`references/story-test.md` for the deletion test and anatomy constraints.
 Check that the ending delivers the hook's promise. Preserve supported facts;
 when the user changes the arc, update facts.json and apply it again before
 rebuilding previews. Older films without a direction use their selected points.

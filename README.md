@@ -127,6 +127,12 @@ targeted follow-up can fill important gaps (an additional paid search when using
 Grok). Thin evidence leads to a narrower story, never an invented turning point.
 Existing projects can still select individual material points as before.
 
+Before modelling, the selected direction gets a text-only story test: what viewers
+remember, why they keep watching, what makes this creator distinctive, and what
+each major toy action communicates. Changed stories need a fresh review; this
+adds no extra user approval round. The actual animation is still checked in the
+storyboard and final review.
+
 ### The sound
 
 You pick the sound by ear: `run.mjs listen` lays each one under the animatic.

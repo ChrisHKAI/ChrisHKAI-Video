@@ -71,6 +71,11 @@ Use two or three factual beats for a typical 30-second film (one to four allowed
 Use `connection` to explain contrast, cause when evidenced, demonstration or
 progression. Reorderable achievements with no relationship need a clearer lens.
 
+Give every main beat `action: { does, means }`: what the toy visibly does and
+what the viewer learns from it. Tie it to that beat's source material and the
+reference character's actual body. Apply the deletion test in
+`references/story-test.md`; a decorative hop is not a demonstration of a method.
+
 Keep narrative hook and camera opening separate: "the page turns left" is a
 visual treatment; it does not tell the viewer why to care. Specify first-frame
 action and short on-screen text; add speech only if the film uses voiceover.
@@ -90,8 +95,8 @@ shape references facts already present in `story`; replace all sample content:
     "text": "Start with something you can make"
   },
   "beats": [
-    { "story": "s1", "role": "Show the representative work", "connection": "" },
-    { "story": "s2", "role": "Reveal its documented method", "connection": "The tutorial explains how that work was made." }
+    { "story": "s1", "role": "Show the representative work", "connection": "", "action": { "does": "Reveal the actual project", "means": "The viewer sees what this creator makes" } },
+    { "story": "s2", "role": "Reveal its documented method", "connection": "The tutorial explains how that work was made.", "action": { "does": "Point out the steps in the creator's tutorial", "means": "The viewer sees the documented approach behind the work" } }
   ],
   "payoff": "The viewer knows what they can learn from this creator.",
   "why": "Specific work, direct sources, and a clear visual demonstration.",
@@ -123,6 +128,11 @@ Older workspaces with only `picks.story` or `proof1/proof2` still work. For a ne
 unattended film choose the supported recommendation, record `picks.direction`
 and explain the assumptions in the handover. Never silently select a direction
 with missing evidence.
+
+Before building the toy, complete the internal story test in
+`references/story-test.md`. It checks the takeaway, reason to keep watching,
+creator specificity and the meaning of each toy action. It adds no user approval
+round; a changed direction needs a fresh review. Only then run `apply-research`.
 
 `apply-research` stores the selected direction in `film.story.direction`. During
 step 4, implement its hook in the film's own code and check the promise against

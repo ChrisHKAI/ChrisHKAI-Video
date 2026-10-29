@@ -65,6 +65,11 @@ const storyCard = (s, k) => {
   return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
 const directions = facts.directions ?? [];
+const actionWords = {
+  "zh-Hant": ["公仔做乜", "觀眾明白乜"],
+  "zh-Hans": ["公仔做什么", "观众明白什么"],
+  en: ["Toy action", "Viewer learns"],
+}[lang];
 const directionCard = (d, i) => {
   const evidence = (d.beats ?? []).flatMap((b) => {
     const s = story.find((s) => s.id === b.story);
@@ -75,7 +80,7 @@ const directionCard = (d, i) => {
   return `<article class="direction"><h3>${i + 1}. ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p><p><b>${D.hook}:</b> ${esc(d.hook?.question)}</p>
   <p><b>${D.visual}:</b> ${esc(d.hook?.visual)}<br><b>${D.text}:</b> ${esc(d.hook?.text)}</p>
-  <ol>${(d.beats ?? []).map((b) => `<li><b>${esc(b.role)}</b>: ${esc(story.find((s) => s.id === b.story)?.line ?? b.story)}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}</li>`).join("")}</ol>
+  <ol>${(d.beats ?? []).map((b) => `<li><b>${esc(b.role)}</b>: ${esc(story.find((s) => s.id === b.story)?.line ?? b.story)}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}<br><b>${actionWords[1]}:</b> ${esc(b.action.means)}</div>` : ""}</li>`).join("")}</ol>
   <p><b>${D.payoff}:</b> ${esc(d.payoff)}</p><p class="why">${esc(d.why)}</p>
   ${(d.cta?.slogan ?? []).length ? `<p>${D.payoff}: ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
   ${evidence.length ? `<details><summary>${D.evidence} (${evidence.length})</summary><ul>${evidence.map((e) => `<li>${link(e)}</li>`).join("")}</ul></details>` : ""}

@@ -11,6 +11,7 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
+import { storyTestIssues } from "../lib/story-test.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -69,6 +70,7 @@ if (past("research")) {
     try {
       const { direction } = resolveDirection(facts);
       if (JSON.stringify(film.story?.direction) !== JSON.stringify(direction)) say("bad", "the chosen story direction changed since it was applied", "run apply-research again, then rebuild the storyboard");
+      for (const issue of storyTestIssues(facts, json("research/story-test.json"))) say("bad", issue, "references/story-test.md");
     } catch (e) { say("bad", e.message, "references/story-directions.md"); }
   }
   const slogan = (film.cta?.slogan ?? []).map((s) => s.text).join("");

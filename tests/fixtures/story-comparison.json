@@ -1,0 +1,349 @@
+[
+  {
+    "fixture": "Fictional material for offline story evaluation, not real creator claims.",
+    "platform": "x",
+    "profile": {
+      "name": "Mira",
+      "handle": "mira_test",
+      "bio": [
+        "Free tools for readable captions"
+      ]
+    },
+    "narrative": {
+      "audience": "Video editors",
+      "goal": "Remember CaptionCheck as a useful tool",
+      "inferred": false
+    },
+    "toy": {
+      "confirmed": true,
+      "images": [
+        "assets/avatar.png"
+      ],
+      "description": "Supplied reference: a humanoid toy; no image is included in this text-only fixture."
+    },
+    "posts": [
+      {
+        "id": "p1",
+        "url": "https://example.org/mira/p1",
+        "date": "2026-09-03",
+        "title": "Why I built CaptionCheck",
+        "text": "I built CaptionCheck so editors can preview captions on a small screen before export. The supplied screenshot shows the tool."
+      },
+      {
+        "id": "p2",
+        "url": "https://example.org/mira/p2",
+        "date": "2026-09-11",
+        "title": "CaptionCheck demo",
+        "text": "The supplied recording demonstrates text contrast and safe-area checks.",
+        "numbers": {
+          "likes": {
+            "display": "120",
+            "label": "likes",
+            "source": "https://example.org/mira/p2",
+            "read": "2026-10-29"
+          }
+        }
+      },
+      {
+        "id": "p3",
+        "url": "https://example.org/mira/p3",
+        "date": "2026-09-30",
+        "title": "100 stars today",
+        "text": "CaptionCheck reached 100 stars today. This is a historical milestone, not a current total."
+      }
+    ],
+    "story": [
+      {
+        "id": "preview",
+        "line": "Preview captions on a small screen before export",
+        "posts": [
+          "p1"
+        ],
+        "sources": [
+          {
+            "url": "https://example.org/mira/p1",
+            "kind": "creator_statement",
+            "supports": "The stated tool purpose"
+          }
+        ],
+        "becomes": [
+          {
+            "anim": "own",
+            "why": "Present the actual tool screenshot"
+          }
+        ]
+      },
+      {
+        "id": "checks",
+        "line": "Check contrast and safe areas",
+        "posts": [
+          "p2"
+        ],
+        "sources": [
+          {
+            "url": "https://example.org/mira/p2",
+            "kind": "observed",
+            "supports": "The supplied demo describes these two checks"
+          }
+        ],
+        "becomes": [
+          {
+            "anim": "own",
+            "why": "Show the recorded checks in sequence"
+          }
+        ]
+      },
+      {
+        "id": "stars",
+        "line": "100 stars on September 30",
+        "posts": [
+          "p3"
+        ],
+        "becomes": [
+          {
+            "anim": "count",
+            "opts": {
+              "to": 100,
+              "label": "stars on Sep 30"
+            }
+          }
+        ]
+      },
+      {
+        "id": "likes",
+        "line": "120 likes on the demo",
+        "posts": [
+          "p2"
+        ],
+        "becomes": [
+          {
+            "anim": "count",
+            "opts": {
+              "to": 120,
+              "label": "likes"
+            }
+          }
+        ]
+      }
+    ],
+    "case": "A",
+    "directions": [
+      {
+        "id": "intro",
+        "title": "Meet Mira",
+        "premise": "Mira shares work people notice.",
+        "hook": {
+          "question": "Who is Mira?",
+          "visual": "The toy waves beside the profile.",
+          "text": "Meet Mira"
+        },
+        "beats": [
+          {
+            "story": "stars",
+            "role": "Show a milestone",
+            "action": {
+              "does": "Hop three times beside the star count",
+              "means": "Celebrate the milestone"
+            }
+          },
+          {
+            "story": "likes",
+            "role": "Show engagement",
+            "connection": "Another number from the creator's work",
+            "action": {
+              "does": "Spin beside the like count",
+              "means": "Celebrate engagement"
+            }
+          }
+        ],
+        "payoff": "Remember Mira as a creator",
+        "why": "Two sourced numbers are easy to show",
+        "gaps": [],
+        "cta": {
+          "slogan": [
+            "Follow Mira"
+          ],
+          "prop": "a display stand"
+        }
+      }
+    ],
+    "picks": {
+      "direction": "intro",
+      "opening": "page-stand"
+    }
+  },
+  {
+    "fixture": "Fictional material for offline story evaluation, not real creator claims.",
+    "platform": "x",
+    "profile": {
+      "name": "Mira",
+      "handle": "mira_test",
+      "bio": [
+        "Free tools for readable captions"
+      ]
+    },
+    "narrative": {
+      "audience": "Video editors",
+      "goal": "Remember CaptionCheck as a useful tool",
+      "inferred": false
+    },
+    "toy": {
+      "confirmed": true,
+      "images": [
+        "assets/avatar.png"
+      ],
+      "description": "Supplied reference: a humanoid toy; no image is included in this text-only fixture."
+    },
+    "posts": [
+      {
+        "id": "p1",
+        "url": "https://example.org/mira/p1",
+        "date": "2026-09-03",
+        "title": "Why I built CaptionCheck",
+        "text": "I built CaptionCheck so editors can preview captions on a small screen before export. The supplied screenshot shows the tool."
+      },
+      {
+        "id": "p2",
+        "url": "https://example.org/mira/p2",
+        "date": "2026-09-11",
+        "title": "CaptionCheck demo",
+        "text": "The supplied recording demonstrates text contrast and safe-area checks.",
+        "numbers": {
+          "likes": {
+            "display": "120",
+            "label": "likes",
+            "source": "https://example.org/mira/p2",
+            "read": "2026-10-29"
+          }
+        }
+      },
+      {
+        "id": "p3",
+        "url": "https://example.org/mira/p3",
+        "date": "2026-09-30",
+        "title": "100 stars today",
+        "text": "CaptionCheck reached 100 stars today. This is a historical milestone, not a current total."
+      }
+    ],
+    "story": [
+      {
+        "id": "preview",
+        "line": "Preview captions on a small screen before export",
+        "posts": [
+          "p1"
+        ],
+        "sources": [
+          {
+            "url": "https://example.org/mira/p1",
+            "kind": "creator_statement",
+            "supports": "The stated tool purpose"
+          }
+        ],
+        "becomes": [
+          {
+            "anim": "own",
+            "why": "Present the actual tool screenshot"
+          }
+        ]
+      },
+      {
+        "id": "checks",
+        "line": "Check contrast and safe areas",
+        "posts": [
+          "p2"
+        ],
+        "sources": [
+          {
+            "url": "https://example.org/mira/p2",
+            "kind": "observed",
+            "supports": "The supplied demo describes these two checks"
+          }
+        ],
+        "becomes": [
+          {
+            "anim": "own",
+            "why": "Show the recorded checks in sequence"
+          }
+        ]
+      },
+      {
+        "id": "stars",
+        "line": "100 stars on September 30",
+        "posts": [
+          "p3"
+        ],
+        "becomes": [
+          {
+            "anim": "count",
+            "opts": {
+              "to": 100,
+              "label": "stars on Sep 30"
+            }
+          }
+        ]
+      },
+      {
+        "id": "likes",
+        "line": "120 likes on the demo",
+        "posts": [
+          "p2"
+        ],
+        "becomes": [
+          {
+            "anim": "count",
+            "opts": {
+              "to": 120,
+              "label": "likes"
+            }
+          }
+        ]
+      }
+    ],
+    "case": "B",
+    "directions": [
+      {
+        "id": "intro",
+        "title": "Check before export",
+        "premise": "Introduce Mira through the caption checks editors can perform.",
+        "hook": {
+          "question": "What can you check before exporting captions?",
+          "visual": "The toy reveals the actual CaptionCheck screenshot inside a small-screen frame.",
+          "text": "Before you export"
+        },
+        "beats": [
+          {
+            "story": "preview",
+            "role": "Show the tool and its purpose",
+            "action": {
+              "does": "Reveal the actual tool screenshot inside a small-screen frame",
+              "means": "CaptionCheck previews captions on small screens before export"
+            }
+          },
+          {
+            "story": "checks",
+            "role": "Demonstrate the two checks",
+            "connection": "The documented checks make the tool's purpose concrete",
+            "action": {
+              "does": "Indicate contrast and safe-area regions in the supplied demo in sequence",
+              "means": "The viewer sees the two documented checks the tool provides"
+            }
+          }
+        ],
+        "payoff": "Editors remember CaptionCheck and what it checks",
+        "why": "Named work and documented features serve the tool-recall goal",
+        "gaps": [],
+        "cta": {
+          "slogan": [
+            "CaptionCheck",
+            "by Mira"
+          ],
+          "prop": "a small screen with the actual tool screenshot"
+        }
+      }
+    ],
+    "picks": {
+      "direction": "intro",
+      "opening": "page-stand"
+    }
+  }
+]

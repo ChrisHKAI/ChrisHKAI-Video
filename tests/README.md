@@ -43,3 +43,15 @@ node --test tests/story-directions.test.mjs
 Covers direction selection through film.json, the existing point/proof formats,
 nested number provenance, material pages in three languages, resume guidance,
 and saved second-round research parsing without overwriting the first round.
+
+The same suite also covers the preproduction story test: missing/revise/stale
+reports cannot move a selected direction into modelling, action meanings are
+required and shown, source/ending edits invalidate the review, and legacy point
+picks still work. Ready reports in unit tests are integration fixtures, not proof
+that a story is compelling.
+
+`tests/fixtures/story-comparison.json` supplies two fictional cuts from the same
+source packet for qualitative evaluation. Give each generated `story-test.md` to
+a fresh reviewer without revealing an expected verdict. Compare its takeaway,
+continuation, specificity and action-meaning answers; no watch-time improvement
+is claimed without audience testing. This evaluation does not render video.

@@ -71,7 +71,8 @@ goes to `extra`; in the film it rises from the name at the top.
   pet, a friend's photo), so this is always asked, never assumed. A real
   person's toy reads better from a clearer photo (half or full body, plain
   light), so offer that too. Record the answer in `toy` (below); step 3 (the
-  toy) can start right away while the research goes on.
+  toy) starts after the selected direction passes the internal story test
+  (`references/story-test.md`); prepare reference images while researching.
 - The banner and every post's cover, as originals (`curl` the image URL; X
   media: `?name=orig`), in `assets/`.
 - Screenshots of the profile and each post in `research/shots/` (on a Mac
@@ -206,6 +207,11 @@ the earlier films did not use (`run.mjs ledger` lists them), and say so in
 the hand-over.
 
 ## Into film.json
+
+For a complete direction, first run `story-test.mjs <film>`, review the generated
+brief and save `research/story-test.json` (`references/story-test.md`). This is
+internal work, not another question for the user. Its current ready verdict is
+required before modelling begins.
 
 `node <skill>/engine/scripts/apply-research.mjs <film>` turns the picks
 into the film: `story.segments` (the opening, each picked story point's

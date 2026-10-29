@@ -66,7 +66,11 @@ Score each from 1 (fails) to 5 (nothing to fix):
    The pace check's results are in the brief; judge what they cannot.
 4. **The motion.** Does each move have weight: it winds up, follows through
    and lands? Is there one toy on screen? Does anything pass through a wall
-   or the floor?
+   or the floor? Compare each major action with its `action.does` and
+   `action.means` in the chosen direction. Does the actual frame communicate
+   that meaning without an explanation? Remove or simplify movements that add
+   no meaning, apart from brief purposeful navigation/identity gestures. Do
+   not infer that written action intent proves the animation implements it.
 5. **The lettering.** Does every line stay long enough to read (the brief
    says how long each needs)? Can it be read against what is behind it?
    Is it inside the safe box?

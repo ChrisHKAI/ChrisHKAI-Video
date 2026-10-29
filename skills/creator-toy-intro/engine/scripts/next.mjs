@@ -7,6 +7,7 @@
 // usage: FILM=<film folder> node engine/scripts/next.mjs   (run.mjs next)
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { film, fromFilm } from "../lib/film.js";
+import { storyTestIssues } from "../lib/story-test.js";
 
 const has = (p) => existsSync(fromFilm(p));
 const json = (p) => { try { return JSON.parse(readFileSync(fromFilm(p), "utf8")); } catch { return null; } };
@@ -27,7 +28,14 @@ if (step === "research") {
     if (!facts.slots?.cta?.length && !facts.directions?.some((d) => d.cta?.slogan?.length)) todo.push("two or three endings: the closing line and the prop → facts.json slots.cta");
     if (facts.story?.length && !has("research/materials.png")) cmds.push("node <skill>/engine/scripts/materials.mjs <film> --lang " + (film.language ?? "zh-Hans"));
     if (has("research/materials.png") && !chosen) show = "research/materials.png: ask for the story direction, the opening and the ending (one round)";
-    if (chosen && facts.toy?.confirmed) cmds.push("node <skill>/engine/scripts/apply-research.mjs <film>");
+    if (chosen && facts.toy?.confirmed) {
+      let issues = [];
+      try { issues = storyTestIssues(facts, json("research/story-test.json")); } catch (e) { issues = [e.message]; }
+      if (issues.length) {
+        todo.push(...issues);
+        cmds.push("node <skill>/engine/scripts/story-test.mjs <film>   (review the brief, save story-test.json, then --check)");
+      } else cmds.push("node <skill>/engine/scripts/apply-research.mjs <film>");
+    }
   }
 } else if (step === "toy") {
   read = "references/toy.md";

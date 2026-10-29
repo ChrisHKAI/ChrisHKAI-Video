@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { readNumber } from "../lib/numbers.js";
 import { resolveDirection } from "../lib/research.js";
+import { storyTestIssues } from "../lib/story-test.js";
 
 const SKILL = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const argv = process.argv.slice(2);
@@ -37,6 +38,12 @@ let selection;
 try { selection = resolveDirection(facts); } catch (e) { fail(e.message); }
 // the toy is only made from a picture the user said to use: many profile pictures are real people
 if (!facts.toy?.confirmed || !facts.toy.images?.length) fail("the toy's picture is not confirmed yet: show the user the profile picture and ask which picture the toy is made from (research/facts.json \"toy\")");
+if (selection.direction) {
+  let report = null;
+  try { report = JSON.parse(readFileSync(join(dir, "research/story-test.json"), "utf8")); } catch { /* an absent or invalid report cannot pass */ }
+  const issues = storyTestIssues(facts, report);
+  if (issues.length) fail(issues.join("\n"));
+}
 const post = (id) => facts.posts.find((p) => p.id === id) ?? fail(`no post "${id}" in research/facts.json`);
 // the stage platform's own grid shows one number per tile
 const stage = film.theme.split("-")[0];
