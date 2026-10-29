@@ -55,3 +55,16 @@ source packet for qualitative evaluation. Give each generated `story-test.md` to
 a fresh reviewer without revealing an expected verdict. Compare its takeaway,
 continuation, specificity and action-meaning answers; no watch-time improvement
 is claimed without audience testing. This evaluation does not render video.
+
+Optional browser layout checks (requires an existing Playwright installation and
+Chrome/Chromium; does not install either):
+
+```bash
+CHROME=/path/to/chrome PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs node tests/materials-browser.mjs
+```
+
+Exercises a three-direction page with alternative hooks at 390, 700 and 1200px
+in all three languages, checking horizontal overflow, column changes, the final
+choice prompt and full-page screenshot capture. The temporary fixture is removed
+afterwards. This tests browser layout, not the CLI PNG-export path or CJK font
+availability; inspect with installed Chinese fonts for final typography approval.

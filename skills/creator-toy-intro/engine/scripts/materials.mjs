@@ -106,7 +106,7 @@ const menu = CAT.filter((a) => a.group === "middle").map((a) => `<div class="m">
 const W = 1200;
 const STYLE = `<style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { width: ${W}px; background: #F4F2EE; font-family: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color: #1C1B19; padding: 36px 40px; }
+body { width: ${W}px; max-width: 100%; background: #F4F2EE; font-family: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color: #1C1B19; padding: 36px 40px; }
 h1 { font-size: 30px; margin-bottom: 16px; } h2 { font-size: 24px; margin: 6px 0 4px; } .note { color: #777; font-size: 16px; margin-bottom: 14px; }
 .pro { display: flex; gap: 20px; align-items: center; background: #fff; border-radius: 14px; padding: 18px 22px; }
 .av { width: 84px; height: 84px; border-radius: 50%; background: #ddd center/cover; flex: none; }
@@ -136,6 +136,22 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .direction h3 { font-size: 22px; } .direction p { margin: 8px 0; font-size: 17px; }
 .direction ol, .direction ul { padding-left: 24px; } .direction li { margin: 6px 0; }
 .badge { color: #267146; font-size: 15px; } .gap { color: #a33c19; } a { color: #205d93; }
+.hook-options { background: #F4F2EE; border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+.sb, .op > div, .pro > div { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  body { padding: 20px 14px; }
+  h1 { font-size: 26px; } h2 { font-size: 21px; }
+  section { padding: 18px 16px; }
+  .pro { padding: 14px; gap: 12px; }
+  .av { width: 56px; height: 56px; }
+  .stories, .ops, .menu { grid-template-columns: 1fr; }
+  .sc { grid-template-columns: 100px minmax(0, 1fr); }
+  .sb { padding: 12px; }
+  .grid { grid-template-columns: 1fr 1fr; }
+  .direction p { font-size: 16px; }
+  .direction h3 { font-size: 20px; }
+  .ask { font-size: 18px; overflow-wrap: anywhere; }
+}
 </style>`;
 const head = `<h1>${T.title}</h1>
 <div class="pro"><div class="av" style="${img(pr.avatar) ? `background-image:url('${img(pr.avatar)}')` : ""}"></div><div><div class="nm">${esc(pr.name)}</div><div class="hd">${pr.handle ? "@" + esc(pr.handle) + " · " : ""}${esc(where)}</div><div class="bio">${(pr.bio ?? []).map(esc).join("<br>")}</div><div class="ns">${nums(pr.numbers)}</div></div></div>`;
@@ -148,7 +164,7 @@ ${directionSection}
 const more = `<section><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
 ${(facts.extra ?? []).length ? `<div class="ns" style="margin-top:12px">${facts.extra.map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("")}</div>` : ""}</section>
 <section><h2>${T.menu}</h2><div class="menu">${menu}</div></section>`;
-const page = (body) => `<!doctype html><html><head><meta charset="utf-8">${STYLE}</head><body>${body}</body></html>`;
+const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${STYLE}</head><body>${body}</body></html>`;
 writeFileSync(join(dir, "research/materials.html"), page(decide + more));
 if (argv.includes("--html-only")) { console.log("wrote research/materials.html"); process.exit(0); }
 
