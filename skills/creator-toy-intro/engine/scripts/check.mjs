@@ -10,6 +10,7 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
+import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -63,7 +64,13 @@ if (past("research")) {
     const n = facts.posts?.find((p) => p.id === pick.post)?.numbers?.[pick.number];
     if (n && c.display && n.display !== c.display) say("bad", `the counter shows ${c.display}, but the pick was ${n.display}`, "run apply-research again, or put the picked number in film.json counter.display");
   }
-  for (const n of facts?.numbers ?? []) if (!n.source || !n.read) say("warn", `the number ${n.display ?? n.value} has no source or date`, "research.md: every number keeps where it was read and when");
+  for (const n of numberProvenanceIssues(facts ?? {})) say("warn", `the number ${n.display} at ${n.path} has no ${n.missing.join(" or ")}`, "research.md: every number keeps where it was read and when");
+  if (facts?.picks?.direction) {
+    try {
+      const { direction } = resolveDirection(facts);
+      if (JSON.stringify(film.story?.direction) !== JSON.stringify(direction)) say("bad", "the chosen story direction changed since it was applied", "run apply-research again, then rebuild the storyboard");
+    } catch (e) { say("bad", e.message, "references/story-directions.md"); }
+  }
   const slogan = (film.cta?.slogan ?? []).map((s) => s.text).join("");
   if (film.cta && !slogan) say("bad", "the end card has no slogan", "film.json cta.slogan: one or two short parts");
 }

@@ -20,11 +20,13 @@
 // minutes and a dollar or so (two runs on cgnot996: $0.92 and $1.38), so run it
 // in the background while the browser research goes on.
 //
-// usage: node engine/scripts/grok-search.mjs <film folder> [--handle <name>] [--max-turns 20] [--from-raw: read research/grok-raw.json again]
+// usage: node engine/scripts/grok-search.mjs <film folder> [--handle <name>] [--max-turns 20] [--gaps] [--from-raw]
+// --gaps reads research/gaps.json; writes separate grok-followup[-raw].json.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { findGrok } from "../lib/tools.js";
+import { researchPrompt } from "../lib/research-prompt.js";
 
 const argv = process.argv.slice(2);
 const arg = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
@@ -34,7 +36,13 @@ const handle = (arg("--handle") ?? film.source?.handle ?? film.profile?.handle ?
 if (!handle) { console.error("no handle: pass --handle <name> (the X account, without @)"); process.exit(1); }
 if (film.source?.platform && film.source.platform !== "x") { console.error(`Grok searches X; this creator is on ${film.source.platform}: use the browser (references/research.md)`); process.exit(1); }
 const grok = findGrok();
-if (!grok) { console.error("no Grok Build: ask the user whether they use Grok (references/onboarding.md), or use the browser"); process.exit(1); }
+if (!grok && !argv.includes("--from-raw")) { console.error("no Grok Build: ask the user whether they use Grok (references/onboarding.md), or use the browser"); process.exit(1); }
+const followup = argv.includes("--gaps");
+const stem = followup ? "grok-followup" : "grok";
+let prompt;
+try {
+  prompt = researchPrompt(handle, followup ? JSON.parse(readFileSync(join(dir, "research/gaps.json"), "utf8")) : null);
+} catch (e) { console.error(e.message); process.exit(1); }
 
 const str = { type: "string" };
 const post = { type: "object", properties: { url: str, date: str, first_line: str, views: str, likes: str, reposts: str, replies: str, has_picture: { type: "boolean" } }, required: ["url", "first_line"] };
@@ -46,18 +54,12 @@ const schema = {
     top: { type: "array", items: post },
     milestones: { type: "array", items: { type: "object", properties: { what: str, date: str, url: str, views: str }, required: ["what"] } },
     ideas: { type: "array", items: { type: "object", properties: { idea: str, from: str }, required: ["idea"] } },
+    story_leads: { type: "array", items: { type: "object", properties: { what: str, kind: str, date: str, url: str, evidence_kind: str }, required: ["what", "kind", "url", "evidence_kind"] } },
+    gap_answers: { type: "array", items: { type: "object", properties: { question: str, status: { type: "string", enum: ["found", "not_found"] }, answer: str, sources: { type: "array", items: str } }, required: ["question", "status", "sources"] } },
     notes: str,
   },
   required: ["top", "milestones", "ideas"],
 };
-const prompt = `Search X for the account @${handle} with your X tools: x_user_search for the account, x_keyword_search for its posts ("from:${handle}", and with min_faves: or the like to find the big ones), x_thread_fetch for each post's numbers. Only read: never like, follow, post or message.
-Find:
-1. its pinned post;
-2. its 5 to 8 posts with the most views or engagement;
-3. every milestone it posted about (followers, stars, plays, sales, days), with the date;
-4. ideas a short intro film about this creator could turn into animation: a journey from one date to another, a number reached, a line in their own words, a turning point.
-For each post: its URL, date, first line, and the views, likes, reposts and replies written exactly as X shows them (keep 万, K, commas); whether it has a picture or video.
-Keep every text in the post's own language. Say in notes what you could not see (for example, a ranking that needs a login).`;
 
 // the answer's text holds one JSON object per turn that answered (the early ones empty): the fullest one
 function answerOf(text) {
@@ -70,14 +72,14 @@ function answerOf(text) {
     else if (c === "{") { if (depth++ === 0) start = i; }
     else if (c === "}" && --depth === 0) { try { objs.push(JSON.parse(text.slice(start, i + 1))); } catch { /* a broken one */ } }
   }
-  const size = (o) => (o.top?.length ?? 0) + (o.milestones?.length ?? 0) + (o.ideas?.length ?? 0) + (o.pinned ? 1 : 0);
+  const size = (o) => (o.top?.length ?? 0) + (o.milestones?.length ?? 0) + (o.ideas?.length ?? 0) + (o.story_leads?.length ?? 0) + (o.gap_answers?.length ?? 0) + (o.pinned ? 1 : 0);
   return objs.reduce((best, o) => (size(o) >= size(best ?? {}) ? o : best), null);
 }
 
 mkdirSync(join(dir, "research"), { recursive: true });
 const t0 = Date.now();
 let raw;
-if (argv.includes("--from-raw")) raw = readFileSync(join(dir, "research/grok-raw.json"), "utf8"); // read a search again, not run it again
+if (argv.includes("--from-raw")) raw = readFileSync(join(dir, `research/${stem}-raw.json`), "utf8"); // no paid search
 else {
   console.log(`grok: searching X for @${handle} (about ten minutes)…`);
   // every tool but the X tools and web search (which --tools cannot name): checked by asking Grok for its tools
@@ -87,7 +89,7 @@ else {
   const r = spawnSync(grok, ["-p", prompt, "--disallowed-tools", DENY.join(","), "--output-format", "json", "--json-schema", JSON.stringify(schema), "--max-turns", arg("--max-turns", "20")],
     { cwd: join(dir, "research"), encoding: "utf8", maxBuffer: 1 << 28 });
   raw = r.stdout ?? "";
-  writeFileSync(join(dir, "research/grok-raw.json"), raw);
+  writeFileSync(join(dir, `research/${stem}-raw.json`), raw);
   if (r.status !== 0) { console.error((r.stderr || raw).slice(-2000)); process.exit(r.status || 1); }
 }
 let out, found;
@@ -97,11 +99,11 @@ try {
   found = typeof answer === "string" ? answerOf(answer) : answer;
   if (!found) throw new Error("no JSON object in the answer");
 } catch (e) {
-  console.error(`grok answered, but not in the shape asked for: see research/grok-raw.json (${e.message})`);
+  console.error(`grok answered, but not in the shape asked for: see research/${stem}-raw.json (${e.message})`);
   process.exit(1);
 }
 const lead = { handle, searched: new Date().toISOString().slice(0, 10), minutes: argv.includes("--from-raw") ? null : +((Date.now() - t0) / 60000).toFixed(1), costUSD: out.total_cost_usd ?? null, ...found };
-writeFileSync(join(dir, "research/grok.json"), JSON.stringify(lead, null, 2) + "\n");
-console.log(`research/grok.json: pinned ${found.pinned ? "yes" : "no"}, ${found.top?.length ?? 0} top posts, ${found.milestones?.length ?? 0} milestones, ${found.ideas?.length ?? 0} ideas (${lead.minutes} min, $${lead.costUSD ?? "?"})`);
+writeFileSync(join(dir, `research/${stem}.json`), JSON.stringify(lead, null, 2) + "\n");
+console.log(`research/${stem}.json: pinned ${found.pinned ? "yes" : "no"}, ${found.top?.length ?? 0} top posts, ${found.milestones?.length ?? 0} milestones, ${found.story_leads?.length ?? 0} story leads, ${found.gap_answers?.length ?? 0} gap answers (${lead.minutes} min, $${lead.costUSD ?? "?"})`);
 if (found.notes) console.log(`grok's note: ${found.notes}`);
 console.log("leads only: open each post on the page and take its numbers from there (references/research.md)");

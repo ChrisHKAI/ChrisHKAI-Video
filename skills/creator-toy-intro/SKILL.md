@@ -23,7 +23,8 @@ recipe: `references/beats.md`, `props.md`), say so to the user in a line,
 and note it so it can come back into the skill. Never make a film worse to
 fit the skill: a template piece that does not fit the material is left out,
 not forced. What stays fixed, whatever is built:
-- numbers are true, current and sourced (where and when each was read);
+- numbers are sourced (where and when read): current counts are fresh,
+  historical milestones retain their event dates and original values;
 - the profile picture is the creator's own, never redrawn;
 - the user picks the toy's picture, the story and the ending, and signs off
   the storyboard; nothing renders for hours before they have seen previews.
@@ -71,7 +72,7 @@ commands to run.
 | --- | --- | --- | --- |
 | 0 | the computer: check, then one yes installs what is missing | the install list, if anything is missing | `references/onboarding.md` |
 | 1 | onboarding: the creator's link, a workspace; how long it all takes, said once | 16:9 or 9:16 | `references/onboarding.md` |
-| 2 | research, story first: what the creator is known for and proud of, each with its material, numbers (current, sourced) and the animation it becomes; `apply-research` turns the picks into the film's pieces | the toy's picture; the story page (`materials.png`): the story points, one of three openings, the ending, each with a preview | `references/research.md` |
+| 2 | research, evidence map and up to three complete story directions (one recommended; one targeted search for important gaps), then story first: what the creator is known for and proud of, each with its material, numbers (current, sourced) and the animation it becomes; `apply-research` turns the picks into the film's pieces | the toy's picture; the story page (`materials.png`): the story points, one of three openings, the ending, each with a preview | `references/research.md`, `story-directions.md` |
 | 3 | the toy, with the body its picture has (person, animal, object), in one of three kits; its colours checked on the dark stage | the turnaround beside the picture | `references/toy.md` |
 | 4 | the film's own code (what its pieces need: cover cuts, a beat of its own, the prop), `check`, then the storyboard page: the story, the beat grid, real preview renders, every sound under the animatic, the checks (pace, the toy's size, reading time, colours, not the last film again, a second opinion) | the storyboard page: notes on the frames, the sound, sign-off | `references/storyboard.md`, `beats.md`, `cover-wall.md`, `props.md`, `avatar.md`, `exits.md` |
 | 5 | how long (a quick half-size version first, if they like), the render, the finish: the film, the effects-only cut, each platform's covers, the last look | the finished film | `references/render.md` |
@@ -86,7 +87,7 @@ the user knowingly keeps something, said in a line).
 | --- | --- |
 | `example/isnail/` | a whole film's own code, worked: film.json, toy.json, the cover recipes |
 | `characters/` | every toy made so far (isnail, a calico cat, Tim, Steve Jobs, Chris), in step 3's formats, to start a new one from |
-| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` (step 2), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `review.md` (the independent review, steps 4 and 5), `render.md` (step 5) |
+| `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md` and `story-directions.md` (step 2: sources, gap search, complete narrative options), `toy.md` (step 3), `cover-wall.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md` and `storyboard.md` (step 4), `review.md` (the independent review, steps 4 and 5), `render.md` (step 5) |
 | `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `catalog.json` (every animation, what it fits, a preview strip in `previews/`, its film.json entry: the story page's menu), `page-stand.js` (Kin's and 铁柱's opening: the page stands up turning right or left, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
 | `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `look.py` (the light, shared by the film and the toy's look-dev); `music.py` (their own song on the film's beat); `real.py` and `instruments.json` (the real instruments: lemo-opuscar's sampler, vendored in `engine/vendor/lemo/` under MIT, and the sample libraries it plays); `pacing.py`, `colors.py` and `ledger.py` (the page's checks: the pace and the toy's size on screen, the colours, the ledger of delivered films: the skill's own in `ledger-base.json`, this machine's in `~/.chrishkai-video/ledger.json`); `sdf.py` (the sculpt kit's signed distance fields) |
@@ -161,7 +162,8 @@ act 3; events, places, camera keys
 and shakes only where they differ from the template's own `story.json`:
 `events` merge one by one, a list such as `camera` or `shakes` replaces the
 template's whole; `segments`, pieces of the story and beats one after
-another: `references/beats.md`), `source` (the creator's link, platform,
+another: `references/beats.md`), `story.direction` (the chosen hook, connected facts and payoff; implement these
+in step 4), `source` (the creator's link, platform,
 handle), `toyFrom` (the pictures the user confirmed the toy is made from)
 and `step` (the step a film being made is at).
 
@@ -239,7 +241,7 @@ film and names the three biggest problems with their times
 - The toy has the body its original has: a lemon gets no arms or legs.
 - What the skill lacks, the film builds; the skill never makes a film worse
   than the model would make it without it.
-- Numbers are today's, read from the page or an API with where and when;
+- Current counts are today's, read from the page or an API with where and when;
   never a round figure from an old post (3,000 when the repo has 8,904).
 - One toy on screen, ever: the toy and the flat sticker swap, never both.
 - The film is as long as what it says: one beat per point, each as long as

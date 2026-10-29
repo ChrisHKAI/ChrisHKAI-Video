@@ -126,6 +126,11 @@ cues = ", ".join(f"{c['t']:.2f} {c['kind']}" for c in sorted(TL["cues"], key=lam
 rubric = (SKILL / "references/review.md").read_text().split("<!-- rubric -->")[1].split("<!-- /rubric -->")[0].strip()
 where = ", ".join(PLATFORMS[p]["name"] for p in platforms([])) or "X"
 
+direction = F.get("story", {}).get("direction")
+narrative = ("\n## Intended story (compare against the actual frames)\n\n```json\n"
+             + json.dumps(direction, ensure_ascii=False, indent=2) + "\n```\n"
+             if direction else "")
+
 brief = f"""# Review: {prof.get('name', F.get('id', 'the film'))}'s intro film
 
 You review a short film on your own, with fresh eyes. Read this file and the
@@ -145,7 +150,7 @@ The words on screen are in {F.get('language', 'zh-Hans')}.
 
 ## The film's parts
 
-""" + "\n".join(f"- {p}" for p in parts) + f"""
+""" + "\n".join(f"- {p}" for p in parts) + narrative + f"""
 
 ## The sound cues (time in s, then what)
 

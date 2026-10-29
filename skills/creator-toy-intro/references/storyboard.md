@@ -4,6 +4,15 @@ The one stop before the full render: a page with the story, the beat grid
 and real preview renders, checked by you first, then signed off by the user.
 Nothing is rendered in full before they say yes.
 
+## Carry the chosen story into the frames
+
+Read `film.story.direction` when present. Implement its first-frame visual and
+short on-screen hook using the film's own code; metadata does not draw them.
+Each segment must advance its stated role and relationship to the previous one.
+Check that the ending delivers the hook's promise. Preserve supported facts;
+when the user changes the arc, update facts.json and apply it again before
+rebuilding previews. Older films without a direction use their selected points.
+
 ## Build it
 
 ```bash

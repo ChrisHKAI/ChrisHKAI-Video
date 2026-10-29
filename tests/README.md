@@ -33,3 +33,13 @@ node tests/research-roundtrip.mjs films/isnail <scratch folder>
 
 Theme layouts: `node tests/make-theme-films.mjs films/isnail` makes a 9:16
 test workspace per phone theme (films/test-<theme>) with test values.
+
+Story direction and evidence checks (offline, no Blender or paid search):
+
+```bash
+node --test tests/story-directions.test.mjs
+```
+
+Covers direction selection through film.json, the existing point/proof formats,
+nested number provenance, material pages in three languages, resume guidance,
+and saved second-round research parsing without overwriting the first round.

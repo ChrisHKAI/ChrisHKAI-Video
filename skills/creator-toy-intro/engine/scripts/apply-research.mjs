@@ -20,6 +20,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { readNumber } from "../lib/numbers.js";
+import { resolveDirection } from "../lib/research.js";
 
 const SKILL = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const argv = process.argv.slice(2);
@@ -32,6 +33,8 @@ const CAT = JSON.parse(readFileSync(join(SKILL, "beats/catalog.json"), "utf8")).
 const anim = (id) => CAT.find((a) => a.id === id);
 
 const picks = facts.picks ?? fail("research/facts.json has no \"picks\" yet: the user picks from the material page first");
+let selection;
+try { selection = resolveDirection(facts); } catch (e) { fail(e.message); }
 // the toy is only made from a picture the user said to use: many profile pictures are real people
 if (!facts.toy?.confirmed || !facts.toy.images?.length) fail("the toy's picture is not confirmed yet: show the user the profile picture and ask which picture the toy is made from (research/facts.json \"toy\")");
 const post = (id) => facts.posts.find((p) => p.id === id) ?? fail(`no post "${id}" in research/facts.json`);
@@ -43,7 +46,7 @@ const show = (p, k) => p.numbers?.[k]?.display;
 // ── the story the user picked → segments ────────────────────────────────────
 // each pick: a story point's id, or { id, anim } when the user chose its second animation
 const story = facts.story ?? [];
-const picked = (picks.story ?? []).map((x) => {
+const picked = selection.story.map((x) => {
   const id = typeof x === "string" ? x : x.id;
   const s = story.find((q) => q.id === id) ?? fail(`picks.story names "${id}", which research/facts.json "story" does not have`);
   const b = (typeof x === "object" && x.anim ? s.becomes?.find((y) => y.anim === x.anim) ?? { anim: x.anim } : s.becomes?.[0]) ?? fail(`story point "${id}" says nothing it becomes ("becomes")`);
@@ -139,7 +142,8 @@ const beforeEnd = segments?.[segments.length - 2];
 const exit = !legacy && beforeEnd && !beforeEnd.story ? "jump" : film.story?.exit;
 
 const others = facts.posts.filter((p) => p !== p1 && p !== p2 && p.cover);
-const slogan = picks.cta?.slogan ?? fail("picks.cta.slogan is missing (one or two short parts)");
+const ending = picks.cta ?? selection.direction?.cta;
+const slogan = ending?.slogan ?? fail("picks.cta.slogan is missing (one or two short parts)");
 const next = {
   ...film,
   profile,
@@ -149,12 +153,12 @@ const next = {
   cta: {
     ...(film.cta ?? {}),
     // the prop idea the user picked with the closing line; the agent builds it (references/props.md)
-    ...(picks.cta.prop ? { prop: { ...(film.cta?.prop ?? {}), idea: picks.cta.prop } } : {}),
+    ...(ending.prop ? { prop: { ...(film.cta?.prop ?? {}), idea: ending.prop } } : {}),
     slogan: slogan.map((text, k) => ({ text, paper: k % 2 ? "red" : "cream" })),
     name: { text: pr.name, paper: "cream" },
     handle: { text: pr.handle ? `@${pr.handle}` : pr.name, paper: "blue" },
   },
-  ...(legacy ? {} : { story: { ...(film.story ?? {}), segments, ...(exit ? { exit } : {}) } }),
+  ...(legacy ? (film.story?.direction ? { story: { ...film.story, direction: null } } : {}) : { story: { ...(film.story ?? {}), segments, direction: selection.direction, ...(exit ? { exit } : {}) } }),
   toyFrom: facts.toy.images,
   source: { ...(film.source ?? {}), read: facts.read },
   step: "toy",

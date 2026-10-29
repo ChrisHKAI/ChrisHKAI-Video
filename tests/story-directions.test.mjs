@@ -1,0 +1,168 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
+import { resolveDirection, numberProvenanceIssues } from "../skills/creator-toy-intro/engine/lib/research.js";
+import { researchPrompt } from "../skills/creator-toy-intro/engine/lib/research-prompt.js";
+
+const root = fileURLToPath(new URL("../", import.meta.url));
+const script = (name) => join(root, "skills/creator-toy-intro/engine/scripts", name);
+const metric = (display) => ({ display, label: "views", source: "https://example.org/post", read: "2026-10-29" });
+function facts() {
+  return {
+    platform: "x", read: "2026-10-29", profile: { name: "Test creator", handle: "test", bio: ["Tools for editors"], avatar: "assets/avatar.png", numbers: { followers: metric("150") } },
+    posts: [
+      { id: "p1", url: "https://example.org/p1", title: "Tool demo", pinned: true, numbers: { views: metric("1.2万") } },
+      { id: "p2", url: "https://example.org/p2", title: "Tutorial", numbers: { views: metric("500") } },
+    ],
+    toy: { confirmed: true, images: ["assets/avatar.png"] },
+    story: [
+      { id: "s1", line: "Tool demo", posts: ["p1"], numbers: [metric("1.2万")], sources: [{ url: "https://example.org/p1", supports: "A real demo" }], becomes: [{ anim: "count", opts: { to: 12000, label: "views" } }] },
+      { id: "s2", line: "Learn the method", posts: ["p2"], becomes: [{ anim: "phrase", opts: { text: "Learn the method" } }] },
+    ],
+    narrative: { audience: "Editors", goal: "Remember a useful tool", inferred: true },
+    directions: [{ id: "method", title: "Learn by making", premise: "Useful tools for editors", hook: { question: "What can I make?", visual: "Reveal the demo", text: "Make this" }, beats: [{ story: "s1", role: "Show the work" }, { story: "s2", role: "Explain the method", connection: "The tutorial explains the demo" }], payoff: "Know what to learn", why: "Specific work and direct sources", gaps: [], cta: { slogan: ["Build along"], prop: "a tiny tool" } }],
+    recommendedDirection: "method", picks: { direction: "method", opening: "page-stand" },
+  };
+}
+function workspace(t, f = facts()) {
+  const dir = mkdtempSync(join(tmpdir(), "story-directions-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const created = run(dir, "new-film.mjs", [dir, "--link", "https://x.com/test"]);
+  assert.equal(created.status, 0, created.stderr);
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  return dir;
+}
+function run(dir, name, args = [], env = {}) {
+  return spawnSync(process.execPath, [script(name), ...args], { encoding: "utf8", env: { ...process.env, FILM: dir, ...env }, cwd: root });
+}
+
+test("direction resolves ordered facts and permits only matching animation overrides", () => {
+  const f = facts();
+  assert.deepEqual(resolveDirection(f).story, ["s1", "s2"]);
+  f.picks.story = ["s1", { id: "s2", anim: "phrase" }];
+  assert.deepEqual(resolveDirection(f).story, f.picks.story);
+  f.picks.story.reverse();
+  assert.throws(() => resolveDirection(f), /differs/);
+});
+
+test("unsupported or broken directions cannot be applied", () => {
+  for (const [mutate, pattern] of [
+    [f => { f.picks.direction = "missing"; }, /name one direction/],
+    [f => { f.directions[0].gaps = ["Why did they change?"]; }, /evidence gaps/],
+    [f => { f.directions[0].beats[1].story = "missing"; }, /missing story/],
+    [f => { f.directions[0].beats[1].connection = ""; }, /connection/],
+    [f => { f.directions[0].hook.text = ""; }, /hook.text/],
+    [f => { f.directions[0].beats[1].story = "s1"; }, /repeats/],
+  ]) {
+    const f = facts(); mutate(f); assert.throws(() => resolveDirection(f), pattern);
+  }
+});
+
+test("all number locations are checked, including old workspaces and blank metadata", () => {
+  const f = facts();
+  assert.deepEqual(numberProvenanceIssues(f), []);
+  delete f.profile.numbers.followers.source;
+  f.posts[0].numbers.views.read = " ";
+  f.story[0].numbers[0].source = "";
+  f.extra = [{ display: "3", source: "screenshot.png" }];
+  f.numbers = [{ value: 0 }];
+  assert.deepEqual(numberProvenanceIssues(f).map(i => i.path), ["numbers.0", "profile.numbers.followers", "posts[0].numbers.views", "story[0].numbers.0", "extra.0"]);
+});
+
+test("selected direction reaches film segments, ending and the preflight check", (t) => {
+  const f = facts(), dir = workspace(t, f);
+  const before = readFileSync(join(dir, "film.json"), "utf8");
+  const dry = run(dir, "apply-research.mjs", [dir, "--dry-run"]);
+  assert.equal(dry.status, 0, dry.stderr);
+  assert.equal(readFileSync(join(dir, "film.json"), "utf8"), before);
+  const applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  const film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.deepEqual(film.story.direction, f.directions[0]);
+  assert.equal(film.story.segments[1].beat, "count");
+  assert.equal(film.story.segments[2].beat, "phrase");
+  assert.equal(film.cta.slogan[0].text, "Build along");
+  assert.equal(film.cta.prop.idea, "a tiny tool");
+  assert.equal(film.counter.display, "1.2万");
+  writeFileSync(join(dir, "toy.json"), JSON.stringify({ joints: {}, parts: [] }));
+  assert.equal(run(dir, "check.mjs").status, 0);
+  f.directions[0].payoff = "Changed promise";
+  delete f.posts[0].numbers.views.source;
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  const checked = run(dir, "check.mjs");
+  assert.equal(checked.status, 1);
+  assert.match(checked.stdout, /posts\[0\].numbers.views has no source/);
+  assert.match(checked.stdout, /direction changed/);
+});
+
+test("existing point picks and legacy proof picks retain their behavior", (t) => {
+  for (const picks of [
+    { story: ["s2", "s1"], opening: "page-stand-left", cta: { slogan: ["Old story"] } },
+    { proof1: { post: "p1", number: "views" }, proof2: { post: "p2" }, cta: { slogan: ["Old proofs"] } },
+  ]) {
+    const f = facts(); delete f.directions; f.picks = picks;
+    const dir = workspace(t, f), result = run(dir, "apply-research.mjs", [dir]);
+    assert.equal(result.status, 0, result.stderr);
+    const film = JSON.parse(readFileSync(join(dir, "film.json")));
+    assert.equal(film.cta.slogan[0].text, picks.cta.slogan[0]);
+    assert.equal(film.counter.display, "1.2万");
+    if (picks.story) assert.equal(film.story.segments[1].beat, "phrase");
+  }
+});
+
+test("a direction is not applied before the toy picture is confirmed", (t) => {
+  const f = facts(); f.toy.confirmed = false;
+  const dir = workspace(t, f), before = readFileSync(join(dir, "film.json"), "utf8");
+  const result = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /picture is not confirmed/);
+  assert.equal(readFileSync(join(dir, "film.json"), "utf8"), before);
+});
+
+test("material page shows complete directions and escapes source text in all languages", (t) => {
+  const f = facts(); f.directions[0].title = '<script>alert("test")</script>';
+  const dir = workspace(t, f);
+  for (const lang of ["en", "zh-Hant", "zh-Hans"]) {
+    const result = run(dir, "materials.mjs", [dir, "--html-only", "--lang", lang]);
+    assert.equal(result.status, 0, result.stderr);
+    const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+    assert.match(html, /&lt;script&gt;/);
+    assert.doesNotMatch(html, /<script>alert/);
+    assert.match(html, /The tutorial explains the demo/);
+    assert.match(html, /Know what to learn/);
+    assert.match(html, /href="https:\/\/example.org\/p1"/);
+  }
+});
+
+test("next resumes a direction pick without requiring duplicate story picks", (t) => {
+  const dir = workspace(t);
+  const result = run(dir, "next.mjs");
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /apply-research/);
+  assert.doesNotMatch(result.stdout, /ask for the story/);
+});
+
+test("search prompts distinguish discovery from a bounded evidence-gap follow-up", () => {
+  assert.match(researchPrompt("test"), /including low-engagement posts/);
+  assert.match(researchPrompt("test"), /Historical|historical/);
+  assert.match(researchPrompt("test", ["Why was this tool made?"]), /Do not repeat the top-post ranking/);
+  for (const gaps of [[], [""], Array(6).fill("question"), ["a".repeat(501)]]) assert.throws(() => researchPrompt("test", gaps), /1–5/);
+  assert.throws(() => researchPrompt("not a handle"), /X handle/);
+});
+
+test("saved follow-up responses reparse offline without replacing discovery results", (t) => {
+  const dir = workspace(t);
+  const original = '{"top":[{"url":"https://example.org/original"}]}';
+  writeFileSync(join(dir, "research/grok.json"), original);
+  writeFileSync(join(dir, "research/gaps.json"), JSON.stringify(["Why this tool?"]));
+  const answer = { top: [], milestones: [], ideas: [], gap_answers: [{ question: "Why this tool?", status: "not_found", sources: [] }] };
+  writeFileSync(join(dir, "research/grok-followup-raw.json"), JSON.stringify({ result: JSON.stringify(answer) }));
+  const result = run(dir, "grok-search.mjs", [dir, "--gaps", "--from-raw"], { GROK: "/nonexistent-grok-do-not-run" });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(readFileSync(join(dir, "research/grok.json"), "utf8"), original);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "research/grok-followup.json"))).gap_answers, answer.gap_answers);
+});

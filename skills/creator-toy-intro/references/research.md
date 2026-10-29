@@ -2,12 +2,14 @@
 
 Find out who the creator is: what they are known for and proud of, with
 the material that shows it (their posts, pictures, numbers, their own
-words). Every number exactly as the platform writes it, current, with where
-and when it was read; the pictures as originals. Then show the user the
-story page and let them pick. Two questions only: which picture the toy is
-made from (as soon as the profile picture is in), and the picks. Never ask
-who the film is for or whether a number is true: use the numbers the user
-gives as they are.
+words). Keep numbers exactly as the platform writes them, with where and
+when they were read. Current counts are fresh; historical milestones retain
+their event dates and original values. Keep pictures as originals. Then show the user the
+story page and let them pick. Two selection rounds: which picture the toy is
+made from (as soon as the profile picture is in), then the story direction, opening and ending together.
+Infer audience and goal from the request and sources and show that assumption
+on the story page for correction. Keep user-supplied numbers as supplied,
+label their source and date, and distinguish them from independently read counts.
 
 The film is their story turned into animation, not a template filled in.
 Pick material for what it says about them, never for the slot it fits.
@@ -31,6 +33,9 @@ Read only, always: never like, follow, comment or message.
   - the posts with the most views or engagement;
   - the milestones they posted about, with dates and numbers;
   - ideas for the film.
+  It also finds beginnings, problems, decisions and methods beyond popular
+  posts. Use one targeted follow-up only for important evidence gaps
+  (`references/story-directions.md`; `grok-search.mjs <film> --gaps`).
   These are leads: open each post on the page and take its numbers from
   there, as the page writes them. Grok's milestones and ideas become story
   points (`story`, below).
@@ -76,10 +81,12 @@ goes to `extra`; in the film it rises from the name at the top.
 - Each number: the platform's own writing (`304万`, `1.1萬`, `46K`, `5,018`),
   its label as the app says it (阅读, 粉丝, 获赞), and its spot: a profile field
   or a post's count. It counts up in the film just as it is written.
-- Numbers are today's: read them from the page or the API now, never from
+- Current counts are today's: read them from the page or the API now, never from
   an old post that mentions them ("破 3K star" is a milestone, not the count;
   the repo has 8,904 today). Each number keeps `source` (the URL it was read
-  from) and `read` (the date).
+  from) and `read` (the date). Historical milestones additionally keep their
+  event date; they are not substituted for current counts. For supplied
+  screenshots, record when received/read and label them as supplied evidence.
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.
 
 `research/` stays out of any git repository.
@@ -93,14 +100,14 @@ goes to `extra`; in the film it rises from the name at the top.
     "name": "蜗牛King", "handle": "isnail", "bio": ["…", "…"],
     "avatar": "assets/avatar.jpg", "banner": "assets/banner.jpg", "shot": "research/shots/profile.png",
     "fields": { "nameEmoji": "👑", "verified": true, "meta": { "link": "chuhai.pet" }, "ip": "广东" },
-    "numbers": { "followers": { "label": "关注者", "display": "5.5万", "source": "https://x.com/isnail", "read": "2026-10-26" }, "following": { "label": "正在关注", "display": "1,380" }, "posts": { "label": "帖子", "display": "3.5万" } }
+    "numbers": { "followers": { "label": "关注者", "display": "5.5万", "source": "https://x.com/isnail", "read": "2026-10-26" }, "following": { "label": "正在关注", "display": "1,380", "source": "https://x.com/isnail", "read": "2026-10-26" }, "posts": { "label": "帖子", "display": "3.5万", "source": "https://x.com/isnail", "read": "2026-10-26" } }
   },
   "posts": [
     { "id": "p1", "url": "…", "date": "5月31日", "title": "…", "cover": "assets/p1.jpg", "shot": "research/shots/p1.png", "pinned": true,
-      "numbers": { "replies": { "label": "回复", "display": "163" }, "reposts": { "label": "转帖", "display": "914" }, "likes": { "label": "喜欢", "display": "5,018" }, "views": { "label": "阅读", "display": "304万" } } }
+      "numbers": { "replies": { "label": "回复", "display": "163", "source": "<original post URL>", "read": "2026-10-26" }, "reposts": { "label": "转帖", "display": "914", "source": "<original post URL>", "read": "2026-10-26" }, "likes": { "label": "喜欢", "display": "5,018", "source": "<original post URL>", "read": "2026-10-26" }, "views": { "label": "阅读", "display": "304万", "source": "<original post URL>", "read": "2026-10-26" } } }
   ],
   "toy": { "images": ["assets/avatar.jpg"], "confirmed": true },
-  "extra": [{ "label": "总播放", "display": "1200万", "source": "research/shots/dashboard.png" }],
+  "extra": [{ "label": "总播放", "display": "1200万", "source": "research/shots/dashboard.png", "read": "2026-10-26" }],
   "story": [{ "id": "s1", "line": "…", "posts": ["p1"], "numbers": [], "becomes": [] }],
   "slots": { "cta": [] },
   "picks": {}
@@ -163,27 +170,38 @@ becomes the shell of a snail because he is 蜗牛King: `{ "slogan":
 ["公众号变现", "找蜗牛"], "prop": "his 公众号 mark becomes a snail's shell; the
 toy rides it", "why": "…" }`.
 
+## Choose a complete direction
+
+Read `references/story-directions.md` before matching facts to animations.
+Synthesize the evidence, search important gaps once, then propose up to three
+distinct supported directions and recommend one. Store `narrative`,
+`directions` and `recommendedDirection` beside `story` in facts.json. Keep
+historical milestones dated; today's counts are a separate fact.
+
 ## The story page
 
 `node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
-language>` writes `research/materials.png` (the three choices: the story
+language>` writes `research/materials.png` (complete directions first, then the choices: the story
 points, each with its picture, numbers, sources and a preview strip of what
 it becomes; the three openings with their previews; the endings) and
 `research/materials-posts.png` (every post found, and the menu of
 animations), and `research/materials.html` with both. Show the first, and
 ask in one round (AskUserQuestion where the agent has it, else one message):
-- which story points, in what order (two or three; a 30 s film holds three);
+- which direction (including its ordered story points), or changes to it;
+  for older workspaces without directions, which story points in what order;
 - which opening (isnail's glass page, Kin's page turning right, 铁柱's
   turning left);
 - which ending, or their own words.
-Write the answers into `picks`: `{ "story": ["s2", { "id": "s1", "anim":
+For a direction, write `picks.direction` to its ID; its beats and ending are
+the defaults (`picks.cta` may override the ending). Otherwise keep the existing
+point-selection format in `picks`: `{ "story": ["s2", { "id": "s1", "anim":
 "count" }], "opening": "page-stand", "cta": { "slogan": […], "prop": "…" } }`
 (a story point by its id takes its first animation; `{ id, anim }` another).
 If they name something no story point covers, add it as one, with what it
 becomes, and show it again.
 
-When the user is away (an unattended run), pick as they would: the story
-points that say most about who the creator is, an opening and an ending
+When the user is away (an unattended run), record the supported recommended
+direction in `picks.direction` (older workspaces: the strongest story points), an opening and an ending
 the earlier films did not use (`run.mjs ledger` lists them), and say so in
 the hand-over.
 
@@ -198,5 +216,7 @@ other posts), the end card's name, handle, slogan and prop idea
 (`cta.prop.idea`, built in step 4: `references/props.md`), `toyFrom` (the
 confirmed pictures), and moves `step` to `toy`. It stops while the toy's
 picture is not confirmed, and names each `own` animation still to write.
+The chosen direction is also stored in `film.story.direction` for the
+storyboard and review. It is a brief to implement, not rendered text by itself.
 Set film.json `language` from the profile's own script (简 → `zh-Hans`, 繁 →
 `zh-Hant`).

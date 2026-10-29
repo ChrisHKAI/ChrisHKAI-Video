@@ -6,7 +6,7 @@
 // found, as evidence, and the whole menu of animations. Plain words only: what
 // the viewer will see, never the template's slot names.
 //
-// usage: node engine/scripts/materials.mjs <film folder> [--lang zh-Hant|zh-Hans|en]
+// usage: node engine/scripts/materials.mjs <film folder> [--lang zh-Hant|zh-Hans|en] [--html-only]
 // reads research/facts.json ("story", "slots.cta", "posts", "ideas")
 // → research/materials.html (everything), research/materials.png (the three
 //   choices) and research/materials-posts.png (the posts and the menu)
@@ -27,6 +27,12 @@ const T = {
   "zh-Hant": { title: "你條片：先揀故事", story: "① 片入面講佢邊幾件事？", storyNote: "揀兩至三件，照出場次序", becomes: "片入面會見到", read: "讀取", opening: "② 點樣開場？", openNote: "揀一款", ending: "③ 點樣收尾？", endNote: "最後一句同佢坐住嘅道具", other: "其他：直接講", posts: "搵到嘅帖（證據）", pinned: "置頂", menu: "仲可以變成呢啲動畫", ask: "揀好就話我知：故事（例如 A、C）、開場、收尾", idea: "想法", none: "未寫故事：agent 先照 research.md 搵出佢最出名、最自豪嘅幾件事" },
   en: { title: "Your film: the story first", story: "① What does the film tell about them?", storyNote: "pick two or three, in the order they come", becomes: "On screen", read: "read", opening: "② How does it open?", openNote: "pick one", ending: "③ How does it end?", endNote: "the last line and the prop the toy sits on", other: "Other: just say", posts: "The posts found (the evidence)", pinned: "pinned", menu: "What else the material can become", ask: "Tell me your picks: the story (say A, C), the opening, the ending", idea: "idea", none: "No story yet: the agent first finds what they are known for and proud of (research.md)" },
 }[lang] ?? {};
+const D = {
+  "zh-Hans": { title: "先选一条故事主线", audience: "给谁看", goal: "看完记住什么／做什么", assumed: "根据资料推断，可修改", recommended: "推荐", hook: "开场要让人想知道", visual: "第一幕", text: "画面短句", payoff: "结尾回应", evidence: "依据", gaps: "还缺证据，暂不选用", ask: "告诉我：故事方向、开场、收尾；也可以修改下面的素材组合" },
+  "zh-Hant": { title: "先揀一條故事主線", audience: "畀邊個睇", goal: "睇完記得乜／做乜", assumed: "按資料推斷，可以改", recommended: "推薦", hook: "開場令人想知道", visual: "第一幕", text: "畫面短句", payoff: "結尾回應", evidence: "依據", gaps: "仲欠證據，暫時唔揀", ask: "話我知：故事方向、開場、收尾；亦可以改下面嘅素材組合" },
+  en: { title: "Choose a story direction", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "The opening question", visual: "First frame", text: "On-screen line", payoff: "Payoff", evidence: "Evidence", gaps: "Evidence missing; not ready to select", ask: "Tell me the direction, camera opening and ending; or change the material choices below" },
+}[lang] ?? null;
+if (!D) throw new Error("--lang must be zh-Hant, zh-Hans or en");
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const img = (p, base = dir) => (p && existsSync(join(base, p)) ? `file://${encodeURI(join(base, p))}` : null);
 const nums = (n) => Object.values(n ?? {}).map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("");
@@ -58,6 +64,27 @@ const storyCard = (s, k) => {
   }).join("");
   return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
+const directions = facts.directions ?? [];
+const directionCard = (d, i) => {
+  const evidence = (d.beats ?? []).flatMap((b) => {
+    const s = story.find((s) => s.id === b.story);
+    return [...(s?.sources ?? []).map((x) => ({ url: x.url, label: x.supports || x.url })),
+      ...(s?.posts ?? []).map((id) => ({ url: post(id)?.url, label: post(id)?.title }))];
+  }).filter((e, i, all) => e.url && all.findIndex((x) => x.url === e.url) === i);
+  const link = (e) => /^https?:\/\//i.test(e.url) ? `<a href="${esc(e.url)}">${esc(e.label || e.url)}</a>` : esc(e.label || e.url);
+  return `<article class="direction"><h3>${i + 1}. ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
+  <p>${esc(d.premise)}</p><p><b>${D.hook}:</b> ${esc(d.hook?.question)}</p>
+  <p><b>${D.visual}:</b> ${esc(d.hook?.visual)}<br><b>${D.text}:</b> ${esc(d.hook?.text)}</p>
+  <ol>${(d.beats ?? []).map((b) => `<li><b>${esc(b.role)}</b>: ${esc(story.find((s) => s.id === b.story)?.line ?? b.story)}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}</li>`).join("")}</ol>
+  <p><b>${D.payoff}:</b> ${esc(d.payoff)}</p><p class="why">${esc(d.why)}</p>
+  ${(d.cta?.slogan ?? []).length ? `<p>${D.payoff}: ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
+  ${evidence.length ? `<details><summary>${D.evidence} (${evidence.length})</summary><ul>${evidence.map((e) => `<li>${link(e)}</li>`).join("")}</ul></details>` : ""}
+  ${d.gaps?.length ? `<p class="gap"><b>${D.gaps}:</b> ${d.gaps.map(esc).join("；")}</p>` : ""}</article>`;
+};
+const narrative = facts.narrative ?? {};
+const directionSection = directions.length ? `<section><h2>${D.title}</h2>
+  <p class="note">${D.audience}: ${esc(narrative.audience)} · ${D.goal}: ${esc(narrative.goal)}${narrative.inferred ? `<br>${D.assumed}` : ""}</p>
+  ${directions.map(directionCard).join("")}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
 const cta = (c, k) => `<div class="c"><span class="k">${LETTER[k]}</span><div><div class="h">${(c.slogan ?? []).map(esc).join(" ／ ")}</div>${c.prop ? `<div class="num">${esc(c.prop)}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;
@@ -94,33 +121,48 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .meta { color: #888; font-size: 13px; margin: 10px 12px 3px; } .t { font-size: 15px; font-weight: 600; line-height: 1.4; margin: 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .card .ns { margin: 6px 12px 0; }
 .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; } .m b { font-size: 15px; }
 .ask { font-size: 21px; font-weight: 700; margin-top: 22px; }
+.direction { border-top: 1px solid #ddd; padding: 18px 0; line-height: 1.6; overflow-wrap: anywhere; }
+.direction h3 { font-size: 22px; } .direction p { margin: 8px 0; font-size: 17px; }
+.direction ol, .direction ul { padding-left: 24px; } .direction li { margin: 6px 0; }
+.badge { color: #267146; font-size: 15px; } .gap { color: #a33c19; } a { color: #205d93; }
 </style>`;
 const head = `<h1>${T.title}</h1>
 <div class="pro"><div class="av" style="${img(pr.avatar) ? `background-image:url('${img(pr.avatar)}')` : ""}"></div><div><div class="nm">${esc(pr.name)}</div><div class="hd">${pr.handle ? "@" + esc(pr.handle) + " · " : ""}${esc(where)}</div><div class="bio">${(pr.bio ?? []).map(esc).join("<br>")}</div><div class="ns">${nums(pr.numbers)}</div></div></div>`;
 const decide = `${head}
+${directionSection}
 <section><h2>${T.story}</h2><div class="note">${T.storyNote}</div>${story.length ? `<div class="stories">${story.map(storyCard).join("")}</div>` : `<div class="why">${T.none}</div>`}</section>
 <section><h2>${T.opening}</h2><div class="note">${T.openNote}</div><div class="ops">${openings.map(opening).join("")}</div></section>
 <section><h2>${T.ending}</h2><div class="note">${T.endNote}</div>${(facts.slots?.cta ?? []).slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
-<div class="ask">${T.ask}</div>`;
+<div class="ask">${directions.length ? D.ask : T.ask}</div>`;
 const more = `<section><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
 ${(facts.extra ?? []).length ? `<div class="ns" style="margin-top:12px">${facts.extra.map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("")}</div>` : ""}</section>
 <section><h2>${T.menu}</h2><div class="menu">${menu}</div></section>`;
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8">${STYLE}</head><body>${body}</body></html>`;
 writeFileSync(join(dir, "research/materials.html"), page(decide + more));
+if (argv.includes("--html-only")) { console.log("wrote research/materials.html"); process.exit(0); }
 
 // the two pictures: the choices (what the user answers), then the evidence and the menu
 const storyRows = Math.ceil(Math.max(story.length, 1) / 2);
 const storyH = story.reduce((h, s, i) => (i % 2 ? h : h + 70 + Math.max(...[s, story[i + 1]].filter(Boolean).map((x) => 60 + 34 * (x.numbers?.length ?? 0) + 96 * Math.min(2, x.becomes?.length ?? 0)), 200)), 0);
-const H1 = 36 + 60 + 130 + 110 + (story.length ? storyH + 16 * storyRows : 60) + 110 + 190 + 110 + 70 * (Math.min(3, facts.slots?.cta?.length ?? 0) + 1) + 90;
+const directionH = directions.length ? 160 + directions.reduce((h, d) => h + 340 + (d.beats?.length ?? 0) * 85 + Math.ceil(JSON.stringify(d).length / 65) * 30, 0) : 0;
+const H1 = directionH + 36 + 60 + 130 + 110 + (story.length ? storyH + 16 * storyRows : 60) + 110 + 190 + 110 + 70 * (Math.min(3, facts.slots?.cta?.length ?? 0) + 1) + 90;
 const H2 = 40 + 100 + Math.ceil(posts.length / 4) * 270 + ((facts.extra ?? []).length ? 50 : 0) + 100 + Math.ceil(CAT.filter((a) => a.group === "middle").length / 2) * 130 + 40;
 const chrome = findChrome();
 if (!chrome) { console.log("no headless Chrome: open research/materials.html instead"); process.exit(0); }
 const shot = (body, h, png) => {
   const tmp = join(dir, `research/.${png}.html`);
-  writeFileSync(tmp, page(body));
-  execFileSync(chrome, ["--headless", "--hide-scrollbars", "--disable-gpu", "--allow-file-access-from-files", `--window-size=${W},${h}`, "--force-device-scale-factor=1",
-    `--screenshot=${join(dir, "research", png)}`, `file://${tmp}`], { stdio: "ignore" });
+  // Direction cards contain prose of variable length. Measure the laid-out
+  // page instead of cropping a long language variant or adding blank screens.
+  writeFileSync(tmp, page(body + '<script>document.title = "material-height:" + Math.ceil(document.documentElement.scrollHeight);</script>'));
+  const flags = ["--headless", "--hide-scrollbars", "--disable-gpu", "--allow-file-access-from-files", "--force-device-scale-factor=1"];
+  let height = h;
+  try {
+    const dom = execFileSync(chrome, [...flags, `--window-size=${W},600`, "--dump-dom", `file://${tmp}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
+    height = Number(dom.match(/<title>material-height:(\d+)<\/title>/)?.[1]) || h;
+  } catch { console.log(`could not measure ${png}; using the estimated page height`); }
+  execFileSync(chrome, [...flags, `--window-size=${W},${height}`, `--screenshot=${join(dir, "research", png)}`, `file://${tmp}`], { stdio: "ignore", timeout: 30000 });
+  return height;
 };
-shot(decide, H1, "materials.png");
-shot(more, H2, "materials-posts.png");
-console.log(`wrote ${join(dir, "research/materials.html")}, materials.png (${W}x${H1}: the story, the opening, the ending) and materials-posts.png (${W}x${H2}: the posts, the menu)`);
+const height1 = shot(decide, H1, "materials.png");
+const height2 = shot(more, H2, "materials-posts.png");
+console.log(`wrote ${join(dir, "research/materials.html")}, materials.png (${W}x${height1}: the story, the opening, the ending) and materials-posts.png (${W}x${height2}: the posts, the menu)`);

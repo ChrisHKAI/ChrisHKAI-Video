@@ -54,7 +54,12 @@ Score each from 1 (fails) to 5 (nothing to fix):
    their own? Are their numbers right and written the way their platform
    writes them ("1,500", "304万")?
 2. **The idea.** Does the film say who they are with their own material?
-   Is there one moment only this kind of film could do?
+   Is there one moment only this kind of film could do? State in one sentence
+   what a new viewer remembers about this creator. Check whether the facts
+   form the intended progression, whether the opening gives a reason to care
+   (not just a camera move), and whether the ending delivers that promise.
+   Flag unsupported causal links and generic achievement lists. When no
+   direction is supplied, judge the film on these questions anyway.
 3. **The pacing.** Where does attention first drift? Always answer with a
    time. Look for a hit in the first 3 s, quiet stretches, a move repeated
    for no reason, and a part that stays longer than it has things to show.

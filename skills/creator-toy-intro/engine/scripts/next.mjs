@@ -22,10 +22,12 @@ if (step === "research") {
   else {
     if (!facts.toy?.confirmed) todo.push("ask which picture the toy is made from (the profile picture, or one they send) → facts.json toy");
     if (!facts.story?.length) todo.push("the creator's story: three to five things they are known for, each with its material and what it becomes → facts.json story");
-    if (!facts.slots?.cta?.length) todo.push("two or three endings: the closing line and the prop → facts.json slots.cta");
+    const chosen = facts.picks?.direction || facts.picks?.story || facts.picks?.proof1;
+    if (!facts.directions?.length && !chosen) todo.push("evidence map, one targeted gap search if needed, then up to three complete directions and a recommendation → facts.json directions (references/story-directions.md)");
+    if (!facts.slots?.cta?.length && !facts.directions?.some((d) => d.cta?.slogan?.length)) todo.push("two or three endings: the closing line and the prop → facts.json slots.cta");
     if (facts.story?.length && !has("research/materials.png")) cmds.push("node <skill>/engine/scripts/materials.mjs <film> --lang " + (film.language ?? "zh-Hans"));
-    if (has("research/materials.png") && !facts.picks?.story) show = "research/materials.png: ask for the story points, the opening and the ending (one round)";
-    if (facts.picks?.story && facts.toy?.confirmed) cmds.push("node <skill>/engine/scripts/apply-research.mjs <film>");
+    if (has("research/materials.png") && !chosen) show = "research/materials.png: ask for the story direction, the opening and the ending (one round)";
+    if (chosen && facts.toy?.confirmed) cmds.push("node <skill>/engine/scripts/apply-research.mjs <film>");
   }
 } else if (step === "toy") {
   read = "references/toy.md";

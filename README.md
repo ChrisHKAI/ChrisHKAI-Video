@@ -121,6 +121,12 @@ Before you sign off, the storyboard page checks the film for you:
 - **Not the last film again**: each film you deliver is kept in a ledger, with the skill's own films in it from the start, and a new one must differ from every one of them in at least four of six things (the opening, the structure, the signature move, the colours, the sound, the ending).
 - **A second opinion**: a fresh reviewer reads the brief and the frames. Where it disagrees, you get its view as one more option, not a rule.
 
+Story selection first offers up to three complete directions and recommends one:
+each has an opening hook, connected facts, a payoff and any evidence gaps. One
+targeted follow-up can fill important gaps (an additional paid search when using
+Grok). Thin evidence leads to a narrower story, never an invented turning point.
+Existing projects can still select individual material points as before.
+
 ### The sound
 
 You pick the sound by ear: `run.mjs listen` lays each one under the animatic.
