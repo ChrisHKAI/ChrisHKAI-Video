@@ -33,6 +33,11 @@ const D = {
   en: { title: "Choose a story direction", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "The opening question", visual: "First frame", text: "On-screen line", payoff: "Payoff", evidence: "Evidence", gaps: "Evidence missing; not ready to select", ask: "Tell me the direction, camera opening and ending; or change the material choices below" },
 }[lang] ?? null;
 if (!D) throw new Error("--lang must be zh-Hant, zh-Hans or en");
+const editorialWords = {
+  "zh-Hant": { reason: "點解揀呢項", tradeoffs: "素材取捨", alternatives: "其他故事開場", why: "取捨" },
+  "zh-Hans": { reason: "为什么选这项", tradeoffs: "素材取舍", alternatives: "其他故事开场", why: "取舍" },
+  en: { reason: "Why this material", tradeoffs: "Material tradeoffs", alternatives: "Alternative story hooks", why: "Tradeoff" },
+}[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const img = (p, base = dir) => (p && existsSync(join(base, p)) ? `file://${encodeURI(join(base, p))}` : null);
 const nums = (n) => Object.values(n ?? {}).map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("");
@@ -62,7 +67,7 @@ const storyCard = (s, k) => {
     const pv = strip(b.anim);
     return `<div class="turn"><div class="tl">${j ? "" : `${T.becomes}：`}<b>${esc(a ? word(a.label) : b.anim)}</b></div>${pv ? `<div class="pv" style="background-image:url('${pv}')"></div>` : ""}${b.why ? `<div class="why">${esc(b.why)}</div>` : ""}</div>`;
   }).join("");
-  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${numbers}${turns}</div></div>`;
+  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
 const directions = facts.directions ?? [];
 const actionWords = {
@@ -80,6 +85,7 @@ const directionCard = (d, i) => {
   return `<article class="direction"><h3>${i + 1}. ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p><p><b>${D.hook}:</b> ${esc(d.hook?.question)}</p>
   <p><b>${D.visual}:</b> ${esc(d.hook?.visual)}<br><b>${D.text}:</b> ${esc(d.hook?.text)}</p>
+  ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.hook}:</b> ${esc(h.question)}<br><b>${D.visual}:</b> ${esc(h.visual)}<br><b>${D.text}:</b> ${esc(h.text)}<br><span class="why">${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
   <ol>${(d.beats ?? []).map((b) => `<li><b>${esc(b.role)}</b>: ${esc(story.find((s) => s.id === b.story)?.line ?? b.story)}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}<br><b>${actionWords[1]}:</b> ${esc(b.action.means)}</div>` : ""}</li>`).join("")}</ol>
   <p><b>${D.payoff}:</b> ${esc(d.payoff)}</p><p class="why">${esc(d.why)}</p>
   ${(d.cta?.slogan ?? []).length ? `<p>${D.payoff}: ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
@@ -89,7 +95,7 @@ const directionCard = (d, i) => {
 const narrative = facts.narrative ?? {};
 const directionSection = directions.length ? `<section><h2>${D.title}</h2>
   <p class="note">${D.audience}: ${esc(narrative.audience)} · ${D.goal}: ${esc(narrative.goal)}${narrative.inferred ? `<br>${D.assumed}` : ""}</p>
-  ${directions.map(directionCard).join("")}</section>` : "";
+  ${directions.map(directionCard).join("")}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
 const cta = (c, k) => `<div class="c"><span class="k">${LETTER[k]}</span><div><div class="h">${(c.slogan ?? []).map(esc).join(" ／ ")}</div>${c.prop ? `<div class="num">${esc(c.prop)}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;

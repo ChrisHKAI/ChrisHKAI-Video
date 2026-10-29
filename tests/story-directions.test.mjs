@@ -224,3 +224,36 @@ test("current review passes check and action meanings appear in the choice page"
   assert.match(html, /公仔做乜/);
   assert.match(html, /See how the work was made/);
 });
+
+test("material reasons and alternative hooks are escaped in all story-page languages", (t) => {
+  const f = facts();
+  f.story[0].selection = { reason: 'Useful demo <script>alert("x")</script>' };
+  f.selectionNotes = ['Omit unrelated viral post <img src=x>'];
+  f.directions[0].hookAlternatives = [{ question: 'What is <safe> here?', visual: 'Actual demo', text: 'Check "before" export', why: 'Concrete task & payoff' }];
+  const dir = workspace(t, f);
+  for (const lang of ['en', 'zh-Hant', 'zh-Hans']) {
+    const result = run(dir, 'materials.mjs', [dir, '--html-only', '--lang', lang]);
+    assert.equal(result.status, 0, result.stderr);
+    const html = readFileSync(join(dir, 'research/materials.html'), 'utf8');
+    assert.ok(html.includes('Useful demo &lt;script&gt;'));
+    assert.ok(html.includes('Omit unrelated viral post &lt;img src=x&gt;'));
+    assert.ok(html.includes('What is &lt;safe&gt; here?'));
+    assert.ok(html.includes('Concrete task &amp; payoff'));
+    assert.ok(!html.includes('<script>alert('));
+  }
+});
+
+test("switching to an alternative hook invalidates the review and applies only the selected hook", (t) => {
+  const f = facts();
+  f.directions[0].hookAlternatives = [{ question: 'What does this tool check?', visual: 'The actual demo', text: 'Check before export', why: 'Lead with the task' }];
+  const dir = workspace(t, f);
+  const { question, visual, text } = f.directions[0].hookAlternatives[0];
+  f.directions[0].hook = { question, visual, text };
+  writeFileSync(join(dir, 'research/facts.json'), JSON.stringify(f));
+  assert.notEqual(run(dir, 'apply-research.mjs', [dir]).status, 0);
+  writeFileSync(join(dir, 'research/story-test.json'), JSON.stringify(readyReport(f)));
+  assert.equal(run(dir, 'apply-research.mjs', [dir]).status, 0);
+  const film = JSON.parse(readFileSync(join(dir, 'film.json'), 'utf8'));
+  assert.deepEqual(film.story.direction.hook, { question, visual, text });
+  assert.equal(film.story.segments.length, 4); // opening + two factual beats + ending
+});

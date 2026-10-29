@@ -174,6 +174,8 @@ toy rides it", "why": "…" }`.
 ## Choose a complete direction
 
 Read `references/story-directions.md` before matching facts to animations.
+Compare candidates for audience relevance, specificity, evidence, visual clarity
+and complementary contribution; record selection reasons and important exclusions.
 Synthesize the evidence, search important gaps once, then propose up to three
 distinct supported directions and recommend one. Store `narrative`,
 `directions` and `recommendedDirection` beside `story` in facts.json. Keep
