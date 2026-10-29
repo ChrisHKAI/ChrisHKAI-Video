@@ -697,24 +697,80 @@ def build_geo(o):
     return me
 
 
-def curve_piece(o):
-    g = o["geo"]
-    cu = bpy.data.curves.new(o["name"], "CURVE")
+def ring_curve(name, rings, g):
+    cu = bpy.data.curves.new(name, "CURVE")
     cu.dimensions = "2D"
     cu.fill_mode = "BOTH"
     cu.extrude = g["depth"] / 2
     cu.bevel_depth = g.get("bevel", 0.0005)
     cu.bevel_resolution = 2
     cu.resolution_u = 1
-    for ring in g["rings"]:
+    for ring in rings:
         sp = cu.splines.new("POLY")
         sp.points.add(len(ring) - 1)
         for p, (x, y) in zip(sp.points, ring):
             p.co = (x, y, 0, 1)
         sp.use_cyclic_u = True
-    for mat in material(o["mat"]):
-        cu.materials.append(mat)
     return cu
+
+
+def inside(pt, ring):
+    """Ray casting: whether pt is inside the closed ring."""
+    x, y = pt
+    c = False
+    for i in range(len(ring)):
+        (x0, y0), (x1, y1) = ring[i - 1], ring[i]
+        if (y0 > y) != (y1 > y) and x < x0 + (y - y0) * (x1 - x0) / (y1 - y0):
+            c = not c
+    return c
+
+
+def islands(rings):
+    """The rings grouped into islands: an outer ring (inside an even number of others) and the holes right inside
+    it. Blender's fill decides the holes of all a curve's rings at once, and two islands side by side can fool it
+    into taking one for a hole of the other: 优's 亻 touches its 尤 at a point, and most of 亻 went unfilled. A
+    ring is inside another when most of its points are."""
+    area = lambda r: abs(0.5 * sum(r[i - 1][0] * r[i][1] - r[i][0] * r[i - 1][1] for i in range(len(r))))  # noqa: E731
+    box = [(min(x for x, _ in r), min(y for _, y in r), max(x for x, _ in r), max(y for _, y in r)) for r in rings]
+    def within(i, j):  # (two dozen of its points are enough to tell)
+        a, b = box[i], box[j]
+        if a[0] < b[0] or a[1] < b[1] or a[2] > b[2] or a[3] > b[3]:
+            return False
+        pts = rings[i][:: max(1, len(rings[i]) // 24)]
+        return sum(inside(p, rings[j]) for p in pts) > len(pts) / 2
+    holders = [[j for j in range(len(rings)) if j != i and within(i, j)] for i in range(len(rings))]
+    groups = {i: [rings[i]] for i, h in enumerate(holders) if len(h) % 2 == 0}
+    for i, h in enumerate(holders):
+        if len(h) % 2:
+            own = min((j for j in h if j in groups), key=lambda j: area(rings[j]), default=None)
+            (groups[own] if own is not None else groups.setdefault(i, [])).append(rings[i])
+    return list(groups.values())
+
+
+def curve_piece(o):
+    """Lettering or a cover piece: its outline rings filled, extruded and bevelled. One island is a curve as
+    ever; several are each filled on their own and joined into one mesh."""
+    g = o["geo"]
+    parts = islands(g["rings"])
+    if len(parts) <= 1:
+        data = ring_curve(o["name"], g["rings"], g)
+    else:
+        bm = bmesh.new()
+        for k, rings in enumerate(parts):
+            cu = ring_curve(f"{o['name']}.{k}", rings, g)
+            tmp = bpy.data.objects.new(cu.name, cu)
+            bpy.context.scene.collection.objects.link(tmp)
+            me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+            bm.from_mesh(me)
+            bpy.data.objects.remove(tmp)
+            bpy.data.curves.remove(cu)
+            bpy.data.meshes.remove(me)
+        data = bpy.data.meshes.new(o["name"])
+        bm.to_mesh(data)
+        bm.free()
+    for mat in material(o["mat"]):
+        data.materials.append(mat)
+    return data
 
 
 # ── Keys straight into the F-curves ─────────────────────────────────────────

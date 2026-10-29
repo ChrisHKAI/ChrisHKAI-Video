@@ -71,6 +71,9 @@ export const RETRO_COVER = L.ANCHORS.secondCover;
 const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < S.events.cut - 1e-6 && s.s0 > S.events.cut - BAR && s.s1 > S.events.cut)?.s0;
 export const EV = END_FROM !== undefined ? { ...S.events, cut: END_FROM } : S.events;
 export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
+// the slogan's letters land a half beat apart; a long one closes up (16th notes, say) so its last letter is
+// down before the final lock, and the line holds to the end
+export const LETTER_STEP = Math.min(BEAT / 2, (EV.final - EV.letters - BEAT / 2) / Math.max(1, [...SLOGAN].length - 1));
 export const SLOGAN_RED = film.cta.slogan[0].text.length; // the second label's letters are red
 export const CTA = S.stage; // the CTA stage: far beyond every other shot's clip distance
 export const SPOT = S.spots ?? D.spots; // places in UI px
@@ -192,13 +195,13 @@ export function soundCues() {
   // a letter a note up the scale; a slogan longer than the scale spreads it over every letter, still rising
   const n = [...SLOGAN].length;
   const note = (i) => TUNE[n <= TUNE.length ? i : Math.round((i * (TUNE.length - 1)) / (n - 1))];
-  [...SLOGAN].forEach((_, i) => add(EV.letters + i * BEAT / 2, "letter", { note: note(i), red: i >= SLOGAN_RED }));
+  [...SLOGAN].forEach((_, i) => add(EV.letters + i * LETTER_STEP, "letter", { note: note(i), red: i >= SLOGAN_RED }));
   add(E.final, "lock", { big: true });
   add(E.final + 0.02, "sparkle");
   add(E.final + 0.15, "glint");
   // the torn-paper labels slap on; the name's letters pop; the crown lands
   const starts = film.cta.slogan.map((_, k) => film.cta.slogan.slice(0, k).reduce((n, p) => n + [...p.text].length, 0));
-  [...starts.map((start) => EV.letters + start * BEAT / 2 - 0.06), E.name, E.name + 0.18].forEach((at, i) => add(at, "slap", { i }));
+  [...starts.map((start) => EV.letters + start * LETTER_STEP - 0.06), E.name, E.name + 0.18].forEach((at, i) => add(at, "slap", { i }));
   const nameLen = [...film.cta.name.text].length;
   for (let i = 0; i < nameLen; i++) add(E.name + 0.05 + 0.05 * i, "namePop", { i });
   add(E.name + 0.22, "namePop", { i: nameLen, handle: true });

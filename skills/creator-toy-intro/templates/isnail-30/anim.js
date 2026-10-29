@@ -553,10 +553,9 @@ const cta = (x, y, z) => [T.CTA[0] + x, T.CTA[1] + y, T.CTA[2] + z];
 // raised Lantinghei Heavy letters on it. The line 公众号变现 | 找蜗牛 stands on
 // the floor where the snail has crawled, a letter per 8th note; 蜗牛King (with a
 // gold crown) and @isnail are slapped up in the empty space above at 28 s.
-const BEAT8 = T.BEAT / 2;
 // label: text, em (m), paper, centre (m from CTA), tilt, when it lands, letter times
 const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt) => makeLabel({ id, text, em, paper, c: [cx, cy, cz], tilt, at, letterAt, adv });
-export const SLOGAN_LETTER = (i) => E.letters + i * BEAT8;
+export const SLOGAN_LETTER = (i) => E.letters + i * T.LETTER_STEP;
 // the slogan's labels run on from one another, a letter per 8th note; the name
 // and the handle are slapped up together at E.name
 const CTA_TEXT = film.cta;
@@ -567,7 +566,9 @@ const sloganPlaces = (scale = 1, xs = null) => {
     sloganAt += [...p.text].length;
     const d = T.CTA_LAYOUT.slogan[k] ?? { ...T.CTA_LAYOUT.slogan.at(-1), at: T.CTA_LAYOUT.slogan.at(-1).at.map((v, j) => v + T.CTA_LAYOUT.sloganStep[j] * (k - T.CTA_LAYOUT.slogan.length + 1)) };
     const at = p.at ?? (xs ? [xs[k], d.at[1], d.at[2]] : d.at);
-    return label(`slogan${k}`, p.text, (p.em ?? d.em) * scale, p.paper, ...at, p.tilt ?? d.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
+    const L = label(`slogan${k}`, p.text, p.em ?? d.em, p.paper, ...at, p.tilt ?? d.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
+    if (scale !== 1) L.fit = scale; // the whole label set smaller (labels.js labelT), its lettering cut at full size
+    return L;
   });
 };
 // the template's places hold a short slogan (公众号变现 / 找蜗牛); a longer one, which would run into the next

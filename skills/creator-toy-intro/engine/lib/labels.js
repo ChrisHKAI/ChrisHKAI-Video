@@ -45,11 +45,12 @@ export function tear(L, i) {
 }
 
 // the label slaps on: a little big and twisted, then flat and still; place
-// turns its centre into world space
+// turns its centre into world space. L.fit sets a whole label smaller (a long slogan fitted to its space): its
+// lettering keeps the size it was cut at, so Blender fills every glyph as it always has
 export function labelT(L, t, place) {
   const s = seg(t, L.at, L.at + 0.18);
   if (t < L.at) return trs(place(...L.c), qId(), HIDDEN);
-  const k = lerp(1.25, 1, easeOut(s));
+  const k = lerp(1.25, 1, easeOut(s)) * (L.fit ?? 1);
   const tw = L.tilt + 0.12 * (1 - easeOut(s));
   return trs(place(L.c[0], L.c[1], L.c[2] + 0.02 * (1 - easeOut(s))), qEuler(-0.15 * (1 - s), 0, tw), k);
 }
