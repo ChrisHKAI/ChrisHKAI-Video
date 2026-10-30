@@ -1,8 +1,9 @@
 // Where the pipeline's outside tools are: Blender, the Python with the
 // pipeline's modules, headless Chrome. Step 0 (scripts/doctor.mjs) installs
 // what is missing without admin rights where it can: Blender into
-// ~/Applications, the Python modules into a venv and the fallback faces into
-// the skill's home (~/.chrishkai-video, or CHRISHKAI_VIDEO_HOME).
+// ~/Applications on a Mac, elsewhere a portable Blender into the skill's home
+// (~/.chrishkai-video, or CHRISHKAI_VIDEO_HOME), as are the Python modules'
+// venv and the fallback faces.
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { homedir } from "node:os";
@@ -21,13 +22,24 @@ export const PY_MODULES = ["numpy", "scipy", "PIL", "fontTools", "contourpy", "s
 const runs = (cmd, args = ["--version"]) => spawnSync(cmd, args, { encoding: "utf8", timeout: 60000 }).status === 0;
 export const onPath = (cmd) => runs(WIN ? "where" : "which", [cmd]);
 
+// BLENDER first (a Blender kept anywhere else), then the usual places: newest version first
 export function blenderCandidates() {
+  const exe = WIN ? "blender.exe" : "blender";
+  // in each folder, its versions' own folders ("Blender 5.2", "blender-5.2.3-windows-x64")
+  const inside = (dir) => newestFirst(readdirSafe(dir)).map((d) => join(dir, d, exe));
+  const env = process.env;
   return [
-    process.env.BLENDER,
+    env.BLENDER,
     "/Applications/Blender.app/Contents/MacOS/Blender",
     join(homedir(), "Applications/Blender.app/Contents/MacOS/Blender"),
-    join(HOME, "blender", "blender"),
-    ...(WIN ? readdirSafe("C:/Program Files/Blender Foundation").sort().reverse().map((d) => `C:/Program Files/Blender Foundation/${d}/blender.exe`) : []),
+    // a portable Blender (doctor's, or a .zip / .tar.xz unpacked by hand) in the skill's home
+    join(HOME, "blender", exe),
+    ...inside(join(HOME, "blender")),
+    ...(WIN ? [
+      ...inside(join(env.ProgramFiles || "C:/Program Files", "Blender Foundation")),
+      ...(env.LOCALAPPDATA ? inside(join(env.LOCALAPPDATA, "Programs", "Blender Foundation")) : []),
+      join(env["ProgramFiles(x86)"] || "C:/Program Files (x86)", "Steam/steamapps/common/Blender", exe),
+    ] : []),
   ].filter(Boolean);
 }
 export function findBlender() {
@@ -71,3 +83,5 @@ export const toolEnv = (extra = {}) => ({ ...process.env, PATH: `${BIN}${WIN ? "
 function readdirSafe(d) {
   try { return readdirSync(d); } catch { return []; }
 }
+// "Blender 5.10" before "Blender 5.2"
+const newestFirst = (names) => [...names].sort((a, b) => b.localeCompare(a, "en", { numeric: true }));

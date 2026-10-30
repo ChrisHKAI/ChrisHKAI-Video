@@ -34,6 +34,14 @@ node tests/research-roundtrip.mjs films/isnail <scratch folder>
 Theme layouts: `node tests/make-theme-films.mjs films/isnail` makes a 9:16
 test workspace per phone theme (films/test-<theme>) with test values.
 
+Which GPU Cycles renders on (`engine/lib/device.py`), from fake device lists
+(no Blender or GPU): OptiX before CUDA, HIP, oneAPI and Metal; the CPU with a
+warning; a card the preferences remember from another computer is not used.
+
+```bash
+python3 tests/render-device.test.py
+```
+
 Story direction and evidence checks (offline, no Blender or paid search):
 
 ```bash
