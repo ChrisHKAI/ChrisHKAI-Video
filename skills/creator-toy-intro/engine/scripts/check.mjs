@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
+import { clearance, describe } from "../lib/clearance.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -147,6 +148,15 @@ if (past("toy") && toy && film.profile) {
       }
     } else if (playsAct3 && wall && !cover) say("bad", "film.json story.wall names act 3's pieces, but build/cover.json is not there", "run the cover recipe (run.mjs recipes)");
   }
+  // where the toy goes into something, from the motion as built (run.mjs anim): worth a look while
+  // previewing, a stop before the full render
+  const animPath = fromFilm("build/anim.json");
+  if (existsSync(animPath) && statSync(animPath).mtimeMs >= statSync(fromFilm("film.json")).mtimeMs) {
+    const { contacts, height } = clearance(JSON.parse(readFileSync(animPath, "utf8")), { file: (p) => fromFilm(p) });
+    const into = describe(contacts, height).filter((m) => m.kind === "into");
+    for (const m of into) say(process.argv.includes("--render") ? "bad" : "warn", `the toy goes through something: ${m.text}`, "references/clearance.md says how to keep it clear");
+    if (!into.length) say("ok", "the toy goes through nothing");
+  } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
 }
 
 // ── before the full render: what the storyboard page found, and the pacing ─

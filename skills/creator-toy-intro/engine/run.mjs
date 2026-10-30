@@ -168,6 +168,8 @@ for (const [i, step] of steps.entries()) {
         console.log("(the page plays every sound under the animatic: listen first)");
         run("node", [fromSkill("engine/run.mjs"), "listen"]);
       }
+      // where the toy goes into something, for the page's checks (a moment to fix is not a stop here)
+      if (existsSync(fromFilm("build/anim.json"))) spawnSync("node", [fromSkill("engine/scripts/clearance.mjs")], { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
       run(PY, [fromSkill("engine/scripts/storyboard.py"), ...more]);
       break;
     case "animatic":

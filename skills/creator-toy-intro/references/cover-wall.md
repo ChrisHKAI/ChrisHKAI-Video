@@ -87,3 +87,10 @@ this cover when there is one (`references/exits.md`).
 
 `node engine/run.mjs recipes` then look at `build/cover-check.png` and
 `build/cover2-check.png`; then a few previews of 7.6–8.4 s and 13–20 s.
+
+The toy keeps clear of every piece by itself: it stands in front of what
+pushes out, and never inside it (`references/clearance.md`). The one thing
+a recipe can still get wrong is a role's piece that is shallower than a
+piece above it: the toy standing on it would be inside the deeper one.
+`engine/scripts/clearance.mjs` says so after `run.mjs anim`. Then make the
+piece it stands on deeper, or move its `at`.

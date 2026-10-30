@@ -5,7 +5,7 @@
 // Three.js-style: metres, +y up, +z toward the viewer's (south) edge of the
 // page; 1 UI px = 1 mm, UI centre at the origin, slab tops at y = 0.
 // Transforms are { p, q, s }.
-import { film, readFilmJSON } from "#engine/film.js";
+import { film, readFilmJSON, fromFilm } from "#engine/film.js";
 import * as T from "./timeline.js";
 import { TOY, CENTER } from "#engine/toy.js";
 import { clamp01, seg, smooth, lerp, easeOut, easeIn, easeInOut, backOut, TAU, v3, lerpAngle, yawTo } from "#engine/math.js";
@@ -16,7 +16,8 @@ import { ballistic } from "#engine/particles.js";
 import { makePeel } from "#engine/peel.js";
 import { counterLayout, countEase, counterGlyphs, counterText, slotCount } from "#engine/counter.js";
 import { mulberry32 } from "#engine/rng.js";
-import { qId, qMul, qAxis, qEuler, qRot, trs, apply, mulT } from "#engine/quat.js";
+import { qId, qMul, qAxis, qEuler, qRot, qConj, trs, apply, mulT } from "#engine/quat.js";
+import { restBounds } from "#engine/clearance.js";
 
 export const MM = 0.001;
 export const SLAB_T = 0.008;
@@ -187,7 +188,7 @@ export function titleTilt(t) {
   return qEuler(-0.25 * out, 0.12 * out, 0.06 * out);
 }
 
-export function mascotPose(t) {
+function storyPose(t) {
   const o = basePose(POP);
   if (t < E.pop) { o.show = false; return o; }
   // ── act 1: pop, land, the glasses, down the profile ──
@@ -365,6 +366,102 @@ export function mascotPose(t) {
   if (p > 0) { o.flat = lerp(1, 0.04, easeIn(p)); o.pop = lerp(1, 1.1, p); }
   return o;
 }
+
+// ── The toy keeps clear of the walls ────────────────────────────────────────
+// The story's places were tuned on isnail's covers; another cover's pieces
+// stand out elsewhere and further. So wherever the story puts the toy in
+// front of a wall, it is moved out along the wall's facing until every piece
+// across its body is behind it. It steps aside a moment before a piece comes
+// out (LEAD), and a wall rising under it tips it off forward. The piece under
+// its feet carries it and is not in the way, and it never steps off that
+// piece's front edge (when it would have to, clearance.mjs says so: a deeper
+// piece, or another place on it). Wall-local metres; the toy's body is a
+// capsule as wide as the toy, so the way round a corner is a smooth curve.
+const BODY = (() => {
+  const o = basePose([0, 0, 0]);
+  const b = restBounds(TOY.parts, partsAt(heroT(o, CENTER), o, TOY), fromFilm);
+  return { r: Math.max(-b.lo[0], b.hi[0], -b.lo[2], b.hi[2]), h: b.hi[1] };
+})();
+const LEAD = 0.4;
+const bbox = (pts) => ({ x0: Math.min(...pts.map((q) => q[0])), x1: Math.max(...pts.map((q) => q[0])), y0: Math.min(...pts.map((q) => q[1])), y1: Math.max(...pts.map((q) => q[1])) });
+const PIECES2 = COVER2.pieces.filter((p) => T.WALL2?.[p.name]).map((p) => ({ p, ...bbox(p.rings.flat().map(coverToWall2)) }));
+const PIECES3 = COVER.pieces.filter((p) => PIECE_DEPTH[p.kind === "ink" ? p.of : p.name] !== undefined).map((p) => ({ p, ...bbox(p.rings.flat().map(coverToWall)) }));
+// how far a piece's front stands out at t (m), as piece2At and pieceAt push it (the title's fly-out is
+// a blink: it counts at rest, so the toy is not thrown about by it)
+function front2(p, t) {
+  const [at, depth] = T.WALL2[p.name];
+  return (0.3 + (depth - 0.3) * backOut(seg(t, at, at + 0.2), 1.7)) * MM;
+}
+function front3(p, t) {
+  const base = p.kind === "ink" ? p.of : p.name;
+  let out = protrudeAt(base, t);
+  if (ROLE[base] === "title") out = Math.min(out, T.WALL.title.depth + 6);
+  return (p.kind === "ink" ? out + 5 * Math.min(1, out / 10) : out) * MM;
+}
+// what the toy makes way for at t: the most a piece will stand out over the next LEAD seconds,
+// the nearer the more
+const ahead = (front, p, t) => Math.max(...[0, 0.25, 0.5, 0.75, 1].map((k) => front(p, t + k * LEAD) * smooth(1 - k)));
+// the walls up at t, where they are
+function wallsAt(t) {
+  const out = [];
+  if (t >= E.stand2[0] && t < E.sink2[0]) out.push({ key: "wall2", tr: wall2At(t), w: WALL_W, h: WALL2_H, pieces: PIECES2.map((x) => ({ ...x, front: ahead(front2, x.p, t) })) });
+  if (T.WALL && t >= E.stand[0] && t < E.flat[1]) out.push({ key: "wall", tr: wallAt(t).tr, w: WALL_W, h: WALL_H, pieces: PIECES3.map((x) => ({ ...x, front: ahead(front3, x.p, t) })) });
+  return out;
+}
+const toWall = (W, p) => qRot(qConj(W.tr.q), v3.sub(p, W.tr.p)).map((v) => v / W.tr.s[0]);
+// how far out along the wall's facing the story's pose at t has to go (m, wall-local)
+const NEED = new Map();
+function needAt(key, t) {
+  const id = `${key}${t.toFixed(5)}`;
+  if (NEED.has(id)) return NEED.get(id);
+  const W = wallsAt(t).find((w) => w.key === key), o = storyPose(t);
+  let need = 0;
+  if (W && o.show) {
+    const lp = toWall(W, o.pos), k = W.tr.s[0];
+    const u = qRot(qConj(W.tr.q), [0, 1, 0]);
+    const H = (BODY.h * o.pop * o.sy) / k, R = (BODY.r * o.pop * o.sxz) / k;
+    // the capsule's spine, its feet at lp, along the toy's up (the wall may still be rising)
+    const a = v3.add(lp, v3.scale(u, R)), b = v3.add(lp, v3.scale(u, Math.max(R, H - R)));
+    let z = -Infinity;
+    for (const x of [{ x0: -W.w / 2, x1: W.w / 2, y0: 0, y1: W.h, front: 0 }, ...W.pieces]) {
+      // the spine's nearest point to the piece's face, then the room the capsule needs in front of it
+      let best = -Infinity;
+      for (let i = 0; i <= 4; i++) {
+        const q = v3.lerp(a, b, i / 4);
+        const dx = Math.max(0, x.x0 - q[0], q[0] - x.x1), dy = Math.max(0, x.y0 - q[1], q[1] - x.y1);
+        const c = R * R - dx * dx - dy * dy;
+        if (c > 0) best = Math.max(best, x.front + Math.sqrt(c) + 0.001 - (q[2] - lp[2]));
+      }
+      z = Math.max(z, best);
+    }
+    need = Math.max(0, z - lp[2]);
+    // standing on a piece, it does not step off its front edge (it may lean a little past it)
+    const feet = lp[1];
+    const support = u[1] > 0.9 ? W.pieces.filter((x) => lp[0] > x.x0 && lp[0] < x.x1 && x.y1 <= feet + 0.006 && x.y1 > feet - 0.03 && x.front > 0.002).sort((m, n) => n.y1 - m.y1)[0] : null;
+    if (support && need > 0) {
+      const grounded = 1 - smooth(clamp01((feet - support.y1 - 0.002) / 0.013));
+      need = lerp(need, Math.min(need, Math.max(0, support.front - 0.3 * R - lp[2])), grounded);
+    }
+  }
+  if (NEED.size > 4000) NEED.clear();
+  NEED.set(id, need);
+  return need;
+}
+// the push eases in and out over SOFT seconds either side, so the toy is never jerked
+const SOFT = 0.15;
+function keepClear(o, t) {
+  if (!o.show) return o;
+  for (const W of wallsAt(t)) {
+    let need = 0;
+    for (const k of [-1, -2 / 3, -1 / 3, 0, 1 / 3, 2 / 3, 1]) need = Math.max(need, needAt(W.key, t + k * SOFT) * (1 - Math.abs(k)));
+    if (need <= 0) continue;
+    const lp = toWall(W, o.pos);
+    lp[2] += need;
+    o.pos = apply(W.tr, lp);
+  }
+  return o;
+}
+export const mascotPose = (t) => keepClear(storyPose(t), t);
 
 // the other way off the wall: a crouch, then a leap straight up out of the frame
 function leapOut(o, t, from) {

@@ -98,6 +98,13 @@ toy under 1.6:1 (dark hair, a black hoodie) melts into the stage. Light it
 with a rim, or lift the colour a little in toy.json; tell the user which.
 The page's "checked first" list shows the same.
 
+Nothing goes through the toy: `run.mjs storyboard` first runs
+`engine/scripts/clearance.mjs`, which tests the toy against every solid at
+every frame, and the page lists each moment it goes into a wall, a piece, a
+label or the prop. Fix each one before the page goes to the user
+(`references/clearance.md`); the eye forgives a hand a few mm in, never the
+body.
+
 Not the last film again: `FILM=<film> node <skill>/engine/run.mjs ledger`
 compares this film with every film delivered before: the skill's own
 (isnail, Kin, 铁柱: `engine/lib/ledger-base.json`, so even a first film on a
