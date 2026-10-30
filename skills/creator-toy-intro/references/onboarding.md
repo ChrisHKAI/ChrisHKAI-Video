@@ -55,6 +55,10 @@ Without image viewing, say so before starting: the checks cannot be skipped.
 
 ## Step 1: onboarding
 
+First read `~/.chrishkai-video/preferences.md` if it is there: what this
+user decided on earlier films (references/render.md). Follow it without
+asking again; a new request of theirs wins over it.
+
 1. Ask for one thing, the creator's profile: a link, a share message pasted
    from the app, or screenshots. If the user gave one already, do not ask.
 2. See what the link says: `node <skill>/engine/scripts/new-film.mjs <folder>

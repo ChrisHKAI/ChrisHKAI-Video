@@ -76,6 +76,20 @@ if (past("research")) {
       for (const issue of storyTestIssues(facts, json("research/story-test.json"))) say("warn", issue, "references/story-test.md");
     } catch (e) { say("bad", e.message, "references/story-directions.md"); }
   }
+  // what the user wants kept out (film.json avoid, from picks.avoid): no word on screen may carry it
+  if (film.avoid?.length) {
+    const words = [];
+    const collect = (v, path) => {
+      if (typeof v === "string") words.push([path, v]);
+      else if (Array.isArray(v)) v.forEach((x, i) => collect(x, `${path}[${i}]`));
+      else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) if (!["prop", "image", "cover", "file", "module", "colors", "color"].includes(k)) collect(x, `${path}.${k}`);
+    };
+    collect(film.cta, "cta"); collect(film.counter, "counter"); collect(film.story?.segments, "story.segments"); collect(film.profile, "profile");
+    const norm = (x) => String(x).toLowerCase().replace(/[\s,，]/g, "");
+    let hits = 0;
+    for (const a of film.avoid) for (const [path, v] of words) if (norm(a) && norm(v).includes(norm(a))) { hits++; say("bad", `"${a}" is on the user's list of things to keep out, and ${path} says "${v}"`, "change that text, or ask the user"); }
+    if (!hits) say("ok", `no word on screen carries what the user keeps out (${film.avoid.join(", ")}); pictures and covers: look`);
+  }
   const slogan = (film.cta?.slogan ?? []).map((s) => s.text).join("");
   if (film.cta && !slogan) say("bad", "the end card has no slogan", "film.json cta.slogan: one or two short parts");
 }

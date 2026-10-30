@@ -224,7 +224,12 @@ point-selection format in `picks`: `{ "story": ["s2", { "id": "s1", "anim":
 "count" }], "opening": "page-stand", "cta": { "slogan": […], "prop": "…" } }`
 (a story point by its id takes its first animation; `{ id, anim }` another).
 If they name something no story point covers, add it as one, with what it
-becomes, and show it again.
+becomes, and show it again. What they want kept out of the film (a number, an
+old name, a picture, a topic) goes in `picks.avoid`, a line each, in their
+words: apply-research carries it to film.json `avoid`, check stops on any
+word on screen that matches, and the storyboard page and the review list
+the rest for the eye. Real material stays real: their picture, their posts,
+their numbers as the platform writes them are never redrawn or invented.
 
 When the user is away (an unattended run), record the supported recommended
 direction in `picks.direction` (older workspaces: the strongest story points), an opening and an ending

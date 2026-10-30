@@ -65,7 +65,9 @@ Score each from 1 (fails) to 5 (nothing to fix):
    for no reason, and a part that stays longer than it has things to show.
    The pace check's results are in the brief; judge what they cannot.
 4. **The motion.** Does each move have weight: it winds up, follows through
-   and lands? Is there one toy on screen? Does anything pass through a wall
+   and lands? Do things move by their size (small ones snap, big ones settle,
+   words come in fast and stay)? After each move, does the eye know where to
+   look next, or do two moves fight for it? Is there one toy on screen? Does anything pass through a wall
    or the floor? Compare each major action with its `action.does` and
    `action.means` in the chosen direction. Does the actual frame communicate
    that meaning without an explanation? Remove or simplify movements that add

@@ -139,7 +139,8 @@ export function makeBeat({ opts, len, at, fov, aspect, page, signature, kit, mat
       part: {
         label: { "zh-Hant": "開場", "zh-Hans": "开场", en: "Opening" },
         what: { "zh-Hant": "主頁好似螢幕咁平放，轉身拆開做企起嘅 slab，頭像鼓起，2.0 秒強拍彈出變公仔", "zh-Hans": "主页像屏幕一样平放，转身拆开成立起的 slab，头像鼓起，2.0 秒强拍弹出变公仔", en: "The page fills the frame like a screen, turns and parts into standing slabs; the picture bulges and the toy pops out on the 2.0 s downbeat" },
-        uses: { "zh-Hant": "佢嘅主頁同頭像", "zh-Hans": "他的主页和头像", en: "their page and picture" },
+        uses: { "zh-Hant": "佢嘅主頁同頭像", "zh-Hans": "创作者的主页和头像", en: "their page and picture" },
+        why: { "zh-Hant": "頭兩秒畀觀眾一個留低嘅理由：佢自己個主頁企起身", "zh-Hans": "头两秒给观众一个留下的理由：创作者自己的主页站了起来", en: "a reason to stay in the first two seconds: their own page stands up" },
       },
       frames: [
         { at: 0.3, title: { "zh-Hant": "主頁", "zh-Hans": "主页", en: "The page" }, what: { "zh-Hant": "主頁好似螢幕咁填滿畫面", "zh-Hans": "主页像屏幕一样填满画面", en: "The page fills the frame" } },

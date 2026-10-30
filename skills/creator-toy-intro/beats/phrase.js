@@ -100,6 +100,7 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
         label: { "zh-Hant": "一句話", "zh-Hans": "一句话", en: "The line" },
         what: { "zh-Hant": `「${line}」逐個字由地下彈出，最後一個字落喺重拍，公仔跳起`, "zh-Hans": `「${line}」逐个字从地下弹出，最后一个字落在重拍，公仔跳起`, en: `"${line}" rises a letter at a time; the last lands on the downbeat and the toy jumps for joy` },
         uses: { "zh-Hant": "用家嘅原話", "zh-Hans": "用户的原话", en: "the user's own words" },
+        why: { "zh-Hant": "佢自己一句話，大到記得住", "zh-Hans": "创作者自己的一句话，大到记得住", en: "their own words, big enough to remember" },
       },
       frames: [
         { at: LAND + 0.25, title: { "zh-Hant": "公仔落地", "zh-Hans": "公仔落地", en: "The toy lands" }, what: { "zh-Hant": "公仔由上面跌落句說話隔籬", "zh-Hans": "公仔从上面掉到这句话旁边", en: "The toy drops in beside the line" } },

@@ -85,6 +85,18 @@ test("all number locations are checked, including old workspaces and blank metad
   assert.deepEqual(numberProvenanceIssues(f).map(i => i.path), ["numbers.0", "profile.numbers.followers", "posts[0].numbers.views", "story[0].numbers.0", "extra.0"]);
 });
 
+test("what the user keeps out reaches film.json, and check stops on a word that carries it", (t) => {
+  const f = facts();
+  f.picks.avoid = ["Build"];
+  const dir = workspace(t, f);
+  const applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "film.json"))).avoid, ["Build"]);
+  const checked = run(dir, "check.mjs");
+  assert.match(checked.stdout, /"Build" is on the user's list of things to keep out, and cta\.slogan\[0\]\.text says "Build along"/);
+  assert.notEqual(checked.status, 0);
+});
+
 test("selected direction reaches film segments, ending and the preflight check", (t) => {
   const f = facts(), dir = workspace(t, f);
   const before = readFileSync(join(dir, "film.json"), "utf8");
@@ -97,6 +109,9 @@ test("selected direction reaches film segments, ending and the preflight check",
   assert.deepEqual(film.story.direction, f.directions[0]);
   assert.equal(film.story.segments[1].beat, "count");
   assert.equal(film.story.segments[2].beat, "phrase");
+  // each part says why it is there (the storyboard page shows it): the direction's action.means
+  assert.equal(film.story.segments[1].why, "See what the creator makes");
+  assert.equal(film.story.segments[2].why, "See how the work was made");
   assert.equal(film.cta.slogan[0].text, "Build along");
   assert.equal(film.cta.prop.idea, "a tiny tool");
   assert.equal(film.counter.display, "1.2万");

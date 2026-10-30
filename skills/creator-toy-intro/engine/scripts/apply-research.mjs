@@ -123,15 +123,17 @@ const segOf = (id, opts = {}) => {
 let segments = film.story?.segments;
 if (!legacy) {
   segments = [segOf(opening) ?? fail(`unknown opening "${opening}": one of ${CAT.filter((a) => a.group === "opening").map((a) => a.id).join(", ")}`)];
+  // why each part is there, for the storyboard page: what the viewer learns from it (the direction's action.means)
+  const whyOf = (id) => { const m = selection.direction?.beats?.find((x) => x.story === id)?.action?.means; return m ? { why: m } : {}; };
   for (const { s, b } of picked) {
     if (b.anim === "own") {
       // an animation written for this film (references/beats.md, "A beat of your own")
-      segments.push({ beat: b.beat ?? `beats/${s.id}.js`, bars: b.bars ?? 3, ...(b.opts ?? {}) });
+      segments.push({ beat: b.beat ?? `beats/${s.id}.js`, bars: b.bars ?? 3, ...(b.opts ?? {}), ...whyOf(s.id) });
       if (!existsSync(join(dir, b.beat ?? `beats/${s.id}.js`))) warn.push(`"${s.line}" becomes an animation of its own: write ${b.beat ?? `beats/${s.id}.js`} before the story step (references/beats.md)`);
       continue;
     }
     const seg = segOf(b.anim, b.opts) ?? fail(`story point "${s.id}" becomes "${b.anim}", which beats/catalog.json does not have (or "own" for one written for this film)`);
-    segments.push(seg);
+    segments.push({ ...seg, ...whyOf(s.id) });
     // act 3 hands over to the end card through its exit (the toy becomes the drawing of itself, or leaps)
     if (b.anim === "act3") segments.push({ story: "exit" });
   }
@@ -168,6 +170,8 @@ const next = {
     handle: { text: pr.handle ? `@${pr.handle}` : pr.name, paper: "blue" },
   },
   ...(legacy ? (film.story?.direction ? { story: { ...film.story, direction: null } } : {}) : { story: { ...(film.story ?? {}), segments, direction: selection.direction, ...(exit ? { exit } : {}) } }),
+  // what the user wants kept out of the film (a number, a name, a picture): check holds every word on screen to it
+  ...(picks.avoid?.length ? { avoid: picks.avoid } : {}),
   toyFrom: facts.toy.images,
   source: { ...(film.source ?? {}), read: facts.read },
   step: "toy",

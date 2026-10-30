@@ -58,7 +58,18 @@ puts the frames side by side for you.
 10. **The creator's own, and nobody else's.** Their posts, numbers and words
     are on screen in every part. The film differs from every earlier film in
     four of six things. (the ledger; the story test)
-11. **The end card.** Their name, their handle and a two-part slogan, with
+11. **Things move by their size.** A small thing (a chip, a badge, a
+    digit, a spark) snaps into place: fast, in a beat or less, no drift.
+    A big thing (a wall, a panel, the page) has weight: it winds up, travels
+    and settles with a little overshoot. Words come in fast and then stay
+    still long enough to read. Before animating a part, decide which of the
+    three each object is. (the animatic; the review's "motion")
+12. **The eye always knows where to go next.** After every move, there is
+    one place to look: what moved last, what the toy points at, what lit up.
+    When two things move at once, or a move ends with nothing to look at,
+    the motion is fighting the message: stagger them or cut one. (the
+    animatic; the review)
+13. **The end card.** Their name, their handle and a two-part slogan, with
     the toy on its prop, all inside the platform's safe box. (the page's
     safe-box check)
 

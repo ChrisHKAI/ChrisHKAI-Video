@@ -133,6 +133,17 @@ next film is compared with them (references/storyboard.md). Where
 film.json does not say what the film did, set it: `-- --add --set
 sound=bed`.
 
+Then keep what this film taught for the next one, so it is never asked or
+learned twice:
+- `<film>/notes.md`: the decisions that made this film, each with its
+  reason (the story the user picked and why, what they changed on the page,
+  what the review fixed, what the sample caught). A film reopened later
+  starts from here.
+- `~/.chrishkai-video/preferences.md`: what the user decided that holds for
+  every film, a dated line each, in their words where they gave any (繁體 for
+  their films, no confetti, their slogans short, a sound they always like).
+  Not this creator's facts: those stay with the film.
+
 When the film's sound is on real instruments (`strings`, `band`),
 `build/credits.txt` holds the credits their licences require: the
 Salamander piano (CC BY 3.0), the MuldjordKit drums (CC BY 4.0). Give the

@@ -76,6 +76,10 @@ Before the user sees it, look at every frame and the safe-zone sheet:
   the point the fingers go to, or the default `wave`);
 - the cut at 24.4 s: no frame shows both sides.
 
+Every part on the page says why it is there: what the viewer gets from it
+(the chosen direction's "means", else the part's own). The page flags a
+part that cannot say; give it a reason in a line, or cut it.
+
 Then hold the frames to the films the user approved:
 
 ```bash

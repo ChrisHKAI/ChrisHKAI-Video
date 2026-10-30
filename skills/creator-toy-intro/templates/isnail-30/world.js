@@ -199,9 +199,11 @@ export function timeline() {
   cues.sort((a, b) => a.t - b.t);
   const r4 = (v) => +v.toFixed(4);
   const SEGMENTS = T.SEG.list.map((s) => {
-    if (s.kind === "story") return { kind: "story", f0: r4(s.f0), f1: r4(s.f1), s0: s.s0, s1: s.s1 };
+    // why: what the viewer gets from it (the chosen direction's "means", carried by apply-research)
+    const why = s.entry.why ? { why: s.entry.why } : {};
+    if (s.kind === "story") return { kind: "story", f0: r4(s.f0), f1: r4(s.f1), s0: s.s0, s1: s.s1, ...why };
     const B = BEATS.find((x) => x.i === s.i);
-    return { kind: "beat", beat: s.entry.beat, f0: r4(s.f0), f1: r4(s.f1), music: B.b.music ?? {}, storyboard: B.b.storyboard ?? {} };
+    return { kind: "beat", beat: s.entry.beat, f0: r4(s.f0), f1: r4(s.f1), music: B.b.music ?? {}, storyboard: B.b.storyboard ?? {}, ...why };
   });
   return { ...base, EV: T.SEG.events(T.EV), cues, STORY: { DURATION: T.STORY_DURATION, EV: T.EV }, SEGMENTS };
 }
