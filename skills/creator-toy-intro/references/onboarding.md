@@ -36,16 +36,14 @@ Quiet unless something is missing.
    - The end-card face falls back to Source Han Sans Heavy when Lantinghei
      SC is not on the computer (on a Mac, Font Book can add it; Windows and
      Linux do not have it).
-7. Grok Build is optional; doctor shows it either way. When the creator is
-   on X and it says "not installed", ask once whether they use Grok. With
-   it, step 2 asks Grok to search X for their best posts, milestones and
-   ideas.
-   - Yes: offer to install it (xAI's own installer,
-     `curl -fsSL https://x.ai/cli/install.sh | bash`, a few MB). Run it
-     only on their yes. They sign in themselves with `grok login`, in their
-     own Terminal.
-   - No: step 2 uses the browser alone. They may also ask @grok on X and
-     paste its answer.
+7. Grok Build is optional, and doctor says whether this computer has it.
+   - Installed: step 1's round asks whether to use it for this creator's X
+     search (below).
+   - Not installed: do not ask about it, and do not offer to install it.
+     Step 2 searches X in the browser.
+   Only when the user asks for Grok themselves: xAI's own installer
+   (`curl -fsSL https://x.ai/cli/install.sh | bash`, a few MB), on their yes.
+   They sign in themselves with `grok login`, in their own Terminal.
 
 What is installed goes user-level: Blender into `~/Applications` on a Mac
 and into `~/.chrishkai-video/blender` on Windows and Linux (the portable
@@ -89,10 +87,16 @@ asking again; a new request of theirs wins over it.
      and make the X film (the 9:16 one plays on phones).
    - only when the link is not an X profile: the creator's X handle, if they
      have one; the film's page is the X profile either way.
+   - only when doctor found Grok Build and the creator is on X: whether to
+     use it to search X for their best posts and milestones (yes, the
+     recommended answer: it reaches X's own search and each post's thread),
+     or the browser alone.
    Not asked: the length (it follows what the film says, 30 s by default:
    `references/beats.md`), the folder, colours, music.
 5. Open the workspace: `node <skill>/engine/scripts/new-film.mjs
-   <handle>-intro --link "…" --publish x --aspect 16:9|9:16`,
+   <handle>-intro --link "…" --publish x --aspect 16:9|9:16`, with
+   `--grok yes` or `--grok no` when you asked (film.json `grok`: next lists
+   the search first, check reminds when it has not run),
    in the user's current folder; tell them where it is. It writes
    `film.json` (`step: "research"`) and the empty `research/`, `assets/`,
    `recipes/`.

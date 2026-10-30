@@ -18,6 +18,8 @@ let show = null, read = null;
 
 if (step === "research") {
   read = "references/research.md";
+  // the user said yes to Grok Build in step 1: its X search runs first, before the browser
+  if (film.grok === true && !has("research/grok.json")) cmds.push("node <skill>/engine/scripts/grok-search.mjs <film>   (first: the user chose Grok for the X search; in the background where you can, else wait a few minutes)");
   const facts = json("research/facts.json");
   if (!facts) todo.push("the research: the profile, the posts and their numbers (with source and date), the profile picture → research/facts.json");
   else {

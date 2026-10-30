@@ -56,7 +56,7 @@ check("chrome", "headless Chrome", Boolean(chrome), chrome ?? "not found");
 // optional: with Grok Build, step 2 asks Grok to search X for the creator's best posts and milestones
 // (it signs in with the user's own Grok account, so it is never installed unasked: references/onboarding.md)
 const grok = findGrok();
-check("grok", "Grok Build (optional: searches X in step 2)", true, grok ? `${sh(grok, ["--version"]).stdout.trim().split(" (")[0]} (${grok})` : "not installed", grok ? "" : "ask whether they use Grok (references/onboarding.md)");
+check("grok", "Grok Build (optional: searches X in step 2)", true, grok ? `${sh(grok, ["--version"]).stdout.trim().split(" (")[0]} (${grok})` : "not installed", grok ? "step 1 asks whether to use it for the X search" : "step 2 searches X in the browser; nothing to ask");
 
 // optional: the real instruments' samples, for the sounds "strings" and "band" (about 1.4 GB, only on a yes)
 const instDir = join(HOME, "instruments");

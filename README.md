@@ -106,7 +106,7 @@ Six steps, and each ends on something you look at.
 |---|---|---|
 | **0 · the computer** | checks Blender, Node, Python, ffmpeg and Chrome; one yes installs what is missing | the install list, if anything is missing |
 | **1 · your link** | reads the link and opens the film's workspace | 16:9 or 9:16 |
-| **2 · their story** | what the creator is known for and proud of, each with its pictures, its numbers (today's, with where they were read) and the animation it becomes; with Grok Build it also searches X | which picture the toy is made from; then one page: pick two or three story points, one of three openings, the ending, each with a preview |
+| **2 · their story** | what the creator is known for and proud of, each with its pictures, its numbers (today's, with where they were read) and the animation it becomes; if this computer has Grok Build, it asks whether to search X with it too (without Grok, the browser, no question) | which picture the toy is made from; then one page: pick two or three story points, one of three openings, the ending, each with a preview |
 | **3 · the toy** | builds the toy with the body its picture has (a person, an animal, an object) in one of three kits: a part list, a pet, a sculpt | a turnaround to approve, its colours already checked on the dark stage |
 | **4 · the storyboard** | the film's pieces in the order you picked, the beat grid, real preview renders, every sound under the animatic | the storyboard page: leave notes on the frames, pick the sound, sign off |
 | **5 · the render** | a few seconds at full quality first, then a quick half-size version if you like, then the film, an effects-only cut, covers for each platform, a last look | the finished film |

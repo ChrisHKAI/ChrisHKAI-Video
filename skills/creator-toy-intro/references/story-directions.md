@@ -81,8 +81,8 @@ Search original threads and linked primary sources, including less popular
 posts. For example: "Did the creator explain why they changed their approach?"
 is better than another search for their highest-viewed post.
 
-Use the available browser/search tools. With Grok Build and the user's existing
-authorization/budget, write a JSON array of questions to `research/gaps.json`:
+Use the available browser/search tools. When the user said yes to Grok Build
+(film.json `grok`), write a JSON array of questions to `research/gaps.json`:
 
 ```json
 ["Which original post explains the decision behind the creator's first project?"]

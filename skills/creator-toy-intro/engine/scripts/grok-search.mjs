@@ -36,7 +36,7 @@ const handle = (arg("--handle") ?? film.source?.handle ?? film.profile?.handle ?
 if (!handle) { console.error("no handle: pass --handle <name> (the X account, without @)"); process.exit(1); }
 if (film.source?.platform && film.source.platform !== "x") { console.error(`Grok searches X; this creator is on ${film.source.platform}: use the browser (references/research.md)`); process.exit(1); }
 const grok = findGrok();
-if (!grok && !argv.includes("--from-raw")) { console.error("no Grok Build: ask the user whether they use Grok (references/onboarding.md), or use the browser"); process.exit(1); }
+if (!grok && !argv.includes("--from-raw")) { console.error("no Grok Build on this computer: search X in the browser (references/research.md); there is nothing to ask the user"); process.exit(1); }
 const followup = argv.includes("--gaps");
 const stem = followup ? "grok-followup" : "grok";
 let prompt;

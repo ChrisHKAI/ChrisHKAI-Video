@@ -51,6 +51,8 @@ if (!toy) {
 }
 
 // ── what research put in film.json ──────────────────────────────────────────
+// the user chose Grok Build for the X search (film.json grok, asked in step 1): it should have run
+if (film.grok === true && !existsSync(fromFilm("research/grok.json"))) say("warn", "the user chose Grok for the X search, but research/grok.json is not there: it has not run, or it failed", "node <skill>/engine/scripts/grok-search.mjs <film> (references/research.md); if it fails, tell the user what it needs");
 if (past("research")) {
   for (const k of ["profile", "cta"]) if (!film[k]) say("bad", `film.json has no "${k}" yet`, "run apply-research (references/research.md)");
   const c = film.counter;

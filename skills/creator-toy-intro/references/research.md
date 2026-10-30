@@ -23,12 +23,18 @@ Read only, always: never like, follow, comment or message.
   scans themselves; never type a password.
 - X: the profile; the pinned post; the most-viewed posts (each post shows
   its views).
-- With Grok Build (step 0), start Grok first, in the background:
-  `node <skill>/engine/scripts/grok-search.mjs <film>`. Grok's X search
-  reaches what a browser hardly can: X's own post search with its
-  operators, each post's thread and numbers. The run takes minutes and
-  some money on the user's Grok account (not something to report to the
-  user: say what it found, not what it cost). It writes
+- Grok Build, when the user said yes to it in step 1 (film.json `grok`:
+  true): run it first, before the browser, every time:
+  `node <skill>/engine/scripts/grok-search.mjs <film>`. Run it in the
+  background where the agent can, and read the page meanwhile. Where the
+  agent cannot run things in the background, run it and wait: it takes a
+  few minutes. Grok's X search reaches what a browser hardly can: X's own
+  post search with its operators, each post's thread and numbers. When it
+  fails (the agent's sandbox has no network, Grok is not signed in), tell
+  the user in a line what it needs (allow the network for it; `grok login`
+  in their Terminal) instead of quietly going on without it. Say what it
+  found, never what it cost. With `grok` false, or no Grok Build on this
+  computer, the browser alone, without asking. It writes
   `research/grok.json` with:
   - the pinned post;
   - the posts with the most views or engagement;

@@ -7,6 +7,7 @@
 //
 // usage: node engine/scripts/new-film.mjs <folder> [--link "<url or pasted share text>"]
 //          [--publish douyin,xhs] [--aspect 9:16|16:9] [--theme <id>] [--language zh-Hans|zh-Hant]
+//          [--grok yes|no: asked in step 1 when this computer has Grok Build; with yes, step 2 searches X with it]
 //          [--id <name>] [--force] [--dry-run: print what it would write, write nothing] [--any-platform]
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
@@ -17,7 +18,7 @@ const SKILL = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const argv = process.argv.slice(2);
 const arg = (name) => (argv.includes(name) ? argv[argv.indexOf(name) + 1] : undefined);
 const fail = (msg) => { console.error(msg); process.exit(1); };
-const VALUED = new Set(["--link", "--publish", "--aspect", "--theme", "--language", "--id"]);
+const VALUED = new Set(["--link", "--publish", "--aspect", "--theme", "--language", "--id", "--grok"]);
 const folder = argv.find((a, i) => !a.startsWith("--") && !VALUED.has(argv[i - 1])) ?? fail("usage: node engine/scripts/new-film.mjs <folder> [--link …] [--publish …] [--aspect …]");
 const dir = resolve(folder);
 if (existsSync(join(dir, "film.json")) && !argv.includes("--force") && !argv.includes("--dry-run")) fail(`${join(dir, "film.json")} is already there (--force replaces it)`);
@@ -52,6 +53,8 @@ const film = {
   publish,
   ...(link ? { source: Object.fromEntries(Object.entries({ link: link.url, platform: link.platform, handle: link.handle, id: link.id, short: link.short || undefined }).filter(([, v]) => v !== undefined)) } : {}),
   step: "research",
+  // whether step 2 searches X with Grok Build: asked only when this computer has it (references/onboarding.md)
+  ...(arg("--grok") ? { grok: /^(y|yes|true|1)$/i.test(arg("--grok")) } : {}),
   // the toy, built in step 3 (references/toy.md)
   toy: "toy.json",
   // the profile picture that peels: the creator's own, cut to the app's circle (references/avatar.md)
