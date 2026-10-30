@@ -77,7 +77,7 @@ export const LETTER_STEP = Math.min(BEAT / 2, (EV.final - EV.letters - BEAT / 2)
 export const SLOGAN_RED = film.cta.slogan[0].text.length; // the second label's letters are red
 export const CTA = S.stage; // the CTA stage: far beyond every other shot's clip distance
 export const SPOT = S.spots ?? D.spots; // places in UI px
-export const WALL2 = S.wall2; // act 2 cover pieces: [push-out time, depth mm]
+export const WALL2 = S.wall2 ?? {}; // act 2 cover pieces: [push-out time, depth mm]; none when the film leaves act 2 out
 export const WALL = S.wall ?? (PLAYS_ACT3 ? noWall() : null); // act 3 wall pieces (wall mm; box tops are where he can stand)
 function noWall() {
   throw new Error('the film plays act 3 (the second cover as a wall), but film.json story.wall names none of its pieces: cut the cover and name the roles (references/cover-wall.md), or leave act 3 out of story.segments');
