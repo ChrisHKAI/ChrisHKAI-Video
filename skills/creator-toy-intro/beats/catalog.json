@@ -6,13 +6,13 @@
    "group": "opening",
    "kind": "story",
    "label": {
-    "zh-Hant": "開場：玻璃主頁、頭像撕出嚟（蝸牛款）",
-    "zh-Hans": "开场：玻璃主页、头像撕出来（蜗牛款）",
-    "en": "Opening: a glass page, the picture peels off (isnail's)"
+    "zh-Hant": "開場：主頁浮喺半空，頭像好似貼紙咁撕起，變成公仔",
+    "zh-Hans": "开场：主页浮在半空，头像像贴纸一样撕起来，变成公仔",
+    "en": "Opening: the page floats in the air; the picture peels off like a sticker and becomes the toy"
    },
    "fits": {
     "zh-Hant": "佢嘅主頁浮喺半空，頭像好似貼紙咁撕起，彈出變公仔",
-    "zh-Hans": "他的主页浮在半空，头像像贴纸一样撕起，弹出变公仔",
+    "zh-Hans": "主页浮在半空，头像像贴纸一样撕起，弹出变公仔",
     "en": "Their page floats as glass; the picture peels off like a sticker and pops into the toy"
    },
    "needs": "the profile page and picture (always there)",
@@ -27,9 +27,9 @@
    "group": "opening",
    "kind": "beat",
    "label": {
-    "zh-Hant": "開場：主頁向右轉企起（Kin 款）",
-    "zh-Hans": "开场：主页向右转立起（Kin 款）",
-    "en": "Opening: the page turns right and stands (Kin's)"
+    "zh-Hant": "開場：主頁好似螢幕咁平放，向右轉身企起，頭像鼓起變成公仔",
+    "zh-Hans": "开场：主页像屏幕一样平放，向右转身立起，头像鼓起变成公仔",
+    "en": "Opening: the page lies flat like a screen, turns right and stands up; the picture puffs out into the toy"
    },
    "fits": {
     "zh-Hant": "主頁好似螢幕咁平放，轉身拆開做企起嘅板，頭像鼓起變公仔",
@@ -50,9 +50,9 @@
    "group": "opening",
    "kind": "beat",
    "label": {
-    "zh-Hant": "開場：主頁向左轉企起（铁柱款）",
-    "zh-Hans": "开场：主页向左转立起（铁柱款）",
-    "en": "Opening: the page turns left and stands (铁柱's)"
+    "zh-Hant": "開場：主頁好似螢幕咁平放，向左轉身企起，頭像鼓起變成公仔",
+    "zh-Hans": "开场：主页像屏幕一样平放，向左转身立起，头像鼓起变成公仔",
+    "en": "Opening: the page lies flat like a screen, turns left and stands up; the picture puffs out into the toy"
    },
    "fits": {
     "zh-Hant": "主頁好似螢幕咁平放，轉身拆開做企起嘅板，頭像鼓起變公仔",
@@ -174,7 +174,7 @@
    },
    "fits": {
     "zh-Hant": "佢嘅原話：自我介紹嗰句、金句、一篇帖嘅標題。字逐個由地下彈出，最後一個字落喺重拍",
-    "zh-Hans": "他的原话：自我介绍那句、金句、一篇帖子的标题。字逐个从地下弹出，最后一个字落在重拍",
+    "zh-Hans": "创作者的原话：自我介绍那句、金句、一篇帖子的标题。字逐个从地下弹出，最后一个字落在重拍",
     "en": "Their own words: a bio line, a quote, a post's title. It rises a letter at a time, the last on a downbeat"
    },
    "needs": "the line, short (a 3-bar beat holds about nine characters)",
@@ -192,12 +192,12 @@
    "kind": "beat",
    "label": {
     "zh-Hant": "專登為佢整嘅動畫",
-    "zh-Hans": "专门为他做的动画",
+    "zh-Hans": "专门为这位创作者做的动画",
     "en": "An animation made for them"
    },
    "fits": {
     "zh-Hant": "上面冇一款啱佢嘅素材：例如插畫拼成立體小世界、作品一幅幅翻、網頁慢慢捲過。由 agent 為呢條片寫出嚟",
-    "zh-Hans": "上面没有一款适合他的素材：例如插画拼成立体小世界、作品一幅幅翻、网页慢慢卷过。由 agent 为这条片写出来",
+    "zh-Hans": "上面没有一款适合这位创作者的素材：例如插画拼成立体小世界、作品一幅幅翻、网页慢慢卷过。由 agent 为这条片写出来",
     "en": "None of the others fits their material: their illustrations assembling into a little 3D world, their works flipping by, a page scrolling past. The agent writes it for this film"
    },
    "needs": "the material, and a beat written in the film (references/beats.md, \"A beat of your own\")",
@@ -218,7 +218,7 @@
    },
    "fits": {
     "zh-Hant": "佢個名、帳號同一句口號貼喺撕紙上，公仔坐喺一件代表佢嘅道具上面",
-    "zh-Hans": "他的名字、账号和一句口号贴在撕纸上，公仔坐在一件代表他的道具上",
+    "zh-Hans": "创作者的名字、账号和一句口号贴在撕纸上，公仔坐在一件代表创作者的道具上",
     "en": "Their name, handle and a line slap down on torn paper; the toy rides a prop that stands for them"
    },
    "needs": "the line (one or two short parts) and the prop (references/props.md)",

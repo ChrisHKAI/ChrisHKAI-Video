@@ -123,8 +123,7 @@ Before you sign off, the storyboard page checks the film for you:
 
 Story selection first offers up to three complete directions and recommends one:
 each has an opening hook, connected facts, a payoff and any evidence gaps. One
-targeted follow-up can fill important gaps (with Grok, one more paid search of
-about US$1, only on your yes). Thin evidence leads to a narrower story, never an invented turning point.
+targeted follow-up can fill important gaps (with Grok, one more search). Thin evidence leads to a narrower story, never an invented turning point.
 Existing projects can still select individual material points as before.
 
 The chosen direction then gets a quick text-only story test: what viewers

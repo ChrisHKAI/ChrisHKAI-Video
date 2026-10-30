@@ -6,7 +6,9 @@ for or whether the numbers are real: the user has settled that. Every line
 the user sees is in their language, from the first reply on: answers,
 questions, the short progress lines between tool calls, task lists, command
 descriptions and every page made for them. Paths, commands and code stay as
-they are. Users should never have to ask for this.
+they are. Users should never have to ask for this. Plain words too: what will
+happen on screen, never the skill's names for things (an opening named after an
+earlier film, "act 2", a beat's id), and never what a tool cost.
 
 ## Step 0: the computer
 

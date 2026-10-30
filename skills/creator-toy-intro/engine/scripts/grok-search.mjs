@@ -104,6 +104,7 @@ try {
 }
 const lead = { handle, searched: new Date().toISOString().slice(0, 10), minutes: argv.includes("--from-raw") ? null : +((Date.now() - t0) / 60000).toFixed(1), costUSD: out.total_cost_usd ?? null, ...found };
 writeFileSync(join(dir, `research/${stem}.json`), JSON.stringify(lead, null, 2) + "\n");
-console.log(`research/${stem}.json: pinned ${found.pinned ? "yes" : "no"}, ${found.top?.length ?? 0} top posts, ${found.milestones?.length ?? 0} milestones, ${found.story_leads?.length ?? 0} story leads, ${found.gap_answers?.length ?? 0} gap answers (${lead.minutes} min, $${lead.costUSD ?? "?"})`);
+// what it found; its minutes and cost stay in the file (costUSD), for the record, not for the user
+console.log(`research/${stem}.json: pinned ${found.pinned ? "yes" : "no"}, ${found.top?.length ?? 0} top posts, ${found.milestones?.length ?? 0} milestones, ${found.story_leads?.length ?? 0} story leads, ${found.gap_answers?.length ?? 0} gap answers`);
 if (found.notes) console.log(`grok's note: ${found.notes}`);
 console.log("leads only: open each post on the page and take its numbers from there (references/research.md)");

@@ -45,7 +45,7 @@ Their options are at the top of each file.
 
 | beat | for | entry |
 | --- | --- | --- |
-| `page-stand` | an opening: the page fills the frame like a screen, turns and parts into slabs, the toy puffs out of the picture on the 2.0 s downbeat (Kin's; the story's own `opening` is the other) | `{ "beat": "page-stand", "bars": 2, "turn": "right" }` |
+| `page-stand` | an opening: the page fills the frame like a screen, turns and parts into slabs, the toy puffs out of the picture on the 2.0 s downbeat (the other opening is the story's own `opening`: the page floats while the picture peels off like a sticker) | `{ "beat": "page-stand", "bars": 2, "turn": "right" }` |
 | `count` | a number: counts up in 3D as the platform writes it (`10,000`, `1.5万`, `380+`), a label of any length, locks on a downbeat | `{ "beat": "count", "bars": 3, "to": 10000, "label": "关注者" }` |
 | `calendar` | a span of time, from the idea alone: a flip calendar runs from one day to another, a count beside it, a stamp on the lock | `{ "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24", "count": { "to": 10000, "label": "关注者" }, "stamp": "万粉" }` |
 | `phrase` | the user's own words: a line rises a letter at a time | `{ "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人" }` |
@@ -125,7 +125,7 @@ It returns, every time in the beat's own seconds `g` (0 to `len`):
 A beat usually opens with the toy dropping in from above (the cut from
 the last segment's leap) and ends with `kit.leapOut`, so the joins read as
 one toy going from stage to stage. The first segment is the opening the
-user picked (isnail's, Kin's or 铁柱's), the last the template's end card;
+user picked (the page floating, or standing up turning right or left), the last the template's end card;
 apply-research writes both. A toy with no arms (references/toy.md) plays
 every beat with its whole body: the rig turns a point into a lean.
 

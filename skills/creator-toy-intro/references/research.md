@@ -27,7 +27,8 @@ Read only, always: never like, follow, comment or message.
   `node <skill>/engine/scripts/grok-search.mjs <film>`. Grok's X search
   reaches what a browser hardly can: X's own post search with its
   operators, each post's thread and numbers. The run takes minutes and
-  about a dollar, on the user's Grok account. It writes
+  some money on the user's Grok account (not something to report to the
+  user: say what it found, not what it cost). It writes
   `research/grok.json` with:
   - the pinned post;
   - the posts with the most views or engagement;
@@ -212,8 +213,10 @@ animations), and `research/materials.html` with both. Show the first, and
 ask in one round (AskUserQuestion where the agent has it, else one message):
 - which direction (including its ordered story points), or changes to it;
   for older workspaces without directions, which story points in what order;
-- which opening (isnail's glass page, Kin's page turning right, 铁柱's
-  turning left);
+- which opening, each said as what the viewer sees, with its preview strip:
+  the page floating while the picture peels off like a sticker; the page lying
+  flat, then turning right to stand up; the same turning left. Never by the
+  films they came from (isnail's, Kin's, 铁柱's): users don't know them;
 - which ending, or their own words.
 For a direction, write `picks.direction` to its ID; its beats and ending are
 the defaults (`picks.cta` may override the ending). Otherwise keep the existing
