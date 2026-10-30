@@ -12,6 +12,20 @@ FILM=<film> node <skill>/engine/run.mjs estimate
 renders three frames at the final settings (Cycles, 48 samples, full size)
 and says how long the whole film takes (an Apple M3 Max: about 4 s a frame,
 about 40 min for 30 s; an M4 Pro or an M5, about 5 s a frame, 1.5 h for 32 s).
+Then, before the hours, the sample: the stretch of the film most likely to
+disappoint, at the final settings with its sound (a few minutes):
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs sample -- --from 6 --to 14
+```
+
+Pick the stretch yourself: the creator's own beat (the default when the film
+has one), the walls, a hard camera move, the end card. Watch it against the
+reference films first (references/quality.md, `run.mjs compare -- --in
+build/sample`), fix what falls short and sample again. Only then show it to
+the user with the estimate. A flaw found in a ten-second sample costs
+minutes; found in the finished film, it costs the render.
+
 Tell the user, and offer two ways:
 - **the quick version first** (about a quarter of the time): the whole film
   at half size and 16 samples, to watch before committing the hours:

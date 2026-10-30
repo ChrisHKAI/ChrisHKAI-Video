@@ -86,7 +86,9 @@ def main():
     subprocess.run([
         "ffmpeg", "-v", "error", "-y",
         "-framerate", fps, "-start_number", str(first), "-i", str(FIN / "%04d.png"),
-        "-i", str(ROOT / "assets/audio/score.wav"),
+        # a stretch of the film (a sample) hears the score from where it starts
+        "-ss", f"{(first - 1) / float(fps):.4f}", "-i", str(ROOT / "assets/audio/score.wav"),
+        "-frames:v", str(len(frames)),  # only these: build/final may still hold a longer cut's frames after them
         "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",  # H.264 4:2:0 wants even sides (a small test render may be odd)
         "-c:v", "libx264", "-profile:v", "high", "-crf", "17", "-preset", "slow", "-pix_fmt", "yuv420p",
         "-af", "volume=-0.3dB",  # the limiter holds samples at -1 dBFS; AAC's overshoot needs a little more room

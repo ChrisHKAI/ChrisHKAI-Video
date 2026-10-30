@@ -76,6 +76,18 @@ Before the user sees it, look at every frame and the safe-zone sheet:
   the point the fingers go to, or the default `wave`);
 - the cut at 24.4 s: no frame shows both sides.
 
+Then hold the frames to the films the user approved:
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs compare
+```
+
+`build/compare.jpg` puts this film's opening, toy, proof, payoff and end
+card beside isnail's, Kin's and 铁柱's, with each frame's brightness,
+contrast and colour. Read it against references/quality.md: is the toy as
+big, the number as big, the frame as simple, the stage as dark, the colour
+as rich? Write each difference in a line and fix it.
+
 Fix what you find and render those frames again before showing the page.
 
 The colours come from the creator's own pictures, never from memory:

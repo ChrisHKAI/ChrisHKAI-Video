@@ -103,7 +103,7 @@ The beat is that answer as code.
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
 | `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face; anything else, in any face, through film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }`) |
 | `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
-| `kit` | `engine/lib/beatkit.js`: `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `confetti(…)`; `HIDDEN` |
+| `kit` | `engine/lib/beatkit.js`: `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `confetti(…)`; `HIDDEN` |
 | `signature` | the toy's own move (toy.json `signature`) on a pose |
 | `math`, `quat`, `mulberry32`, `readFilmJSON` | the engine's helpers |
 
@@ -121,6 +121,8 @@ It returns, every time in the beat's own seconds `g` (0 to `len`):
 | `music` | `{ groove: "light" \| "normal" \| "half" \| "double" \| "none", chords: ["Em", "C", "G", "D"], hits: [g…] }`: the song's groove under it, a big kick on each hit; with `"sound": "bed"` the long chords move away from G as the beat comes in and come home on its hits |
 | `cuts` | optional: its own hard cuts `[g…]` (a beat in two shots) |
 | `storyboard` | `{ part: { label, what, uses }, frames: [{ at, title, what }], hits: [{ at, label }] }`, each text per language (`zh-Hant`, `zh-Hans`, `en`) |
+
+Write a move the kit already has with the kit (a wave, a nod, a point): the film's own code is for what only this creator's story does.
 
 A beat usually opens with the toy dropping in from above (the cut from
 the last segment's leap) and ends with `kit.leapOut`, so the joins read as

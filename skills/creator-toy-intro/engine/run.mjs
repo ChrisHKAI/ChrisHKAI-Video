@@ -15,6 +15,8 @@
 //                    (listen -- bed own: just those)
 //           lookdev  Blender turnaround of the toy → build/lookdev/, beside its picture: compare.jpg
 //           estimate three frames at the final settings → how long the full render takes
+//           sample   a stretch at the final quality with its sound, to watch before the hours of the whole
+//                    (-- --from 6 --to 14, seconds; else the film's own beat, else 6–14 s) → out/<film>-sample.mp4
 //           render   Blender Cycles frames → build/render/ (args after -- go to scene.py; --resume skips frames on disk)
 //           finish   bloom, vignette, grain, H.264 + AAC → out/ (and the effects-only cut), then covers and qa
 //           covers   each platform's covers cut from the last frame → out/covers/
@@ -26,6 +28,9 @@
 //                    the confetti's against the stage → build/palette.json, build/palette-check.jpg
 //           ledger   how this film differs from each delivered one (opening, structure, signature, colours,
 //                    sound, ending: four of six at least); ledger -- --add keeps it once delivered
+//           compare  this film beside the approved films, moment by moment (opening, the toy, the proof,
+//                    the payoff, the end card), with each frame's brightness, contrast and colour
+//                    → build/compare.jpg (compare -- --in build/sample: the sample's frames)
 //           review   the independent review's brief: the film, what to watch, the checks, the
 //                    rubric → build/review.md (references/review.md)
 //           storyboard  the page to sign off: parts, beat grid, previews, checks → build/storyboard/
@@ -40,9 +45,9 @@
 //                    template → <film>/template/ (film.json "template": "./template"),
 //                    scene.py → <film>/engine/scene.py (render, estimate and animatic use it)
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { film, FILM, fromFilm, fromSkill, fromTemplate, OWN_TEMPLATE } from "./lib/film.js";
+import { film, FILM, fromFilm, fromSkill, fromTemplate, importTemplate, OWN_TEMPLATE } from "./lib/film.js";
 import { HOME, findBlender, findPython, toolEnv } from "./lib/tools.js";
 
 const argv = process.argv.slice(2);
@@ -86,7 +91,7 @@ for (const [i, step] of steps.entries()) {
   const more = i === steps.length - 1 ? extra : [];
   // the animatic is part of making the storyboard; the full render waits for the page and the user's sign-off
   // (preview frames, the animatic and the estimate need only that nothing breaks)
-  if (step === "animatic" || step === "estimate") gate(false);
+  if (step === "animatic" || step === "estimate" || step === "sample") gate(false);
   if (step === "render") gate(!more.includes("--frames") || !more.includes("--samples"));
   switch (step) {
     case "check": run("node", [fromSkill("engine/scripts/check.mjs"), ...more]); break;
@@ -150,6 +155,23 @@ for (const [i, step] of steps.entries()) {
       console.log(`about ${per.toFixed(0)} s a frame at 48 samples, full size: the film's ${n} frames ≈ ${(per * n / 3600).toFixed(1)} h; previews (32 samples, half size) ≈ ${(per / 16).toFixed(1)} s a frame`);
       break;
     }
+    case "sample": {
+      // the stretch most likely to disappoint, at the final settings with its sound, before committing the
+      // hours (references/render.md): -- --from s --to s, else the film's own beat (10 s of it at most), else 6–14 s
+      const fps = film.format.fps, pick = (k) => (more.includes(k) ? +more[more.indexOf(k) + 1] : null);
+      let [a, b] = [pick("--from"), pick("--to")];
+      if (a == null || b == null) {
+        const T = await importTemplate("timeline.js");
+        const own = T.SEG?.on ? T.SEG.list.find((s) => s.kind === "beat" && /[/.]/.test(s.entry.beat)) : null;
+        [a, b] = own ? [own.f0, Math.min(own.f1, own.f0 + 10)] : [6, 14];
+      }
+      const rest = more.filter((v, j) => !["--from", "--to"].includes(v) && !["--from", "--to"].includes(more[j - 1]));
+      rmSync(fromFilm("build/sample"), { recursive: true, force: true });
+      console.log(`the sample: ${a.toFixed(1)}–${b.toFixed(1)} s at 48 samples, full size`);
+      run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `${Math.round(a * fps) + 1}-${Math.round(b * fps)}`, "--samples", "48", "--scale", "100", "--out", "build/sample", ...rest]));
+      run(...awake(PY, [fromSkill("engine/scripts/finish.py"), "--in", "build/sample", "--out", (film.output ?? "out/film.mp4").replace(/(\.mp4)?$/, "-sample.mp4")]));
+      break;
+    }
     case "finish":
       run(...awake(PY, [fromSkill("engine/scripts/finish.py"), ...more]));
       // a side cut (the quick version: -- --in build/quick --out out/<id>-quick.mp4) gets no covers or qa
@@ -182,6 +204,7 @@ for (const [i, step] of steps.entries()) {
     case "palette": run(PY, [fromSkill("engine/scripts/palette.py"), ...more]); break;
     case "ledger": run(PY, [fromSkill("engine/scripts/ledger.py"), ...more]); break;
     case "review": run(PY, [fromSkill("engine/scripts/review.py"), ...more]); break;
+    case "compare": run(PY, [fromSkill("engine/scripts/compare.py"), ...more]); break;
     case "own":
       // what the template or the scene can't do for this film is changed in the film's own copy
       if (!more.length) { console.error("own takes what to copy: own -- template scene.py"); process.exit(1); }
