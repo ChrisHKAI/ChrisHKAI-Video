@@ -1,7 +1,7 @@
 {
   "name": "chrishkai-video",
   "displayName": "ChrisHKAI-Video",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Video skills by ChrisHKAI. First skill, creator-toy-intro: paste a creator's X link, get a short self-introduction film (30 s by default) starring them as a 3D vinyl toy.",
   "author": {
     "name": "ChrisHKAI"
