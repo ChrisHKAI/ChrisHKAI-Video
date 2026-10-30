@@ -109,7 +109,7 @@ Six steps, and each ends on something you look at.
 | **2 · their story** | what the creator is known for and proud of, each with its pictures, its numbers (today's, with where they were read) and the animation it becomes; with Grok Build it also searches X | which picture the toy is made from; then one page: pick two or three story points, one of three openings, the ending, each with a preview |
 | **3 · the toy** | builds the toy with the body its picture has (a person, an animal, an object) in one of three kits: a part list, a pet, a sculpt | a turnaround to approve, its colours already checked on the dark stage |
 | **4 · the storyboard** | the film's pieces in the order you picked, the beat grid, real preview renders, every sound under the animatic | the storyboard page: leave notes on the frames, pick the sound, sign off |
-| **5 · the render** | a quick half-size version if you like, then the film, an effects-only cut, covers for each platform, a last look | the finished film |
+| **5 · the render** | a few seconds at full quality first, then a quick half-size version if you like, then the film, an effects-only cut, covers for each platform, a last look | the finished film |
 
 Nothing is a template filled in: when your material wants an animation the skill doesn't have yet (your illustrations as a little 3D world, a page scrolling past), the agent writes it for your film.
 
@@ -118,6 +118,8 @@ Before you sign off, the storyboard page checks the film for you:
 - **Pace**: quiet stretches, the toy left alone too long or too small to see, the first three seconds, and whether every line stays up long enough to read.
 - **It won't break**: `check` reads everything before Blender starts and says what is wrong in plain words; the full render waits until the page is clean and you have signed off.
 - **Colour**: every word must read on the dark stage; the palette comes from the creator's own pictures.
+- **Solid things stay solid**: the toy never walks into a wall, stands inside what pushes out of it, or has a label slide through it. It makes way by itself, and `clearance` checks every frame before Blender.
+- **As good as the approved films**: `compare` puts your film's opening, toy, proof, payoff and end card beside three films that were approved, and the agent fixes what falls short. Before the hours of the full render, `sample` renders the riskiest few seconds at full quality with sound.
 - **Not the last film again**: each film you deliver is kept in a ledger, with the skill's own films in it from the start, and a new one must differ from every one of them in at least four of six things (the opening, the structure, the signature move, the colours, the sound, the ending).
 - **A second opinion**: a fresh reviewer reads the brief and the frames. Where it disagrees, you get its view as one more option, not a rule.
 

@@ -34,7 +34,8 @@ def read():
     p = path()
     mine = json.loads(p.read_text()) if p.exists() else []
     ids = {e.get("id") for e in mine}
-    return [e for e in base if e.get("id") not in ids] + mine
+    # the skill's own are marked: the user has not seen them, so a page names them as examples, not by creator
+    return [{**e, "example": True} for e in base if e.get("id") not in ids] + mine
 
 
 def piece(s):
