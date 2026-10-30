@@ -60,11 +60,11 @@ scene.cycles.samples = int(arg("--samples", 64))
 scene.cycles.use_denoising = True
 scene.render.resolution_x = 960
 scene.render.resolution_y = 540
-LOOK = lighting.Look(FILM_JSON, arg)
+LOOK = lighting.Look(FILM_JSON, arg, FILM)
 lighting.view(scene, LOOK)
 scene.render.image_settings.file_format = "PNG"
 # the film's light; the classic one keeps the look-dev's own lighter backdrop and suns
-lighting.world(bpy, scene, LOOK, sky=0.35, camera="#14161b" if LOOK.classic else lighting.STAGE)
+lighting.world(bpy, scene, LOOK, sky=0.35, camera="#14161b" if LOOK.classic else None)
 
 root = bpy.data.objects.new("THREE", None)
 scene.collection.objects.link(root)
@@ -214,7 +214,7 @@ floor.parent = root
 fm = bpy.data.materials.new("floor")
 fm.use_nodes = True
 fp = fm.node_tree.nodes["Principled BSDF"]
-fp.inputs["Base Color"].default_value = rgba("#24272e")
+fp.inputs["Base Color"].default_value = rgba(LOOK.stage["lookdev"])  # the film's stage: dark, or mid for a dark toy
 fp.inputs["Roughness"].default_value = 0.45
 floor_me.materials.append(fm)
 

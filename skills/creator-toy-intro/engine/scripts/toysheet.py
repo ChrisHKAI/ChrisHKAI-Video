@@ -56,8 +56,12 @@ print(f"compare sheet → {out.relative_to(FILM)} ({len(refs)} reference, {len(v
 # into the stage (dark hair, a black hoodie) is lifted here, so what they approve is what the film shows
 import colors  # noqa: E402
 
+stage, _ = colors.stage_for(FILM)
+if stage != "dark":
+    print(f"the toy is dark ({colors.darkness(FILM) * 100:.0f}% of it would melt into the dark stage): the film plays on the "
+          "mid-tone stage instead, and this sheet shows it there (film.json look.stage keeps it on \"dark\")")
 for r in colors.toy_colours(FILM):
     if r["share"] >= 0.1 and r["contrast"] < colors.MELT:
-        print(f"! the toy's {r['key']} ({r['hex']}, {r['share'] * 100:.0f}% of it) melts into the dark stage "
-              f"({r['contrast']:.2f}:1, {colors.MELT}:1 reads): lift the colour a little in toy.json, or the film "
-              "keeps its rim light on it; show the user the change on this sheet")
+        print(f"! the toy's {r['key']} ({r['hex']}, {r['share'] * 100:.0f}% of it) melts into the {stage} stage "
+              f"({r['contrast']:.2f}:1, {colors.MELT}:1 reads): lift the colour to {colors.lift(r['hex'], against=colors.STAGES[stage]['sky'])} "
+              "in toy.json (the same hue, just findable) and show the user the change here")

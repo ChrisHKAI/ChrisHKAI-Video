@@ -48,7 +48,7 @@ if not pics:
 rows, accents = colors.creator_colours([(label, str(p), w) for label, p, w in pics])
 fc = colors.film_colours(FILM) if (FILM / "build/anim.json").exists() else None
 bad = colors.problems(fc) if fc else []
-STAGE = colors.STAGE
+STAGE = colors.stage_for(FILM)[1]["sky"]  # the film's own stage: dark, or mid slate for a dark toy
 out = {"stage": STAGE, "pictures": [str(p.relative_to(FILM)) for _, p, _ in pics],
        "creator": [{**r, "contrast": round(colors.contrast(r["hex"], STAGE), 2)} for r in rows],
        "accents": [r["hex"] for r in accents], "film": fc,

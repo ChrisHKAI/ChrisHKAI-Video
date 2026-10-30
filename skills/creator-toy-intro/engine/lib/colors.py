@@ -11,7 +11,17 @@ from pathlib import Path
 
 import numpy as np
 
-STAGE = "#0b0c10"  # what the camera sees behind everything (engine/scripts/scene.py's world)
+STAGE = "#0b0c10"  # what the camera sees behind everything on the dark stage (engine/scripts/scene.py's world)
+# The stage the film plays on takes the other side of the toy (stage_for): the dark one the first films used,
+# or a mid tone a dark toy (a black hoodie, navy hair) stands out on while white lettering still reads (3:1):
+# a blue slate, or a neutral grey when the toy's own dark is blue (navy on slate is blue on blue).
+# sky: what the camera sees past the floor; floor: the stage under the page (its edge, the ring, the middle);
+# glass and fade: the end card's and the beats' glass floor and where it fades; lookdev: the turnaround's floor.
+STAGES = {
+    "dark": {"sky": STAGE, "floorEdge": "#08090c", "floorRing": "#10131a", "floorMid": "#1a2030", "glass": "#08090c", "fade": "#000000", "lookdev": "#24272e"},
+    "mid": {"sky": "#4a505d", "floorEdge": "#434956", "floorRing": "#596070", "floorMid": "#788093", "glass": "#555c6b", "fade": "#4a505d", "lookdev": "#6c7384"},
+    "grey": {"sky": "#57585c", "floorEdge": "#4e4f53", "floorRing": "#626368", "floorMid": "#7f8086", "glass": "#5c5d62", "fade": "#57585c", "lookdev": "#737479"},
+}
 READ, MELT = 3.0, 1.6  # lettering wants READ:1; a big colour under MELT:1 melts into the stage
 
 
@@ -63,8 +73,9 @@ def part_area(p):
     return 0.0
 
 
-def toy_colours(film):
-    """The toy's colours on the stage, by how much of it each covers (largest first)."""
+def toy_colours(film, against=None):
+    """The toy's colours on the stage (`against`: its sky; the film's own by default), by how much of it each
+    covers (largest first)."""
     film = Path(film)
     F = json.loads((film / "film.json").read_text())
     toy_file = F.get("toy", "toy.json")
@@ -85,7 +96,8 @@ def toy_colours(film):
         if key in palette:
             area[key] = area.get(key, 0) + part_area(p)
     total = sum(area.values()) or 1
-    return sorted(({"key": k, "hex": palette[k], "share": a / total, "contrast": contrast(palette[k], STAGE)} for k, a in area.items()), key=lambda r: -r["share"])
+    against = against or stage_for(film)[1]["sky"]
+    return sorted(({"key": k, "hex": palette[k], "share": a / total, "contrast": contrast(palette[k], against)} for k, a in area.items()), key=lambda r: -r["share"])
 
 
 def film_colours(film):
@@ -94,7 +106,8 @@ def film_colours(film):
     film = Path(film)
     F = json.loads((film / "film.json").read_text())
     anim = json.loads((film / "build/anim.json").read_text())
-    toy_rows = toy_colours(film)
+    STAGE = stage_for(film)[1]["sky"]
+    toy_rows = toy_colours(film, STAGE)
     # dark lettering printed on a paper of its own group (label0_l0 on label0_sheet, a calendar's day on its
     # page) is read against the paper; the rest against the stage
     group = lambda name: name.split("_")[0]  # noqa: E731
@@ -114,6 +127,77 @@ def film_colours(film):
     conf = [c for c in (F.get("pop") or {}).get("confetti", []) if isinstance(c, str)]
     conf_rows = [{"hex": c.upper(), "contrast": contrast(c, STAGE)} for c in conf]
     return {"stage": STAGE, "toy": toy_rows, "text": text_rows, "confetti": conf_rows}
+
+
+def from_oklab(lab):
+    """OKLab (n, 3) → sRGB (n, 3) in 0–1 (clipped)."""
+    lab = np.atleast_2d(np.asarray(lab, dtype=float))
+    lms = lab @ np.array([[1.0, 1.0, 1.0],
+                          [0.3963377774, -0.1055613458, -0.0894841775],
+                          [0.2158037573, -0.0638541728, -1.2914855480]])
+    lin = (lms ** 3) @ np.array([[4.0767416621, -1.2684380046, -0.0041960863],
+                                 [-3.3077115913, 2.6097574011, -0.7034186147],
+                                 [0.2309699292, -0.3413193965, 1.7076147010]])
+    lin = np.clip(lin, 0, 1)
+    return np.where(lin <= 0.0031308, lin * 12.92, 1.055 * np.power(lin, 1 / 2.4) - 0.055)
+
+
+def lift(hex_, target=MELT + 0.2, against=STAGE):
+    """The same colour made lighter, its hue and chroma kept (OKLab lightness raised), just enough to stand at
+    `target`:1 on the stage: a navy stays a navy, only one the eye can find."""
+    lab = oklab(np.array([rgb(hex_)]))[0]
+    if contrast(hex_, against) >= target:
+        return hex_.upper()
+    lo, hi = lab[0], 1.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        h = hexof(from_oklab([[mid, lab[1], lab[2]]])[0])
+        lo, hi = (mid, hi) if contrast(h, against) < target else (lo, mid)
+    return hexof(from_oklab([[hi, lab[1], lab[2]]])[0]).upper()
+
+
+def darkness(film, against=STAGE):
+    """How much of the toy melts into a stage (`against`: its sky): the share of its surface in colours under
+    MELT:1 (0–1)."""
+    try:
+        return float(sum(r["share"] for r in toy_colours(film, against) if r["contrast"] < MELT))
+    except Exception:  # no toy yet, or one these colours cannot read
+        return 0.0
+
+
+def delivered():
+    """The ids of the films this machine has delivered (engine/lib/ledger.py's ledger)."""
+    import os
+    p = Path(os.environ.get("CHRISHKAI_VIDEO_HOME") or Path.home() / ".chrishkai-video") / "ledger.json"
+    try:
+        return {e.get("id") for e in json.loads(p.read_text())}
+    except Exception:
+        return set()
+
+
+def stage_for(film):
+    """(name, palette) of the stage this film plays on: film.json look.stage when it says ("dark", "mid",
+    "grey"); else the dark stage, unless 15% or more of the toy melts into it and less melts into a mid one:
+    the slate, or the grey when what melts is blue (a delivered film keeps the dark one it was approved on)."""
+    film = Path(film)
+    try:
+        F = json.loads((film / "film.json").read_text())
+    except Exception:
+        F = {}
+    name = (F.get("look") or {}).get("stage")
+    if name not in STAGES and (F.get("step") == "done" or F.get("id") in delivered()):
+        name = "dark"  # a delivered film keeps the stage it was approved on
+    if name not in STAGES:
+        dark = darkness(film, STAGES["dark"]["sky"])
+        name = "dark"
+        if dark >= 0.15:
+            # the hue of what melts, by how much of the toy it covers: blue (OKLab b under 0) wants the grey
+            rows = [r for r in toy_colours(film, STAGES["dark"]["sky"]) if r["contrast"] < MELT]
+            b = sum(oklab(np.array([rgb(r["hex"])]))[0][2] * r["share"] for r in rows) / max(1e-9, sum(r["share"] for r in rows))
+            mid = "grey" if b < -0.015 else "mid"
+            if darkness(film, STAGES[mid]["sky"]) < dark:
+                name = mid
+    return name, STAGES[name]
 
 
 def problems(fc):

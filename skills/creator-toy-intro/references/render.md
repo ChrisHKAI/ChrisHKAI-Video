@@ -69,6 +69,19 @@ the camera, from behind the toy and above, and the vinyl reflects it. That
 outlines dark hair against the dark stage in every shot, and it lights
 nothing else.
 
+The **stage takes the other side of the toy**. A toy that is mostly dark
+(a black hoodie, navy clothes, near-black hair: 15% or more of it under
+1.6:1 on the dark stage, `engine/lib/colors.py`) would melt into the dark,
+so its film plays on a mid-tone stage instead: a blue slate, or a neutral
+grey when the toy's own dark is blue. The floors, the end card's glass, the
+beats' stages and what the camera sees past them all take that tone. White
+lettering still reads on it (3:1 or more), and the creator's page keeps its
+own theme. A light toy (a white cat, a white mascot) keeps the dark stage,
+and so does a film already delivered (the ledger). The toy's look-dev in
+step 3 shows the same stage, and the storyboard page says when it changed.
+If a colour still melts, the check prints the same hue made just light
+enough to read.
+
 The **sky splits in two**. What reflects sees a bright softbox overhead, so
 vinyl keeps its highlights. What is lit sees a dim sky, so floors and walls
 stay dark: the end card's floor was a flat grey before.
@@ -83,6 +96,7 @@ film.json `"look"` changes the defaults:
 | `softbox` | 1.4 | how bright the reflected softbox is |
 | `view` | `"Khronos PBR Neutral"` | the colour transform |
 | `light` | | `"classic"`: the first films' look (Standard, a rim on everything, one even sky) |
+| `stage` | by the toy | `"dark"`, `"mid"` (blue slate) or `"grey"`: the stage's tone, when the user wants another than the toy picks |
 
 `-- --look classic` and `-- --rim 6` try a look on a few frames first
 (`--frames … --samples 24 --scale 50`). The toy's look-dev (step 3) shares

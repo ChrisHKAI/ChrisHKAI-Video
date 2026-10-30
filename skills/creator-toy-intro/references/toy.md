@@ -136,7 +136,8 @@ confirmed picture(s) beside them. They are lit as the film lights the toy
 (`engine/lib/look.py`, film.json `"look"`, references/render.md "The
 light"), so what the user approves here is what the film shows. The back
 view keeps the rim on the toy's back, so the back of the head and the hood
-can be seen. Look at it first yourself: likeness,
+can be seen. A dark toy is shown on the mid-tone stage its film will play on
+(references/render.md, "The light"). Look at it first yourself: likeness,
 proportions, nothing floating or sunk, the colours. Then show the user and
 change it from their words, a round at a time (about a minute each). Once
 they say it is right, keep a copy for the next film:

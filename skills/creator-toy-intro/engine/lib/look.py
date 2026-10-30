@@ -12,6 +12,10 @@ default:
   strength; look.rimOn, the names it falls on).
 - What reflects sees a bright softbox sky, and what is lit sees a dim one
   (look.softbox, look.sky): vinyl keeps its highlights, the world stays dark.
+- The stage takes the other side of the toy (engine/lib/colors.py stage_for):
+  dark, as the first films, or a mid slate when the toy is dark (a black
+  hoodie, navy hair) and would melt into the dark; white lettering still reads
+  on it. look.stage ("dark", "mid") says which; the page keeps its own theme.
 
 "light": "classic" (or --look classic) keeps the first films' light: Standard,
 a rim light on everything, one even sky (each script's own numbers).
@@ -31,7 +35,7 @@ def rgba(hex_, k=1.0):
 
 
 class Look:
-    def __init__(self, film_json, arg):
+    def __init__(self, film_json, arg, film=None):
         L = film_json.get("look", {})
         self.classic = arg("--look", L.get("light", "")) == "classic"
         self.view = "Standard" if self.classic else L.get("view", "Khronos PBR Neutral")
@@ -39,6 +43,8 @@ class Look:
         self.rim_on = L.get("rimOn", ["hero"])
         self.sky = float(L.get("sky", 0.22))
         self.softbox = float(L.get("softbox", 1.4))
+        import colors
+        self.stage_name, self.stage = colors.stage_for(film) if film else ("dark", colors.STAGES["dark"])
 
 
 def view(scene, look):
@@ -49,9 +55,11 @@ def view(scene, look):
     scene.view_settings.look = "None"
 
 
-def world(bpy, scene, look, sky=0.32, camera=STAGE):
+def world(bpy, scene, look, sky=0.32, camera=None):
     """The world: the camera sees `camera`. In the classic light everything else sees one even sky
-    (strength `sky`); otherwise what reflects sees the softbox, and what is lit a dim sky (look.sky)."""
+    (strength `sky`); otherwise what reflects sees the softbox, and what is lit a dim sky (look.sky). The camera
+    sees the film's stage (look.stage) unless `camera` says."""
+    camera = camera or look.stage["sky"]
     w = bpy.data.worlds.new("Studio")
     scene.world = w
     w.use_nodes = True

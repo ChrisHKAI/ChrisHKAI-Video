@@ -29,8 +29,9 @@ puts the frames side by side for you.
    and every cut falls on a downbeat. The shake and the sparks come only on
    those hits. (the beat grid on the storyboard page; `segments.js` warns
    when a part leaves the downbeats)
-4. **The stage is dark; the colour is in the content.** Measured on the
-   references' frames (0–255):
+4. **The stage is dark; the colour is in the content.** A dark toy turns the
+   stage mid-tone by itself, so it never melts in (references/render.md, "The
+   light"). Measured on the references' frames (0–255):
    - the toy's and the proof's shots: brightness 48–76, contrast 33–88;
    - the proof, the payoff and the end card: colourfulness 27–48. Under
      that, the frame reads grey and flat.

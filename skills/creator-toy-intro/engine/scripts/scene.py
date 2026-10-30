@@ -110,7 +110,7 @@ scene.render.film_transparent = False
 scene.render.image_settings.file_format = "PNG"
 scene.render.image_settings.color_depth = "8"
 # the light (engine/lib/look.py: film.json "look", references/render.md "The light"), shared with the look-dev
-LOOK = lighting.Look(FILM_JSON, arg)
+LOOK = lighting.Look(FILM_JSON, arg, FILM)
 lighting.view(scene, LOOK)
 scene.view_settings.exposure = float(arg("--exposure", 0.0))
 scene.render.use_persistent_data = True
@@ -304,7 +304,7 @@ def material(spec):
         p.inputs["Emission Strength"].default_value = 0.12
         L.new(bump.outputs["Normal"], p.inputs["Normal"])
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
-    elif kind == "stage":  # the CTA floor: black glass that mirrors the line, fading out far away
+    elif kind == "stage":  # the CTA floor: glass in the stage's tone that mirrors the line, fading out far away
         tc = nt.nodes.new("ShaderNodeTexCoord")
         grad = nt.nodes.new("ShaderNodeTexGradient")
         grad.gradient_type = "SPHERICAL"
@@ -312,9 +312,9 @@ def material(spec):
         mp.inputs["Scale"].default_value = (0.45, 0.45, 0.45)
         L.new(tc.outputs["Object"], mp.inputs["Vector"])
         L.new(mp.outputs["Vector"], grad.inputs["Vector"])
-        p = principled(nt, "#08090c", 0.34, 0.4, coat=0.25, coat_rough=0.3)
+        p = principled(nt, LOOK.stage["glass"], 0.34, 0.4, coat=0.25, coat_rough=0.3)
         dark = nt.nodes.new("ShaderNodeBsdfDiffuse")
-        dark.inputs["Color"].default_value = rgba("#000000")
+        dark.inputs["Color"].default_value = rgba(LOOK.stage["fade"])
         mx = nt.nodes.new("ShaderNodeMixShader")
         ramp = nt.nodes.new("ShaderNodeValToRGB")
         ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
@@ -474,9 +474,9 @@ def material(spec):
         mp.inputs["Scale"].default_value = (0.4, 0.4, 0.4)
         ramp = nt.nodes.new("ShaderNodeValToRGB")
         cr = ramp.color_ramp
-        cr.elements[0].color = rgba("#08090c")
-        cr.elements[1].color = rgba("#1a2030")
-        cr.elements.new(0.55).color = rgba("#10131a")
+        cr.elements[0].color = rgba(LOOK.stage["floorEdge"])
+        cr.elements[1].color = rgba(LOOK.stage["floorMid"])
+        cr.elements.new(0.55).color = rgba(LOOK.stage["floorRing"])
         L.new(tc.outputs["Object"], mp.inputs["Vector"])
         L.new(mp.outputs["Vector"], grad.inputs["Vector"])
         L.new(grad.outputs["Fac"], ramp.inputs["Fac"])
