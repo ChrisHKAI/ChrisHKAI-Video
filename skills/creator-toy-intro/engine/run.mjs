@@ -147,6 +147,9 @@ for (const [i, step] of steps.entries()) {
       const secs = [...(r.stdout ?? "").matchAll(/rendered frame \d+ in ([\d.]+)s/g)].map((m) => +m[1]);
       if (r.status !== 0 || !secs.length) { console.error((r.stderr || r.stdout || "").slice(-2000)); process.exit(r.status || 1); }
       const per = secs.reduce((x, y) => x + y, 0) / secs.length;
+      // which GPU it ran on (engine/lib/device.py), or the warning that it ran on the CPU
+      const gpu = (r.stdout ?? "").match(/^Cycles: .*$/m);
+      if (gpu) console.log(gpu[0]);
       console.log(`about ${per.toFixed(0)} s a frame at 48 samples, full size: the film's ${n} frames ≈ ${(per * n / 3600).toFixed(1)} h; previews (32 samples, half size) ≈ ${(per / 16).toFixed(1)} s a frame`);
       break;
     }

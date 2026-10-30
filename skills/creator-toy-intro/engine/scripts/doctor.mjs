@@ -1,10 +1,12 @@
 // Step 0: checks what the pipeline needs on this computer and lists what is
 // missing as one plan (what, size, from where, whether it needs an admin
 // password), so the user answers once. With --install it then installs the
-// plan, user-level wherever it can: Blender into ~/Applications, the Python
-// modules into a venv, headless Chrome into ~/.cache/puppeteer, the fallback
-// faces into the skill's home. Steps that need an admin password are printed
-// for the user to run themselves; the agent never types a password.
+// plan, user-level wherever it can: Blender into ~/Applications on a Mac and
+// into the skill's home on Windows and Linux, the Python modules into a venv,
+// headless Chrome into ~/.cache/puppeteer, the fallback faces into the
+// skill's home. Steps that need an admin password are printed for the user to
+// run themselves; the agent never types a password. It also asks Blender
+// which GPU the render will use.
 //
 // usage: node engine/scripts/doctor.mjs                     checks + plan
 //        node engine/scripts/doctor.mjs --json              the same as JSON
@@ -84,8 +86,24 @@ let free = null;
 try { const s = statfsSync(process.cwd()); free = (s.bavail * s.bsize) / 1e9; } catch { /* not on this system */ }
 check("disk", "free space (a film needs about 10 GB)", free === null || free >= 10, free === null ? "unknown" : `${free.toFixed(0)} GB free here`);
 
-const gpu = OS === "darwin" && ARCH === "arm64" ? "Apple GPU (Metal)" : onPath("nvidia-smi") ? "NVIDIA (OptiX / CUDA)" : null;
-check("gpu", "GPU for Cycles", Boolean(gpu), gpu ?? "none found", gpu ? "" : "Cycles renders on the CPU: expect hours per film; the draft tier (EEVEE) stays quick");
+// the GPU Cycles will render on: Blender is asked the way the render picks it (engine/lib/device.py)
+const nvidia = OS !== "darwin" && onPath("nvidia-smi");
+const guess = OS === "darwin" && ARCH === "arm64" ? "Apple GPU (Metal)" : nvidia ? "NVIDIA (OptiX / CUDA)" : null;
+const onCpu = "Cycles renders on the CPU: expect hours per film; the draft tier (EEVEE) stays quick";
+let gpu = null; // { backend, devices } as Blender sees them
+if (bv) {
+  const r = sh(blender, ["-b", "--factory-startup", "--python-expr", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(SKILL, "engine/lib"))})
+import bpy, device
+_, found = device.available(bpy)
+backend, picked = device.choose(found)
+print("GPU-CHOICE " + json.dumps({"backend": backend and device.LABEL[backend], "devices": [d.name for d in picked]}))`]);
+  const line = (r.stdout ?? "").split("\n").find((l) => l.startsWith("GPU-CHOICE "));
+  if (line) gpu = JSON.parse(line.slice("GPU-CHOICE ".length));
+}
+if (gpu?.backend) check("gpu", "GPU for Cycles", true, `${gpu.devices.join(", ")} (${gpu.backend})`);
+else if (gpu) check("gpu", "GPU for Cycles", false, "none Blender can use", nvidia ? `an NVIDIA card is here: update its driver, then check again; until then ${onCpu}` : onCpu);
+else check("gpu", "GPU for Cycles", Boolean(guess), guess ? `${guess}, by the look of this computer` : "none found",
+  `${bv ? "Blender could not list its devices" : "Blender says which once it is installed"}${guess ? "" : `; ${onCpu}`}`);
 
 // for trying the plan on a computer that has everything: DOCTOR_PRETEND_MISSING=blender,chrome
 for (const id of (process.env.DOCTOR_PRETEND_MISSING ?? "").split(",").filter(Boolean)) {
@@ -112,14 +130,14 @@ if (failed.has("python-modules") || failed.has("python")) {
     [vpy, "-m", "pip", "install", "numpy", "scipy", "pillow", "fonttools", "contourpy", "scikit-image"],
   ]);
 }
-if (failed.has("blender") && supported) item("blender", `Blender ${BLENDER_SERIES} LTS`, "~400 MB", "download.blender.org", OS === "win32", OS === "win32" ? [["winget", "install", "-e", "--id", "BlenderFoundation.Blender"]] : [["@blender"]]);
+if (failed.has("blender") && supported) item("blender", `Blender ${BLENDER_SERIES} LTS`, "~400 MB", "download.blender.org", false, [["@blender"]]);
 if (failed.has("ffmpeg")) item("ffmpeg", "ffmpeg", "~80 MB", OS === "win32" ? "gyan.dev via winget" : "Homebrew / apt", OS === "linux", OS === "darwin" ? [["brew", "install", "ffmpeg"]] : OS === "win32" ? [["winget", "install", "-e", "--id", "Gyan.FFmpeg"]] : [["sudo", "apt", "install", "-y", "ffmpeg"]], OS === "linux");
 if (failed.has("chrome")) item("chrome", "headless Chrome (Chrome for Testing)", "~100 MB", "Google, via @puppeteer/browsers", false, [["npx", "-y", "@puppeteer/browsers", "install", "chrome-headless-shell@stable", "--path", join(homedir(), ".cache/puppeteer")]]);
 if (failed.has("fonts") && py && fontsFound !== "needs the Python modules first") item("fonts", "Source Han Sans (free faces, SIL OFL)", "~96 MB", "github.com/adobe-fonts", false, [["@fonts"]]);
 
 // ── output ─────────────────────────────────────────────────────────────────
 if (argv.includes("--json")) {
-  console.log(JSON.stringify({ ok: !failed.size || [...failed].every((f) => f === "gpu"), checks, plan, home: HOME }, null, 2));
+  console.log(JSON.stringify({ ok: !failed.size || [...failed].every((f) => f === "gpu"), checks, plan, home: HOME, gpu }, null, 2));
 } else if (!argv.includes("--install")) {
   for (const c of checks) console.log(`${c.ok ? "✓" : "✗"} ${c.name}: ${c.found}${c.note ? `  (${c.note})` : ""}`);
   if (!plan.length) console.log(failed.size ? "\nNothing to install; see the notes above." : "\nEverything is here.");
@@ -158,11 +176,12 @@ if (argv.includes("--install")) {
   if (!dry) console.log("\nDone: run doctor.mjs again to check.");
 }
 
-// Blender: the newest 5.2.x build for this computer, user-level
+// Blender: the newest 5.2.x build for this computer, user-level (on Windows and Linux the portable
+// build, unpacked into the skill's home: no installer, no admin)
 async function installBlender(run, dry) {
   const index = `https://download.blender.org/release/Blender${BLENDER_SERIES}/`;
-  const kind = OS === "darwin" ? "macos-arm64.dmg" : "linux-x64.tar.xz";
-  const names = [...(await (await fetch(index)).text()).matchAll(new RegExp(`blender-${BLENDER_SERIES.replace(".", "\\.")}\\.(\\d+)-${kind.replace(".", "\\.")}`, "g"))];
+  const kind = OS === "darwin" ? "macos-arm64.dmg" : OS === "win32" ? `windows-${ARCH}.zip` : "linux-x64.tar.xz";
+  const names = [...(await (await fetch(index)).text()).matchAll(new RegExp(`blender-${BLENDER_SERIES.replaceAll(".", "\\.")}\\.(\\d+)-${kind.replaceAll(".", "\\.")}`, "g"))];
   if (!names.length) throw new Error(`no ${kind} in ${index}`);
   const name = names.sort((a, b) => +a[1] - +b[1]).at(-1)[0];
   const tmp = dry ? join(tmpdir(), "blender-dl") : mkdtempSync(join(tmpdir(), "blender-"));
@@ -175,8 +194,9 @@ async function installBlender(run, dry) {
     run("ditto", [join(mnt, "Blender.app"), join(homedir(), "Applications/Blender.app")]);
     run("hdiutil", ["detach", "-quiet", mnt]);
   } else {
+    // Windows' own tar (bsdtar) unpacks the .zip too: ~/.chrishkai-video/blender/blender(.exe)
     mkdirSync(join(HOME, "blender"), { recursive: true });
-    run("tar", ["-xJf", file, "-C", join(HOME, "blender"), "--strip-components=1"]);
+    run("tar", ["-xf", file, "-C", join(HOME, "blender"), "--strip-components=1"]);
   }
   if (!dry) rmSync(tmp, { recursive: true, force: true });
 }

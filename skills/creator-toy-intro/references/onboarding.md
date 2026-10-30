@@ -29,9 +29,13 @@ Quiet unless something is missing.
 5. No: print `doctor.mjs --install --dry-run` so they have the commands,
    and stop.
 6. Notes, said once:
-   - With no GPU, Cycles renders take hours (the EEVEE draft stays quick).
+   - The GPU line names the graphics card the final render will use, on a
+     Mac, Windows or Linux. With none, the final render takes many hours
+     (the quick draft stays quick). An NVIDIA, AMD or Intel card that shows
+     ✗ usually needs a newer driver: say so, then check again.
    - The end-card face falls back to Source Han Sans Heavy when Lantinghei
-     SC is not on the Mac (Font Book can add it).
+     SC is not on the computer (on a Mac, Font Book can add it; Windows and
+     Linux do not have it).
 7. Grok Build is optional; doctor shows it either way. When the creator is
    on X and it says "not installed", ask once whether they use Grok. With
    it, step 2 asks Grok to search X for their best posts, milestones and
@@ -43,10 +47,15 @@ Quiet unless something is missing.
    - No: step 2 uses the browser alone. They may also ask @grok on X and
      paste its answer.
 
-What is installed goes user-level: Blender into `~/Applications`, the
-Python modules into `~/.chrishkai-video/venv`, headless Chrome into
-`~/.cache/puppeteer`, the fallback faces into `~/.chrishkai-video/fonts`.
-`engine/run.mjs` finds them there by itself.
+What is installed goes user-level: Blender into `~/Applications` on a Mac
+and into `~/.chrishkai-video/blender` on Windows and Linux (the portable
+build: no installer, no password), the Python modules into
+`~/.chrishkai-video/venv`, headless Chrome into `~/.cache/puppeteer`, the
+fallback faces into `~/.chrishkai-video/fonts`. `engine/run.mjs` finds them
+there by itself, and finds a Blender the user installed the usual way too
+(Windows: `Program Files`, Steam). A Blender unpacked anywhere else: set
+`BLENDER` to its `blender.exe` (Windows) or `blender` (Linux) for doctor and
+every `run.mjs` command.
 
 This skill also needs, from the agent running it: a shell that may run for
 an hour or more (renders run in the background), the ability to look at
@@ -87,8 +96,9 @@ Without image viewing, say so before starting: the checks cannot be skipped.
    them, so the wait is never a surprise: the research about 10–20 min
    (then they pick the story), the toy 10–20 min (they approve it), the
    storyboard 30–60 min (they sign it off), then the render, about 1.5 h on
-   an M4 Pro or an M5 (an exact figure comes from `run.mjs estimate` before
-   it starts), on its own in the background. While a long step runs, send a
+   an M4 Pro or an M5 and many hours without a graphics card (an exact
+   figure for their computer comes from `run.mjs estimate` before it
+   starts), on its own in the background. While a long step runs, send a
    small picture each time a piece is done (a cover cut, the prop, a preview
    frame), so they see it moving.
 7. A share link (`v.douyin.com`, `xhslink.com`) only names the platform:

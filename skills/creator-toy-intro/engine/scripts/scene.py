@@ -31,6 +31,7 @@ sys.path.insert(0, str(Path(os.environ.get("SKILL") or Path(__file__).resolve().
 from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
 import toyblend  # noqa: E402  the pet and sculpt kits' shapes and paint
 import look as lighting  # noqa: E402  the light, shared with the look-dev
+import device  # noqa: E402  which GPU Cycles renders on, shared with the look-dev
 
 ROOT = FILM
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -80,12 +81,7 @@ if ENGINE == "eevee":
     scene.eevee.taa_render_samples = SAMPLES
 else:
     scene.render.engine = "CYCLES"
-    prefs = bpy.context.preferences.addons["cycles"].preferences
-    prefs.compute_device_type = "METAL"
-    prefs.get_devices()
-    for d in prefs.devices:
-        d.use = d.type == "METAL"
-    scene.cycles.device = "GPU"
+    device.use(bpy, scene)  # OptiX, CUDA, HIP, oneAPI or Metal, whichever this computer has (engine/lib/device.py)
     scene.cycles.samples = SAMPLES
     scene.cycles.use_adaptive_sampling = True
     scene.cycles.adaptive_threshold = 0.015

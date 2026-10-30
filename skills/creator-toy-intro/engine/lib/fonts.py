@@ -3,7 +3,8 @@ them (macOS keeps PingFang and Lantinghei as on-demand assets under a hashed
 path), and falls back to free faces where a Mac face is missing.
 
 Roles (isnail's type design):
-  latin  the counter's digits          Helvetica Neue Bold → Arial Bold
+  latin  the counter's digits          Helvetica Neue Bold → Arial Bold → Liberation Sans Bold
+                                       (Linux) → Source Han Sans Bold
   cjk    the counter's unit and label  PingFang SC/TC Semibold → Source Han Sans Bold
   heavy  the torn-paper labels         Lantinghei SC/TC Heavy → Source Han Sans Heavy
 film.json "type": { role: [{ "family": …, "style": … }, …] } puts the film's own
@@ -16,7 +17,7 @@ from pathlib import Path
 from fontTools.ttLib import TTCollection, TTFont
 
 ROLES = {
-    "latin": {"*": [("Helvetica Neue", "Bold"), ("Arial", "Bold")]},
+    "latin": {"*": [("Helvetica Neue", "Bold"), ("Arial", "Bold"), ("Liberation Sans", "Bold"), ("Source Han Sans SC", "Bold")]},
     "cjk": {
         "zh-Hans": [("PingFang SC", "Semibold"), ("Source Han Sans CN", "Bold"), ("Source Han Sans SC", "Bold")],
         "zh-Hant": [("PingFang TC", "Semibold"), ("PingFang HK", "Semibold"), ("Source Han Sans HK", "Bold"), ("Source Han Sans TC", "Bold")],
@@ -32,7 +33,10 @@ DIRS = [
     HOME_FONTS,
     "/System/Library/Fonts", "/System/Library/Fonts/Supplemental", "/Library/Fonts", str(Path.home() / "Library/Fonts"),
     "/System/Library/AssetsV2/com_apple_MobileAsset_Font*/*/AssetData",
-    "C:/Windows/Fonts", "/usr/share/fonts/**", "/usr/local/share/fonts/**", str(Path.home() / ".local/share/fonts/**"),
+    # Windows: the system's faces, and the ones installed "for me only" (what a double-click does)
+    str(Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"),
+    str(Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData/Local") / "Microsoft/Windows/Fonts"),
+    "/usr/share/fonts/**", "/usr/local/share/fonts/**", str(Path.home() / ".local/share/fonts/**"),
 ]
 _faces = None
 

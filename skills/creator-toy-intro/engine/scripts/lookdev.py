@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib"))
 from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var)
 import toyblend  # noqa: E402  the pet and sculpt kits' shapes and paint
 import look as lighting  # noqa: E402  the film's light (film.json "look"), so the toy is lit as the film lights it
+import device  # noqa: E402  which GPU Cycles renders on, as the film picks it
 
 ROOT = FILM
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -50,12 +51,7 @@ scene = bpy.context.scene
 for o in list(bpy.data.objects):
     bpy.data.objects.remove(o, do_unlink=True)
 scene.render.engine = "CYCLES"
-prefs = bpy.context.preferences.addons["cycles"].preferences
-prefs.compute_device_type = "METAL"
-prefs.get_devices()
-for d in prefs.devices:
-    d.use = d.type == "METAL"
-scene.cycles.device = "GPU"
+device.use(bpy, scene)
 scene.cycles.samples = int(arg("--samples", 64))
 scene.cycles.use_denoising = True
 scene.render.resolution_x = 960

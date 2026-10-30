@@ -10,8 +10,12 @@ FILM=<film> node <skill>/engine/run.mjs estimate
 ```
 
 renders three frames at the final settings (Cycles, 48 samples, full size)
-and says how long the whole film takes (an Apple M3 Max: about 4 s a frame,
-about 40 min for 30 s; an M4 Pro or an M5, about 5 s a frame, 1.5 h for 32 s).
+and says which graphics card rendered them and how long the whole film takes
+(an Apple M3 Max: about 4 s a frame, about 40 min for 30 s; an M4 Pro or an
+M5, about 5 s a frame, 1.5 h for 32 s; on a Windows or Linux PC it depends on
+the card, so go by the estimate). It picks the card itself: an NVIDIA card,
+then AMD, then Intel, then Apple's. If it says the CPU on a computer that has
+a graphics card, stop and run doctor: the card's driver is usually too old.
 Tell the user, and offer two ways:
 - **the quick version first** (about a quarter of the time): the whole film
   at half size and 16 samples, to watch before committing the hours:
@@ -35,8 +39,9 @@ With no `--frames` it renders the whole film: its frame count is film.json's
 a film whose length follows its content needs no other change. `--frames`
 renders a part (`--frames 300-420`, `--frames 13,49,121`).
 
-Run it in the background. It keeps a Mac awake while it runs, prints each
-frame with the time left, and `--resume` picks up from the frames already
+Run it in the background. On a Mac it keeps the computer awake while it
+runs; on Windows or Linux, ask the user to set the computer not to sleep for
+those hours. It prints each frame with the time left, and `--resume` picks up from the frames already
 on disk if it stops. While it runs, look at a few finished frames now and
 then (`build/render/`): stop early if something is wrong rather than an
 hour later. After a late change, render only the frames `diff-anim.py`
