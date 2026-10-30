@@ -82,8 +82,9 @@ let raw;
 if (argv.includes("--from-raw")) raw = readFileSync(join(dir, `research/${stem}-raw.json`), "utf8"); // no paid search
 else {
   console.log(`grok: searching X for @${handle} (about ten minutes)…`);
-  // every tool but the X tools and web search (which --tools cannot name): checked by asking Grok for its tools
-  const DENY = ["run_terminal_cmd", "search_replace", "write", "read_file", "list_dir", "grep", "todo_write", "task", "web_fetch", "use_tool", "search_tool",
+  // every tool but the X tools and web search (which --tools cannot name): checked by asking Grok for its tools.
+  // Grok ignores a name it does not know, so a renamed tool slips through: grok 1.0.73 calls the shell run_terminal_command
+  const DENY = ["run_terminal_cmd", "run_terminal_command", "search_replace", "write", "read_file", "list_dir", "grep", "todo_write", "task", "web_fetch", "use_tool", "search_tool",
     "image_gen", "image_edit", "image_to_video", "reference_to_video", "workflow", "scheduler_create", "scheduler_delete", "scheduler_list", "monitor",
     "send_feedback", "ask_user_question", "spawn_subagent", "kill_command_or_subagent", "get_command_or_subagent_output", "enter_plan_mode", "exit_plan_mode"];
   const r = spawnSync(grok, ["-p", prompt, "--disallowed-tools", DENY.join(","), "--output-format", "json", "--json-schema", JSON.stringify(schema), "--max-turns", arg("--max-turns", "20")],
@@ -100,6 +101,12 @@ try {
   if (!found) throw new Error("no JSON object in the answer");
 } catch (e) {
   console.error(`grok answered, but not in the shape asked for: see research/${stem}-raw.json (${e.message})`);
+  process.exit(1);
+}
+// with a schema Grok sometimes answers on its first turn, before any search: nothing found is then not an answer
+const empty = !found.pinned && !found.top?.length && !found.milestones?.length && !found.story_leads?.length && !found.gap_answers?.length;
+if (empty && (out.num_turns ?? 2) <= 1) {
+  console.error(`grok answered before searching (one turn, nothing found): run it again; see research/${stem}-raw.json`);
   process.exit(1);
 }
 const lead = { handle, searched: new Date().toISOString().slice(0, 10), minutes: argv.includes("--from-raw") ? null : +((Date.now() - t0) / 60000).toFixed(1), costUSD: out.total_cost_usd ?? null, ...found };
