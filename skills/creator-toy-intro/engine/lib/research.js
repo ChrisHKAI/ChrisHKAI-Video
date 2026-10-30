@@ -1,8 +1,10 @@
 // Research stays separate from animation: a direction connects existing facts,
 // while a beat decides how to show one. Old story/proof picks still work.
+// A direction with open evidence gaps can still be chosen once its claims are narrowed
+// to what the sources support: the gaps come back as warnings, for the user to see.
 export function resolveDirection(facts) {
   const picks = facts.picks ?? {};
-  if (!picks.direction) return { direction: null, story: picks.story ?? [] };
+  if (!picks.direction) return { direction: null, story: picks.story ?? [], warnings: [] };
   const matches = (facts.directions ?? []).filter((d) => d.id === picks.direction);
   if (matches.length !== 1) throw new Error(`picks.direction must name one direction: "${picks.direction}"`);
   const direction = matches[0];
@@ -13,7 +15,9 @@ export function resolveDirection(facts) {
     if (typeof direction.hook?.[key] !== "string" || !direction.hook[key].trim()) throw new Error(`direction "${direction.id}" needs hook.${key}`);
   }
   if (!Array.isArray(direction.gaps)) throw new Error(`direction "${direction.id}" needs gaps (an empty list when supported)`);
-  if (direction.gaps.length) throw new Error(`direction "${direction.id}" still has evidence gaps: resolve them or choose a supported direction`);
+  const warnings = direction.gaps.length
+    ? [`direction "${direction.id}" has open evidence gaps (${direction.gaps.join("; ")}): keep its claims to what the sources support, and tell the user`]
+    : [];
   if (!Array.isArray(direction.beats) || direction.beats.length < 1 || direction.beats.length > 4) throw new Error(`direction "${direction.id}" needs 1–4 story beats`);
   const ids = direction.beats.map((b, i) => {
     if (!(facts.story ?? []).some((s) => s.id === b.story)) throw new Error(`direction "${direction.id}" names missing story "${b.story}"`);
@@ -27,7 +31,7 @@ export function resolveDirection(facts) {
   if (!Array.isArray(story) || JSON.stringify(story.map((s) => typeof s === "string" ? s : s.id)) !== JSON.stringify(ids)) {
     throw new Error("picks.story differs from the chosen direction: update its beats first (animation overrides may keep the same order)");
   }
-  return { direction, story };
+  return { direction, story, warnings };
 }
 
 export function numberProvenanceIssues(facts = {}) {

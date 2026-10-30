@@ -58,7 +58,6 @@ test("direction resolves ordered facts and permits only matching animation overr
 test("unsupported or broken directions cannot be applied", () => {
   for (const [mutate, pattern] of [
     [f => { f.picks.direction = "missing"; }, /name one direction/],
-    [f => { f.directions[0].gaps = ["Why did they change?"]; }, /evidence gaps/],
     [f => { f.directions[0].beats[1].story = "missing"; }, /missing story/],
     [f => { f.directions[0].beats[1].connection = ""; }, /connection/],
     [f => { f.directions[0].hook.text = ""; }, /hook.text/],
@@ -66,6 +65,13 @@ test("unsupported or broken directions cannot be applied", () => {
   ]) {
     const f = facts(); mutate(f); assert.throws(() => resolveDirection(f), pattern);
   }
+});
+
+test("a direction with open evidence gaps can be chosen, the gaps repeated as a warning", () => {
+  const f = facts(); f.directions[0].gaps = ["Why did they change?"];
+  const { direction, warnings } = resolveDirection(f);
+  assert.equal(direction.id, "method");
+  assert.match(warnings.join("\n"), /open evidence gaps.*Why did they change/);
 });
 
 test("all number locations are checked, including old workspaces and blank metadata", () => {
@@ -174,21 +180,21 @@ test("saved follow-up responses reparse offline without replacing discovery resu
 });
 
 
-test("preproduction story test writes a brief but never approves itself", (t) => {
+test("preproduction story test writes a brief, never approves itself, and never stops the film", (t) => {
   const f = facts(), dir = workspace(t, f);
   rmSync(join(dir, "research/story-test.json"));
   const brief = run(dir, "story-test.mjs", [dir]);
   assert.equal(brief.status, 0, brief.stderr);
   assert.match(readFileSync(join(dir, "research/story-test.md"), "utf8"), /Specificity: replace the creator/);
   assert.equal(run(dir, "story-test.mjs", [dir, "--check"]).status, 1);
-  const before = readFileSync(join(dir, "film.json"), "utf8");
-  const applied = run(dir, "apply-research.mjs", [dir]);
-  assert.equal(applied.status, 1);
-  assert.match(applied.stderr, /no story test/);
-  assert.equal(readFileSync(join(dir, "film.json"), "utf8"), before);
+  // advice, not a gate: the direction is applied and the missing review is said
   const next = run(dir, "next.mjs");
   assert.match(next.stdout, /story-test.mjs/);
-  assert.doesNotMatch(next.stdout, /apply-research.mjs/);
+  assert.match(next.stdout, /apply-research.mjs/);
+  const applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.match(applied.stdout, /story test: no story test/);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "film.json"), "utf8")).story.direction, f.directions[0]);
 });
 
 test("review requires ready answers, resolved issues and purposeful actions", () => {
@@ -250,9 +256,14 @@ test("switching to an alternative hook invalidates the review and applies only t
   const { question, visual, text } = f.directions[0].hookAlternatives[0];
   f.directions[0].hook = { question, visual, text };
   writeFileSync(join(dir, 'research/facts.json'), JSON.stringify(f));
-  assert.notEqual(run(dir, 'apply-research.mjs', [dir]).status, 0);
+  // the old review no longer fits the new hook: said, not stopped
+  const stale = run(dir, 'apply-research.mjs', [dir]);
+  assert.equal(stale.status, 0, stale.stderr);
+  assert.match(stale.stdout, /stale/);
   writeFileSync(join(dir, 'research/story-test.json'), JSON.stringify(readyReport(f)));
-  assert.equal(run(dir, 'apply-research.mjs', [dir]).status, 0);
+  const fresh = run(dir, 'apply-research.mjs', [dir]);
+  assert.equal(fresh.status, 0);
+  assert.doesNotMatch(fresh.stdout, /story test:/);
   const film = JSON.parse(readFileSync(join(dir, 'film.json'), 'utf8'));
   assert.deepEqual(film.story.direction.hook, { question, visual, text });
   assert.equal(film.story.segments.length, 4); // opening + two factual beats + ending

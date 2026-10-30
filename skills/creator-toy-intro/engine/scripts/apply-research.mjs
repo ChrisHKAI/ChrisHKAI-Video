@@ -38,11 +38,13 @@ let selection;
 try { selection = resolveDirection(facts); } catch (e) { fail(e.message); }
 // the toy is only made from a picture the user said to use: many profile pictures are real people
 if (!facts.toy?.confirmed || !facts.toy.images?.length) fail("the toy's picture is not confirmed yet: show the user the profile picture and ask which picture the toy is made from (research/facts.json \"toy\")");
+// the story test is advice, not a gate (references/story-test.md): what it still asks for is said here,
+// and the film goes on; the full render waits for the storyboard page and the user's sign-off
+warn.push(...selection.warnings);
 if (selection.direction) {
   let report = null;
-  try { report = JSON.parse(readFileSync(join(dir, "research/story-test.json"), "utf8")); } catch { /* an absent or invalid report cannot pass */ }
-  const issues = storyTestIssues(facts, report);
-  if (issues.length) fail(issues.join("\n"));
+  try { report = JSON.parse(readFileSync(join(dir, "research/story-test.json"), "utf8")); } catch { /* none yet */ }
+  warn.push(...storyTestIssues(facts, report).map((issue) => `story test: ${issue}`));
 }
 const post = (id) => facts.posts.find((p) => p.id === id) ?? fail(`no post "${id}" in research/facts.json`);
 // the stage platform's own grid shows one number per tile

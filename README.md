@@ -123,15 +123,15 @@ Before you sign off, the storyboard page checks the film for you:
 
 Story selection first offers up to three complete directions and recommends one:
 each has an opening hook, connected facts, a payoff and any evidence gaps. One
-targeted follow-up can fill important gaps (an additional paid search when using
-Grok). Thin evidence leads to a narrower story, never an invented turning point.
+targeted follow-up can fill important gaps (with Grok, one more paid search of
+about US$1, only on your yes). Thin evidence leads to a narrower story, never an invented turning point.
 Existing projects can still select individual material points as before.
 
-Before modelling, the selected direction gets a text-only story test: what viewers
+The chosen direction then gets a quick text-only story test: what viewers
 remember, why they keep watching, what makes this creator distinctive, and what
-each major toy action communicates. Changed stories need a fresh review; this
-adds no extra user approval round. The actual animation is still checked in the
-storyboard and final review.
+each major toy action communicates. It is advice, never a gate: it adds no
+question for you and doesn't hold up the toy. The actual animation is still
+checked in the storyboard and final review.
 
 ### The sound
 

@@ -72,7 +72,7 @@ commands to run.
 | --- | --- | --- | --- |
 | 0 | the computer: check, then one yes installs what is missing | the install list, if anything is missing | `references/onboarding.md` |
 | 1 | onboarding: the creator's link, a workspace; how long it all takes, said once | 16:9 or 9:16 | `references/onboarding.md` |
-| 2 | research, evidence map, reasoned material selection and up to three complete story directions (one recommended with alternate hooks; one targeted search for important gaps; an internal story test before modelling), a clearly labelled story proposal (not final animation style; no PPT required), then story first: what the creator is known for and proud of, each with its material, numbers (current, sourced) and the animation it becomes; `apply-research` turns the picks into the film's pieces | the toy's picture; the story page (`materials.png`): the story points, one of three openings, the ending, each with a preview | `references/research.md`, `story-directions.md`, `story-test.md` |
+| 2 | research, story first: what the creator is known for and proud of, each fact with its sources, numbers (current counts fresh, milestones dated) and the animation it becomes; up to three complete story directions from them (a hook, connected facts, what the toy does and what the viewer learns, a payoff), one recommended; one targeted search for important gaps, if needed; then a cheap text story test of the chosen one (advice, never a gate); `apply-research` turns the picks into the film's pieces | the toy's picture; the story page (`materials.png`): a story direction (A/B/C), one of three openings, the ending, each with pictures and previews | `references/research.md`, `story-directions.md`, `story-test.md` |
 | 3 | the toy, with the body its picture has (person, animal, object), in one of three kits; its colours checked on the dark stage | the turnaround beside the picture | `references/toy.md` |
 | 4 | the film's own code (what its pieces need: cover cuts, a beat of its own, the prop), `check`, then the storyboard page: the story, the beat grid, real preview renders, every sound under the animatic, the checks (pace, the toy's size, reading time, colours, not the last film again, a second opinion) | the storyboard page: notes on the frames, the sound, sign-off | `references/storyboard.md`, `beats.md`, `cover-wall.md`, `props.md`, `avatar.md`, `exits.md` |
 | 5 | how long (a quick half-size version first, if they like), the render, the finish: the film, the effects-only cut, each platform's covers, the last look | the finished film | `references/render.md` |
@@ -238,10 +238,11 @@ film and names the three biggest problems with their times
   picked for what it says about them, and each piece is the animation that
   fits it; a piece that does not fit is left out, never forced (a lemon's
   illustrations are not a cover wall; a cloud is not a number).
-- Before modelling, test the selected direction's takeaway, continuation and
-  creator specificity. Each major toy action states what it does and what the
-  viewer learns (`references/story-test.md`); remove empty motion. Review again
-  after changing the story, sources, action or ending, without another user gate.
+- Each major toy action states what it does and what the viewer learns; remove
+  empty motion. A cheap text story test of the chosen direction (takeaway, why
+  keep watching, what makes it this creator) comes before the storyboard
+  (`references/story-test.md`): advice, never a gate, and no extra question
+  for the user.
 - The toy has the body its original has: a lemon gets no arms or legs.
 - What the skill lacks, the film builds; the skill never makes a film worse
   than the model would make it without it.

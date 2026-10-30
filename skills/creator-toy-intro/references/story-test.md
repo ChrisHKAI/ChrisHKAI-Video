@@ -1,8 +1,8 @@
 # Test the story before making the toy
 
-Run after choosing a complete direction and confirming the toy's reference,
-before building its geometry or rendering previews. This is an internal text
-review, not another user approval step. Older point/proof projects still work;
+Run after choosing a complete direction, before the storyboard's previews (the
+toy can be built meanwhile). This is an internal text review, not another user
+approval step, and advice rather than a gate: it never stops the film. Older point/proof projects still work;
 use these questions manually when revisiting them.
 
 ## Give every major action a purpose
@@ -73,9 +73,10 @@ work and explain the limitation; do not enter an endless review loop or invent
 facts. Preserve the user's explicit choices and explain any necessary change.
 
 4. Run `node <skill>/engine/scripts/story-test.mjs <film> --check`, then
-   `apply-research.mjs <film>`. Missing, stale or revise verdicts stop the selected
-   direction from entering the toy-building stage. Old point/proof selections
-   do not acquire a new mandatory schema.
+   `apply-research.mjs <film>`. A missing, stale or revise review is reported
+   by `apply-research`, `next` and `check` as something to look at; it does not
+   stop the film. Fix what the review found, or tell the user in a line why it
+   stays. Old point/proof selections do not acquire a new schema.
 
 Changing the source packet, hook, action, story order or chosen ending invalidates
 the report. Re-review the changed story; JSON key ordering alone does not matter.

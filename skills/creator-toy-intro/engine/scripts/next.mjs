@@ -31,10 +31,12 @@ if (step === "research") {
     if (chosen && facts.toy?.confirmed) {
       let issues = [];
       try { issues = storyTestIssues(facts, json("research/story-test.json")); } catch (e) { issues = [e.message]; }
+      // the story test is advice: recommended first, never in the way
       if (issues.length) {
-        todo.push(...issues);
-        cmds.push("node <skill>/engine/scripts/story-test.mjs <film>   (review the brief, save story-test.json, then --check)");
-      } else cmds.push("node <skill>/engine/scripts/apply-research.mjs <film>");
+        todo.push(...issues.map((issue) => `recommended: ${issue}`));
+        cmds.push("node <skill>/engine/scripts/story-test.mjs <film>   (a cheap text review of the chosen story: references/story-test.md)");
+      }
+      cmds.push("node <skill>/engine/scripts/apply-research.mjs <film>");
     }
   }
 } else if (step === "toy") {

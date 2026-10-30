@@ -89,8 +89,9 @@ authorization/budget, write a JSON array of questions to `research/gaps.json`:
 ```
 
 Run `node <skill>/engine/scripts/grok-search.mjs <film> --gaps`. This is one
-additional paid run, not part of the first run's cost; do not run it when the
-evidence is already sufficient. It keeps `grok.json` intact and writes
+more paid run on the user's Grok account (about another US$1): tell them the
+cost and ask before running it; do not run it when the evidence is already
+sufficient. It keeps `grok.json` intact and writes
 `grok-followup.json` and `grok-followup-raw.json`. `--gaps --from-raw` reparses the
 saved response without searching or needing Grok installed. Verify retrieved
 leads before adding them to facts. Record inaccessible or absent evidence.
@@ -154,8 +155,9 @@ shape references facts already present in `story`; replace all sample content:
 Compare creator specificity, audience relevance, evidence and visual clarity in
 plain words. Recommend one supported direction with a concrete reason, not a
 made-up probability of going viral. Put unresolved central evidence questions in
-`gaps`; such a direction is not ready to select. Never clear gaps just to pass
-validation. Prefer a narrower supported option.
+`gaps`; the story page shows them. Such a direction can still be chosen once its
+claims are narrowed to what the sources support (`apply-research` repeats the gaps
+as a warning). Never clear gaps to hide them. Prefer a narrower supported option.
 
 ### Opening variants
 
@@ -182,9 +184,13 @@ At step 4 implement the selected hook only; alternatives are not extra scenes.
 
 ## 4. One choice, then the existing film pipeline
 
-`materials.mjs` shows direction cards first: audience/goal, recommendation,
-opening hook, ordered facts and connections, evidence links, payoff and gaps.
-The original material cards remain below for detail and custom choices.
+`materials.mjs` shows the direction cards as the story choice, lettered A/B/C:
+audience/goal, recommendation, the first picture and its words, each fact with
+its picture, its connection, what the viewer learns and a preview strip of its
+animation, the payoff, the ending, evidence links and gaps. The fact cards move
+to the second picture (`materials-posts.png`) for detail and custom choices.
+Openings and endings are numbered, so an answer reads "story A, opening 2,
+ending 1".
 
 Ask for a direction, camera opening and ending together. Record
 `picks.direction: "method"`; its `beats` supply the story order, and its `cta`
@@ -196,12 +202,13 @@ facts, update the direction, hook and payoff to match before applying it.
 Older workspaces with only `picks.story` or `proof1/proof2` still work. For a new
 unattended film choose the supported recommendation, record `picks.direction`
 and explain the assumptions in the handover. Never silently select a direction
-with missing evidence.
+with missing evidence: say which gaps remain and how its claims were narrowed.
 
-Before building the toy, complete the internal story test in
-`references/story-test.md`. It checks the takeaway, reason to keep watching,
-creator specificity and the meaning of each toy action. It adds no user approval
-round; a changed direction needs a fresh review. Only then run `apply-research`.
+Then run the internal story test in `references/story-test.md` (the toy can
+be built meanwhile). It checks the takeaway, reason to keep watching, creator
+specificity and the meaning of each toy action. It adds no user approval round
+and stops nothing: `apply-research` reports what it still asks for. A changed
+direction is worth a fresh review.
 
 `apply-research` stores the selected direction in `film.story.direction`. During
 step 4, implement its hook in the film's own code and check the promise against

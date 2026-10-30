@@ -68,9 +68,11 @@ if (past("research")) {
   for (const n of numberProvenanceIssues(facts ?? {})) say("warn", `the number ${n.display} at ${n.path} has no ${n.missing.join(" or ")}`, "research.md: every number keeps where it was read and when");
   if (facts?.picks?.direction) {
     try {
-      const { direction } = resolveDirection(facts);
+      const { direction, warnings } = resolveDirection(facts);
+      for (const w of warnings) say("warn", w, "references/story-directions.md");
       if (JSON.stringify(film.story?.direction) !== JSON.stringify(direction)) say("bad", "the chosen story direction changed since it was applied", "run apply-research again, then rebuild the storyboard");
-      for (const issue of storyTestIssues(facts, json("research/story-test.json"))) say("bad", issue, "references/story-test.md");
+      // the story test is advice: worth a look, never a stop
+      for (const issue of storyTestIssues(facts, json("research/story-test.json"))) say("warn", issue, "references/story-test.md");
     } catch (e) { say("bad", e.message, "references/story-directions.md"); }
   }
   const slogan = (film.cta?.slogan ?? []).map((s) => s.text).join("");

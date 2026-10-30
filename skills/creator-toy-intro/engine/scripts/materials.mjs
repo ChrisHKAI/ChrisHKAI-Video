@@ -28,15 +28,15 @@ const T = {
   en: { title: "Your film: the story first", story: "① What does the film tell about them?", storyNote: "pick two or three, in the order they come", becomes: "On screen", read: "read", opening: "② How does it open?", openNote: "pick one", ending: "③ How does it end?", endNote: "the last line and the prop the toy sits on", other: "Other: just say", posts: "The posts found (the evidence)", pinned: "pinned", menu: "What else the material can become", ask: "Tell me your picks: the story (say A, C), the opening, the ending", idea: "idea", none: "No story yet: the agent first finds what they are known for and proud of (research.md)" },
 }[lang] ?? {};
 const D = {
-  "zh-Hans": { title: "先选一条故事主线", audience: "给谁看", goal: "看完记住什么／做什么", assumed: "根据资料推断，可修改", recommended: "推荐", hook: "开场要让人想知道", visual: "第一幕", text: "画面短句", payoff: "结尾回应", evidence: "依据", gaps: "还缺证据，暂不选用", ask: "告诉我：故事方向、开场、收尾；也可以修改下面的素材组合" },
-  "zh-Hant": { title: "先揀一條故事主線", audience: "畀邊個睇", goal: "睇完記得乜／做乜", assumed: "按資料推斷，可以改", recommended: "推薦", hook: "開場令人想知道", visual: "第一幕", text: "畫面短句", payoff: "結尾回應", evidence: "依據", gaps: "仲欠證據，暫時唔揀", ask: "話我知：故事方向、開場、收尾；亦可以改下面嘅素材組合" },
-  en: { title: "Choose a story direction", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "The opening question", visual: "First frame", text: "On-screen line", payoff: "Payoff", evidence: "Evidence", gaps: "Evidence missing; not ready to select", ask: "Tell me the direction, camera opening and ending; or change the material choices below" },
+  "zh-Hans": { title: "① 片子讲哪一条主线？", note: "选一条（A／B／C）。每条都已经排好要讲的几件事和次序", audience: "给谁看", goal: "看完记住什么／做什么", assumed: "根据资料推断，可修改", recommended: "推荐", hook: "开场让人想知道", visual: "第一个画面", text: "画面上的字", payoff: "最后回答了什么", ending: "收尾一句和道具", means: "观众会明白", evidence: "依据", gaps: "还缺证据：选这条的话，会只讲资料能证明的部分", ask: "选好就告诉我，例如：主线 A、开场 2、收尾 1" },
+  "zh-Hant": { title: "① 條片講邊條主線？", note: "揀一條（A／B／C）。每條都已經排好要講嘅幾件事同次序", audience: "畀邊個睇", goal: "睇完記得乜／做乜", assumed: "按資料推斷，可以改", recommended: "推薦", hook: "開場令人想知道", visual: "第一個畫面", text: "畫面上嘅字", payoff: "最後答咗乜", ending: "收尾一句同道具", means: "觀眾會明白", evidence: "依據", gaps: "仲欠證據：揀呢條嘅話，只會講資料證明到嘅部分", ask: "揀好就話我知，例如：主線 A、開場 2、收尾 1" },
+  en: { title: "① Which story does the film tell?", note: "Pick one (A / B / C): each already orders the facts it tells", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "What makes them want to know", visual: "First picture", text: "Words on screen", payoff: "What the end answers", ending: "Closing line and prop", means: "Viewer learns", evidence: "Evidence", gaps: "Evidence missing: choosing this, the film says only what the sources support", ask: "Tell me your picks, say: story A, opening 2, ending 1" },
 }[lang] ?? null;
 if (!D) throw new Error("--lang must be zh-Hant, zh-Hans or en");
 const editorialWords = {
-  "zh-Hant": { reason: "點解揀呢項", tradeoffs: "素材取捨", alternatives: "其他故事開場", why: "取捨" },
-  "zh-Hans": { reason: "为什么选这项", tradeoffs: "素材取舍", alternatives: "其他故事开场", why: "取舍" },
-  en: { reason: "Why this material", tradeoffs: "Material tradeoffs", alternatives: "Alternative story hooks", why: "Tradeoff" },
+  "zh-Hant": { reason: "點解揀呢項", tradeoffs: "素材取捨", alternatives: "另一個開場講法（可以揀）", why: "取捨", points: "每件事嘅素材（詳細）", pointsNote: "主線用到嘅每件事、佢嘅數字同會變成嘅動畫；想換件事就話我知", ownEnding: "唔揀嘅話，就用主線自帶嘅收尾" },
+  "zh-Hans": { reason: "为什么选这项", tradeoffs: "素材取舍", alternatives: "另一个开场讲法（可选）", why: "取舍", points: "每件事的素材（详细）", pointsNote: "主线用到的每件事、它的数字和会变成的动画；想换一件就告诉我", ownEnding: "不选的话，就用主线自带的收尾" },
+  en: { reason: "Why this material", tradeoffs: "Material tradeoffs", alternatives: "Another way to open (you can pick it)", why: "Tradeoff", points: "Each fact's material (detail)", pointsNote: "Every fact the stories use, its numbers and the animation it becomes; ask to swap one", ownEnding: "Without a pick, each story keeps its own ending" },
 }[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const img = (p, base = dir) => (p && existsSync(join(base, p)) ? `file://${encodeURI(join(base, p))}` : null);
@@ -67,7 +67,7 @@ const storyCard = (s, k) => {
     const pv = strip(b.anim);
     return `<div class="turn"><div class="tl">${j ? "" : `${T.becomes}：`}<b>${esc(a ? word(a.label) : b.anim)}</b></div>${pv ? `<div class="pv" style="background-image:url('${pv}')"></div>` : ""}${b.why ? `<div class="why">${esc(b.why)}</div>` : ""}</div>`;
   }).join("");
-  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
+  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
 const directions = facts.directions ?? [];
 const actionWords = {
@@ -75,6 +75,12 @@ const actionWords = {
   "zh-Hans": ["公仔做什么", "观众明白什么"],
   en: ["Toy action", "Viewer learns"],
 }[lang];
+const beatRow = (b, n) => {
+  const s = story.find((x) => x.id === b.story);
+  const pic = s && ((s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot)).find(Boolean));
+  const pv = s?.becomes?.[0] && strip(s.becomes[0].anim);
+  return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}</div>${pv ? `<div class="pv bpv" style="background-image:url('${pv}')"></div>` : ""}</li>`;
+};
 const directionCard = (d, i) => {
   const evidence = (d.beats ?? []).flatMap((b) => {
     const s = story.find((s) => s.id === b.story);
@@ -82,23 +88,24 @@ const directionCard = (d, i) => {
       ...(s?.posts ?? []).map((id) => ({ url: post(id)?.url, label: post(id)?.title }))];
   }).filter((e, i, all) => e.url && all.findIndex((x) => x.url === e.url) === i);
   const link = (e) => /^https?:\/\//i.test(e.url) ? `<a href="${esc(e.url)}">${esc(e.label || e.url)}</a>` : esc(e.label || e.url);
-  return `<article class="direction"><h3>${i + 1}. ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
-  <p>${esc(d.premise)}</p><p><b>${D.hook}:</b> ${esc(d.hook?.question)}</p>
-  <p><b>${D.visual}:</b> ${esc(d.hook?.visual)}<br><b>${D.text}:</b> ${esc(d.hook?.text)}</p>
-  ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.hook}:</b> ${esc(h.question)}<br><b>${D.visual}:</b> ${esc(h.visual)}<br><b>${D.text}:</b> ${esc(h.text)}<br><span class="why">${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
-  <ol>${(d.beats ?? []).map((b) => `<li><b>${esc(b.role)}</b>: ${esc(story.find((s) => s.id === b.story)?.line ?? b.story)}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}<br><b>${actionWords[1]}:</b> ${esc(b.action.means)}</div>` : ""}</li>`).join("")}</ol>
-  <p><b>${D.payoff}:</b> ${esc(d.payoff)}</p><p class="why">${esc(d.why)}</p>
-  ${(d.cta?.slogan ?? []).length ? `<p>${D.payoff}: ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
+  return `<article class="direction"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
+  <p>${esc(d.premise)}</p>
+  <p><b>${D.visual}:</b> ${esc(d.hook?.visual)} · <b>${D.text}:</b> 「${esc(d.hook?.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(d.hook?.question)}</span></p>
+  ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.visual}:</b> ${esc(h.visual)} · <b>${D.text}:</b> 「${esc(h.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(h.question)} · ${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
+  <ol class="beats">${(d.beats ?? []).map(beatRow).join("")}</ol>
+  <p><b>${D.payoff}:</b> ${esc(d.payoff)}</p>
+  ${(d.cta?.slogan ?? []).length ? `<p><b>${D.ending}:</b> ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
+  <p class="why">${esc(d.why)}</p>
   ${evidence.length ? `<details><summary>${D.evidence} (${evidence.length})</summary><ul>${evidence.map((e) => `<li>${link(e)}</li>`).join("")}</ul></details>` : ""}
   ${d.gaps?.length ? `<p class="gap"><b>${D.gaps}:</b> ${d.gaps.map(esc).join("；")}</p>` : ""}</article>`;
 };
 const narrative = facts.narrative ?? {};
-const directionSection = directions.length ? `<section><h2>${D.title}</h2>
+const directionSection = directions.length ? `<section><h2>${D.title}</h2><div class="note">${D.note}</div>
   <p class="note">${D.audience}: ${esc(narrative.audience)} · ${D.goal}: ${esc(narrative.goal)}${narrative.inferred ? `<br>${D.assumed}` : ""}</p>
   ${directions.map(directionCard).join("")}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
-const cta = (c, k) => `<div class="c"><span class="k">${LETTER[k]}</span><div><div class="h">${(c.slogan ?? []).map(esc).join(" ／ ")}</div>${c.prop ? `<div class="num">${esc(c.prop)}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;
+const cta = (c, k) => `<div class="c"><span class="k">${k + 1}</span><div><div class="h">${(c.slogan ?? []).map(esc).join(" ／ ")}</div>${c.prop ? `<div class="num">${esc(c.prop)}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;
 const card = (p, i) => `<div class="card"><div class="pic" style="${img(p.shot ?? p.cover) ? `background-image:url('${img(p.shot ?? p.cover)}')` : ""}"><i>#${i + 1}</i>${p.pinned ? `<em>${T.pinned}</em>` : ""}</div>
   <div class="meta">${esc(p.date)}</div><div class="t">${esc(p.title)}</div><div class="ns">${nums(p.numbers)}</div></div>`;
 const menu = CAT.filter((a) => a.group === "middle").map((a) => `<div class="m"><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv sm" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div>`).join("");
@@ -137,6 +144,11 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .direction ol, .direction ul { padding-left: 24px; } .direction li { margin: 6px 0; }
 .badge { color: #267146; font-size: 15px; } .gap { color: #a33c19; } a { color: #205d93; }
 .hook-options { background: #F4F2EE; border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
+.direction h3 { display: flex; align-items: center; gap: 10px; }
+.beats { list-style: none; padding: 0 !important; margin: 10px 0; }
+.beat { display: grid; grid-template-columns: 120px minmax(0, 1fr) 260px; gap: 14px; align-items: center; padding: 8px 0; border-top: 1px solid #EEE; margin: 0 !important; }
+.bp { height: 80px; border-radius: 8px; background: #E6E2DA center/cover no-repeat; }
+.bt { font-size: 16px; line-height: 1.5; min-width: 0; } .bpv { height: 62px; margin: 0; background-size: 100% auto; }
 .sb, .op > div, .pro > div { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
   body { padding: 20px 14px; }
@@ -149,6 +161,7 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
   .sb { padding: 12px; }
   .grid { grid-template-columns: 1fr 1fr; }
   .direction p { font-size: 16px; }
+  .beat { grid-template-columns: 84px minmax(0, 1fr); } .bp { height: 64px; } .bpv { grid-column: 1 / -1; }
   .direction h3 { font-size: 20px; }
   .ask { font-size: 18px; overflow-wrap: anywhere; }
 }
@@ -160,13 +173,14 @@ const proposalNote = {
 }[lang];
 const head = `<h1>${T.title}</h1><p class="note">${esc(proposalNote)}</p>
 <div class="pro"><div class="av" style="${img(pr.avatar) ? `background-image:url('${img(pr.avatar)}')` : ""}"></div><div><div class="nm">${esc(pr.name)}</div><div class="hd">${pr.handle ? "@" + esc(pr.handle) + " · " : ""}${esc(where)}</div><div class="bio">${(pr.bio ?? []).map(esc).join("<br>")}</div><div class="ns">${nums(pr.numbers)}</div></div></div>`;
+const storySection = `<section><h2>${directions.length ? editorialWords.points : T.story}</h2><div class="note">${directions.length ? editorialWords.pointsNote : T.storyNote}</div>${story.length ? `<div class="stories">${story.map(storyCard).join("")}</div>` : `<div class="why">${T.none}</div>`}</section>`;
+const endings = facts.slots?.cta ?? [];
 const decide = `${head}
-${directionSection}
-<section><h2>${T.story}</h2><div class="note">${T.storyNote}</div>${story.length ? `<div class="stories">${story.map(storyCard).join("")}</div>` : `<div class="why">${T.none}</div>`}</section>
+${directions.length ? directionSection : storySection}
 <section><h2>${T.opening}</h2><div class="note">${T.openNote}</div><div class="ops">${openings.map(opening).join("")}</div></section>
-<section><h2>${T.ending}</h2><div class="note">${T.endNote}</div>${(facts.slots?.cta ?? []).slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
+<section><h2>${T.ending}</h2><div class="note">${directions.length && !endings.length ? editorialWords.ownEnding : T.endNote}</div>${endings.slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
 <div class="ask">${directions.length ? D.ask : T.ask}</div>`;
-const more = `<section><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
+const more = `${directions.length ? storySection : ""}<section><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
 ${(facts.extra ?? []).length ? `<div class="ns" style="margin-top:12px">${facts.extra.map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("")}</div>` : ""}</section>
 <section><h2>${T.menu}</h2><div class="menu">${menu}</div></section>`;
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${STYLE}</head><body>${body}</body></html>`;
@@ -177,8 +191,8 @@ if (argv.includes("--html-only")) { console.log("wrote research/materials.html")
 const storyRows = Math.ceil(Math.max(story.length, 1) / 2);
 const storyH = story.reduce((h, s, i) => (i % 2 ? h : h + 70 + Math.max(...[s, story[i + 1]].filter(Boolean).map((x) => 60 + 34 * (x.numbers?.length ?? 0) + 96 * Math.min(2, x.becomes?.length ?? 0)), 200)), 0);
 const directionH = directions.length ? 160 + directions.reduce((h, d) => h + 340 + (d.beats?.length ?? 0) * 85 + Math.ceil(JSON.stringify(d).length / 65) * 30, 0) : 0;
-const H1 = directionH + 36 + 60 + 130 + 110 + (story.length ? storyH + 16 * storyRows : 60) + 110 + 190 + 110 + 70 * (Math.min(3, facts.slots?.cta?.length ?? 0) + 1) + 90;
-const H2 = 40 + 100 + Math.ceil(posts.length / 4) * 270 + ((facts.extra ?? []).length ? 50 : 0) + 100 + Math.ceil(CAT.filter((a) => a.group === "middle").length / 2) * 130 + 40;
+const H1 = (directions.length ? directionH : (story.length ? storyH + 16 * storyRows : 60)) + 36 + 60 + 130 + 110 + 110 + 190 + 110 + 70 * (Math.min(3, endings.length) + 1) + 90;
+const H2 = (directions.length ? storyH + 16 * storyRows + 110 : 0) + 40 + 100 + Math.ceil(posts.length / 4) * 270 + ((facts.extra ?? []).length ? 50 : 0) + 100 + Math.ceil(CAT.filter((a) => a.group === "middle").length / 2) * 130 + 40;
 const chrome = findChrome();
 if (!chrome) { console.log("no headless Chrome: open research/materials.html instead"); process.exit(0); }
 const shot = (body, h, png) => {
