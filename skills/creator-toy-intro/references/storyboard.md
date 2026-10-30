@@ -16,6 +16,27 @@ Check that the ending delivers the hook's promise. Preserve supported facts;
 when the user changes the arc, update facts.json and apply it again before
 rebuilding previews. Older films without a direction use their selected points.
 
+## Verify the animation treatment
+
+A step-2 story proposal approves the narrative only. Turn each agreed beat into
+visible events: the subject's action, a change in the scene, the camera's part
+and the transition to the next beat. Short text may clarify names or facts, but
+do not simply animate the proposal's slides and call that the intended film.
+Metaphors must not imply instant, guaranteed or unsupported results.
+
+For a new or uncertain treatment, build one representative 5–8 second motion
+test before extending it across the film. Use the actual film code and character
+when ready; mark any placeholder explicitly. Choose a beat that tests the main
+storytelling action or transition, not just an easy logo reveal. Check whether
+its meaning is understandable without the proposal's explanation. If only still
+frames are available, call them still previews; do not claim motion is verified.
+
+Include this test in the existing storyboard review, or proceed on an already
+approved treatment; it adds no compulsory approval round. Only real rendered
+frames and the actual animatic establish the film's visual style and motion.
+If the runtime cannot render them, report that limit and hand off the story
+proposal without claiming the animation pipeline has been validated.
+
 ## Build it
 
 ```bash
@@ -124,8 +145,9 @@ and render again only what they touch.
 The user points at what to change on the page itself, on real renders only:
 a click on a spot of a preview frame (Cycles), or on the animatic (EEVEE: it
 pauses there), opens a box under it; they write a line and send it. There is
-no second, drawn-in-the-browser preview: everything the user sees is what
-Blender makes, so nothing on the page misleads about the film's look.
+no second, drawn-in-the-browser animation substitute on this step-4 page:
+its visual sign-off uses what Blender makes. The earlier, explicitly labelled
+step-2 story proposal may use text and supplied footage; it is not this sign-off.
 
 ```bash
 FILM=<film> node <skill>/engine/run.mjs studio        # serves the page; runs until stopped

@@ -153,7 +153,12 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
   .ask { font-size: 18px; overflow-wrap: anywhere; }
 }
 </style>`;
-const head = `<h1>${T.title}</h1>
+const proposalNote = {
+  "zh-Hant": "故事提案：先確認情節同次序，唔代表最終動畫風格。下面嘅示例用嚟講解；正式效果以實際動畫預覽為準。",
+  "zh-Hans": "故事提案：先确认情节和顺序，不代表最终动画风格。下面的示例用于讲解；正式效果以实际动画预览为准。",
+  en: "Story proposal: confirm the plot and order, not the final animation style. Examples explain the plan; actual animation previews establish the final treatment.",
+}[lang];
+const head = `<h1>${T.title}</h1><p class="note">${esc(proposalNote)}</p>
 <div class="pro"><div class="av" style="${img(pr.avatar) ? `background-image:url('${img(pr.avatar)}')` : ""}"></div><div><div class="nm">${esc(pr.name)}</div><div class="hd">${pr.handle ? "@" + esc(pr.handle) + " · " : ""}${esc(where)}</div><div class="bio">${(pr.bio ?? []).map(esc).join("<br>")}</div><div class="ns">${nums(pr.numbers)}</div></div></div>`;
 const decide = `${head}
 ${directionSection}

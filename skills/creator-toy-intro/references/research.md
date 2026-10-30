@@ -183,6 +183,26 @@ historical milestones dated; today's counts are a separate fact.
 
 ## The story page
 
+Explain the proposed story before production, within the existing choice round.
+Default to a short in-chat outline (opening → connected events → ending) or the
+existing light material page. A polished PPT, slide deck or narrated sales pitch
+is not required. Make a timed text-and-footage rough cut only when useful or
+requested; do not add a mandatory deliverable or another approval round.
+
+Label this stage clearly in the user's language: “Story proposal — confirms the
+plot and order, not the final animation style.” Say what is actual supplied
+footage, what is a placeholder, and what remains to animate. A text-card video
+is a story rough cut, not an animation test or a rendered storyboard approval.
+For each beat describe what the viewer will see happen, not just the sentence
+on a slide. Keep explanations beside the proposal, not as final-film subtitles.
+
+For explanatory pages/cards, use a bright background (white, warm ivory or pale
+blue), dark readable text and restrained accents. Avoid default black/navy
+corporate decks. Follow explicit user preferences; this presentation palette
+does not choose the final film's palette. Do not rebuild a prettier deck when
+the user only wants to understand the story.
+
+
 `node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
 language>` writes `research/materials.png` (complete directions first, then the choices: the story
 points, each with its picture, numbers, sources and a preview strip of what
