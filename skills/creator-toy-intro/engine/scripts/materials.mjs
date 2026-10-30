@@ -101,7 +101,7 @@ const directionCard = (d, i) => {
 };
 const narrative = facts.narrative ?? {};
 const directionSection = directions.length ? `<section><h2>${D.title}</h2><div class="note">${D.note}</div>
-  <p class="note">${D.audience}: ${esc(narrative.audience)} · ${D.goal}: ${esc(narrative.goal)}${narrative.inferred ? `<br>${D.assumed}` : ""}</p>
+  ${narrative.audience || narrative.goal ? `<div class="brief">${narrative.audience ? `<div class="row"><span class="lb">${D.audience}</span><span class="val">${esc(narrative.audience)}</span></div>` : ""}${narrative.goal ? `<div class="row"><span class="lb">${D.goal}</span><span class="val">${esc(narrative.goal)}</span></div>` : ""}${narrative.inferred ? `<span class="tag">${D.assumed}</span>` : ""}</div>` : ""}
   ${directions.map(directionCard).join("")}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
@@ -139,6 +139,12 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .meta { color: #888; font-size: 13px; margin: 10px 12px 3px; } .t { font-size: 15px; font-weight: 600; line-height: 1.4; margin: 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .card .ns { margin: 6px 12px 0; }
 .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; } .m b { font-size: 15px; }
 .ask { font-size: 21px; font-weight: 700; margin-top: 22px; }
+/* who the film is for and what they keep: two labelled rows, not one run-on line */
+.brief { background: #FAF9F7; border: 1px solid #EEEAE2; border-radius: 12px; padding: 14px 18px; margin: 2px 0 18px; display: grid; gap: 10px; }
+.brief .row { display: grid; grid-template-columns: 10em 1fr; gap: 16px; align-items: baseline; }
+.brief .lb { color: #8A8780; font-size: 14px; font-weight: 600; }
+.brief .val { font-size: 17px; line-height: 1.6; }
+.brief .tag { justify-self: start; font-size: 13px; color: #7A5A0F; background: #FFF1CC; padding: 3px 10px; border-radius: 999px; }
 .direction { border-top: 1px solid #ddd; padding: 18px 0; line-height: 1.6; overflow-wrap: anywhere; }
 .direction h3 { font-size: 22px; } .direction p { margin: 8px 0; font-size: 17px; }
 .direction ol, .direction ul { padding-left: 24px; } .direction li { margin: 6px 0; }
@@ -152,6 +158,7 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .sb, .op > div, .pro > div { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
   body { padding: 20px 14px; }
+  .brief .row { grid-template-columns: 1fr; gap: 2px; }
   h1 { font-size: 26px; } h2 { font-size: 21px; }
   section { padding: 18px 16px; }
   .pro { padding: 14px; gap: 12px; }
