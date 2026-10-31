@@ -442,3 +442,20 @@ test("a direction's card shows the image people remember, and its opening once, 
   assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /開場（按故事揀）:<\/b> 主頁好似螢幕咁平放，向左轉身企起/);
   assert.match(again.stdout, /direction A "Learn by making": no image people remember yet/);
 });
+
+test("their words in 「」 are checked word for word against the texts kept", (t) => {
+  const f = facts();
+  f.posts[1].text = "工具越来越智能，我越来越像前台。今天说说为什么。";
+  f.story[1].special = "他自己的话「工具越来越智能，我越来越像前台」";
+  f.story[1].says = "开头和结尾：「工具越来越智能……像前台」";
+  f.directions[0].pitch = "「工具越智能，我越像前台」";
+  const dir = workspace(t, f);
+  const out = run(dir, "materials.mjs", [dir, "--html-only"]).stdout;
+  // a cut marked …… holds; a cut left unmarked is said
+  assert.doesNotMatch(out, /「工具越来越智能，我越来越像前台」 is not|「工具越来越智能……像前台」 is not/);
+  assert.match(out, /「工具越智能，我越像前台」 is not word for word/);
+  // a source kept in research/sources/ counts too
+  mkdirSync(join(dir, "research/sources"), { recursive: true });
+  writeFileSync(join(dir, "research/sources/readme.txt"), "工具越智能，我越像前台（标题版）");
+  assert.doesNotMatch(run(dir, "materials.mjs", [dir, "--html-only"]).stdout, /is not word for word/);
+});
