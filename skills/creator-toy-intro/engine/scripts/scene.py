@@ -503,6 +503,12 @@ def material(spec):
         keyed.append(("blob", nt, k))
     else:
         raise ValueError(kind)
+    if spec.get("sampled") is False:
+        # a glow that only shows itself (a lit facet on the toy, a line of light, a picture card beside it): not
+        # sampled as a light, or Cycles spends the toy's light samples on it and the toy, a few mm behind it, comes
+        # out dark and blotched on some frames
+        for mm in result:
+            mm.cycles.emission_sampling = "NONE"
     mats[key] = result
     return result
 
