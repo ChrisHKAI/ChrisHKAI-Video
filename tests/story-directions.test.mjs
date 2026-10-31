@@ -4,7 +4,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { createServer } from "node:http";
 import { resolveDirection, numberProvenanceIssues } from "../skills/creator-toy-intro/engine/lib/research.js";
 import { storyTestSignature, storyTestIssues } from "../skills/creator-toy-intro/engine/lib/story-test.js";
 import { researchPrompt } from "../skills/creator-toy-intro/engine/lib/research-prompt.js";
@@ -398,4 +399,28 @@ test("a point's material may be a folder of their work: the page shows its first
   const served = readFileSync(join(dir, "research/story/index.html"), "utf8");
   assert.match(served, /img\/0-2\.png/);
   assert.doesNotMatch(served, /notes\.txt|file:\/\//);
+});
+
+test("each film's studio takes a port of its own, and one already serving the film is used", async (t) => {
+  const dir = workspace(t);
+  const blocker = createServer(() => {}); // another program on the first port, which never answers
+  await new Promise((ok) => blocker.listen(0, "127.0.0.1", ok));
+  t.after(() => blocker.close());
+  const first = blocker.address().port;
+  const start = (port) => new Promise((ok, no) => {
+    const c = spawn(process.execPath, [script("studio.mjs"), "--film", dir, "--port", String(port)]);
+    let out = "";
+    c.stdout.on("data", (d) => { out += d; if (/notes land in/.test(out)) ok({ c, out }); });
+    c.on("exit", () => ok({ c, out }));
+    setTimeout(() => no(new Error(`no address: ${out}`)), 8000);
+  });
+  const a = await start(first);
+  t.after(() => a.c.kill());
+  const port = +a.out.match(/127\.0\.0\.1:(\d+)\/storyboard/)[1];
+  assert.ok(port > first);
+  assert.match(a.out, /taken by another film's studio or program/);
+  const b = await start(first);
+  t.after(() => b.c.kill());
+  assert.match(b.out, /already running/);
+  assert.match(b.out, new RegExp(`127\\.0\\.0\\.1:${port}/storyboard`));
 });

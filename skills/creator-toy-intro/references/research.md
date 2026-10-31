@@ -274,10 +274,12 @@ where the user clicks any card (a direction, a point, an idea, an ending, a
 post) to leave a note (`build/comments.jsonl`, `run.mjs comments` lists
 them). It says which point still lacks an idea of the film's own, or its
 sketch: add them before the user sees the page. Serve it and give the user
-the address on a line of its own (words stuck to it become part of the link):
+the address it prints, on a line of its own (words stuck to it become part of
+the link). Each film's studio takes a port of its own (another film's may hold
+4173), so the address is the one printed, never one remembered:
 
 ```bash
-FILM=<film> node <skill>/engine/run.mjs studio   # → http://127.0.0.1:4173/story/
+FILM=<film> node <skill>/engine/run.mjs studio   # prints http://127.0.0.1:<port>/story/
 ```
 
 Where the chat shows pictures, show them too, one story a picture

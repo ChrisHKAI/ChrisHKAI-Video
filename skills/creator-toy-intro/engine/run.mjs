@@ -39,7 +39,8 @@
 //           animatic the whole film in EEVEE, small, with its score → build/storyboard/animatic.mp4
 //           studio   the story page (/story/) and the storyboard page on a local server: the user clicks a card, or a spot on a real frame or
 //                    the paused animatic and writes a note → build/comments.jsonl
-//                    (studio -- --port 4173; runs until stopped)
+//                    (from port 4173 up, the first free one: it prints its address; one already serving this film is
+//                    used as it is; runs until stopped)
 //           comments the user's open notes, each with its frame marked → build/comments/<id>.jpg
 //                    (comments -- --all; comments -- --done c3 "what changed")
 //           own      a copy in the film to change for this film alone (own -- template scene.py):
