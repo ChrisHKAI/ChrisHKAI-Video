@@ -194,7 +194,7 @@ const endings = facts.slots?.cta ?? [];
 const decide = `${head}
 ${directions.length ? directionSection : storySection}
 ${directions.length ? "" : `<section><h2>${T.opening}</h2><div class="note">${T.openNote}</div><div class="ops">${openings.map(opening).join("")}</div></section>`}
-<section><h2>${T.ending}</h2><div class="note">${directions.length && !endings.length ? editorialWords.ownEnding : T.endNote}</div>${endings.slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
+<section><h2>${directions.length ? T.ending.replace("③", "②") : T.ending}</h2><div class="note">${directions.length && !endings.length ? editorialWords.ownEnding : T.endNote}</div>${endings.slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
 <div class="ask">${directions.length ? D.ask : T.ask}</div>`;
 const more = `${directions.length ? storySection : ""}<section><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
 ${(facts.extra ?? []).length ? `<div class="ns" style="margin-top:12px">${facts.extra.map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("")}</div>` : ""}</section>
@@ -234,4 +234,4 @@ const shot = (body, h, png) => {
 };
 const height1 = shot(decide, H1, "materials.png");
 const height2 = shot(more, H2, "materials-posts.png");
-console.log(`wrote ${join(dir, "research/materials.html")}, materials.png (${W}x${height1}: the story, the opening, the ending) and materials-posts.png (${W}x${height2}: the posts, the menu)`);
+console.log(`wrote ${join(dir, "research/materials.html")}, materials.png (${W}x${height1}: ${directions.length ? "the directions with their ideas, the ending" : "the story, the opening, the ending"}) and materials-posts.png (${W}x${height2}: the posts, the skill's animations)`);
