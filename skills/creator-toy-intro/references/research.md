@@ -192,10 +192,13 @@ Design them before opening the catalog:
    sentence a jury would remember; and `why`: what the viewer sees, and what
    of the material it uses.
 2. Each idea of the film's own gets a `sketch`: a picture made from the
-   creator's own material (`engine/scripts/sketch.py` lays their pictures out
-   in a grid, a fan, a stack or a row around the toy's picture, or compose
-   one yourself), so it stands on the story page as something seen, beside
-   the preview strips of the skill's animations.
+   creator's own material, so it stands on the story page as something seen,
+   beside the preview strips of the skill's animations. Most ideas need one
+   composed for them (a fold climbing to the moon, a staircase, a turning
+   boat), and that is the usual case: `engine/lib/sketchkit.py` gives the
+   pieces (their picture as a card, the toy's disc, a caption, a label, an
+   arrow or an arc). For many pictures at once, `engine/scripts/sketch.py`
+   lays them out in a grid, a wall, a fan, a stack or a row.
 3. Only then the skill's animations (`beats/catalog.json`, with `opts` as its
    `takes` says, below): one is an idea when it is the best way to show
    this point, or a part the film's own animation starts from. Hold each to
