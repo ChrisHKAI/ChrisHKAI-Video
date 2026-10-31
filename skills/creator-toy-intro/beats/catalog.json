@@ -1,5 +1,5 @@
 {
- "_about": "What each animation can show, for step 2's page: material → animation. Each one: what it fits (the user reads this), what it needs, a film that used it, a preview strip cut from that film (beats/previews/<id>.jpg) and how it goes into film.json. group: opening, middle or ending (a film is one opening, a few middles, one ending). kind: story (a piece of the template's story) or beat (beats/<id>.js, its own clock). A material with no picture (an idea, a date, a line) still has animations: calendar, count, phrase. None of these is a limit: \"own\" is an animation written for this film.",
+ "_about": "Parts to build from, not a menu. Step 2 designs each point's animation from its material first (references/research.md: what is special about the material, and an idea of the film's own, with a sketch); one of these is an idea only when it is the best way to show that point, or the start of the film's own. Each one: what it fits (the user reads this), what it needs, a film that used it, a preview strip cut from that film (beats/previews/<id>.jpg) and how it goes into film.json. group: opening, middle or ending (a film is one opening, a few middles, one ending; the opening is chosen by the story: it hands over to the first point). kind: story (a piece of the template's story) or beat (beats/<id>.js, its own clock).",
  "animations": [
   {
    "id": "opening",
@@ -69,6 +69,27 @@
    "preview": "beats/previews/page-stand-left.jpg"
   },
   {
+   "id": "own",
+   "group": "middle",
+   "kind": "beat",
+   "label": {
+    "zh-Hant": "呢條片自己嘅動畫：由佢嘅素材出發設計",
+    "zh-Hans": "这条片自己的动画：从创作者的素材出发设计",
+    "en": "The film's own animation, designed from their material"
+   },
+   "fits": {
+    "zh-Hant": "每一點都先由佢嘅素材諗：素材有乜特別（數量、規模、前後對比、佢自己嘅風格同字體、本身已經識郁嘅嘢），動畫就用嗰樣。例如一年嘅每日一畫翻成一段動畫",
+    "zh-Hans": "每一点都先从创作者的素材想：素材有什么特别（数量、规模、前后对比、自己的风格和字体、本身会动的东西），动画就用那一样。例如一年的每日一画翻成一段动画",
+    "en": "Every point starts from its material: what is special about it (its quantity, scale, a before and after, their own style and type, a motion it already has), and the animation uses that. Say, a year of daily drawings flipped into one animation"
+   },
+   "needs": "the material, its sketch on the story page, and a beat written in the film (references/beats.md, \"A beat of your own\"; the kit's picture cards and layouts)",
+   "example": "cgnot996: the ambassador invitation (its own beat)",
+   "film": {
+    "beat": "beats/<name>.js",
+    "bars": 3
+   }
+  },
+  {
    "id": "act2",
    "group": "middle",
    "kind": "story",
@@ -99,9 +120,9 @@
     "en": "The cover becomes a wall"
    },
    "fits": {
-    "zh-Hant": "一篇帖嘅封面企起做 3D 牆，大字逐件推出嚟，公仔爬上去；封面有大字或者數字最好",
-    "zh-Hans": "一篇帖子的封面立起做 3D 墙，大字逐块推出来，公仔爬上去；封面有大字或数字最好",
-    "en": "A post's cover stands up as a 3D wall, its big words pushing out piece by piece; the toy climbs it. A cover with big lettering or numbers works best"
+    "zh-Hant": "一篇帖嘅封面企起做 3D 牆，大字逐件推出嚟，公仔爬上去：封面要有大字，仲要有位爬（一級矮台加三級錯開嘅盒，每級上面有公仔咁高嘅空位）",
+    "zh-Hans": "一篇帖的封面立起来变 3D 墙，大字逐件推出来，公仔爬上去：封面要有大字，还要有位置爬（一级矮台加三级错开的盒子，每级上方留出公仔那么高的空位）",
+    "en": "A post's cover stands up as a 3D wall, its big words pushing out piece by piece; the toy climbs it. The cover needs big lettering and room to climb: a low ledge and three boxes stepping up across it, each with the toy's height of clear space above"
    },
    "needs": "a post whose cover has big lettering and up to three claims or numbers to climb (pieces cut from it: references/cover-wall.md). Not for illustrations, photos or small text: pick another animation, or write one",
    "example": "isnail: 自媒体很苦 / 46K粉, 12–24 s; cgnot996: 5天 380+ star",
@@ -185,27 +206,6 @@
     "text": "马斯克得不到的男人"
    },
    "preview": "beats/previews/phrase.jpg"
-  },
-  {
-   "id": "own",
-   "group": "middle",
-   "kind": "beat",
-   "label": {
-    "zh-Hant": "專登為佢整嘅動畫",
-    "zh-Hans": "专门为这位创作者做的动画",
-    "en": "An animation made for them"
-   },
-   "fits": {
-    "zh-Hant": "上面冇一款啱佢嘅素材：例如插畫拼成立體小世界、作品一幅幅翻、網頁慢慢捲過。由 agent 為呢條片寫出嚟",
-    "zh-Hans": "上面没有一款适合这位创作者的素材：例如插画拼成立体小世界、作品一幅幅翻、网页慢慢卷过。由 agent 为这条片写出来",
-    "en": "None of the others fits their material: their illustrations assembling into a little 3D world, their works flipping by, a page scrolling past. The agent writes it for this film"
-   },
-   "needs": "the material, and a beat written in the film (references/beats.md, \"A beat of your own\")",
-   "example": "cgnot996: the ambassador invitation (its own beat)",
-   "film": {
-    "beat": "beats/<name>.js",
-    "bars": 3
-   }
   },
   {
    "id": "endCard",

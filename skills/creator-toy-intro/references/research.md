@@ -6,7 +6,7 @@ words). Keep numbers exactly as the platform writes them, with where and
 when they were read. Current counts are fresh; historical milestones retain
 their event dates and original values. Keep pictures as originals. Then show the user the
 story page and let them pick. Two selection rounds: which picture the toy is
-made from (as soon as the profile picture is in), then the story direction, opening and ending together.
+made from (as soon as the profile picture is in), then the story direction (with its ideas) and the ending together.
 Infer audience and goal from the request and sources and show that assumption
 on the story page for correction. Keep user-supplied numbers as supplied,
 label their source and date, and distinguish them from independently read counts.
@@ -23,6 +23,15 @@ Read only, always: never like, follow, comment or message.
   scans themselves; never type a password.
 - X: the profile; the pinned post; the most-viewed posts (each post shows
   its views).
+- The work itself, all of it, as it is today: what the posts are about. A
+  repository: its README, its gallery or site and its folders (how many
+  styles, tools, chapters there are now, and a picture of each); an
+  illustrator's drawings; a channel's videos; a product's own pages. Posts
+  say what happened; the work is what the film can show. Keep its pictures in
+  `assets/work/` (all of them when there are many: a quantity is material
+  too), and today's count of it in `extra` with its source and date. A
+  library that launched with 39 styles and has 66 today says 66 on screen; the
+  39 is a milestone with its date.
 - Grok Build, when the user said yes to it in step 1 (film.json `grok`:
   true): run it first, before the browser, every time:
   `node <skill>/engine/scripts/grok-search.mjs <film>`. Run it in the
@@ -59,8 +68,11 @@ Read only, always: never like, follow, comment or message.
     and `https://api.fxtwitter.com/<handle>/status/<id>` (a post, its
     numbers, its media);
   - GitHub: `https://api.github.com/repos/<owner>/<repo>` (stars, forks,
-    when it was made), `…/stargazers` with `Accept:
-    application/vnd.github.star+json` for when the stars came;
+    when it was made, its description), `…/readme` with `Accept:
+    application/vnd.github.raw` and `…/contents/<folder>` (the work itself);
+    when the stars came needs a token (`…/stargazers` with `Accept:
+    application/vnd.github.star+json`); without one, the creator's own dated
+    milestone posts;
   - YouTube, B站: their public pages.
   Ask once for screenshots of what none of these reaches.
 
@@ -142,32 +154,54 @@ learn about them. Look in:
 - a role or a title, a turn in their path, a line they are known for;
 - Grok's milestones and ideas, and the user's own words.
 
-Each story point:
+Each story point (an illustrator's, to show the thinking: every creator's
+material asks for its own idea, never this one):
 
 ```json
-{ "id": "s1", "line": "一个月 8,904 颗 star", "says": "lemo-opuscar, a month old",
-  "posts": ["p3"], "material": ["assets/p3.jpg"],
-  "numbers": [{ "display": "8,904", "label": "star", "source": "https://api.github.com/repos/…", "read": "2026-10-28" }],
-  "becomes": [{ "anim": "calendar", "why": "9月26日 → 10月28日, the stars counting up beside it",
-                "opts": { "from": "2026-09-26", "to": "2026-10-28", "count": { "to": 8904, "label": "star" }, "stamp": "满月" } },
-              { "anim": "count", "opts": { "to": 8904, "label": "star" } }] }
+{ "id": "s1", "line": "一年 365 天，每天一张猫", "says": "a drawing a day for a year, the same cat in each",
+  "special": "365 drawings of one cat: in order, they are already an animation",
+  "posts": ["p3"], "material": ["assets/work/"],
+  "numbers": [{ "display": "365", "label": "张", "source": "https://…/gallery", "read": "2026-10-28" }],
+  "becomes": [
+    { "anim": "own", "beat": "beats/flipbook.js",
+      "pitch": "她一年的猫，一页页翻成一段动画：猫走过一整年",
+      "why": "the drawings flip past like a flipbook, faster and faster; the cat walks across the year, and the toy walks beside it",
+      "sketch": "research/sketches/s1-flipbook.jpg" },
+    { "anim": "calendar", "pitch": "一年翻过去", "why": "a flip calendar runs a year; the count reaches 365",
+      "opts": { "from": "2025-10-28", "to": "2026-10-28", "count": { "to": 365, "label": "张" } } }] }
 ```
 
-`line` is what the viewer takes away, in the creator's language; `becomes`
-is one or two animations from `beats/catalog.json`, the best first, with the
-options it needs (`opts`, as the catalog's `film` entry writes them), and why
-in one line, as the user would see it on screen. Fit the animation to the
-material, not the other way round:
-- a number on a post → `act2` (it rises from its spot on the page), or
-  `count` on its own stage;
-- a span of days → `calendar`;
-- their own words → `phrase`;
-- a cover with big lettering and claims to climb → `act3`. Not for an
-  illustration, a photo or small text: those smear as 3D lettering;
-- anything none of these shows well (their illustrations, a product, a page
-  to scroll through, a before and after) → `"anim": "own"`: an animation
-  written for this film (references/beats.md, "A beat of your own"). Say
-  what it will look like in `why`.
+`line` is what the viewer takes away, in the creator's language. `special`
+is what is special about this material: its quantity, its scale, a before
+and after, its own look (a style, a typeface, a colour), a motion it already
+has. `becomes` holds the ideas for showing it, your recommendation first.
+Design them before opening the catalog:
+1. Two ideas at least, one at least the film's own (`"anim": "own"`, with the
+   `beat` file it will be), designed from what is special about this
+   material. Each says, in the user's language, `pitch`: the idea in one
+   sentence a jury would remember; and `why`: what the viewer sees, and what
+   of the material it uses.
+2. Each idea of the film's own gets a `sketch`: a picture made from the
+   creator's own material (`engine/scripts/sketch.py` lays their pictures out
+   in a grid, a fan, a stack or a row around the toy's picture, or compose
+   one yourself), so it stands on the story page as something seen, beside
+   the preview strips of the skill's animations.
+3. Only then the skill's animations (`beats/catalog.json`, with `opts` as its
+   `film` entry writes them): one is an idea when it is the best way to show
+   this point, or a part the film's own animation starts from. Hold each to
+   its material: with another creator's material, would it be the same
+   animation? Then it is a template, not an idea.
+
+What the skill's animations need, so that one is never forced:
+- `act2`, a post's number rising from its spot on the page: a post whose
+  number is the point;
+- `act3`, a cover standing up as a wall the toy climbs: big lettering, and
+  room to climb: a low ledge and three boxes stepping up across the cover,
+  each with the toy's height of clear space above it (`engine/scripts/
+  regions.py` numbers the cover's blocks). Most covers have the lettering and
+  not the room. Illustrations, photos and small text smear as 3D lettering;
+- `count`, `calendar`, `phrase`: a number, a span of days, a line of their
+  own words, each on a stage of its own.
 
 Also in facts.json: `slots.cta`, two or three endings, each the closing line
 in one or two short parts and the end card's prop, together. First work out
@@ -211,24 +245,29 @@ the user only wants to understand the story.
 
 
 `node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
-language>` writes `research/materials.png` (complete directions first, then the choices: the story
-points, each with its picture, numbers, sources and a preview strip of what
-it becomes; the three openings with their previews; the endings) and
-`research/materials-posts.png` (every post found, and the menu of
-animations), and `research/materials.html` with both. Show the first, and
-ask in one round (AskUserQuestion where the agent has it, else one message):
+language>` writes `research/materials.png` (complete directions first, each
+with its pitch, the opening it starts with and why, and its points' ideas:
+the film's own with their sketches, the skill's with their preview strips;
+then the endings) and `research/materials-posts.png` (every post found, each
+point in detail, and the skill's animations as parts), and
+`research/materials.html` with both. It says which point still lacks an idea
+of the film's own, or its sketch: add them before the user sees the page.
+Show the first, and ask in one round (AskUserQuestion where the agent has
+it, else one message):
 - which direction (including its ordered story points), or changes to it;
   for older workspaces without directions, which story points in what order;
-- which opening, each said as what the viewer sees, with its preview strip:
-  the page floating while the picture peels off like a sticker; the page lying
-  flat, then turning right to stand up; the same turning left. Never by the
-  films they came from (isnail's, Kin's, 铁柱's): users don't know them;
+- for a point with more than one idea, which (the first is the one you
+  recommend);
 - which ending, or their own words.
-For a direction, write `picks.direction` to its ID; its beats and ending are
-the defaults (`picks.cta` may override the ending). Otherwise keep the existing
-point-selection format in `picks`: `{ "story": ["s2", { "id": "s1", "anim":
-"count" }], "opening": "page-stand", "cta": { "slogan": […], "prop": "…" } }`
-(a story point by its id takes its first animation; `{ id, anim }` another).
+Not the opening: the story chooses it (`references/story-directions.md`), and
+the direction card says which and why. Ask only if the user raises it.
+For a direction, write `picks.direction` to its ID; its beats, opening and
+ending are the defaults (`picks.cta` may override the ending, `picks.opening`
+the opening when the user asked for another). Another idea for a point:
+`picks.story` in the direction's order, `{ "id": "s2", "idea": 1 }` (its place
+in `becomes`, 0 the first) or `{ "id": "s2", "anim": "count" }`. Older
+workspaces keep the point-selection format: `{ "story": ["s2", "s1"], "cta":
+{ "slogan": […], "prop": "…" } }` (a story point by its id takes its first idea).
 If they name something no story point covers, add it as one, with what it
 becomes, and show it again. What they want kept out of the film (a number, an
 old name, a picture, a topic) goes in `picks.avoid`, a line each, in their
@@ -238,9 +277,9 @@ the rest for the eye. Real material stays real: their picture, their posts,
 their numbers as the platform writes them are never redrawn or invented.
 
 When the user is away (an unattended run), record the supported recommended
-direction in `picks.direction` (older workspaces: the strongest story points), an opening and an ending
-the earlier films did not use (`run.mjs ledger` lists them), and say so in
-the hand-over.
+direction in `picks.direction` (older workspaces: the strongest story points)
+with its recommended ideas and its opening, and an ending the earlier films
+did not use (`run.mjs ledger` lists them), and say so in the hand-over.
 
 ## Into film.json
 
@@ -250,8 +289,8 @@ internal work, not another question for the user. It is advice: `apply-research`
 `next` and `check` say what it still asks for, and the film goes on.
 
 `node <skill>/engine/scripts/apply-research.mjs <film>` turns the picks
-into the film: `story.segments` (the opening, each picked story point's
-animation in order, the end card, timed so every hit stays on a downbeat),
+into the film: `story.segments` (the opening the story chose, each picked
+story point's idea in order, the end card, timed so every hit stays on a downbeat),
 `profile`, `posts` (the two the page shows: the one whose number rises, and
 the next), `counter` (that number as the platform writes it), `grid` (the
 other posts), the end card's name, handle, slogan and prop idea

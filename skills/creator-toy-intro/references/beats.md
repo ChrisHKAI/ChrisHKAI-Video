@@ -39,9 +39,12 @@ length and checks it against each publish platform's longest
 
 ## The skill's beats
 
-Each is a worked answer to "how does this become an animation"; take one
-when it fits the point, change it or write the film's own when it doesn't.
-Their options are at the top of each file.
+Each is a worked answer to "how does this become an animation" for someone
+else's material: parts and starting points, not a menu. Every point is
+designed from its own material first (references/research.md, "The story
+first"); take one of these whole only when it is the best way to show that
+point, change it, or start the film's own from it. Their options are at the
+top of each file.
 
 | beat | for | entry |
 | --- | --- | --- |
@@ -127,8 +130,9 @@ Write a move the kit already has with the kit (a wave, a nod, a point): the film
 A beat usually opens with the toy dropping in from above (the cut from
 the last segment's leap) and ends with `kit.leapOut`, so the joins read as
 one toy going from stage to stage. The first segment is the opening the
-user picked (the page floating, or standing up turning right or left), the last the template's end card;
-apply-research writes both. A toy with no arms (references/toy.md) plays
+story chose (the page floating, which ends on the pinned post, or standing up
+turning right or left, which ends with the toy out in front), the last the
+template's end card; apply-research writes both. A toy with no arms (references/toy.md) plays
 every beat with its whole body: the rig turns a point into a lean.
 
 ## Check

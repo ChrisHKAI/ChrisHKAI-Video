@@ -136,8 +136,9 @@ ledger.json`), in six things:
 It should differ from each earlier film in at least four of the six. A
 film built from the template's defaults comes out as isnail again (it
 differs from isnail in one of the six). When it is too close, change what
-costs least and suits the creator: another of the three openings, a beat
-built from their material, their own colours, another sound, another prop.
+suits the creator: a beat built from their material, their own colours,
+another sound, another prop, or the other side for an opening that stands the
+page up (the opening still has to hand over to the first point).
 Tell the user in a line what changed and why. The page's "checked first"
 list shows the same.
 

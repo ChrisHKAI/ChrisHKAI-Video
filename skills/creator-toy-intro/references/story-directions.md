@@ -128,6 +128,22 @@ visual treatment; it does not tell the viewer why to care. Specify first-frame
 action and short on-screen text; add speech only if the film uses voiceover.
 The words must be supported and the film must deliver their promise.
 
+Give every direction a `pitch`: the whole film's idea in one sentence a jury
+would remember (SKILL.md, "The bar"), and the one image it leaves. Each beat
+plays its point's recommended idea (`becomes[0]`, designed from the material
+first: references/research.md); a direction may prefer another
+(`beats[].idea`, its place in `becomes`).
+
+Choose the camera opening for the story, not from a menu, and record it as
+`opening: { "id", "why" }`: it hands over to the first beat. The page floating
+while the picture peels off (`opening`) ends with the toy on the pinned post,
+so it opens a film whose first beat rises from that post (`act2`); otherwise
+the page lying flat and standing up (`page-stand`, `page-stand-left`) ends with
+the toy out in front, ready for any beat; or the film's own opening, when the
+material asks for one. Left or right: whichever the films delivered before
+used less (`run.mjs ledger`). The user is not asked; the card says which and
+why, and they can still ask for another.
+
 Write `facts.directions` and `facts.recommendedDirection`. This illustrative
 shape references facts already present in `story`; replace all sample content:
 
@@ -136,6 +152,8 @@ shape references facts already present in `story`; replace all sample content:
   "id": "method",
   "title": "Learn by building",
   "premise": "Their public examples make a difficult workflow approachable.",
+  "pitch": "The workflow builds itself in front of you, out of their own example",
+  "opening": { "id": "page-stand", "why": "the toy comes out in front of the standing page, ready to reveal the work" },
   "hook": {
     "question": "What can I make with this workflow?",
     "visual": "The toy reveals the finished example from the creator's post.",
@@ -185,19 +203,23 @@ At step 4 implement the selected hook only; alternatives are not extra scenes.
 ## 4. One choice, then the existing film pipeline
 
 `materials.mjs` shows the direction cards as the story choice, lettered A/B/C:
-audience/goal, recommendation, the first picture and its words, each fact with
-its picture, its connection, what the viewer learns and a preview strip of its
-animation, the payoff, the ending, evidence links and gaps. The fact cards move
-to the second picture (`materials-posts.png`) for detail and custom choices.
-Openings and endings are numbered, so an answer reads "story A, opening 2,
+audience/goal, recommendation, the pitch, the opening and why, the first
+picture and its words, each fact with its picture, its connection, what the
+viewer learns and its ideas (the film's own with their sketches, the skill's
+with their preview strips), the payoff, the ending, evidence links and gaps.
+The fact cards move to the second picture (`materials-posts.png`) for detail
+and custom choices. Endings are numbered, so an answer reads "story A,
 ending 1".
 
-Ask for a direction, camera opening and ending together. Record
-`picks.direction: "method"`; its `beats` supply the story order, and its `cta`
-supplies the default ending. `picks.cta` may replace the ending. To choose an
-alternative animation, use `picks.story: ["s1", { "id": "s2", "anim": "phrase" }]`
-with the same IDs and order as the direction. If the user changes the order or
-facts, update the direction, hook and payoff to match before applying it.
+Ask for a direction (with another idea for a point, if they prefer one) and
+the ending together. Record `picks.direction: "method"`; its `beats` supply
+the story order, its `opening` the opening, and its `cta` the default ending.
+`picks.cta` may replace the ending. To choose another idea for a point, use
+`picks.story: ["s1", { "id": "s2", "idea": 1 }]` (or `{ "id": "s2", "anim":
+"phrase" }`) with the same IDs and order as the direction. If the user changes
+the order or facts, update the direction, hook, opening and payoff to match
+before applying it. When the ending they pick is not the direction's own,
+check the payoff still answers the hook, and rewrite it if not.
 
 Older workspaces with only `picks.story` or `proof1/proof2` still work. For a new
 unattended film choose the supported recommendation, record `picks.direction`

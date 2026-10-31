@@ -29,15 +29,40 @@ not forced. What stays fixed, whatever is built:
 - the user picks the toy's picture, the story and the ending, and signs off
   the storyboard; nothing renders for hours before they have seen previews.
 
-A film is pieces, each its own animation (film.json `story.segments`): one
-of three openings (the page floating while the picture peels off like a
-sticker; the page lying flat, then turning right, or left, to stand up), the
-story points the user picked, each
-as the animation that fits its material (a number rising from its spot on
-the page, a cover standing up as a wall the toy climbs, a count, a flip
-calendar, a line rising letter by letter, or one written for this film),
-and the end card. It runs as long as what it says: about 22 s for two
-points, 30 s or more for three.
+**The bar: a film a jury would shortlist.** Make every film as if it were
+going to the awards where a 30 s piece made for someone competes: Annie's
+Best Sponsored Production, Annecy's Commissioned Films, D&AD's animation and
+film craft (the Oscar for an animated short asks the same of a story). Their
+juries ask, and so does every step here:
+- one idea, said in a sentence;
+- the idea grows out of this creator's material: give the film to another
+  creator and it breaks;
+- one image people remember;
+- the craft serves the idea: its lettering, colours, motion and sound come
+  from the material;
+- nothing that looks like a template, or like the last film.
+
+The film's job stays fixed: a stranger learns who this is, what they make
+and where to find them, and every fact is sourced. The awards are the bar
+for the idea and the craft, never a reason to go vague, long or arty.
+
+**No clock.** There is no time limit. Designing each animation from the
+creator's material is the work, not a step to get through, and time or
+effort is never a reason to take a ready-made piece. When a ready-made piece
+needs forcing (boxes placed by hand round a cover with no room for them, a
+count that is not the point), stop: design what the material wants and bring
+it to the user, even when they picked the ready-made one.
+
+A film is pieces, each its own animation (film.json `story.segments`): an
+opening that hands over to the first point (the page floating while the
+picture peels off like a sticker, which ends on the pinned post; the page
+lying flat, then turning right, or left, to stand up), the story points the
+user picked, each as an animation designed from its own material, and the
+end card. The skill's animations (a number rising from its spot on the page,
+a cover standing up as a wall the toy climbs, a count, a flip calendar, a
+line rising letter by letter) are parts to build from; one plays whole only
+when it is the best way to show that point. It runs as long as what it
+says: about 22 s for two points, 30 s or more for three.
 
 The sound of a new film (film.json `"sound": "bed"`, which `new-film` writes)
 is the effects over one quiet layer of long chords, 14 dB under them, at -13
@@ -76,7 +101,7 @@ commands to run.
 | --- | --- | --- | --- |
 | 0 | the computer: check, then one yes installs what is missing | the install list, if anything is missing | `references/onboarding.md` |
 | 1 | onboarding: the creator's link, a workspace; how long it all takes, said once | 16:9 or 9:16 | `references/onboarding.md` |
-| 2 | research, story first: what the creator is known for and proud of, each fact with its sources, numbers (current counts fresh, milestones dated) and the animation it becomes; up to three complete story directions from them (a hook, connected facts, what the toy does and what the viewer learns, a payoff), one recommended; one targeted search for important gaps, if needed; then a cheap text story test of the chosen one (advice, never a gate); `apply-research` turns the picks into the film's pieces | the toy's picture; the story page (`materials.png`): a story direction (A/B/C), one of three openings, the ending, each with pictures and previews | `references/research.md`, `story-directions.md`, `story-test.md` |
+| 2 | research, story first: what the creator is known for and proud of, and the work itself (all of it, as it is today), each fact with its sources and numbers (current counts fresh, milestones dated); for each point, what is special about its material and the ideas designed from it (one at least the film's own, each with a one-line pitch and a sketch made from their material); up to three complete story directions (a hook, connected facts, what the toy does and what the viewer learns, a payoff, the opening that hands over to the first point), one recommended; one targeted search for important gaps, if needed; then a cheap text story test of the chosen one, with the jury's questions (advice, never a gate); `apply-research` turns the picks into the film's pieces | the toy's picture; the story page (`materials.png`): a story direction (A/B/C) with its ideas, and the ending | `references/research.md`, `story-directions.md`, `story-test.md` |
 | 3 | the toy, with the body its picture has (person, animal, object), in one of three kits; its colours checked on the dark stage | the turnaround beside the picture | `references/toy.md` |
 | 4 | the film's own code (what its pieces need: cover cuts, a beat of its own, the prop), `check`, then the storyboard page: the story, the beat grid, real preview renders, every sound under the animatic, the checks (pace, the toy's size, reading time, colours, the toy never going through anything, not the last film again, a second opinion), and the frames held beside the approved films' (`compare`) | the storyboard page: notes on the frames, the sound, sign-off | `references/storyboard.md`, `quality.md`, `beats.md`, `cover-wall.md`, `clearance.md`, `props.md`, `avatar.md`, `exits.md` |
 | 5 | the sample (the riskiest stretch at the final quality, with its sound, held to the approved films), how long (a quick half-size version first, if they like), the render, the finish: the film, the effects-only cut, each platform's covers, the last look | the finished film | `references/render.md` |
@@ -241,9 +266,15 @@ film and names the three biggest problems with their times
 ## Rules the films taught
 
 - The film is the creator's story, not a template filled in: material is
-  picked for what it says about them, and each piece is the animation that
-  fits it; a piece that does not fit is left out, never forced (a lemon's
-  illustrations are not a cover wall; a cloud is not a number).
+  picked for what it says about them, and each piece is designed from it
+  first (what is special about this material, and the animation that shows
+  it). The skill's animations are parts; one that does not fit is left out,
+  never forced (a lemon's illustrations are not a cover wall; a cloud is not
+  a number; sixty-six styles are not one cover).
+- The opening is chosen by the story, never asked: it hands over to the first
+  point. The page floating ends with the toy on the pinned post, so it opens a
+  film whose first point rises from that post; the page standing up ends with
+  the toy out in front of it, ready for any beat.
 - Each major toy action states what it does and what the viewer learns; remove
   empty motion. A cheap text story test of the chosen direction (takeaway, why
   keep watching, what makes it this creator) comes before the storyboard

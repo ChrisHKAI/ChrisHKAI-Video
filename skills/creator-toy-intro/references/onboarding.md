@@ -116,4 +116,5 @@ asking again; a new request of theirs wins over it.
    x-desktop` that reuses the research and the toy.
 
 Next is step 2, the research: the profile, the pinned and best posts, their
-numbers, then the story page: what they are known for, the opening and the ending, for the user to pick.
+numbers and the work itself, then the story page: what they are known for,
+each point's ideas designed from its material, and the ending, for the user to pick.
