@@ -58,6 +58,9 @@ not imply an unsupported event, endorsement, skill, income or causal claim.
      piece a template or a repeat of another film, and what one image would
      they remember (SKILL.md, "The bar")? Does the opening hand over to the
      first beat?
+   - **Heart:** who is at its heart (a person: who they are, why they do it,
+     for whom), and what would a stranger feel? A film of numbers and devices
+     can be clever and still move no one.
 3. Save the actual review to `research/story-test.json`:
 
 ```json
@@ -69,6 +72,7 @@ not imply an unsupported event, endorsement, skill, income or causal claim.
   "specificity": "The distinctive evidence, or why a name swap still works.",
   "actionMeaning": "What the major actions communicate; identify empty motion.",
   "material": "What each beat's animation takes from its material, which piece a jury would call a template, and the one image they would remember.",
+  "heart": "The person at its heart, why and for whom, and what a stranger would feel; or that it is all numbers.",
   "issues": ["s1: the toy hops beside a count, but the tool is never shown; reveal the actual tool instead."]
 }
 ```

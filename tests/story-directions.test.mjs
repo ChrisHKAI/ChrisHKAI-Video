@@ -41,7 +41,7 @@ function workspace(t, f = facts()) {
 }
 // These are schema/integration fixtures, not an automated judgement of story quality.
 function readyReport(f) {
-  return { signature: storyTestSignature(f), verdict: "ready", takeaway: "A creator of editor tools", continuation: "The tutorial explains the demonstrated work", specificity: "The named demo and its own tutorial", actionMeaning: "Revealing the work and pointing at its steps directs attention to the method", material: "The demo's own interface fills the count; a jury would remember the export check turning green", issues: [] };
+  return { signature: storyTestSignature(f), verdict: "ready", takeaway: "A creator of editor tools", continuation: "The tutorial explains the demonstrated work", specificity: "The named demo and its own tutorial", actionMeaning: "Revealing the work and pointing at its steps directs attention to the method", material: "The demo's own interface fills the count; a jury would remember the export check turning green", heart: "An editor who built the check they needed, for editors like them", issues: [] };
 }
 function run(dir, name, args = [], env = {}) {
   return spawnSync(process.execPath, [script(name), ...args], { encoding: "utf8", env: { ...process.env, FILM: dir, ...env }, cwd: root });

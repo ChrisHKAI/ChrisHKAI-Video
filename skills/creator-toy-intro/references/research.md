@@ -49,8 +49,9 @@ Read only, always: never like, follow, comment or message.
   - the posts with the most views or engagement;
   - the milestones they posted about, with dates and numbers;
   - ideas for the film.
-  It also finds beginnings, problems, decisions and methods beyond popular
-  posts. Use one targeted follow-up only for important evidence gaps
+  It also finds beginnings, problems, decisions, methods and personal
+  moments (family, why they started, something made for one person) beyond
+  popular posts. Use one targeted follow-up only for important evidence gaps
   (`references/story-directions.md`; `grok-search.mjs <film> --gaps`).
   These are leads: open each post on the page and take its numbers from
   there, as the page writes them, and open the profile itself: Grok's search
@@ -170,6 +171,9 @@ learn about them. Look in:
 - milestones they posted about (a number reached, a date, a first);
 - what they made: a project, a product, a style, a channel;
 - a role or a title, a turn in their path, a line they are known for;
+- a moment that is theirs alone: their family, why they started, something
+  they made for one person, a message that moved them. It may have few views
+  and still be the heart of the film;
 - Grok's milestones and ideas, and the user's own words.
 
 Each story point (an illustrator's, to show the thinking: every creator's
@@ -219,7 +223,10 @@ Design them before opening the catalog:
    `takes` says, below): one is an idea when it is the best way to show
    this point, or a part the film's own animation starts from. Hold each to
    its material: with another creator's material, would it be the same
-   animation? Then it is a template, not an idea.
+   animation? Then it is a template, not an idea. Hold the story to it too,
+   and swap the story, not the fact: a well-known fact (how far light travels
+   in a year) goes to anyone; who did something with it, why and for whom
+   does not.
 
 What the skill's animations need, so that one is never forced:
 - `act2`, a post's number rising from its spot on the page: a post whose

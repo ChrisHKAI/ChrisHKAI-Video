@@ -35,8 +35,10 @@ Best Sponsored Production, Annecy's Commissioned Films, D&AD's animation and
 film craft (the Oscar for an animated short asks the same of a story). Their
 juries ask, and so does every step here:
 - one idea, said in a sentence;
+- a stranger feels something: at its heart is a person (who they are, why
+  they do it, whom they do it for), not a number;
 - the idea grows out of this creator's material: give the film to another
-  creator and it breaks;
+  creator and it breaks, as a story (who, why, for whom), not only as a fact;
 - one image people remember (each direction names it: `image`);
 - the craft serves the idea: its lettering, colours, motion and sound come
   from the material;

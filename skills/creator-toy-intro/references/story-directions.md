@@ -27,6 +27,7 @@ exactly what it supports. Separate interpretations from facts. Engagement is a
 discovery signal, not proof of expertise, quality, motive or causation.
 
 Look for: a beginning, a problem, a decision, a method, representative work,
+a personal moment (family, why they started, something made for one person),
 an outcome and what the audience gains. Missing categories are allowed. Never
 invent a struggle, quotation, motive, turning point or success to fill an arc.
 Historical milestones keep their event date and value; current profile counts
@@ -44,6 +45,7 @@ candidates against the audience and goal. Use short reasons, not numeric scores:
 | Evidence | What exact claim does the accessible primary source support? |
 | Visual clarity | Can the real material be understood briefly on a phone? |
 | Contribution | Does it add something the other selected facts do not? |
+| Heart | Is there a person in it (who, why, for whom), and would a stranger feel something? |
 
 Evidence is a prerequisite for a factual claim, not a score that popularity or
 visual appeal can offset. A creator's statement supports attribution, not an
@@ -52,6 +54,9 @@ an asset still needed; narrow the claim or use supported text when no asset is
 available. Never invent a before/after result to make a visual stronger.
 
 Keep the useful low-engagement demonstration ahead of an unrelated viral post.
+Weigh the most human moment first: their family, why they started, something
+they made for one person. It is a candidate for the heart of the film whatever
+its views: engagement says what people came for, not what a stranger will feel.
 Avoid three facts that all prove popularity. Select complementary facts; their
 story order follows their relationship, not this comparison. User priorities
 may change the relevance judgement but cannot supply missing evidence.
@@ -117,6 +122,17 @@ that holds attention, how each fact advances it, and how the ending pays it off.
 Use two or three factual beats for a typical 30-second film (one to four allowed).
 Use `connection` to explain contrast, cause when evidenced, demonstration or
 progression. Reorderable achievements with no relationship need a clearer lens.
+
+Hold each direction to the swap test as a story: who it is about, why they did
+it, for whom. Give it to another creator and it should break. A fact alone (a
+famous puzzle, a tool's feature, a follower count) passes to anyone.
+
+A visual metaphor may carry the film through its points: one motion that comes
+back (a fold that doubles, a thread that lengthens) and ties a moment to a
+milestone. It is a way of showing, not a claim: the film never says one fact
+caused the other, and every number on screen keeps its source. A claim of
+cause needs a source; a rhyme between two facts does not. `connection` says
+which it is.
 
 Give every main beat `action: { does, means }`: what the toy visibly does and
 what the viewer learns from it. Tie it to that beat's source material and the

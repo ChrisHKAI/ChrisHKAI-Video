@@ -86,7 +86,8 @@ Score each from 1 (fails) to 5 (nothing to fix):
 8. **The finish.** Look for flicker, jumps at a join between parts, a frame
    that shows both sides of a cut, and anything cut off at an edge.
 9. **The jury.** Judge it as a jury at Annie (Best Sponsored Production),
-   Annecy (Commissioned Films) or D&AD would. Is there one idea, and does it
+   Annecy (Commissioned Films) or D&AD would. Does a stranger feel something,
+   with a person at its heart rather than a number? Is there one idea, and does it
    grow out of this creator's material, so that another creator's film could
    not be the same? Name the one image they would remember, or say there is
    none; the direction promised one (film.json `story.direction.image`): is

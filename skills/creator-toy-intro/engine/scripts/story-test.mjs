@@ -40,6 +40,8 @@ paid search, modelling or rendering. Answer in the creator's language.
    jury at Annie (Best Sponsored Production), Annecy (Commissioned Films) or D&AD
    call any piece a template, or a repeat of another film, and what one image
    would they remember? Does the opening hand over to the first beat?
+6. Heart: who is at its heart (a person: who they are, why they do it, for whom),
+   and what would a stranger feel? Numbers and clever devices alone move no one.
 
 Check evidence and anatomy too: popularity does not establish expertise, cause,
 income or endorsements, and an object-shaped toy does not acquire hands to fit a
@@ -52,8 +54,8 @@ Return JSON for research/story-test.json, using this signature exactly:
 ${signature}
 
 Fields: signature, verdict (ready or revise), takeaway, continuation, specificity,
-actionMeaning, material, issues (up to three specific problems, each naming its beat
-and the smallest useful fix). All five answers must contain reasoning, not pass/yes.
+actionMeaning, material, heart, issues (up to three specific problems, each naming its
+beat and the smallest useful fix). All six answers must contain reasoning, not pass/yes.
 Use verdict=ready with issues=[] only when the actual material supports it.
 This brief generator never approves a story. At most two review rounds: if still
 weak, narrow the story and explain the remaining limitation, never invent facts.
