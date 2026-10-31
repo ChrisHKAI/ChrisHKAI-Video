@@ -129,10 +129,11 @@ Write a move the kit already has with the kit (a wave, a nod, a point): the film
 
 ### Their pictures, many at once
 
-Most ideas built from the material show the creator's own pictures: their
-drawings flipping by, a fan of their covers round the toy, all their works at
-once in a wall bigger than the frame. The kit makes any picture in the film a
-card and places many at once:
+Some ideas show the creator's own pictures: their drawings flipping by, a fan
+of their covers round the toy, all their works at once. Others are a motion,
+a process, a change, a sound, their words: the idea comes from the material,
+not from what the kit makes easy. When it is pictures, the kit makes any
+picture in the film a card and places many at once:
 
 ```js
 const files = kit.pictureFiles("assets/work");                        // their pictures, in name order

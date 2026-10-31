@@ -78,9 +78,9 @@
     "en": "The film's own animation, designed from their material"
    },
    "fits": {
-    "zh-Hant": "每一點都先由佢嘅素材諗：素材有乜特別（數量、規模、前後對比、佢自己嘅風格同字體、本身已經識郁嘅嘢），動畫就用嗰樣。例如一年嘅每日一畫翻成一段動畫",
-    "zh-Hans": "每一点都先从创作者的素材想：素材有什么特别（数量、规模、前后对比、自己的风格和字体、本身会动的东西），动画就用那一样。例如一年的每日一画翻成一段动画",
-    "en": "Every point starts from its material: what is special about it (its quantity, scale, a before and after, their own style and type, a motion it already has), and the animation uses that. Say, a year of daily drawings flipped into one animation"
+    "zh-Hant": "每一點都先由佢嘅素材諗：素材有乜係只得佢先有（數量、規模、前後對比、佢自己嘅風格同字體、本身識郁嘅嘢、一個過程、一把聲、佢嘅笑位），動畫就用嗰樣。例如一年嘅每日一畫翻成一段動畫",
+    "zh-Hans": "每一点都先从创作者的素材想：素材有什么是只有它才有的（数量、规模、前后对比、自己的风格和字体、本身会动的东西、一个过程、一个声音、他的笑点），动画就用那一样。例如一年的每日一画翻成一段动画",
+    "en": "Every point starts from its material: what only it has (its quantity, scale, a before and after, their own style and type, a motion it already has, a process, a sound, their humour), and the animation uses that. Say, a year of daily drawings flipped into one animation"
    },
    "needs": "the material, its sketch on the story page, and a beat written in the film (references/beats.md, \"A beat of your own\"; the kit's picture cards and layouts)",
    "example": "cgnot996: the ambassador invitation (its own beat)",

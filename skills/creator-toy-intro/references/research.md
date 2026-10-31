@@ -172,9 +172,12 @@ material asks for its own idea, never this one):
 ```
 
 `line` is what the viewer takes away, in the creator's language. `special`
-is what is special about this material: its quantity, its scale, a before
-and after, its own look (a style, a typeface, a colour), a motion it already
-has. `becomes` holds the ideas for showing it, your recommendation first.
+is what is special about this material, and only it has: its quantity, its
+scale, a before and after, its own look (a style, a typeface, a colour), a
+motion it already has, a process, a sound, a joke of theirs; these are
+prompts, not the list. `becomes` holds the ideas for showing it, your
+recommendation first; ideas that differ in kind, not two layouts of the same
+pictures.
 Design them before opening the catalog:
 1. Two ideas at least, one at least the film's own (`"anim": "own"`, with the
    `beat` file it will be), designed from what is special about this
