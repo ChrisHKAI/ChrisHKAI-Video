@@ -176,7 +176,9 @@ material asks for its own idea, never this one):
       "opts": { "from": "2025-10-28", "to": "2026-10-28", "count": { "to": 365, "label": "张" } } }] }
 ```
 
-`line` is what the viewer takes away, in the creator's language. `special`
+`line` is what the viewer takes away, in the creator's language. `material`
+is its pictures, files or folders of them (a folder shows its first picture
+on the page, in name order: put the telling one first). `special`
 is what is special about this material, and only it has: its quantity, its
 scale, a before and after, its own look (a style, a typeface, a colour), a
 motion it already has, a process, a sound, a joke of theirs; these are

@@ -16,7 +16,7 @@
 //   at twice the page's pixels (--scale), and each story on a picture of its own (materials-A.png …, the endings
 //   on materials-endings.png): a chat shrinks one tall picture until it blurs
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CAT, anim, optsIssues } from "../lib/catalog.js";
@@ -51,7 +51,15 @@ const ideaWords = {
   en: { pitch: "In a sentence", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
 }[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const img = (p, base = dir) => (p && existsSync(join(base, p)) ? `file://${encodeURI(join(base, p))}` : null);
+// a picture: a file, or a folder of their work (research.md writes "assets/work/"), shown by its first picture
+const PIC = /\.(png|jpe?g|webp|gif)$/i;
+const picOf = (abs) => {
+  if (!existsSync(abs)) return null;
+  if (statSync(abs).isFile()) return PIC.test(abs) ? abs : null;
+  const first = readdirSync(abs).filter((f) => PIC.test(f)).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))[0];
+  return first ? join(abs, first) : null;
+};
+const img = (p, base = dir) => { const f = p && picOf(join(base, p)); return f ? `file://${encodeURI(f)}` : null; };
 const nums = (n) => Object.values(n ?? {}).map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("");
 const posts = facts.posts ?? [];
 const post = (id) => posts.find((p) => p.id === id);

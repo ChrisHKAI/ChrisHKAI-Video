@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -386,4 +386,16 @@ test("a skill's animation takes this creator's opts, never the catalog's example
   assert.equal(film.counter.display, "500");
   assert.deepEqual(film.story.segments[1], { story: "act2", why: "See what the creator makes" });
   assert.match(applied.stdout, /act2 does nothing with "colour"/);
+});
+
+test("a point's material may be a folder of their work: the page shows its first picture", (t) => {
+  const f = facts(); f.story[0].material = ["assets/work/"];
+  const dir = workspace(t, f);
+  mkdirSync(join(dir, "assets/work"), { recursive: true });
+  for (const n of ["10.png", "2.png", "notes.txt"]) writeFileSync(join(dir, "assets/work", n), "x");
+  const r = run(dir, "materials.mjs", [dir, "--html-only"]);
+  assert.equal(r.status, 0, r.stderr);
+  const served = readFileSync(join(dir, "research/story/index.html"), "utf8");
+  assert.match(served, /img\/0-2\.png/);
+  assert.doesNotMatch(served, /notes\.txt|file:\/\//);
 });
