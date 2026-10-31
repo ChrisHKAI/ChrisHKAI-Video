@@ -270,7 +270,9 @@ the address on a line of its own (words stuck to it become part of the link):
 FILM=<film> node <skill>/engine/run.mjs studio   # → http://127.0.0.1:4173/story/
 ```
 
-Where the chat shows pictures, show `materials.png` too. Then ask in one
+Where the chat shows pictures, show them too, one story a picture
+(`materials-A.png`, `-B`, `-C`, then `materials-endings.png`, at twice the
+page's pixels): one tall picture is shrunk by a chat until it blurs. Then ask in one
 round (AskUserQuestion where the agent has it, else one message):
 - which direction (including its ordered story points), or changes to it;
   for older workspaces without directions, which story points in what order;

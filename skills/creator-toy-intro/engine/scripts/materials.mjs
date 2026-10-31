@@ -8,11 +8,13 @@
 // what the viewer will see, never the template's slot names. It says which
 // point still lacks an idea of the film's own, or its sketch.
 //
-// usage: node engine/scripts/materials.mjs <film folder> [--lang zh-Hant|zh-Hans|en] [--html-only]
+// usage: node engine/scripts/materials.mjs <film folder> [--lang zh-Hant|zh-Hans|en] [--html-only] [--scale 2]
 // reads research/facts.json ("story", "slots.cta", "posts", "ideas")
 // → research/story/index.html (the page the studio serves, as the storyboard's is: run.mjs studio, /story/;
 //   the user clicks a card to leave a note), research/materials.html (the same with file paths),
-//   research/materials.png (the choices) and research/materials-posts.png (the posts and the parts), for a chat
+//   research/materials.png (the choices) and research/materials-posts.png (the posts and the parts), for a chat,
+//   at twice the page's pixels (--scale), and each story on a picture of its own (materials-A.png …, the endings
+//   on materials-endings.png): a chat shrinks one tall picture until it blurs
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
@@ -21,7 +23,7 @@ import { findChrome } from "../lib/tools.js";
 
 const SKILL = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const argv = process.argv.slice(2);
-const dir = resolve(argv.find((a, i) => !a.startsWith("--") && argv[i - 1] !== "--lang") ?? process.env.FILM ?? ".");
+const dir = resolve(argv.find((a, i) => !a.startsWith("--") && !["--lang", "--scale"].includes(argv[i - 1])) ?? process.env.FILM ?? ".");
 const facts = JSON.parse(readFileSync(join(dir, "research/facts.json"), "utf8"));
 const film = existsSync(join(dir, "film.json")) ? JSON.parse(readFileSync(join(dir, "film.json"), "utf8")) : {};
 const lang = argv.includes("--lang") ? argv[argv.indexOf("--lang") + 1] : film.language ?? "zh-Hans";
@@ -126,6 +128,7 @@ const card = (p, i) => `<div class="card"><div class="pic" style="${img(p.shot ?
 const menu = CAT.filter((a) => a.group === "middle").map((a) => `<div class="m"><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv sm" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div>`).join("");
 
 const W = 1200;
+const SCALE = Math.max(1, Math.min(3, +(argv.includes("--scale") ? argv[argv.indexOf("--scale") + 1] : 2) || 2)); // the pictures' pixels per page pixel
 const STYLE = `<style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { width: ${W}px; max-width: 100%; background: #F4F2EE; font-family: "PingFang SC", "PingFang TC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; color: #1C1B19; padding: 36px 40px; }
@@ -294,10 +297,11 @@ const shot = (body, h, png) => {
   // Direction cards contain prose of variable length. Measure the laid-out
   // page instead of cropping a long language variant or adding blank screens.
   writeFileSync(tmp, page(body + '<script>document.title = "material-height:" + Math.ceil(document.documentElement.scrollHeight);</script>'));
-  const flags = ["--headless", "--hide-scrollbars", "--disable-gpu", "--allow-file-access-from-files", "--force-device-scale-factor=1"];
+  // sharp on a phone or a retina screen: the page drawn at twice its pixels
+  const flags = ["--headless", "--hide-scrollbars", "--disable-gpu", "--allow-file-access-from-files", `--force-device-scale-factor=${SCALE}`];
   let height = h;
   try {
-    const dom = execFileSync(chrome, [...flags, `--window-size=${W},600`, "--dump-dom", `file://${tmp}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
+    const dom = execFileSync(chrome, [...flags, `--window-size=${W},100`, "--dump-dom", `file://${tmp}`], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 30000, maxBuffer: 8 * 1024 * 1024 });
     height = Number(dom.match(/<title>material-height:(\d+)<\/title>/)?.[1]) || h;
   } catch { console.log(`could not measure ${png}; using the estimated page height`); }
   execFileSync(chrome, [...flags, `--window-size=${W},${height}`, `--screenshot=${join(dir, "research", png)}`, `file://${tmp}`], { stdio: "ignore", timeout: 30000 });
@@ -305,4 +309,15 @@ const shot = (body, h, png) => {
 };
 const height1 = shot(decide, H1, "materials.png");
 const height2 = shot(more, H2, "materials-posts.png");
-console.log(`wrote ${join(dir, "research/materials.html")}, materials.png (${W}x${height1}: ${directions.length ? "the directions with their ideas, the ending" : "the story, the opening, the ending"}) and materials-posts.png (${W}x${height2}: the posts, the skill's animations)`);
+// each story, and the endings, on a picture of its own: readable when a chat shows it
+const parts = [];
+for (const [i, d] of directions.entries()) {
+  const png = `materials-${LETTER[i] ?? i + 1}.png`;
+  shot(`<section>${directionCard(d, i)}</section>`, 1200, png);
+  parts.push(png);
+}
+if (directions.length) {
+  shot(`<section><h2>${T.ending.replace("③", "②")}</h2>${endings.slice(0, 3).map(cta).join("")}</section><div class="ask">${D.ask}</div>`, 600, "materials-endings.png");
+  parts.push("materials-endings.png");
+}
+console.log(`wrote ${join(dir, "research/materials.html")}, materials.png (${W * SCALE}x${height1 * SCALE}: ${directions.length ? "the directions with their ideas, the ending" : "the story, the opening, the ending"}) and materials-posts.png (${W * SCALE}x${height2 * SCALE}: the posts, the skill's animations)${parts.length ? `; for a chat, one picture each: ${parts.join(", ")}` : ""}`);
