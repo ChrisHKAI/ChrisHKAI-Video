@@ -195,7 +195,7 @@ Design them before opening the catalog:
    one yourself), so it stands on the story page as something seen, beside
    the preview strips of the skill's animations.
 3. Only then the skill's animations (`beats/catalog.json`, with `opts` as its
-   `film` entry writes them): one is an idea when it is the best way to show
+   `takes` says, below): one is an idea when it is the best way to show
    this point, or a part the film's own animation starts from. Hold each to
    its material: with another creator's material, would it be the same
    animation? Then it is a template, not an idea.
@@ -210,6 +210,14 @@ What the skill's animations need, so that one is never forced:
   not the room. Illustrations, photos and small text smear as 3D lettering;
 - `count`, `calendar`, `phrase`: a number, a span of days, a line of their
   own words, each on a stage of its own.
+
+Each one's `takes` (in the catalog) says what an idea's `opts` give it:
+`count` `{ to, label }` (and `from`, `unit`…), `calendar` `{ from, to }` (and
+`count`, `stamp`), `phrase` `{ text }`; `act2` may name `{ post, number }`
+(the post whose number rises and which number: `"views"`), `act3` `{ post }`,
+else the point's first post. The values the catalog's `film` entry shows are
+another film's example: they never reach this one, so an idea that leaves out
+one it needs stops `apply-research`, and the story page says so first.
 
 Also in facts.json: `slots.cta`, two or three endings, each the closing line
 in one or two short parts and the end card's prop, together. First work out

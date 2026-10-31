@@ -363,3 +363,27 @@ test("the story page shows each point's ideas with their sketch and pitch, the o
   assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]).status, 0);
   assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /點樣開場/);
 });
+
+test("a skill's animation takes this creator's opts, never the catalog's example", (t) => {
+  // a line left out: the story page says so, and apply-research stops before another film's line reaches this one
+  let f = facts(); f.story[1].becomes = [{ anim: "phrase", opts: {} }];
+  let dir = workspace(t, f);
+  assert.match(run(dir, "materials.mjs", [dir, "--html-only"]).stdout, /s2: phrase needs "text"/);
+  const stopped = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(stopped.status, 1);
+  assert.match(stopped.stderr, /phrase needs "text"/);
+  // a calendar without a count or a stamp has none: not the example's 10,000 and 万粉
+  f = facts(); f.story[1].becomes = [{ anim: "calendar", opts: { from: "2026-01-01", to: "2026-03-01" } }];
+  dir = workspace(t, f);
+  assert.equal(run(dir, "apply-research.mjs", [dir]).status, 0);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "film.json"))).story.segments[2], { beat: "calendar", bars: 4, from: "2026-01-01", to: "2026-03-01", why: "See how the work was made" });
+  // act 2 rises from the post and number its opts name; an opt it does not take is said
+  f = facts(); f.story[0].becomes = [{ anim: "act2", opts: { post: "p2", number: "views", colour: "red" } }];
+  dir = workspace(t, f);
+  const applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  const film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.equal(film.counter.display, "500");
+  assert.deepEqual(film.story.segments[1], { story: "act2", why: "See what the creator makes" });
+  assert.match(applied.stdout, /act2 does nothing with "colour"/);
+});

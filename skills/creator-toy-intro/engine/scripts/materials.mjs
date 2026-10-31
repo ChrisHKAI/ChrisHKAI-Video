@@ -19,6 +19,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CAT, anim, optsIssues } from "../lib/catalog.js";
 import { findChrome } from "../lib/tools.js";
 
 const SKILL = join(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -57,9 +58,7 @@ const post = (id) => posts.find((p) => p.id === id);
 const pr = facts.profile ?? {};
 const PLATFORMS = JSON.parse(readFileSync(join(SKILL, "engine/lib/platforms.json"), "utf8")).platforms;
 const where = PLATFORMS[facts.platform]?.name ?? facts.platform ?? "";
-const CAT = JSON.parse(readFileSync(join(SKILL, "beats/catalog.json"), "utf8")).animations;
 const word = (d) => (typeof d === "string" ? d : d?.[lang] ?? d?.["zh-Hant"] ?? d?.en ?? "");
-const anim = (id) => CAT.find((c) => c.id === id);
 const LETTER = "ABCDEFGH";
 const host = (u) => { try { return new URL(u).host.replace(/^www\./, ""); } catch { return u ? String(u).slice(0, 28) : ""; } };
 
@@ -281,6 +280,8 @@ for (const s of shown) {
   if (!own.length) console.log(`! ${s.id} "${s.line}": no idea of the film's own yet: design one from what is special about its material (references/research.md, "The story first")`);
   for (const b of own) if (!img(b.sketch)) console.log(`! ${s.id}: its own idea "${b.pitch ?? b.beat ?? "?"}" has no sketch on the page yet (${b.sketch ?? "no sketch"}): make one from their material (engine/scripts/sketch.py)`);
   if (!s.special) console.log(`! ${s.id}: say what is special about its material ("special")`);
+  // a skill's animation shows this creator's numbers and words only when its opts give them
+  for (const b of s.becomes ?? []) for (const x of optsIssues(b.anim, b.opts)) console.log(`! ${s.id}: ${x}`);
 }
 if (argv.includes("--html-only")) { console.log("wrote research/materials.html"); process.exit(0); }
 

@@ -1,5 +1,5 @@
 {
- "_about": "Parts to build from, not a menu. Step 2 designs each point's animation from its material first (references/research.md: what is special about the material, and an idea of the film's own, with a sketch); one of these is an idea only when it is the best way to show that point, or the start of the film's own. Each one: what it fits (the user reads this), what it needs, a film that used it, a preview strip cut from that film (beats/previews/<id>.jpg) and how it goes into film.json. group: opening, middle or ending (a film is one opening, a few middles, one ending; the opening is chosen by the story: it hands over to the first point). kind: story (a piece of the template's story) or beat (beats/<id>.js, its own clock).",
+ "_about": "Parts to build from, not a menu. Step 2 designs each point's animation from its material first (references/research.md: what is special about the material, and an idea of the film's own, with a sketch); one of these is an idea only when it is the best way to show that point, or the start of the film's own. Each one: what it fits (the user reads this), what it needs, a film that used it, a preview strip cut from that film (beats/previews/<id>.jpg), how it goes into film.json (`film`) and what an idea gives it (`takes`: the `opts` it needs and may have). The values `film` has for those are that film's example, never another film's words: apply-research takes them from the idea's `opts` only. group: opening, middle or ending (a film is one opening, a few middles, one ending; the opening is chosen by the story: it hands over to the first point). kind: story (a piece of the template's story) or beat (beats/<id>.js, its own clock).",
  "animations": [
   {
    "id": "opening",
@@ -108,6 +108,10 @@
    "film": {
     "story": "act2"
    },
+   "takes": {
+    "optional": ["post", "number"],
+    "note": "post: the post whose number rises (the point's first post by default); number: which of its numbers (views, likes…; the one matching the point's first number by default)"
+   },
    "preview": "beats/previews/act2.jpg"
   },
   {
@@ -128,6 +132,10 @@
    "example": "isnail: 自媒体很苦 / 46K粉, 12–24 s; cgnot996: 5天 380+ star",
    "film": {
     "story": "act3"
+   },
+   "takes": {
+    "optional": ["post"],
+    "note": "post: the post whose cover stands up (the point's first post by default)"
    },
    "preview": "beats/previews/act3.jpg"
   },
@@ -152,6 +160,10 @@
     "bars": 3,
     "to": 10000,
     "label": "关注者"
+   },
+   "takes": {
+    "required": ["to", "label"],
+    "optional": ["from", "unit", "sep", "decimals", "color", "em"]
    },
    "preview": "beats/previews/count.jpg"
   },
@@ -182,6 +194,10 @@
     },
     "stamp": "万粉"
    },
+   "takes": {
+    "required": ["from", "to"],
+    "optional": ["count", "stamp"]
+   },
    "preview": "beats/previews/calendar.jpg"
   },
   {
@@ -204,6 +220,10 @@
     "beat": "phrase",
     "bars": 3,
     "text": "马斯克得不到的男人"
+   },
+   "takes": {
+    "required": ["text"],
+    "optional": ["color", "em"]
    },
    "preview": "beats/previews/phrase.jpg"
   },

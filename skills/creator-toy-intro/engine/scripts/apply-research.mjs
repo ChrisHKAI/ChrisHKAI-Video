@@ -20,6 +20,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
+import { CAT, optsIssues, segmentOf } from "../lib/catalog.js";
 import { readNumber } from "../lib/numbers.js";
 import { resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
@@ -31,8 +32,6 @@ const film = JSON.parse(readFileSync(join(dir, "film.json"), "utf8"));
 const facts = JSON.parse(readFileSync(join(dir, "research/facts.json"), "utf8"));
 const fail = (msg) => { console.error(msg); process.exit(1); };
 const warn = [];
-const CAT = JSON.parse(readFileSync(join(SKILL, "beats/catalog.json"), "utf8")).animations;
-const anim = (id) => CAT.find((a) => a.id === id);
 
 const picks = facts.picks ?? fail("research/facts.json has no \"picks\" yet: the user picks from the material page first");
 let selection;
@@ -77,9 +76,9 @@ const act3Pick = picked.find(({ b }) => b.anim === "act3");
 // the posts the page shows: the one whose number rises (act 2, else the pinned one, else the first the story names),
 // and the one that rises below it (act 3's, else the next)
 const storyPosts = picked.flatMap(({ s }) => s.posts ?? []);
-const firstId = legacy ? picks.proof1.post : act2Pick?.s.posts?.[0] ?? facts.posts.find((p) => p.pinned)?.id ?? storyPosts[0] ?? facts.posts[0]?.id;
+const firstId = legacy ? picks.proof1.post : act2Pick?.b.opts?.post ?? act2Pick?.s.posts?.[0] ?? facts.posts.find((p) => p.pinned)?.id ?? storyPosts[0] ?? facts.posts[0]?.id;
 const p1 = post(firstId ?? fail("the research found no post: the page needs one"));
-const secondId = legacy ? picks.proof2.post : act3Pick?.s.posts?.[0] ?? [...storyPosts, ...facts.posts.map((p) => p.id)].find((id) => id !== p1.id);
+const secondId = legacy ? picks.proof2.post : act3Pick?.b.opts?.post ?? act3Pick?.s.posts?.[0] ?? [...storyPosts, ...facts.posts.map((p) => p.id)].find((id) => id !== p1.id);
 const p2 = secondId ? post(secondId) : p1;
 
 function asPost(p) {
@@ -104,7 +103,7 @@ if (stage === "x" && pr.numbers?.posts) { profile.postsCount = `${pr.numbers.pos
 for (const k of Object.keys(profile)) if (profile[k] === undefined) delete profile[k];
 
 // the counter: the number that rises from the first post's spot on the page, as the platform writes it
-const numberKey = legacy ? picks.proof1.number : act2Pick?.b.number ?? (act2Pick?.s.numbers?.[0] && Object.keys(p1.numbers ?? {}).find((k) => p1.numbers[k].display === act2Pick.s.numbers[0].display)) ?? TILE;
+const numberKey = legacy ? picks.proof1.number : act2Pick?.b.opts?.number ?? act2Pick?.b.number ?? (act2Pick?.s.numbers?.[0] && Object.keys(p1.numbers ?? {}).find((k) => p1.numbers[k].display === act2Pick.s.numbers[0].display)) ?? TILE;
 const n1 = p1.numbers?.[numberKey] ?? Object.values(p1.numbers ?? {})[0] ?? (usesAct2 ? fail(`post "${p1.id}" has no number "${numberKey}"`) : { display: "0", label: "" });
 const c = readNumber(n1.display) ?? fail(`can't read "${n1.display}" as a number: write it as the platform does (304万, 6.5万, 7,253, 46K)`);
 // it counts up as the platform writes it (6.5万, 7,253, 46K): a long label only crowds the page
@@ -129,10 +128,14 @@ if (!legacy && !opening) {
   if (selection.direction) warn.push(`the direction names no opening: took "${opening}", which hands over to its first point; write it as direction.opening { id, why } so the story page says so`);
 }
 if (!legacy && opening === "opening" && firstAnim && firstAnim !== "act2") warn.push(`the opening with the page floating ends with the toy on the pinned post, ready for its number to rise, but the first point here is "${firstAnim}": an opening that stands the page up (page-stand, page-stand-left) hands over to it`);
+// an idea's opts are this creator's: one the animation needs and lacks would leave the catalog's example (another
+// film's number, its line) on screen
 const segOf = (id, opts = {}) => {
-  const a = anim(id);
-  if (id === "own" || !a) return null;
-  return { ...a.film, ...opts };
+  const issues = optsIssues(id, opts);
+  const missing = issues.find((x) => / needs /.test(x));
+  if (missing) fail(`${missing} (beats/catalog.json "takes"; references/research.md, "The story first")`);
+  warn.push(...issues);
+  return segmentOf(id, opts);
 };
 let segments = film.story?.segments;
 if (!legacy) {
