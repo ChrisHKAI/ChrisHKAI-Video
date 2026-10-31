@@ -107,6 +107,11 @@ goes to `extra`; in the film it rises from the name at the top.
   from) and `read` (the date). Historical milestones additionally keep their
   event date; they are not substituted for current counts. For supplied
   screenshots, record when received/read and label them as supplied evidence.
+- Their type: the face their own covers, site or titles use (a serif, a brush,
+  a mono). Name it in film.json `type.display` (`[{ "family": "Songti SC",
+  "style": "Black" }]`, a face on this computer), or put the face file they
+  use in the film's `fonts/`: a beat's own line is set in it, not in the end
+  card's heavy face.
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.
 
 `research/` stays out of any git repository.

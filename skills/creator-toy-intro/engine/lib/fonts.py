@@ -7,6 +7,9 @@ Roles (isnail's type design):
                                        (Linux) → Source Han Sans Bold
   cjk    the counter's unit and label  PingFang SC/TC Semibold → Source Han Sans Bold
   heavy  the torn-paper labels         Lantinghei SC/TC Heavy → Source Han Sans Heavy
+  display  a beat's own line (their words, a pitch) in the creator's own face: film.json "type":
+         { "display": [{ "family": "Songti SC", "style": "Black" }] }, the face their covers or site
+         use; without one, the heavy face
 film.json "type": { role: [{ "family": …, "style": … }, …] } puts the film's own
 choices in front. Font files a film brings sit in its fonts/ folder.
 """
@@ -27,6 +30,7 @@ ROLES = {
         "zh-Hant": [("Lantinghei TC", "Heavy"), ("Source Han Sans HK", "Heavy"), ("Source Han Sans TC", "Heavy")],
     },
 }
+ROLES["display"] = ROLES["heavy"]  # the creator's own face comes first (film.json type.display)
 # faces step 0 installed (scripts/doctor.mjs) sit in the skill's home
 HOME_FONTS = str(Path(os.environ.get("CHRISHKAI_VIDEO_HOME") or Path.home() / ".chrishkai-video") / "fonts")
 DIRS = [

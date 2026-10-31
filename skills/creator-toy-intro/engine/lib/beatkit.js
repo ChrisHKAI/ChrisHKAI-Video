@@ -2,7 +2,7 @@
 // toy's pose on the beat's own stage, its moves between beats (it drops in,
 // cheers, leaps out of the top of the frame), the toy and its contact shadow
 // from a pose, and a camera from keys in the beat's own seconds.
-import { TOY, CENTER, JOINTS } from "./toy.js";
+import { TOY, CENTER, JOINTS, COLORS } from "./toy.js";
 import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "./rig.js";
 import { makeCamera } from "./camera.js";
 import { clamp01, seg, smooth, easeInOut, lerp, lerpAngle, yawTo, TAU, v3 } from "./math.js";
@@ -146,4 +146,31 @@ export function confetti(i, g, t0, p0, colors, rand) {
   if (dt < 0 || dt > 1.6) return { tr: trs(p0.slice(), qId(), HIDDEN), color };
   const p = [p0[0] + v0[0] * dt, Math.max(0.0007, p0[1] + v0[1] * dt - 1.2 * dt * dt), p0[2] + v0[2] * dt];
   return { tr: trs(p, qEuler(dt * spin[0], dt * spin[1], dt * 5), 1 - seg(dt, 1.3, 1.6)), color };
+}
+
+// ── colours beside the toy ──────────────────────────────────────────────────
+// lettering in the toy's own colour melts into it when they stand side by side (a gold line beside a lemon):
+// apart(candidates) is the first colour clear of the toy's main colours (those covering a quarter of it or more)
+const oklab = (hex) => {
+  const lin = [1, 3, 5].map((i) => { const c = parseInt(hex.slice(i, i + 2), 16) / 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); });
+  const [l, m, s] = [[0.4122214708, 0.5363325363, 0.0514459929], [0.2119034982, 0.6806995451, 0.1073969566], [0.0883024619, 0.2817188376, 0.6299787005]]
+    .map((r) => Math.cbrt(r[0] * lin[0] + r[1] * lin[1] + r[2] * lin[2]));
+  return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+};
+const partArea = (p) => {
+  if (p.size) { const [x, y, z] = p.size; return 2 * (x * y + y * z + z * x); }
+  if (Array.isArray(p.r)) { const [a, b = a, c = b] = p.r; return 4 * Math.PI * Math.pow((Math.pow(a * b, 1.6) + Math.pow(a * c, 1.6) + Math.pow(b * c, 1.6)) / 3, 1 / 1.6); }
+  if (p.pts) { let L = 0; for (let i = 1; i < p.pts.length; i++) L += Math.hypot(...p.pts[i].map((v, k) => v - p.pts[i - 1][k])); return L * 2 * Math.PI * ((p.radii ?? [0.002]).reduce((a, b) => a + b, 0) / (p.radii?.length ?? 1)); }
+  return 0;
+};
+export function toyMainColours(share = 0.25) {
+  const area = {};
+  for (const p of TOY.parts ?? []) if (p.mat && COLORS?.[p.mat]) area[p.mat] = (area[p.mat] ?? 0) + partArea(p);
+  const total = Object.values(area).reduce((a, b) => a + b, 0) || 1;
+  return Object.entries(area).filter(([, a]) => a / total >= share).map(([k]) => COLORS[k]);
+}
+export const colourGap = (a, b) => { const p = oklab(a), q = oklab(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
+export function apart(candidates, gap = 0.12) {
+  const main = toyMainColours();
+  return candidates.find((c) => main.every((m) => colourGap(c, m) >= gap)) ?? candidates[candidates.length - 1];
 }

@@ -7,20 +7,28 @@
 // film.json, in story.segments:
 //   { "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人", "color": "#F2C14E" }
 // "text" is the line (the glyph step cuts its characters); "color" the
-// letters' (default the end card's gold); "em" their size in metres (0.062).
+// letters' (default the end card's gold, or cream when the toy is that gold
+// itself: kit.apart); "em" their size in metres (0.062). The letters are in
+// the creator's own face when the film names one (film.json type.display,
+// engine/lib/fonts.py), else the end card's heavy face.
 export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signature, kit, math, quat }) {
   const { seg, backOut } = math;
   const { trs, qId, qEuler } = quat;
   const TEXT = [...String(opts.text ?? "")];
   if (!TEXT.length) throw new Error('beat "phrase" needs "text": the line to say');
   const EM = opts.em ?? 0.062;
-  const COLOR = opts.color ?? "#F2C14E";
+  // never the toy's own colour: a gold line beside a lemon melts into it
+  const COLOR = opts.color ?? kit.apart(["#F2C14E", "#F4F1EA", "#FF8A5C"]);
   const blank = (c) => /\s/.test(c);
-  const missing = TEXT.filter((c) => !blank(c) && !glyph.has(`heavy:${c}`));
+  // the creator's own face where the film names one and it has the letter, else the heavy face
+  const key = (c) => (glyph.has(`display:${c}`) ? `display:${c}` : `heavy:${c}`);
+  const missing = TEXT.filter((c) => !blank(c) && !glyph.has(`heavy:${c}`) && !glyph.has(`display:${c}`));
   if (missing.length) throw new Error(`beat "phrase": no lettering for ${missing.join("")} yet: run the glyph step (run.mjs glyphs)`);
 
   // the line, centred on the stage; its glyphs' lowest point on the floor
-  const advs = TEXT.map((c) => (blank(c) ? 0.3 : glyph.adv(`heavy:${c}`)) * EM);
+  // a little air between the letters, so heavy strokes never run into each other
+  const TRACK = /[\x00-\x7f]/.test(TEXT.join("")) ? 0.02 : 0.07;
+  const advs = TEXT.map((c) => (blank(c) ? 0.3 : glyph.adv(key(c)) + TRACK) * EM);
   const W = advs.reduce((a, b) => a + b, 0);
   const X = advs.map((_, i) => -W / 2 + advs.slice(0, i).reduce((a, b) => a + b, 0));
   const BASE = 0.12 * EM;
@@ -61,9 +69,9 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
   const dist = ((W + 0.25) / 2 / Math.tan(hfov / 2)) * 1.1;
   const C = at(0.04, EM * 0.9, 0);
   const camera = kit.cameraFrom([
-    { t: 0, target: at(0.04, EM * 1.1, 0), dist: dist * 1.12, elev: 9, az: 4 },
-    { t: LOCK, target: C, dist, elev: 7, az: 0 },
-    { t: len, target: C, dist: dist * 0.96, elev: 7, az: -3 },
+    { t: 0, target: at(0.04, EM * 1.1, 0), dist: dist * 1.12, elev: 9, az: 4, fstop: 9 },
+    { t: LOCK, target: C, dist, elev: 7, az: 0, fstop: 9 },
+    { t: len, target: C, dist: dist * 0.96, elev: 7, az: -3, fstop: 9 },
   ], { fov, aspect, shakes: [[LOCK, 0.6]] });
 
   const esc = (s) => s.replace(/[{}]/g, (m) => m + m); // the storyboard page fills {names}
@@ -71,7 +79,8 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
   return {
     declare(add) {
       add({ name: "floor", geo: { type: "plane", w: 6, h: 6 }, mat: { type: "stage" }, anim: true });
-      for (const { c, i } of letters) add({ name: `l${i}`, geo: glyph.geo(`heavy:${c}`, EM, 0.014, 0.0014), mat: { type: "type", color: COLOR, emit: 0.3 }, anim: true });
+      // a shallow, fine bevel: deep bevelled heavy strokes swell into lumps
+      for (const { c, i } of letters) add({ name: `l${i}`, geo: glyph.geo(key(c), EM, 0.009, 0.0006), mat: { type: "type", color: COLOR, emit: 0.3 }, anim: true });
     },
     sample(put, g) {
       put("floor", trs(at(0, 0, 0), qEuler(-Math.PI / 2, 0, 0)));

@@ -52,8 +52,10 @@ def words(v):
 
 
 BEATS = [s for s in F.get("story", {}).get("segments", []) if "beat" in s]
+CHARS["display"] = ""  # and in the creator's own face, for a beat that sets its line in it (fonts.py "display")
 for s in BEATS:
     CHARS["heavy"] += words({k: v for k, v in s.items() if k != "beat"})
+    CHARS["display"] += words({k: v for k, v in s.items() if k != "beat"})
 if BEATS:
     CHARS["heavy"] += "0123456789,.+%月日"
 # what a film's own template or scene shows beyond these: film.json "glyphs" adds characters
@@ -113,9 +115,9 @@ for key, (path, index, chars) in FONTS.items():
     gs = font.getGlyphSet()
     hmtx = font["hmtx"]
     missing = sorted({ch for ch in chars if ord(ch) not in cmap})
-    if missing:
+    if missing and key != "display":  # the creator's own face may lack a sign: the beat takes the heavy face's
         raise SystemExit(f"{key}: {Path(path).name} has no glyph for {' '.join(missing)}")
-    for ch in sorted(set(chars)):
+    for ch in sorted(set(chars) - set(missing)):
         name = cmap[ord(ch)]
         pen = Flatten(gs)
         gs[name].draw(pen)

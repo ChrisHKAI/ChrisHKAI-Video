@@ -110,6 +110,9 @@ for k, r in bad:
         what = f"the toy's {r['key']} {r['hex']} ({r['share'] * 100:.0f}% of it)"
     elif k == "text":
         what = f"lettering in {r['hex']} on {r['on']} ({r['objects']} objects: {', '.join(r['names'])})"
+    elif k == "twin":
+        print(f"  ! lettering in {r['hex']} ({r['objects']} objects: {', '.join(r['names'])}) is the toy's own colour {r['twin']}: beside it, the two melt into one; another colour")
+        continue
     else:
         what = f"confetti {r['hex']}"
     print(f"  ! {what}: {r['contrast']:.1f}:1 on the stage, will not read")

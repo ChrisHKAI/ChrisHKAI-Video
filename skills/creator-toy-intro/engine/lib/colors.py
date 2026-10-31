@@ -23,6 +23,7 @@ STAGES = {
     "grey": {"sky": "#57585c", "floorEdge": "#4e4f53", "floorRing": "#626368", "floorMid": "#7f8086", "glass": "#5c5d62", "fade": "#57585c", "lookdev": "#737479"},
 }
 READ, MELT = 3.0, 1.6  # lettering wants READ:1; a big colour under MELT:1 melts into the stage
+TWIN = 0.12  # lettering closer than this (OKLab distance) to the toy's main colour melts into the toy beside it
 
 
 def rgb(hex_):
@@ -124,6 +125,13 @@ def film_colours(film):
             back = papers.get(group(o["name"])) if contrast(m["color"], STAGE) < READ else None
             text.setdefault((m["color"].upper(), (back or STAGE).upper()), []).append(o["name"])
     text_rows = sorted(({"hex": h, "on": b, "objects": len(n), "names": n[:4], "contrast": contrast(h, b)} for (h, b), n in text.items()), key=lambda r: r["contrast"])
+    # lettering on the stage beside the toy, in the toy's own colour (a gold line by a lemon): the two read as one
+    main = [r for r in toy_rows if r["share"] >= 0.25]
+    for r in text_rows:
+        if r["on"] == STAGE.upper():
+            near = [m for m in main if float(np.linalg.norm(oklab(np.array([rgb(r["hex"])]))[0] - oklab(np.array([rgb(m["hex"])]))[0])) < TWIN]
+            if near:
+                r["twin"] = near[0]["hex"].upper()
     conf = [c for c in (F.get("pop") or {}).get("confetti", []) if isinstance(c, str)]
     conf_rows = [{"hex": c.upper(), "contrast": contrast(c, STAGE)} for c in conf]
     return {"stage": STAGE, "toy": toy_rows, "text": text_rows, "confetti": conf_rows}
@@ -204,6 +212,7 @@ def problems(fc):
     """What will not read on the stage: (kind, row) for a big toy colour that melts, lettering under READ, confetti that melts."""
     out = [("toy", r) for r in fc["toy"] if r["share"] >= 0.1 and r["contrast"] < MELT]
     out += [("text", r) for r in fc["text"] if r["contrast"] < READ]
+    out += [("twin", r) for r in fc["text"] if r.get("twin")]
     out += [("confetti", r) for r in fc["confetti"] if r["contrast"] < MELT]
     return out
 
