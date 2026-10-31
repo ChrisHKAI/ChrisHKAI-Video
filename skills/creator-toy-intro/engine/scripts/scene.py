@@ -300,6 +300,8 @@ def material(spec):
         p.inputs["Emission Strength"].default_value = 0.12
         L.new(bump.outputs["Normal"], p.inputs["Normal"])
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
+    elif kind in ("stage", "floor") and LOOK.stage.get("light"):  # a light stage: white paper, the toy's shadow on it
+        lighting.light_floor(nt, LOOK, out)
     elif kind == "stage":  # the CTA floor: glass in the stage's tone that mirrors the line, fading out far away
         tc = nt.nodes.new("ShaderNodeTexCoord")
         grad = nt.nodes.new("ShaderNodeTexGradient")

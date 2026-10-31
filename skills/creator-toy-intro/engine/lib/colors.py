@@ -190,7 +190,10 @@ def stage_of(hex_):
     lab = oklab(np.array([rgb(hex_)]))[0]
     shade = lambda d: hexof(from_oklab([[max(0.0, min(1.0, lab[0] + d)), lab[1], lab[2]]])[0])  # noqa: E731
     return {"sky": hex_.upper(), "floorEdge": shade(-0.08), "floorRing": shade(-0.03), "floorMid": shade(0.03),
-            "glass": shade(-0.05), "fade": hex_.upper(), "lookdev": shade(0.02)}
+            "glass": shade(-0.05), "fade": hex_.upper(), "lookdev": shade(0.02),
+            # a light stage (a white like the logo's own paper): the camera sees it as it is and the floor runs into
+            # it with no horizon, the toy's contact shadow on it (engine/lib/look.py light_floor)
+            "light": bool(lab[0] >= 0.85)}
 
 
 def stage_for(film):

@@ -56,10 +56,69 @@ def view(scene, look):
     scene.view_settings.look = "None"
 
 
+def shown(look, hex_):
+    """The light (linear RGB, may pass 1) that the view transform shows as `hex_`: PBR Neutral compresses
+    everything over 0.76, so a white of 1.0 comes out a light grey (#F0F0F0); this undoes that. The target is
+    held under 0.99, which the curve reaches."""
+    target = [min(0.99, v) for v in rgba(hex_)[:3]]
+    if look.view != "Khronos PBR Neutral":
+        return target
+
+    def neutral(c):
+        x = min(c)
+        off = x - 6.25 * x * x if x < 0.08 else 0.04
+        c = [v - off for v in c]
+        peak = max(c)
+        if peak < 0.76:
+            return c
+        d = 0.24
+        new = 1 - d * d / (peak + d - 0.76)
+        c = [v * new / peak for v in c]
+        g = 1 - 1 / (0.15 * (peak - new) + 1)
+        return [v * (1 - g) + new * g for v in c]
+
+    c = list(target)
+    for _ in range(200):
+        out = neutral(c)
+        c = [max(0.0, v + (t - o) * (1 + 3 * v)) for v, t, o in zip(c, target, out)]
+    return c
+
+
+def light_floor(nt, look, out, distance=0.12, shade=0.6):
+    """A floor for a light stage: the camera sees the stage's own colour (shown), darkened only where something
+    stands close (ambient occlusion: the toy's soft contact shadow), so the floor runs into the sky with no
+    horizon; every other ray sees a plain diffuse floor of that colour, so it lights nothing."""
+    L = nt.links
+    c = shown(look, look.stage["sky"])
+    m = max(c) or 1.0
+    ao = nt.nodes.new("ShaderNodeAmbientOcclusion")
+    ao.inputs["Distance"].default_value = distance
+    ao.samples = 16
+    k = nt.nodes.new("ShaderNodeMapRange")  # 1 in the open, 1 - shade under the toy
+    k.inputs["To Min"].default_value = 1 - shade
+    L.new(ao.outputs["AO"], k.inputs["Value"])
+    mul = nt.nodes.new("ShaderNodeMath")
+    mul.operation = "MULTIPLY"
+    mul.inputs[1].default_value = m
+    L.new(k.outputs["Result"], mul.inputs[0])
+    e = nt.nodes.new("ShaderNodeEmission")
+    e.inputs["Color"].default_value = (c[0] / m, c[1] / m, c[2] / m, 1.0)
+    L.new(mul.outputs["Value"], e.inputs["Strength"])
+    dif = nt.nodes.new("ShaderNodeBsdfDiffuse")
+    dif.inputs["Color"].default_value = rgba(look.stage["sky"])
+    lp = nt.nodes.new("ShaderNodeLightPath")
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    L.new(lp.outputs["Is Camera Ray"], mix.inputs["Fac"])
+    L.new(dif.outputs["BSDF"], mix.inputs[1])
+    L.new(e.outputs["Emission"], mix.inputs[2])
+    L.new(mix.outputs["Shader"], out.inputs["Surface"])
+
+
 def world(bpy, scene, look, sky=0.32, camera=None):
     """The world: the camera sees `camera`. In the classic light everything else sees one even sky
     (strength `sky`); otherwise what reflects sees the softbox, and what is lit a dim sky (look.sky). The camera
-    sees the film's stage (look.stage) unless `camera` says."""
+    sees the film's stage (look.stage) unless `camera` says; a light stage as itself (shown)."""
+    light = camera is None and look.stage.get("light")
     camera = camera or look.stage["sky"]
     w = bpy.data.worlds.new("Studio")
     scene.world = w
@@ -73,6 +132,11 @@ def world(bpy, scene, look, sky=0.32, camera=None):
     w_light.inputs["Strength"].default_value = sky if look.classic else look.sky
     w_cam = wn.new("ShaderNodeBackground")
     w_cam.inputs["Color"].default_value = rgba(camera)
+    if light:
+        c = shown(look, camera)
+        m = max(c) or 1.0
+        w_cam.inputs["Color"].default_value = (c[0] / m, c[1] / m, c[2] / m, 1.0)
+        w_cam.inputs["Strength"].default_value = m
     w_path = wn.new("ShaderNodeLightPath")
     wl.new(w_path.outputs["Is Camera Ray"], w_mix.inputs["Fac"])
     wl.new(w_cam.outputs["Background"], w_mix.inputs[2])
