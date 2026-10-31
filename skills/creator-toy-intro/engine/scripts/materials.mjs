@@ -46,9 +46,9 @@ const editorialWords = {
 }[lang];
 // the ideas: the film's own (designed from the material, shown by its sketch) and the skill's (shown by a strip of another film)
 const ideaWords = {
-  "zh-Hant": { pitch: "一句講晒", special: "素材特別在", sketch: "示意：用佢自己嘅素材砌，唔係最終畫面", opening: "開場（按故事揀）", more: "仲有 {n} 個點子，喺詳細頁" },
-  "zh-Hans": { pitch: "一句话", special: "素材特别在", sketch: "示意：用创作者自己的素材拼，不是最终画面", opening: "开场（按故事选）", more: "还有 {n} 个点子，在详细页" },
-  en: { pitch: "In a sentence", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
+  "zh-Hant": { pitch: "一句講晒", image: "令人記住嘅畫面", special: "素材特別在", sketch: "示意：用佢自己嘅素材砌，唔係最終畫面", opening: "開場（按故事揀）", more: "仲有 {n} 個點子，喺詳細頁" },
+  "zh-Hans": { pitch: "一句话", image: "让人记住的画面", special: "素材特别在", sketch: "示意：用创作者自己的素材拼，不是最终画面", opening: "开场（按故事选）", more: "还有 {n} 个点子，在详细页" },
+  en: { pitch: "In a sentence", image: "The image people remember", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
 }[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // a picture: a file, or a folder of their work (research.md writes "assets/work/"), shown by its first picture
@@ -81,6 +81,8 @@ const strip = (id) => { const a = anim(id); return a?.preview ? img(a.preview, S
 const ownIdea = (b) => b?.anim === "own";
 const ideaPic = (b) => (ownIdea(b) ? img(b.sketch) : strip(b?.anim));
 const ideaLabel = (b) => { const a = anim(b?.anim); return a ? word(a.label) : b?.anim; };
+// an opening as the viewer sees it: its catalog label without the "開場：" it starts with (the heading says it)
+const openingLabel = (id) => word(anim(id)?.label).replace(/^(開場|开场|Opening)\s*[：:]\s*/i, "") || id;
 const storyCard = (s, k) => {
   const pic = (s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot)).find(Boolean);
   const numbers = (s.numbers ?? []).map((n) => `<div class="num"><b>${esc(n.display)}</b> ${esc(n.label)}${n.source || n.read ? `<span class="src">${esc(host(n.source))}${n.read ? ` · ${T.read} ${esc(n.read)}` : ""}</span>` : ""}</div>`).join("");
@@ -113,7 +115,8 @@ const directionCard = (d, i) => {
   return `<article class="direction"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p>
   ${d.pitch ? `<p class="pitch"><b>${ideaWords.pitch}:</b> ${esc(d.pitch)}</p>` : ""}
-  ${d.opening?.id ? `<p class="why"><b>${ideaWords.opening}:</b> ${esc(word(anim(d.opening.id)?.label) || d.opening.id)}${d.opening.why ? ` · ${esc(d.opening.why)}` : ""}</p>` : ""}
+  ${d.image ? `<p class="pitch"><b>${ideaWords.image}:</b> ${esc(d.image)}</p>` : ""}
+  ${d.opening?.id ? `<p class="why"><b>${ideaWords.opening}:</b> ${esc(d.opening.why || openingLabel(d.opening.id))}</p>` : ""}
   <p><b>${D.visual}:</b> ${esc(d.hook?.visual)} · <b>${D.text}:</b> 「${esc(d.hook?.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(d.hook?.question)}</span></p>
   ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.visual}:</b> ${esc(h.visual)} · <b>${D.text}:</b> 「${esc(h.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(h.question)} · ${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
   <ol class="beats">${(d.beats ?? []).map(beatRow).join("")}</ol>
@@ -128,7 +131,7 @@ const directionSection = directions.length ? `<section><h2>${D.title}</h2><div c
   <p class="note">${D.audience}: ${esc(narrative.audience)} · ${D.goal}: ${esc(narrative.goal)}${narrative.inferred ? `<br>${D.assumed}` : ""}</p>
   ${directions.map(directionCard).join("")}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
-const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
+const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(openingLabel(a.id))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
 const cta = (c, k) => `<div class="c"><span class="k">${k + 1}</span><div><div class="h">${(c.slogan ?? []).map(esc).join(" ／ ")}</div>${c.prop ? `<div class="num">${esc(c.prop)}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;
 const card = (p, i) => `<div class="card"><div class="pic" style="${img(p.shot ?? p.cover) ? `background-image:url('${img(p.shot ?? p.cover)}')` : ""}"><i>#${i + 1}</i>${p.pinned ? `<em>${T.pinned}</em>` : ""}</div>
   <div class="meta">${esc(p.date)}</div><div class="t">${esc(p.title)}</div><div class="ns">${nums(p.numbers)}</div></div>`;
@@ -282,6 +285,7 @@ writeFileSync(join(dir, "research/materials.html"), page(decide + more));
 })();</script>`;
   writeFileSync(join(STORY, "index.html"), local(page(decide + more + notes)));
 }
+for (const [i, d] of directions.entries()) if (!d.image) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": no image people remember yet ("image": references/story-directions.md)`);
 const shown = directions.length ? story.filter((s) => directions.some((d) => (d.beats ?? []).some((b) => b.story === s.id))) : story;
 for (const s of shown) {
   const own = (s.becomes ?? []).filter(ownIdea);

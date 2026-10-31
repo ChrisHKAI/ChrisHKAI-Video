@@ -89,7 +89,8 @@ Score each from 1 (fails) to 5 (nothing to fix):
    Annecy (Commissioned Films) or D&AD would. Is there one idea, and does it
    grow out of this creator's material, so that another creator's film could
    not be the same? Name the one image they would remember, or say there is
-   none. Name any part they would call a template or a repeat of another film,
+   none; the direction promised one (film.json `story.direction.image`): is
+   it on screen, and is it the one they remember? Name any part they would call a template or a repeat of another film,
    and what the material could have become instead.
 
 Answer in this form, in English:

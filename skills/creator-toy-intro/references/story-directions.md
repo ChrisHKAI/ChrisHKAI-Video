@@ -129,7 +129,10 @@ action and short on-screen text; add speech only if the film uses voiceover.
 The words must be supported and the film must deliver their promise.
 
 Give every direction a `pitch`: the whole film's idea in one sentence a jury
-would remember (SKILL.md, "The bar"), and the one image it leaves. Each beat
+would remember (SKILL.md, "The bar"); and an `image`: the one picture it
+leaves, as the viewer sees it (the page folded again and again, the stack
+rising to the star), in the user's language. The story page shows both under
+the title, and the review asks whether the film delivers that image. Each beat
 plays its point's recommended idea (`becomes[0]`, designed from the material
 first: references/research.md); a direction may prefer another
 (`beats[].idea`, its place in `becomes`).
@@ -141,8 +144,9 @@ so it opens a film whose first beat rises from that post (`act2`); otherwise
 the page lying flat and standing up (`page-stand`, `page-stand-left`) ends with
 the toy out in front, ready for any beat; or the film's own opening, when the
 material asks for one. Left or right: whichever the films delivered before
-used less (`run.mjs ledger`). The user is not asked; the card says which and
-why, and they can still ask for another.
+used less (`run.mjs ledger` lists them while the film is in step 2). The user
+is not asked; the card shows `why` alone, so it says what the viewer sees in
+this story's words, and why it fits; they can still ask for another.
 
 Write `facts.directions` and `facts.recommendedDirection`. This illustrative
 shape references facts already present in `story`; replace all sample content:
@@ -153,7 +157,8 @@ shape references facts already present in `story`; replace all sample content:
   "title": "Learn by building",
   "premise": "Their public examples make a difficult workflow approachable.",
   "pitch": "The workflow builds itself in front of you, out of their own example",
-  "opening": { "id": "page-stand", "why": "the toy comes out in front of the standing page, ready to reveal the work" },
+  "image": "Their example assembling itself, step by step, around the toy",
+  "opening": { "id": "page-stand", "why": "the page lies flat, then stands up; the toy comes out in front of it, ready to reveal the work" },
   "hook": {
     "question": "What can I make with this workflow?",
     "visual": "The toy reveals the finished example from the creator's post.",
@@ -203,7 +208,7 @@ At step 4 implement the selected hook only; alternatives are not extra scenes.
 ## 4. One choice, then the existing film pipeline
 
 `materials.mjs` shows the direction cards as the story choice, lettered A/B/C:
-audience/goal, recommendation, the pitch, the opening and why, the first
+audience/goal, recommendation, the pitch, the image, the opening, the first
 picture and its words, each fact with its picture, its connection, what the
 viewer learns and its ideas (the film's own with their sketches, the skill's
 with their preview strips), the payoff, the ending, evidence links and gaps.

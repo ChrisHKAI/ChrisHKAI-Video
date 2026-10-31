@@ -37,7 +37,7 @@ juries ask, and so does every step here:
 - one idea, said in a sentence;
 - the idea grows out of this creator's material: give the film to another
   creator and it breaks;
-- one image people remember;
+- one image people remember (each direction names it: `image`);
 - the craft serves the idea: its lettering, colours, motion and sound come
   from the material;
 - nothing that looks like a template, or like the last film.

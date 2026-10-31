@@ -424,3 +424,21 @@ test("each film's studio takes a port of its own, and one already serving the fi
   assert.match(b.out, /already running/);
   assert.match(b.out, new RegExp(`127\\.0\\.0\\.1:${port}/storyboard`));
 });
+
+test("a direction's card shows the image people remember, and its opening once, in its own words", (t) => {
+  const f = withIdeas();
+  f.directions[0].image = "The demo's screens snapping into the tool around the toy";
+  f.directions[0].opening = { id: "page-stand-left", why: "the page lies flat like the desk in the demo, then stands up to the left" };
+  const dir = workspace(t, f);
+  const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]);
+  const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /令人記住嘅畫面:<\/b> The demo's screens snapping/);
+  assert.match(html, /開場（按故事揀）:<\/b> the page lies flat like the desk in the demo, then stands up to the left<\/p>/);
+  assert.doesNotMatch(r.stdout, /no image people remember/);
+  // without its why, the opening as the viewer sees it, never "開場：" twice; without an image, it is said
+  delete f.directions[0].opening.why; delete f.directions[0].image;
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  const again = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /開場（按故事揀）:<\/b> 主頁好似螢幕咁平放，向左轉身企起/);
+  assert.match(again.stdout, /direction A "Learn by making": no image people remember yet/);
+});
