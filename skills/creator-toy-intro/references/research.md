@@ -22,7 +22,11 @@ Read only, always: never like, follow, comment or message.
   computer use on Chrome). A login page or a QR code: the user logs in or
   scans themselves; never type a password.
 - X: the profile; the pinned post; the most-viewed posts (each post shows
-  its views).
+  its views). X's own search stops early: `from:<handle> min_faves:100` may
+  return only the last weeks and miss the biggest post. Search it in dated
+  windows (`since:2026-06-01 until:2026-08-01`), or let Grok's search reach
+  further back. In the browser tool, collect in short passes (scroll, read,
+  scroll): one long script times out in a hidden pane.
 - The work itself, all of it, as it is today: what the posts are about. A
   repository: its README, its gallery or site and its folders (how many
   styles, tools, chapters there are now, and a picture of each); an
@@ -95,6 +99,10 @@ goes to `extra`; in the film it rises from the name at the top.
   light), so offer that too. Record the answer in `toy` (below); step 3 (the
   toy) can start right away while the research goes on: a changed story
   changes what the toy does, not its body.
+- A pinned post X marks as a paid partnership (付费合作关系, Paid
+  partnership): keep it, with `"sponsored": true`. The film's page does not
+  feature it: apply-research takes another post for the page unless the story
+  names this one, and says so when it does.
 - The banner and every post's cover, as originals (`curl` the image URL; X
   media: `?name=orig`), in `assets/`.
 - Screenshots of the profile and each post in `research/shots/` (on a Mac
@@ -102,10 +110,15 @@ goes to `extra`; in the film it rises from the name at the top.
   files). They are for the story page only and never go into the film:
   the page is rebuilt by the theme, the pictures are the originals. Where
   nothing can save one (a browser pane that only shows the page), skip them:
-  the covers and the profile picture stand in on the story page.
+  the covers and the profile picture stand in on the story page. A public
+  page (their site, a README, a gallery) is sharp from headless Chrome:
+  `node <skill>/engine/scripts/shot.mjs <url> research/shots/<name>.png`.
 - Each number: the platform's own writing (`304万`, `1.1萬`, `46K`, `5,018`),
   its label as the app says it (阅读, 粉丝, 获赞), and its spot: a profile field
-  or a post's count. It counts up in the film just as it is written. Write it
+  or a post's count. A post's views as its own page writes them under it
+  (`214.6万 次查看`, fuller than the `214万` in its action bar), with the label
+  the page shows (X's 简体 page: a post's views 查看, an article's 阅读). It
+  counts up in the film just as it is written. Write it
   in the film's language, the creator's own script (a 简 creator's `1.1万`
   and `关注者`, even when your browser shows X in 繁 as `1.1萬`, or the API
   gives `11375`); where the source wrote it otherwise, say so in its `note`.
@@ -127,6 +140,8 @@ goes to `extra`; in the film it rises from the name at the top.
   A quote stays in their script, word for word; a cut inside it is marked
   ……. The story page checks every 「quote」 against these texts.
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.
+  A bio line that carries one (「199 付费答疑群 +V: …」) is left out of
+  `profile.bio`; the rest of the page stays as theirs.
 
 `research/` stays out of any git repository.
 

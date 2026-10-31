@@ -486,3 +486,20 @@ test("a direction may open with an opening of the film's own, shown by its pitch
   assert.deepEqual(JSON.parse(readFileSync(join(dir, "film.json"))).story.segments[0], { beat: "beats/sail.js", bars: 2 });
   assert.match(applied.stdout, /write beats\/sail\.js before the story step/);
 });
+
+test("a pinned post that is a paid partnership is marked on the page and kept out of the film unless the story names it", (t) => {
+  const f = facts(); f.posts[0].sponsored = true; f.story[0].posts = ["p2"];
+  const dir = workspace(t, f);
+  assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]).status, 0);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /<em class="ad">付费合作<\/em>/);
+  let applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.equal(JSON.parse(readFileSync(join(dir, "film.json"))).posts.pinned.title, "Tutorial");
+  assert.doesNotMatch(applied.stdout, /paid partnership/);
+  // the story names it: it is used, and said
+  f.story[0].posts = ["p1"];
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
+  applied = run(dir, "apply-research.mjs", [dir]);
+  assert.match(applied.stdout, /"Tool demo", is a paid partnership/);
+});

@@ -76,9 +76,9 @@ const act3Pick = picked.find(({ b }) => b.anim === "act3");
 // the posts the page shows: the one whose number rises (act 2, else the pinned one, else the first the story names),
 // and the one that rises below it (act 3's, else the next)
 const storyPosts = picked.flatMap(({ s }) => s.posts ?? []);
-const firstId = legacy ? picks.proof1.post : act2Pick?.b.opts?.post ?? act2Pick?.s.posts?.[0] ?? facts.posts.find((p) => p.pinned)?.id ?? storyPosts[0] ?? facts.posts[0]?.id;
+const firstId = legacy ? picks.proof1.post : act2Pick?.b.opts?.post ?? act2Pick?.s.posts?.[0] ?? facts.posts.find((p) => p.pinned && !p.sponsored)?.id ?? storyPosts[0] ?? facts.posts.find((p) => !p.sponsored)?.id ?? facts.posts[0]?.id;
 const p1 = post(firstId ?? fail("the research found no post: the page needs one"));
-const secondId = legacy ? picks.proof2.post : act3Pick?.b.opts?.post ?? act3Pick?.s.posts?.[0] ?? [...storyPosts, ...facts.posts.map((p) => p.id)].find((id) => id !== p1.id);
+const secondId = legacy ? picks.proof2.post : act3Pick?.b.opts?.post ?? act3Pick?.s.posts?.[0] ?? [...storyPosts, ...facts.posts.filter((p) => !p.sponsored).map((p) => p.id)].find((id) => id !== p1.id);
 const p2 = secondId ? post(secondId) : p1;
 
 function asPost(p) {
@@ -127,6 +127,7 @@ if (!legacy && !opening) {
   }
   if (selection.direction) warn.push(`the direction names no opening: took "${opening}", which hands over to its first point; write it as direction.opening { id, why } so the story page says so`);
 }
+if (p1.sponsored) warn.push(`the page's first post, "${p1.title}", is a paid partnership (X marks it): the film would feature an ad${opening === "opening" ? ", and the page floating ends the toy on it" : ""}; give the point another post, unless the user wants this one`);
 if (!legacy && opening === "opening" && firstAnim && firstAnim !== "act2") warn.push(`the opening with the page floating ends with the toy on the pinned post, ready for its number to rise, but the first point here is "${firstAnim}": an opening that stands the page up (page-stand, page-stand-left) hands over to it`);
 // an idea's opts are this creator's: one the animation needs and lacks would leave the catalog's example (another
 // film's number, its line) on screen
