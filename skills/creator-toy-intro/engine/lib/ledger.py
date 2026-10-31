@@ -62,6 +62,8 @@ def describe(film):
     sound = F.get("sound", "song")
     if sound == "own":
         sound += ": " + Path((F.get("music") or {}).get("file", "")).name
+    elif sound == "score":  # a score written for this film is its own, like no other film's
+        sound += ": " + (F.get("id") or film.name)
     return {
         "id": F.get("id") or film.name, "name": (F.get("profile") or {}).get("name") or F.get("id") or film.name,
         "film": str(film.resolve()), "date": date.today().isoformat(),

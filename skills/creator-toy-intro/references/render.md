@@ -151,7 +151,7 @@ Once the user takes the film, keep it in the ledger:
 film's opening, structure, signature move, colours, sound and ending. The
 next film is compared with them (references/storyboard.md). Where
 film.json does not say what the film did, set it: `-- --add --set
-sound=bed`.
+sound=score`.
 
 Then keep what this film taught for the next one, so it is never asked or
 learned twice:

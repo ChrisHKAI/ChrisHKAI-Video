@@ -10,9 +10,10 @@
 //           hero     the toy's parts → build/hero.json (look-dev reads it)
 //           ui       the platform page as HTML → assets/ui.png …, build/timeline.json
 //           anim     every object at every half frame → build/anim.json
-//           sound    the synthesized score → assets/audio/score.wav (film.json "sound": song | band | bed | strings | fx | own)
-//           listen   each sound under the animatic, to choose by ear → build/storyboard/sound-<sound>.mp4
-//                    (listen -- bed own: just those)
+//           sound    the film's sound → assets/audio/score.wav: its effects over its own score (film.json "sound": "score",
+//                    <film>/music/score.py: references/sound.md), their own song ("own"), the effects alone ("fx"), or an
+//                    older film's ("song", "band", "bed", "strings")
+//           listen   (older films) other sounds under the animatic → build/storyboard/sound-<sound>.mp4
 //           lookdev  Blender turnaround of the toy → build/lookdev/, beside its picture: compare.jpg
 //           estimate three frames at the final settings → how long the full render takes
 //           sample   a stretch at the final quality with its sound, to watch before the hours of the whole
@@ -187,12 +188,7 @@ for (const [i, step] of steps.entries()) {
     case "covers": run(PY, [fromSkill("engine/scripts/covers.py"), ...more]); break;
     case "safezone": run(PY, [fromSkill("engine/scripts/safezone.py"), ...more]); break;
     case "storyboard":
-      // the sounds to choose from are part of the page: with an animatic and no versions yet, make them first
-      if (!more.includes("--frames") && existsSync(fromFilm("build/storyboard/animatic.mp4")) && !steps.includes("listen")
-        && !readdirSync(fromFilm("build/storyboard")).some((f) => f.startsWith("sound-"))) {
-        console.log("(the page plays every sound under the animatic: listen first)");
-        run("node", [fromSkill("engine/run.mjs"), "listen"]);
-      }
+      // the page plays the film's own sound under the animatic, no menu of versions (references/sound.md)
       // where the toy goes into something, for the page's checks (a moment to fix is not a stop here)
       if (existsSync(fromFilm("build/anim.json"))) spawnSync("node", [fromSkill("engine/scripts/clearance.mjs")], { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
       run(PY, [fromSkill("engine/scripts/storyboard.py"), ...more]);

@@ -12,8 +12,11 @@ letters play a tune up to the last chord (28.0 s).
 Every effect cue lands on its frame; instruments and effects come from the
 synth kit (engine/lib/synth.py), the arrangement and the mix are this story's.
 
-That is the song: film.json "sound": "song", and a film.json without "sound".
-The other sounds leave the arrangement out:
+New films play "score": the effects over the film's own score, music the agent
+writes for this cut in <film>/music/score.py (compose(ctx): engine/lib/compose.py,
+references/sound.md), given way a little under each loud effect; without that
+file yet, the effects alone. The arrangement below is "song", the sound of a
+film.json without "sound", kept for the films made with it, as are the others:
 - "bed", which new films start with: the effects over one quiet layer of long
   chords, 14 dB under them. G at the start; a part coming in moves away, its
   big moment comes home to G; D into the end card. A creator chose it after
@@ -52,8 +55,8 @@ import synth  # noqa: E402  the synth kit (engine/lib/synth.py)
 ROOT = FILM
 # the sound: film.json "sound", or SOUND for one version of a listening test (run.mjs listen)
 SOUND = os.environ.get("SOUND") or FILM_JSON.get("sound", "song")
-if SOUND not in ("song", "band", "bed", "strings", "fx", "own"):
-    raise SystemExit(f'film.json "sound" is "song", "band", "bed", "strings", "fx" or "own", not "{SOUND}"')
+if SOUND not in ("score", "song", "band", "bed", "strings", "fx", "own"):
+    raise SystemExit(f'film.json "sound" is "score" (the film\'s own, music/score.py), "fx", "own", or the older "song", "band", "bed", "strings"; not "{SOUND}"')
 if SOUND == "own" and not (FILM_JSON.get("music") or {}).get("file"):
     raise SystemExit('"sound": "own" needs film.json "music": {"file": "assets/<their song>"}')
 TL = json.loads((ROOT / "build/timeline.json").read_text())
@@ -324,6 +327,23 @@ elif SOUND == "own":  # their song on the film's grid (engine/lib/music.py), giv
     music.x[:n] += song[:n] * (1 - 0.35 * loud[:n] / max(loud.max(), 1e-9))[:, None]
     music.x *= rms(sfx.x * 0.95) * 10 ** (float(FILM_JSON["music"].get("gain", -8)) / 20) / max(rms(music.x * 0.85), 1e-9)
     print(line)
+elif SOUND == "score":  # the film's own score, written for this cut (music/score.py, engine/lib/compose.py)
+    import compose
+    SCORE = ROOT / (FILM_JSON.get("music") or {}).get("score", "music/score.py")
+    if SCORE.exists():
+        pieces = json.loads((Path(__file__).resolve().parent / "story.json").read_text())["pieces"]
+        ctx = compose.context(TL, FILM_JSON, synth, SR, N, DUR, pieces)
+        played = np.asarray(compose.load(SCORE).compose(ctx), dtype=float)
+        if played.ndim != 2 or played.shape[1] != 2:
+            raise SystemExit(f"{SCORE.name}: compose(ctx) returns stereo music, (ctx.n, 2); it returned {played.shape}")
+        n = min(N, len(played))
+        loud = uniform_filter1d(maximum_filter1d(np.abs(sfx.x).max(axis=1), int(0.06 * SR)), int(0.12 * SR))
+        music.x[:n] += played[:n] * (1 - 0.35 * loud[:n] / max(loud.max(), 1e-9))[:, None]
+        # under the effects by film.json music.gain (dB, default -6): music to listen to, the effects still on top
+        music.x *= rms(sfx.x * 0.95) * 10 ** (float((FILM_JSON.get("music") or {}).get("gain", -6)) / 20) / max(rms(music.x * 0.85), 1e-9)
+        print(f"score: {SCORE.relative_to(ROOT)}")
+    else:
+        print(f"no score of the film's own yet: the effects alone (write {SCORE.relative_to(ROOT)}: references/sound.md)")
 
 ir_t = t_axis(1.6)
 ir = np.stack([rng.standard_normal(len(ir_t)), rng.standard_normal(len(ir_t))], axis=1)
@@ -373,7 +393,8 @@ if "SCORE_OUT" not in os.environ:  # a listening test's version leaves the film'
     write(ROOT / "assets/audio/score-sfx.wav", fx)
     # the real instruments' credits (the Salamander piano and the MuldjordKit drums require them): with the film's post
     credits = ROOT / "build/credits.txt"
-    if SOUND in ("strings", "band"):
+    if SOUND in ("strings", "band") or (SOUND == "score" and "real" in sys.modules and sys.modules["real"].USED):
+        import real  # noqa: F811
         credits.parent.mkdir(exist_ok=True)
         credits.write_text(real.credits() + "\n")
         print("credits → build/credits.txt:", real.credits().replace("\n", " | "))

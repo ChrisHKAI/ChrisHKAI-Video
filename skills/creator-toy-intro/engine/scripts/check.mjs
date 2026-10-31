@@ -110,6 +110,7 @@ for (const r of film.recipes ?? []) {
 
 // ── sound ───────────────────────────────────────────────────────────────────
 if (film.sound === "own" && !(film.music?.file && existsSync(fromFilm(film.music.file)))) say("bad", 'the sound is "own" but film.json music.file is missing', 'put their song in assets/ and set "music": { "file": "assets/<song>" }');
+if (film.sound === "score" && past("toy") && !existsSync(fromFilm(film.music?.score ?? "music/score.py"))) say("warn", `the film plays its effects alone: its own score (${film.music?.score ?? "music/score.py"}) is not written yet`, "compose it once the cut is set (references/sound.md), then run.mjs sound");
 
 // ── the world, built and sampled as export-anim does ────────────────────────
 if (past("toy") && toy && film.profile) {

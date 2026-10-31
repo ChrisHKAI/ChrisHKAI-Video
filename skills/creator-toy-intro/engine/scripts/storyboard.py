@@ -294,26 +294,8 @@ g += "".join(f'<div class="hit{" low" if k % 2 else ""}" style="grid-column:{min
 
 anim = OUT / "animatic.mp4"
 animatic = f'<section><h2>{W["animatic"]}</h2><video controls src="animatic.mp4" style="width:100%;max-width:{720 if orient == "landscape" else 360}px"></video></section>' if anim.exists() else ""
-# the same picture under each sound (run.mjs listen): chosen by ear, which says more than "唔順"
-SOUND_WORDS = {
-    "zh-Hant": {"title": "聽聲揀版本", "note": "同一段畫面配唔同嘅聲，聽完話俾 agent 知揀邊個", "now": "而家用緊",
-                "song": ("成首配樂", "合成嘅完整配樂：鼓、低音、和弦，跟住畫面轉段"), "band": ("成首配樂（真樂器）", "同一首編曲，換做真鼓、低音大提琴、弦樂、鋼琴、法國號"), "strings": ("弦樂鋼琴和弦底", "聲效喺面，下面墊真弦樂嘅長和弦，每次轉和弦鋼琴輕輕彈一下"), "bed": ("聲效加輕和弦底", "動作嘅聲效喺面，下面墊一層好輕嘅長和弦"),
-                "fx": ("淨聲效", "冇音樂，淨係動作嘅聲"), "own": ("你自己首歌", "{file}，拉到片嘅速度，一下拍子對正第一下重拍")},
-    "zh-Hans": {"title": "听声选版本", "note": "同一段画面配不同的声音，听完告诉 agent 选哪个", "now": "现在用的",
-                "song": ("整首配乐", "合成的完整配乐：鼓、低音、和弦，跟着画面转段"), "band": ("整首配乐（真乐器）", "同一首编曲，换成真鼓、低音提琴、弦乐、钢琴、圆号"), "strings": ("弦乐钢琴和弦底", "音效在上面，下面垫真弦乐的长和弦，每次换和弦钢琴轻轻弹一下"), "bed": ("音效加轻和弦底", "动作的音效在上面，下面垫一层很轻的长和弦"),
-                "fx": ("只有音效", "没有音乐，只有动作的声音"), "own": ("你自己的歌", "{file}，拉到片子的速度，一下拍子对准第一下重拍")},
-    "en": {"title": "Choose the sound by ear", "note": "The same picture under each sound: tell the agent which one", "now": "now",
-           "song": ("The whole score", "A synthesized score: drums, bass, chords, changing with the picture"), "band": ("The whole score, real instruments", "The same arrangement on real drums, double bass, strings, piano and horns"), "strings": ("Effects over strings and piano", "The effects on top of long chords on a real string section, a piano touching each change"), "bed": ("Effects over a bed", "The action's effects on top of one quiet layer of long chords"),
-           "fx": ("Effects alone", "No music, only the sounds of what happens"), "own": ("Your own song", "{file}, at the film's tempo, a beat on the first hit")},
-}[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
-heard = [k for k in ("song", "band", "bed", "strings", "fx", "own") if (OUT / f"sound-{k}.mp4").exists()]
-now = FILM_JSON.get("sound", "song")
-song_file = Path((FILM_JSON.get("music") or {}).get("file", "")).name
-now_tag = f' <em>{SOUND_WORDS["now"]}</em>'
-sounds = (f'<section><h2>{SOUND_WORDS["title"]}<small>{SOUND_WORDS["note"]}</small></h2><div class="sounds">'
-          + "".join(f'<figure><video controls preload="metadata" src="sound-{k}.mp4"></video><figcaption><h4>{e(SOUND_WORDS[k][0])}'
-                    f'{now_tag if k == now else ""}</h4><p>{e(SOUND_WORDS[k][1].format(file=song_file))}</p></figcaption></figure>' for k in heard)
-          + "</div></section>") if heard else ""
+# the film's sound is its own score under its effects, in the animatic: no menu of versions (references/sound.md)
+sounds = ""
 checks_html = "".join(f'<li class="{"ok" if ok else "warn"}"><b>{W["ok"] if ok else W["warn"]}</b>{e(msg)}</li>' for ok, msg in checks)
 decide = "".join(f"<li>{e(t(d))}</li>" for d in SB["decisions"])
 specs = [f"{W_}×{H_} · {FPS} fps", f"{DUR} s · {BPM} BPM", FILL["publish"], "Blender Cycles"]

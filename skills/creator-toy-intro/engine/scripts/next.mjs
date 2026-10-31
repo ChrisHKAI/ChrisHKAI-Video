@@ -56,11 +56,13 @@ if (step === "research") {
   for (const seg of film.story?.segments ?? []) if (seg.beat?.startsWith("beats/") && !has(seg.beat)) todo.push(`write ${seg.beat} (references/beats.md, "A beat of your own")`);
   if (!film.cta?.prop?.module && !film.cta?.prop?.kind) todo.push(`the end card's prop: ${film.cta?.prop?.idea ?? "their idea"} (references/props.md; or the ready-made "plinth")`);
   cmds.push("FILM=<film> node <skill>/engine/run.mjs data check");
-  if (!has("build/storyboard/animatic.mp4")) cmds.push("FILM=<film> node <skill>/engine/run.mjs animatic listen");
-  else if (!readdirSync(fromFilm("build/storyboard")).some((f) => f.startsWith("sound-"))) cmds.push("FILM=<film> node <skill>/engine/run.mjs listen");
+  // the film's own score, written once the cut is set, before the animatic (references/sound.md)
+  const score = film.music?.score ?? "music/score.py";
+  if ((film.sound ?? "song") === "score" && !has(score)) todo.push(`the film's own score: ${score}, compose(ctx) for this cut, once its parts and hits are set (references/sound.md); then run.mjs sound`);
+  if (!has("build/storyboard/animatic.mp4")) cmds.push("FILM=<film> node <skill>/engine/run.mjs sound animatic");
   cmds.push("FILM=<film> node <skill>/engine/run.mjs storyboard -- --frames   (then render those frames as previews: references/storyboard.md)");
   cmds.push("FILM=<film> node <skill>/engine/run.mjs pace palette ledger review storyboard");
-  if (has("build/storyboard/index.html")) show = "the storyboard page (run.mjs studio): the previews, the sounds, the checks; on their go, film.json step → render";
+  if (has("build/storyboard/index.html")) show = "the storyboard page (run.mjs studio): the previews, the animatic with its score, the checks; on their go, film.json step → render";
   const checks = json("build/storyboard/checks.json");
   for (const c of checks ?? []) if (!c.ok) todo.push(`the page says: ${c.text}`);
 } else if (step === "render") {
