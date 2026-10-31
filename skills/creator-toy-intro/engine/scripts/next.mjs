@@ -24,12 +24,14 @@ if (step === "research") {
   if (!facts) todo.push("the research: the profile, the posts and their numbers (with source and date), the profile picture → research/facts.json");
   else {
     if (!facts.toy?.confirmed) todo.push("ask which picture the toy is made from (the profile picture, or one they send) → facts.json toy");
-    if (!facts.story?.length) todo.push("the creator's story: three to five things they are known for, each with its material and what it becomes → facts.json story");
+    if (!facts.story?.length) todo.push("the creator's story: three to five things they are known for, each with its material, what is special about it, and two ideas at least designed from it (one the film's own, with a pitch and a sketch) → facts.json story (references/research.md)");
+    const bare = (facts.story ?? []).filter((s) => !(s.becomes ?? []).some((b) => b.anim === "own"));
+    if (facts.story?.length && bare.length && !(facts.picks?.direction || facts.picks?.story || facts.picks?.proof1)) todo.push(`an idea of the film's own, designed from its material, with its sketch, for ${bare.map((s) => s.id).join(", ")} (references/research.md, "The story first")`);
     const chosen = facts.picks?.direction || facts.picks?.story || facts.picks?.proof1;
     if (!facts.directions?.length && !chosen) todo.push("evidence map, one targeted gap search if needed, then up to three complete directions and a recommendation → facts.json directions (references/story-directions.md)");
     if (!facts.slots?.cta?.length && !facts.directions?.some((d) => d.cta?.slogan?.length)) todo.push("two or three endings: the closing line and the prop → facts.json slots.cta");
     if (facts.story?.length && !has("research/materials.png")) cmds.push("node <skill>/engine/scripts/materials.mjs <film> --lang " + (film.language ?? "zh-Hans"));
-    if (has("research/materials.png") && !chosen) show = "research/materials.png: ask for the story direction, the opening and the ending (one round)";
+    if (has("research/materials.png") && !chosen) show = "research/materials.png: ask for the story direction (another idea for a point, if they prefer one) and the ending, one round; the story chooses the opening";
     if (chosen && facts.toy?.confirmed) {
       let issues = [];
       try { issues = storyTestIssues(facts, json("research/story-test.json")); } catch (e) { issues = [e.message]; }
