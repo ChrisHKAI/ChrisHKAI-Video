@@ -120,8 +120,9 @@ goes to `extra`; in the film it rises from the name at the top.
   use in the film's `fonts/`: a beat's own line is set in it, not in the end
   card's heavy face.
 - Their words, whole: whatever the page or the film quotes in 「」, keep the
-  text it comes from, a post's full text in its `text`, anything else (an
-  article, a README, a line from a video) in `research/sources/<name>.txt`.
+  text it comes from, a post's full text in its `text`, anything else in
+  `research/sources/`: an article, a README, a line from a video as a
+  `.txt`, a post's API answer as it came (`fx-<id>.json`).
   A quote stays in their script, word for word; a cut inside it is marked
   ……. The story page checks every 「quote」 against these texts.
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.

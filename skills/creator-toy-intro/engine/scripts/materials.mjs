@@ -293,10 +293,14 @@ writeFileSync(join(dir, "research/materials.html"), page(decide + more));
   const kept = [pr.name, ...(pr.bio ?? []), ...posts.flatMap((p) => [p.title, p.text]), ...story.flatMap((s) => (s.sources ?? []).map((x) => x.text))];
   try { kept.push(...strings(JSON.parse(readFileSync(join(dir, "research/grok.json"), "utf8")))); } catch { /* no Grok answer */ }
   const SRC = join(dir, "research/sources");
-  if (existsSync(SRC)) for (const f of readdirSync(SRC)) if (statSync(join(SRC, f)).isFile()) kept.push(readFileSync(join(SRC, f), "utf8"));
+  for (const f of existsSync(SRC) ? readdirSync(SRC) : []) {
+    if (!statSync(join(SRC, f)).isFile()) continue;
+    const raw = readFileSync(join(SRC, f), "utf8");
+    try { kept.push(...(f.endsWith(".json") ? strings(JSON.parse(raw)) : [raw])); } catch { kept.push(raw); } // an API's answer, as its strings
+  }
   const text = flat(kept.filter(Boolean).join("\n"));
   const quotes = new Set(strings({ ...facts, posts: [], profile: {} }).flatMap((t) => t.match(/「[^「」]+」/g) ?? []));
-  for (const q of quotes) if (q.slice(1, -1).split(/…+|\.{3,}/).map(flat).filter(Boolean).some((part) => !text.includes(part))) console.log(`! ${q} is not word for word in any text kept: copy it from its source in their script, mark a cut with ……, and keep that text (a post's "text", or research/sources/)`);
+  for (const q of quotes) if (q.slice(1, -1).split(/…+|\.{3,}/).map(flat).filter(Boolean).some((part) => !text.includes(part))) console.log(`! ${q} is not word for word in any text kept: copy it from its source in their script, mark a cut with ……, and keep that text (a post's "text", or research/sources/); words that are not theirs go without 「」`);
 }
 for (const [i, d] of directions.entries()) if (!d.image) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": no image people remember yet ("image": references/story-directions.md)`);
 const shown = directions.length ? story.filter((s) => directions.some((d) => (d.beats ?? []).some((b) => b.story === s.id))) : story;
