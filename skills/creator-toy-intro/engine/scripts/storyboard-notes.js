@@ -1,6 +1,7 @@
 // Notes on the storyboard page's real frames (inlined by storyboard.py; NOTES
 // holds the language's words and the film's fps). Click a spot on a preview
-// frame, or on the animatic (it pauses), write what to change, send. Through
+// frame, or on the animatic once it is paused, write what to change, send. While
+// the animatic plays, a click is the player's own (play, pause). Through
 // the studio (engine/scripts/studio.mjs) a note lands in build/comments.jsonl;
 // opened as a plain file it is copied, to paste into the chat.
 (() => {
@@ -15,7 +16,7 @@
 .npop button.go{background:#3d7bff;border-color:#3d7bff}
 .npin{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#e2463b;border:2px solid #fff;z-index:4;pointer-events:none}
 .nring{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:3px solid #e2463b;z-index:4;pointer-events:none}
-.nvid{position:relative;display:inline-block;max-width:100%}.nvid .ncatch{position:absolute;left:0;top:0;right:0;bottom:48px;cursor:crosshair}
+.nvid{position:relative;display:inline-block;max-width:100%}.nvid .ncatch{position:absolute;left:0;top:0;right:0;bottom:72px;cursor:crosshair;display:none}.nvid.paused .ncatch{display:block}
 .nlist{display:grid;gap:8px}.nlist .n{border:1px solid #2a2d33;border-radius:6px;padding:8px 10px;background:#15171c}.nlist .n small{color:#9a978f}.nlist .n.done{opacity:.55}
 .nhint{color:#9a978f;font-size:13px}`;
   document.head.appendChild(css);
@@ -76,7 +77,8 @@
       pop(shot, (e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, { source: "storyboard", t: +f.dataset.t, frame: +f.dataset.n });
     });
   }
-  // the animatic (EEVEE): a click on the picture pauses it there; its controls stay free
+  // the animatic (EEVEE): while it plays, clicks are the player's (play, pause, its controls); once it is
+  // paused part-way, a click on the picture writes a note there. Its controls stay free either way
   const vid = document.querySelector("video");
   if (vid) {
     const wrap = document.createElement("div");
@@ -86,6 +88,8 @@
     const c = document.createElement("div");
     c.className = "ncatch";
     wrap.appendChild(c);
+    const sync = () => wrap.classList.toggle("paused", vid.paused && vid.currentTime > 0 && !vid.ended);
+    for (const ev of ["play", "pause", "seeked", "ended"]) vid.addEventListener(ev, sync);
     c.addEventListener("click", (e) => {
       vid.pause();
       const r = vid.getBoundingClientRect();
