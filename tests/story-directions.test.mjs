@@ -459,3 +459,30 @@ test("their words in 「」 are checked word for word against the texts kept", (
   writeFileSync(join(dir, "research/sources/readme.txt"), "工具越智能，我越像前台（标题版）");
   assert.doesNotMatch(run(dir, "materials.mjs", [dir, "--html-only"]).stdout, /is not word for word/);
 });
+
+test("a direction may open with an opening of the film's own, shown by its pitch and sketch; each card says how long it plays", (t) => {
+  const f = facts();
+  f.directions[0].opening = { id: "own", beat: "beats/sail.js", pitch: "The boat in their banner sails out of the page", why: "their banner's boat" };
+  delete f.picks.opening;
+  const dir = workspace(t, f);
+  let r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  let html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /开场（按故事选）:<\/b> The boat in their banner sails out of the page · their banner's boat/);
+  assert.doesNotMatch(html, /这部片自己的动画/);
+  assert.match(r.stdout, /its own opening needs a pitch and a sketch/);
+  // the page floating (6 s) is not it: two bars of its own (4 s), a count and a line (3 bars each, 12 s), the end card
+  assert.match(html, /<span class="len">约 22 秒<\/span>/);
+  mkdirSync(join(dir, "research/sketches"), { recursive: true });
+  writeFileSync(join(dir, "research/sketches/sail.png"), "x");
+  f.directions[0].opening.sketch = "research/sketches/sail.png";
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
+  r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  assert.doesNotMatch(r.stdout, /its own opening needs/);
+  assert.match(readFileSync(join(dir, "research/story/index.html"), "utf8"), /class="pv osk" style="background-image:url\('img\/\d+-sail\.png'\)/);
+  // apply-research makes it the first segment, a beat still to write
+  const applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, "film.json"))).story.segments[0], { beat: "beats/sail.js", bars: 2 });
+  assert.match(applied.stdout, /write beats\/sail\.js before the story step/);
+});

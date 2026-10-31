@@ -159,7 +159,9 @@ while the picture peels off (`opening`) ends with the toy on the pinned post,
 so it opens a film whose first beat rises from that post (`act2`); otherwise
 the page lying flat and standing up (`page-stand`, `page-stand-left`) ends with
 the toy out in front, ready for any beat; or the film's own opening, when the
-material asks for one. Left or right: whichever the films delivered before
+material asks for one: `{ "id": "own", "beat": "beats/<name>.js", "pitch",
+"sketch", "why" }`, shown on the card by its pitch and sketch like a point's
+own idea, and written as a beat (references/beats.md). Left or right: whichever the films delivered before
 used less (`run.mjs ledger` lists them while the film is in step 2). The user
 is not asked; the card shows `why` alone, so it says what the viewer sees in
 this story's words, and why it fits; they can still ask for another.

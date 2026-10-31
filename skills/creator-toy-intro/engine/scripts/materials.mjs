@@ -46,9 +46,9 @@ const editorialWords = {
 }[lang];
 // the ideas: the film's own (designed from the material, shown by its sketch) and the skill's (shown by a strip of another film)
 const ideaWords = {
-  "zh-Hant": { pitch: "一句講晒", image: "令人記住嘅畫面", special: "素材特別在", sketch: "示意：用佢自己嘅素材砌，唔係最終畫面", opening: "開場（按故事揀）", more: "仲有 {n} 個點子，喺詳細頁" },
-  "zh-Hans": { pitch: "一句话", image: "让人记住的画面", special: "素材特别在", sketch: "示意：用创作者自己的素材拼，不是最终画面", opening: "开场（按故事选）", more: "还有 {n} 个点子，在详细页" },
-  en: { pitch: "In a sentence", image: "The image people remember", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
+  "zh-Hant": { pitch: "一句講晒", image: "令人記住嘅畫面", ownOpening: "呢條片自己嘅開場", length: "約 {n} 秒", special: "素材特別在", sketch: "示意：用佢自己嘅素材砌，唔係最終畫面", opening: "開場（按故事揀）", more: "仲有 {n} 個點子，喺詳細頁" },
+  "zh-Hans": { pitch: "一句话", image: "让人记住的画面", ownOpening: "这部片自己的开场", length: "约 {n} 秒", special: "素材特别在", sketch: "示意：用创作者自己的素材拼，不是最终画面", opening: "开场（按故事选）", more: "还有 {n} 个点子，在详细页" },
+  en: { pitch: "In a sentence", image: "The image people remember", ownOpening: "An opening of the film's own", length: "about {n} s", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
 }[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // a picture: a file, or a folder of their work (research.md writes "assets/work/"), shown by its first picture
@@ -105,6 +105,33 @@ const beatRow = (b, n) => {
   const pv = idea && ideaPic(idea);
   return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${idea?.pitch ? `<div class="pitch">${esc(idea.pitch)}</div>` : ""}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}${others ? `<div class="why">${esc(ideaWords.more.replace("{n}", others))}</div>` : ""}</div>${pv ? `<div class="pv bpv${ownIdea(idea) ? " sk" : ""}" style="background-image:url('${pv}')"></div>` : ""}</li>`;
 };
+// the opening a direction chose: its why (what the viewer sees, in this story's words); one of the film's own
+// ({ id: "own", beat, pitch, sketch, why }) by its pitch and its sketch, as a point's own idea is
+const openingLine = (o) => {
+  if (!o?.id) return "";
+  const own = o.id === "own", pv = own && img(o.sketch);
+  const words = own ? [o.pitch, o.why].filter(Boolean).join(" · ") || ideaWords.ownOpening : o.why || openingLabel(o.id);
+  return `<p class="why"><b>${ideaWords.opening}:</b> ${esc(words)}</p>${pv ? `<div class="pv osk" style="background-image:url('${pv}')"></div><div class="skn">${ideaWords.sketch}</div>` : ""}`;
+};
+// how long a direction plays, as apply-research cuts it: its opening, each beat's idea, the end card
+const BAR = (60 / (film.format?.bpm ?? 120)) * 4;
+const TPL = (() => {
+  const t = film.template ?? "isnail-30";
+  try { return JSON.parse(readFileSync(join(/^\.|[\\/]/.test(t) ? resolve(dir, t) : join(SKILL, "templates", t), "story.json"), "utf8")); } catch { return null; }
+})();
+const pieceLen = (name) => { const p = TPL?.pieces?.[name]; return p ? (p[1] === "end" ? TPL.duration : p[1]) - p[0] : 0; };
+const lenOf = (id, b = {}) => {
+  if (id === "own") return (b.opts?.bars ?? b.bars ?? 3) * BAR;
+  const a = anim(id);
+  if (!a) return 0;
+  return a.kind === "story" ? pieceLen(a.film.story) + (id === "act3" ? pieceLen("exit") : 0) : (b.opts?.bars ?? a.film.bars ?? 3) * BAR;
+};
+const seconds = (d) => {
+  const o = d.opening?.id ?? "page-stand";
+  let t = o === "own" ? (d.opening.bars ?? 2) * BAR : lenOf(o);
+  for (const x of d.beats ?? []) { const b = story.find((q) => q.id === x.story)?.becomes?.[x.idea ?? 0]; if (b) t += lenOf(b.anim, b); }
+  return Math.round(t + pieceLen("endCard"));
+};
 const directionCard = (d, i) => {
   const evidence = (d.beats ?? []).flatMap((b) => {
     const s = story.find((s) => s.id === b.story);
@@ -112,11 +139,11 @@ const directionCard = (d, i) => {
       ...(s?.posts ?? []).map((id) => ({ url: post(id)?.url, label: post(id)?.title }))];
   }).filter((e, i, all) => e.url && all.findIndex((x) => x.url === e.url) === i);
   const link = (e) => /^https?:\/\//i.test(e.url) ? `<a href="${esc(e.url)}">${esc(e.label || e.url)}</a>` : esc(e.label || e.url);
-  return `<article class="direction"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
+  return `<article class="direction"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}${TPL ? ` <span class="len">${esc(ideaWords.length.replace("{n}", seconds(d)))}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p>
   ${d.pitch ? `<p class="pitch"><b>${ideaWords.pitch}:</b> ${esc(d.pitch)}</p>` : ""}
   ${d.image ? `<p class="pitch"><b>${ideaWords.image}:</b> ${esc(d.image)}</p>` : ""}
-  ${d.opening?.id ? `<p class="why"><b>${ideaWords.opening}:</b> ${esc(d.opening.why || openingLabel(d.opening.id))}</p>` : ""}
+  ${openingLine(d.opening)}
   <p><b>${D.visual}:</b> ${esc(d.hook?.visual)} · <b>${D.text}:</b> 「${esc(d.hook?.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(d.hook?.question)}</span></p>
   ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.visual}:</b> ${esc(h.visual)} · <b>${D.text}:</b> 「${esc(h.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(h.question)} · ${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
   <ol class="beats">${(d.beats ?? []).map(beatRow).join("")}</ol>
@@ -150,7 +177,7 @@ h1 { font-size: 30px; margin-bottom: 16px; } h2 { font-size: 24px; margin: 6px 0
 section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top: 18px; }
 .stories { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .sc { border: 2px solid #EEE; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 170px 1fr; }
-.sp { background: #E6E2DA center/cover no-repeat; position: relative; min-height: 190px; }
+.sp { background: #E6E2DA center/contain no-repeat; position: relative; min-height: 190px; }
 .sp i, .pic i { position: absolute; left: 10px; top: 10px; background: #1C1B19; color: #fff; font-style: normal; font-weight: 700; font-size: 22px; padding: 2px 13px; border-radius: 20px; }
 .sb { padding: 14px 16px; } .line { font-size: 19px; font-weight: 700; line-height: 1.4; }
 .num { font-size: 15px; margin-top: 6px; } .num b { font-size: 20px; } .src { color: #999; font-size: 12px; margin-left: 8px; }
@@ -164,7 +191,7 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .c { display: flex; gap: 14px; padding: 10px 0; border-top: 1px solid #EEE; } .c:first-of-type { border-top: 0; } .o .k { background: #BBB; } .h { font-size: 18px; font-weight: 600; padding-top: 4px; }
 .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .card { background: #FAF9F7; border-radius: 12px; overflow: hidden; padding-bottom: 12px; }
-.pic { height: 150px; background: #E6E2DA center/cover no-repeat; position: relative; } .pic i { font-size: 16px; }
+.pic { height: 150px; background: #E6E2DA center/contain no-repeat; position: relative; } .pic i { font-size: 16px; }
 .pic em { position: absolute; right: 10px; top: 10px; background: #E8432E; color: #fff; font-style: normal; font-size: 13px; padding: 3px 8px; border-radius: 6px; }
 .meta { color: #888; font-size: 13px; margin: 10px 12px 3px; } .t { font-size: 15px; font-weight: 600; line-height: 1.4; margin: 0 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; } .card .ns { margin: 6px 12px 0; }
 .menu { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; } .m b { font-size: 15px; }
@@ -177,7 +204,8 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .direction h3 { display: flex; align-items: center; gap: 10px; }
 .beats { list-style: none; padding: 0 !important; margin: 10px 0; }
 .beat { display: grid; grid-template-columns: 120px minmax(0, 1fr) 260px; gap: 14px; align-items: center; padding: 8px 0; border-top: 1px solid #EEE; margin: 0 !important; }
-.bp { height: 80px; border-radius: 8px; background: #E6E2DA center/cover no-repeat; }
+.bp { height: 80px; border-radius: 8px; background: #E6E2DA center/contain no-repeat; }
+.osk { width: 360px; height: 203px; margin: 4px 0 2px; background: #111 center/contain no-repeat; } .len { color: #888; font-size: 15px; font-weight: 400; }
 .bt { font-size: 16px; line-height: 1.5; min-width: 0; } .bpv { height: 62px; margin: 0; background-size: 100% auto; }
 .sb, .op > div, .pro > div { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
@@ -302,6 +330,7 @@ writeFileSync(join(dir, "research/materials.html"), page(decide + more));
   const quotes = new Set(strings({ ...facts, posts: [], profile: {} }).flatMap((t) => t.match(/「[^「」]+」/g) ?? []));
   for (const q of quotes) if (q.slice(1, -1).split(/…+|\.{3,}/).map(flat).filter(Boolean).some((part) => !text.includes(part))) console.log(`! ${q} is not word for word in any text kept: copy it from its source in their script, mark a cut with ……, and keep that text (a post's "text", or research/sources/); words that are not theirs go without 「」`);
 }
+for (const [i, d] of directions.entries()) if (d.opening?.id === "own" && (!d.opening.pitch || !img(d.opening.sketch))) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": its own opening needs a pitch and a sketch on the page ("opening": { "id": "own", "beat", "pitch", "sketch", "why" })`);
 for (const [i, d] of directions.entries()) if (!d.image) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": no image people remember yet ("image": references/story-directions.md)`);
 const shown = directions.length ? story.filter((s) => directions.some((d) => (d.beats ?? []).some((b) => b.story === s.id))) : story;
 for (const s of shown) {

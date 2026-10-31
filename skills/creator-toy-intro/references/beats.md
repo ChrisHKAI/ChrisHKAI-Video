@@ -157,7 +157,11 @@ the last segment's leap) and ends with `kit.leapOut`, so the joins read as
 one toy going from stage to stage. The first segment is the opening the
 story chose (the page floating, which ends on the pinned post, or standing up
 turning right or left, which ends with the toy out in front), the last the
-template's end card; apply-research writes both. A toy with no arms (references/toy.md) plays
+template's end card; apply-research writes both. An opening of the film's own
+(direction.opening `{ "id": "own", "beat" }`) is a beat like the others: it
+starts on their page and brings the toy out of their picture in its own way,
+then hands over with `kit.leapOut` (`beats/page-stand.js` builds the page and
+the toy's first moment: start from it). A toy with no arms (references/toy.md) plays
 every beat with its whole body: the rig turns a point into a lean.
 
 ## Check

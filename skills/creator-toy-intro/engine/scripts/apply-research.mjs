@@ -139,7 +139,14 @@ const segOf = (id, opts = {}) => {
 };
 let segments = film.story?.segments;
 if (!legacy) {
-  segments = [segOf(opening) ?? fail(`unknown opening "${opening}": one of ${CAT.filter((a) => a.group === "opening").map((a) => a.id).join(", ")}`)];
+  // an opening of the film's own (direction.opening { id: "own", beat, pitch, sketch }): a beat written for this film
+  const ownOpening = () => {
+    const o = selection.direction?.opening?.id === "own" ? selection.direction.opening : {};
+    const beat = o.beat ?? "beats/opening.js";
+    if (!existsSync(join(dir, beat))) warn.push(`the film opens with an opening of its own: write ${beat} before the story step: it starts on their page and brings the toy out of their picture (references/beats.md)`);
+    return { beat, bars: o.bars ?? 2 };
+  };
+  segments = [opening === "own" ? ownOpening() : segOf(opening) ?? fail(`unknown opening "${opening}": one of ${CAT.filter((a) => a.group === "opening").map((a) => a.id).join(", ")}, or "own" (one written for this film)`)];
   // why each part is there, for the storyboard page: what the viewer learns from it (the direction's action.means)
   const whyOf = (id) => { const m = selection.direction?.beats?.find((x) => x.story === id)?.action?.means; return m ? { why: m } : {}; };
   for (const { s, b } of picked) {
