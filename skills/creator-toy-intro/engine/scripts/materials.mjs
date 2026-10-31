@@ -1,10 +1,12 @@
 // Step 2's page, for the user to pick from: the creator's story first (the
 // things they are known for and proud of, each with its material, its numbers
-// and where they were read, and what it becomes in the film, with a preview
-// strip of that animation), then how the film opens (each opening's preview),
+// and where they were read, and the ideas for showing it: the film's own with
+// a sketch made from their material, the skill's with a preview strip of that
+// animation), each direction with its pitch and the opening the story chose,
 // then how it ends (the line and the prop), then every post the research
-// found, as evidence, and the whole menu of animations. Plain words only: what
-// the viewer will see, never the template's slot names.
+// found, as evidence, and the skill's animations as parts. Plain words only:
+// what the viewer will see, never the template's slot names. It says which
+// point still lacks an idea of the film's own, or its sketch.
 //
 // usage: node engine/scripts/materials.mjs <film folder> [--lang zh-Hant|zh-Hans|en] [--html-only]
 // reads research/facts.json ("story", "slots.cta", "posts", "ideas")
@@ -23,20 +25,26 @@ const facts = JSON.parse(readFileSync(join(dir, "research/facts.json"), "utf8"))
 const film = existsSync(join(dir, "film.json")) ? JSON.parse(readFileSync(join(dir, "film.json"), "utf8")) : {};
 const lang = argv.includes("--lang") ? argv[argv.indexOf("--lang") + 1] : film.language ?? "zh-Hans";
 const T = {
-  "zh-Hans": { title: "你的片：先选故事", story: "① 片里讲哪几件事？", storyNote: "选两到三件，按出场顺序", becomes: "片里会看到", read: "读取", opening: "② 怎样开场？", openNote: "选一款", ending: "③ 怎样收尾？", endNote: "最后一句和公仔坐着的道具", other: "其他：直接讲", posts: "找到的帖子（证据）", pinned: "置顶", menu: "还可以变成这些动画", ask: "选好就告诉我：故事（例如 A、C）、开场、收尾；有什么不想出现在片里（某个数字、某张图、旧名字），也一起说", idea: "想法", none: "还没写故事：agent 先按 research.md 找出创作者最出名、最自豪的几件事" },
-  "zh-Hant": { title: "你條片：先揀故事", story: "① 片入面講佢邊幾件事？", storyNote: "揀兩至三件，照出場次序", becomes: "片入面會見到", read: "讀取", opening: "② 點樣開場？", openNote: "揀一款", ending: "③ 點樣收尾？", endNote: "最後一句同佢坐住嘅道具", other: "其他：直接講", posts: "搵到嘅帖（證據）", pinned: "置頂", menu: "仲可以變成呢啲動畫", ask: "揀好就話我知：故事（例如 A、C）、開場、收尾；有冇嘢唔想出現喺片入面（某個數字、某張相、舊名），都一齊講", idea: "想法", none: "未寫故事：agent 先照 research.md 搵出佢最出名、最自豪嘅幾件事" },
-  en: { title: "Your film: the story first", story: "① What does the film tell about them?", storyNote: "pick two or three, in the order they come", becomes: "On screen", read: "read", opening: "② How does it open?", openNote: "pick one", ending: "③ How does it end?", endNote: "the last line and the prop the toy sits on", other: "Other: just say", posts: "The posts found (the evidence)", pinned: "pinned", menu: "What else the material can become", ask: "Tell me your picks: the story (say A, C), the opening, the ending; and anything that must not appear (a number, a picture, an old name)", idea: "idea", none: "No story yet: the agent first finds what they are known for and proud of (research.md)" },
+  "zh-Hans": { title: "你的片：先选故事", story: "① 片里讲哪几件事？", storyNote: "选两到三件，按出场顺序", becomes: "片里会看到", read: "读取", opening: "② 怎样开场？", openNote: "选一款", ending: "③ 怎样收尾？", endNote: "最后一句和公仔坐着的道具", other: "其他：直接讲", posts: "找到的帖子（证据）", pinned: "置顶", menu: "技能自带的动画（零件，可以从这里开始做）", ask: "选好就告诉我：故事（例如 A、C）、开场、收尾；有什么不想出现在片里（某个数字、某张图、旧名字），也一起说", idea: "想法", none: "还没写故事：agent 先按 research.md 找出创作者最出名、最自豪的几件事" },
+  "zh-Hant": { title: "你條片：先揀故事", story: "① 片入面講佢邊幾件事？", storyNote: "揀兩至三件，照出場次序", becomes: "片入面會見到", read: "讀取", opening: "② 點樣開場？", openNote: "揀一款", ending: "③ 點樣收尾？", endNote: "最後一句同佢坐住嘅道具", other: "其他：直接講", posts: "搵到嘅帖（證據）", pinned: "置頂", menu: "skill 自帶嘅動畫（零件，可以由呢度開始整）", ask: "揀好就話我知：故事（例如 A、C）、開場、收尾；有冇嘢唔想出現喺片入面（某個數字、某張相、舊名），都一齊講", idea: "想法", none: "未寫故事：agent 先照 research.md 搵出佢最出名、最自豪嘅幾件事" },
+  en: { title: "Your film: the story first", story: "① What does the film tell about them?", storyNote: "pick two or three, in the order they come", becomes: "On screen", read: "read", opening: "② How does it open?", openNote: "pick one", ending: "③ How does it end?", endNote: "the last line and the prop the toy sits on", other: "Other: just say", posts: "The posts found (the evidence)", pinned: "pinned", menu: "The skill's animations (parts to start from)", ask: "Tell me your picks: the story (say A, C), the opening, the ending; and anything that must not appear (a number, a picture, an old name)", idea: "idea", none: "No story yet: the agent first finds what they are known for and proud of (research.md)" },
 }[lang] ?? {};
 const D = {
-  "zh-Hans": { title: "① 片子讲哪一条主线？", note: "选一条（A／B／C）。每条都已经排好要讲的几件事和次序", audience: "给谁看", goal: "看完记住什么／做什么", assumed: "根据资料推断，可修改", recommended: "推荐", hook: "开场让人想知道", visual: "第一个画面", text: "画面上的字", payoff: "最后回答了什么", ending: "收尾一句和道具", means: "观众会明白", evidence: "依据", gaps: "还缺证据：选这条的话，会只讲资料能证明的部分", ask: "选好就告诉我，例如：主线 A、开场 2、收尾 1。有什么不想出现在片里（某个数字、某张图、旧名字），也一起说" },
-  "zh-Hant": { title: "① 條片講邊條主線？", note: "揀一條（A／B／C）。每條都已經排好要講嘅幾件事同次序", audience: "畀邊個睇", goal: "睇完記得乜／做乜", assumed: "按資料推斷，可以改", recommended: "推薦", hook: "開場令人想知道", visual: "第一個畫面", text: "畫面上嘅字", payoff: "最後答咗乜", ending: "收尾一句同道具", means: "觀眾會明白", evidence: "依據", gaps: "仲欠證據：揀呢條嘅話，只會講資料證明到嘅部分", ask: "揀好就話我知，例如：主線 A、開場 2、收尾 1。有冇嘢唔想出現喺片入面（某個數字、某張相、舊名），都一齊講" },
-  en: { title: "① Which story does the film tell?", note: "Pick one (A / B / C): each already orders the facts it tells", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "What makes them want to know", visual: "First picture", text: "Words on screen", payoff: "What the end answers", ending: "Closing line and prop", means: "Viewer learns", evidence: "Evidence", gaps: "Evidence missing: choosing this, the film says only what the sources support", ask: "Tell me your picks, say: story A, opening 2, ending 1. And anything that must not appear (a number, a picture, an old name)" },
+  "zh-Hans": { title: "① 片子讲哪一条主线？", note: "选一条（A／B／C）。每条都已经排好要讲的几件事和次序", audience: "给谁看", goal: "看完记住什么／做什么", assumed: "根据资料推断，可修改", recommended: "推荐", hook: "开场让人想知道", visual: "第一个画面", text: "画面上的字", payoff: "最后回答了什么", ending: "收尾一句和道具", means: "观众会明白", evidence: "依据", gaps: "还缺证据：选这条的话，会只讲资料能证明的部分", ask: "选好就告诉我，例如：主线 A、收尾 1（想某件事换另一个点子也说）。有什么不想出现在片里（某个数字、某张图、旧名字），也一起说" },
+  "zh-Hant": { title: "① 條片講邊條主線？", note: "揀一條（A／B／C）。每條都已經排好要講嘅幾件事同次序", audience: "畀邊個睇", goal: "睇完記得乜／做乜", assumed: "按資料推斷，可以改", recommended: "推薦", hook: "開場令人想知道", visual: "第一個畫面", text: "畫面上嘅字", payoff: "最後答咗乜", ending: "收尾一句同道具", means: "觀眾會明白", evidence: "依據", gaps: "仲欠證據：揀呢條嘅話，只會講資料證明到嘅部分", ask: "揀好就話我知，例如：主線 A、收尾 1（想某件事換第二個點子都講）。有冇嘢唔想出現喺片入面（某個數字、某張相、舊名），都一齊講" },
+  en: { title: "① Which story does the film tell?", note: "Pick one (A / B / C): each already orders the facts it tells", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "What makes them want to know", visual: "First picture", text: "Words on screen", payoff: "What the end answers", ending: "Closing line and prop", means: "Viewer learns", evidence: "Evidence", gaps: "Evidence missing: choosing this, the film says only what the sources support", ask: "Tell me your picks, say: story A, ending 1 (and another idea for a point, if you prefer one). And anything that must not appear (a number, a picture, an old name)" },
 }[lang] ?? null;
 if (!D) throw new Error("--lang must be zh-Hant, zh-Hans or en");
 const editorialWords = {
   "zh-Hant": { reason: "點解揀呢項", tradeoffs: "素材取捨", alternatives: "另一個開場講法（可以揀）", why: "取捨", points: "每件事嘅素材（詳細）", pointsNote: "主線用到嘅每件事、佢嘅數字同會變成嘅動畫；想換件事就話我知", ownEnding: "唔揀嘅話，就用主線自帶嘅收尾" },
   "zh-Hans": { reason: "为什么选这项", tradeoffs: "素材取舍", alternatives: "另一个开场讲法（可选）", why: "取舍", points: "每件事的素材（详细）", pointsNote: "主线用到的每件事、它的数字和会变成的动画；想换一件就告诉我", ownEnding: "不选的话，就用主线自带的收尾" },
   en: { reason: "Why this material", tradeoffs: "Material tradeoffs", alternatives: "Another way to open (you can pick it)", why: "Tradeoff", points: "Each fact's material (detail)", pointsNote: "Every fact the stories use, its numbers and the animation it becomes; ask to swap one", ownEnding: "Without a pick, each story keeps its own ending" },
+}[lang];
+// the ideas: the film's own (designed from the material, shown by its sketch) and the skill's (shown by a strip of another film)
+const ideaWords = {
+  "zh-Hant": { pitch: "一句講晒", special: "素材特別在", sketch: "示意：用佢自己嘅素材砌，唔係最終畫面", opening: "開場（按故事揀）", more: "仲有 {n} 個點子，喺詳細頁" },
+  "zh-Hans": { pitch: "一句话", special: "素材特别在", sketch: "示意：用创作者自己的素材拼，不是最终画面", opening: "开场（按故事选）", more: "还有 {n} 个点子，在详细页" },
+  en: { pitch: "In a sentence", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
 }[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const img = (p, base = dir) => (p && existsSync(join(base, p)) ? `file://${encodeURI(join(base, p))}` : null);
@@ -59,15 +67,18 @@ const story = facts.story?.length ? facts.story : [
   ...(facts.ideas ?? []).map((d, i) => ({ id: `i${i + 1}`, line: d.text, becomes: d.becomes ?? [] })),
 ];
 const strip = (id) => { const a = anim(id); return a?.preview ? img(a.preview, SKILL) : null; };
+// an idea's picture: the film's own by its sketch, the skill's by its preview strip
+const ownIdea = (b) => b?.anim === "own";
+const ideaPic = (b) => (ownIdea(b) ? img(b.sketch) : strip(b?.anim));
+const ideaLabel = (b) => { const a = anim(b?.anim); return a ? word(a.label) : b?.anim; };
 const storyCard = (s, k) => {
   const pic = (s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot)).find(Boolean);
   const numbers = (s.numbers ?? []).map((n) => `<div class="num"><b>${esc(n.display)}</b> ${esc(n.label)}${n.source || n.read ? `<span class="src">${esc(host(n.source))}${n.read ? ` · ${T.read} ${esc(n.read)}` : ""}</span>` : ""}</div>`).join("");
-  const turns = (s.becomes ?? []).slice(0, 2).map((b, j) => {
-    const a = anim(b.anim);
-    const pv = strip(b.anim);
-    return `<div class="turn"><div class="tl">${j ? "" : `${T.becomes}：`}<b>${esc(a ? word(a.label) : b.anim)}</b></div>${pv ? `<div class="pv" style="background-image:url('${pv}')"></div>` : ""}${b.why ? `<div class="why">${esc(b.why)}</div>` : ""}</div>`;
+  const turns = (s.becomes ?? []).slice(0, 3).map((b, j) => {
+    const pv = ideaPic(b);
+    return `<div class="turn"><div class="tl">${j ? "" : `${T.becomes}：`}<b>${esc(ideaLabel(b))}</b></div>${b.pitch ? `<div class="pitch">${esc(b.pitch)}</div>` : ""}${pv ? `<div class="pv${ownIdea(b) ? " sk" : ""}" style="background-image:url('${pv}')"></div>${ownIdea(b) ? `<div class="skn">${ideaWords.sketch}</div>` : ""}` : ""}${b.why ? `<div class="why">${esc(b.why)}</div>` : ""}</div>`;
   }).join("");
-  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
+  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.special ? `<div class="why"><b>${ideaWords.special}:</b> ${esc(s.special)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
 const directions = facts.directions ?? [];
 const actionWords = {
@@ -78,8 +89,9 @@ const actionWords = {
 const beatRow = (b, n) => {
   const s = story.find((x) => x.id === b.story);
   const pic = s && ((s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot)).find(Boolean));
-  const pv = s?.becomes?.[0] && strip(s.becomes[0].anim);
-  return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}</div>${pv ? `<div class="pv bpv" style="background-image:url('${pv}')"></div>` : ""}</li>`;
+  const idea = s?.becomes?.[b.idea ?? 0], others = Math.max(0, (s?.becomes?.length ?? 0) - 1);
+  const pv = idea && ideaPic(idea);
+  return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${idea?.pitch ? `<div class="pitch">${esc(idea.pitch)}</div>` : ""}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}${others ? `<div class="why">${esc(ideaWords.more.replace("{n}", others))}</div>` : ""}</div>${pv ? `<div class="pv bpv${ownIdea(idea) ? " sk" : ""}" style="background-image:url('${pv}')"></div>` : ""}</li>`;
 };
 const directionCard = (d, i) => {
   const evidence = (d.beats ?? []).flatMap((b) => {
@@ -90,6 +102,8 @@ const directionCard = (d, i) => {
   const link = (e) => /^https?:\/\//i.test(e.url) ? `<a href="${esc(e.url)}">${esc(e.label || e.url)}</a>` : esc(e.label || e.url);
   return `<article class="direction"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p>
+  ${d.pitch ? `<p class="pitch"><b>${ideaWords.pitch}:</b> ${esc(d.pitch)}</p>` : ""}
+  ${d.opening?.id ? `<p class="why"><b>${ideaWords.opening}:</b> ${esc(word(anim(d.opening.id)?.label) || d.opening.id)}${d.opening.why ? ` · ${esc(d.opening.why)}` : ""}</p>` : ""}
   <p><b>${D.visual}:</b> ${esc(d.hook?.visual)} · <b>${D.text}:</b> 「${esc(d.hook?.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(d.hook?.question)}</span></p>
   ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.visual}:</b> ${esc(h.visual)} · <b>${D.text}:</b> 「${esc(h.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(h.question)} · ${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
   <ol class="beats">${(d.beats ?? []).map(beatRow).join("")}</ol>
@@ -128,6 +142,8 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .num { font-size: 15px; margin-top: 6px; } .num b { font-size: 20px; } .src { color: #999; font-size: 12px; margin-left: 8px; }
 .turn { margin-top: 10px; } .tl { font-size: 15px; } .tl b { color: #E8432E; }
 .pv { height: 52px; margin-top: 6px; border-radius: 6px; background: #111 left center/auto 100% no-repeat; } .pv.sm { height: 44px; }
+.pv.sk { height: 120px; background: #EDEAE4 center/cover no-repeat; } .bpv.sk { height: 110px; } .skn { color: #999; font-size: 12px; margin-top: 3px; }
+.pitch { font-size: 15px; font-weight: 600; color: #1C1B19; margin-top: 4px; line-height: 1.45; }
 .why { color: #666; font-size: 14px; margin-top: 4px; line-height: 1.5; }
 .ops { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; } .op { display: flex; gap: 10px; } .op b { font-size: 16px; } .op .pv { height: 62px; background-size: 100% auto; }
 .ok, .k { flex: none; width: 32px; height: 32px; border-radius: 50%; background: #1C1B19; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 16px; }
@@ -177,7 +193,7 @@ const storySection = `<section><h2>${directions.length ? editorialWords.points :
 const endings = facts.slots?.cta ?? [];
 const decide = `${head}
 ${directions.length ? directionSection : storySection}
-<section><h2>${T.opening}</h2><div class="note">${T.openNote}</div><div class="ops">${openings.map(opening).join("")}</div></section>
+${directions.length ? "" : `<section><h2>${T.opening}</h2><div class="note">${T.openNote}</div><div class="ops">${openings.map(opening).join("")}</div></section>`}
 <section><h2>${T.ending}</h2><div class="note">${directions.length && !endings.length ? editorialWords.ownEnding : T.endNote}</div>${endings.slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
 <div class="ask">${directions.length ? D.ask : T.ask}</div>`;
 const more = `${directions.length ? storySection : ""}<section><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
@@ -185,6 +201,13 @@ ${(facts.extra ?? []).length ? `<div class="ns" style="margin-top:12px">${facts.
 <section><h2>${T.menu}</h2><div class="menu">${menu}</div></section>`;
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${STYLE}</head><body>${body}</body></html>`;
 writeFileSync(join(dir, "research/materials.html"), page(decide + more));
+const shown = directions.length ? story.filter((s) => directions.some((d) => (d.beats ?? []).some((b) => b.story === s.id))) : story;
+for (const s of shown) {
+  const own = (s.becomes ?? []).filter(ownIdea);
+  if (!own.length) console.log(`! ${s.id} "${s.line}": no idea of the film's own yet: design one from what is special about its material (references/research.md, "The story first")`);
+  for (const b of own) if (!img(b.sketch)) console.log(`! ${s.id}: its own idea "${b.pitch ?? b.beat ?? "?"}" has no sketch on the page yet (${b.sketch ?? "no sketch"}): make one from their material (engine/scripts/sketch.py)`);
+  if (!s.special) console.log(`! ${s.id}: say what is special about its material ("special")`);
+}
 if (argv.includes("--html-only")) { console.log("wrote research/materials.html"); process.exit(0); }
 
 // the two pictures: the choices (what the user answers), then the evidence and the menu

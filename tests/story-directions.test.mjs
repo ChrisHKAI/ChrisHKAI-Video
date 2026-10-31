@@ -40,7 +40,7 @@ function workspace(t, f = facts()) {
 }
 // These are schema/integration fixtures, not an automated judgement of story quality.
 function readyReport(f) {
-  return { signature: storyTestSignature(f), verdict: "ready", takeaway: "A creator of editor tools", continuation: "The tutorial explains the demonstrated work", specificity: "The named demo and its own tutorial", actionMeaning: "Revealing the work and pointing at its steps directs attention to the method", issues: [] };
+  return { signature: storyTestSignature(f), verdict: "ready", takeaway: "A creator of editor tools", continuation: "The tutorial explains the demonstrated work", specificity: "The named demo and its own tutorial", actionMeaning: "Revealing the work and pointing at its steps directs attention to the method", material: "The demo's own interface fills the count; a jury would remember the export check turning green", issues: [] };
 }
 function run(dir, name, args = [], env = {}) {
   return spawnSync(process.execPath, [script(name), ...args], { encoding: "utf8", env: { ...process.env, FILM: dir, ...env }, cwd: root });
@@ -215,7 +215,7 @@ test("preproduction story test writes a brief, never approves itself, and never 
 test("review requires ready answers, resolved issues and purposeful actions", () => {
   const f = facts();
   assert.deepEqual(storyTestIssues(f, readyReport(f)), []);
-  for (const mutate of [r => { r.verdict = "revise"; }, r => { r.specificity = " "; }, r => { r.issues = ["s1 is generic"]; }]) {
+  for (const mutate of [r => { r.verdict = "revise"; }, r => { r.specificity = " "; }, r => { r.issues = ["s1 is generic"]; }, r => { delete r.material; }]) {
     const r = readyReport(f); mutate(r); assert.ok(storyTestIssues(f, r).length);
   }
   delete f.directions[0].beats[0].action.means;
@@ -282,4 +282,80 @@ test("switching to an alternative hook invalidates the review and applies only t
   const film = JSON.parse(readFileSync(join(dir, 'film.json'), 'utf8'));
   assert.deepEqual(film.story.direction.hook, { question, visual, text });
   assert.equal(film.story.segments.length, 4); // opening + two factual beats + ending
+});
+
+// The idea first (references/research.md): each point carries ideas designed from its material, the film's own among them
+function withIdeas(f = facts()) {
+  f.story[0].special = "The demo's own screens";
+  f.story[0].becomes.unshift({ anim: "own", beat: "beats/demo.js", pitch: "The demo's screens assemble into the tool", why: "Its screens fly in and lock", sketch: "research/sketches/s1.png" });
+  return f;
+}
+
+test("the opening is chosen by the story: it hands over to the first point", (t) => {
+  const opening = (f) => {
+    const dir = workspace(t, f), r = run(dir, "apply-research.mjs", [dir]);
+    assert.equal(r.status, 0, r.stderr);
+    return { seg: JSON.parse(readFileSync(join(dir, "film.json"))).story.segments[0], out: r.stdout };
+  };
+  // a first point that is a beat: the page stands up (right or left), and the direction is asked to name it
+  let f = facts(); delete f.picks.opening;
+  let o = opening(f);
+  assert.equal(o.seg.beat, "page-stand");
+  assert.match(o.out, /names no opening/);
+  // the direction's own choice wins, and no warning
+  f = facts(); delete f.picks.opening; f.directions[0].opening = { id: "page-stand-left", why: "the toy comes out to the left of the page" };
+  o = opening(f);
+  assert.deepEqual([o.seg.beat, o.seg.turn], ["page-stand", "left"]);
+  assert.doesNotMatch(o.out, /opening/);
+  // a first point rising from the pinned post: the page floating, which ends on that post
+  f = facts(); delete f.picks.opening; f.story[0].becomes = [{ anim: "act2" }, ...f.story[0].becomes];
+  o = opening(f);
+  assert.equal(o.seg.story, "opening");
+  // the page floating before a beat: said, since it ends on the pinned post
+  f = facts(); f.picks.opening = "opening";
+  assert.match(opening(f).out, /ends with the toy on the pinned post/);
+});
+
+test("an idea is picked by its place, and a point without one of the film's own is said", (t) => {
+  const f = withIdeas();
+  f.picks.story = [{ id: "s1", idea: 1 }, "s2"];
+  const dir = workspace(t, f), r = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal(JSON.parse(readFileSync(join(dir, "film.json"))).story.segments[1].beat, "count");
+  assert.match(r.stdout, /story point "s2" has no idea of the film's own/);
+  assert.doesNotMatch(r.stdout, /story point "s1" has no idea/);
+  // the direction's first idea for s1 is its own: a beat of the film still to write
+  f.picks.story = ["s1", "s2"];
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
+  const own = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(JSON.parse(readFileSync(join(dir, "film.json"))).story.segments[1].beat, "beats/demo.js");
+  assert.match(own.stdout, /write beats\/demo\.js/);
+  // an idea that is not there stops it
+  f.picks.story = [{ id: "s1", idea: 5 }, "s2"];
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  assert.match(run(dir, "apply-research.mjs", [dir]).stderr, /has no idea 5/);
+});
+
+test("the story page shows each point's ideas with their sketch and pitch, the opening the story chose, and no opening to pick", (t) => {
+  const f = withIdeas();
+  f.directions[0].pitch = "The tool builds itself out of its own demo";
+  f.directions[0].opening = { id: "page-stand", why: "the toy comes out ready to reveal the demo" };
+  const dir = workspace(t, f);
+  const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]);
+  assert.equal(r.status, 0, r.stderr);
+  const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /The demo's screens assemble into the tool/);
+  assert.match(html, /The tool builds itself out of its own demo/);
+  assert.match(html, /開場（按故事揀）/);
+  assert.doesNotMatch(html, /點樣開場/);
+  assert.match(html, /呢條片自己嘅動畫/);
+  // what still lacks an idea of the film's own, or its sketch, is said before the user sees it
+  assert.match(r.stdout, /s1: its own idea "The demo's screens assemble into the tool" has no sketch/);
+  assert.match(r.stdout, /s2 "Learn the method": no idea of the film's own yet/);
+  // older workspaces without directions keep the opening choice
+  delete f.directions; f.picks = { story: ["s1"] };
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]).status, 0);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /點樣開場/);
 });

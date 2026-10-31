@@ -11,8 +11,9 @@
 //
 // usage: node engine/scripts/apply-research.mjs <film folder> [--dry-run]
 // reads research/facts.json:
-//   "picks": { "story": ["s2", { "id": "s1", "anim": "calendar" }], "opening": "page-stand-left",
-//              "cta": { "slogan": [...], "prop": "…" } }
+//   "picks": { "direction": "method" } (its beats, opening and ending), or
+//   "picks": { "story": ["s2", { "id": "s1", "idea": 1 }, { "id": "s3", "anim": "calendar" }],
+//              "opening": "page-stand-left", "cta": { "slogan": [...], "prop": "…" } }
 //   (research from before the story: "picks": { "proof1": { post, number }, "proof2": { post }, "cta": … })
 //   "toy": { "images", "confirmed" }
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -53,12 +54,18 @@ const TILE = { douyin: "likes", xhs: "likes", channels: "likes", ig: "views", x:
 const show = (p, k) => p.numbers?.[k]?.display;
 
 // ── the story the user picked → segments ────────────────────────────────────
-// each pick: a story point's id, or { id, anim } when the user chose its second animation
+// each pick: a story point's id (its first idea, or the one the direction's beat names), { id, idea } (an idea
+// by its place in "becomes") or { id, anim } (the idea with that animation)
 const story = facts.story ?? [];
+const ideaOf = (id) => selection.direction?.beats?.find((b) => b.story === id)?.idea ?? 0;
 const picked = selection.story.map((x) => {
   const id = typeof x === "string" ? x : x.id;
   const s = story.find((q) => q.id === id) ?? fail(`picks.story names "${id}", which research/facts.json "story" does not have`);
-  const b = (typeof x === "object" && x.anim ? s.becomes?.find((y) => y.anim === x.anim) ?? { anim: x.anim } : s.becomes?.[0]) ?? fail(`story point "${id}" says nothing it becomes ("becomes")`);
+  const b = (typeof x === "object" && Number.isInteger(x.idea) ? s.becomes?.[x.idea] ?? fail(`picks.story: story point "${id}" has no idea ${x.idea} (it has ${s.becomes?.length ?? 0})`)
+    : typeof x === "object" && x.anim ? s.becomes?.find((y) => y.anim === x.anim) ?? { anim: x.anim }
+    : s.becomes?.[ideaOf(id)]) ?? fail(`story point "${id}" says nothing it becomes ("becomes")`);
+  // designed from the material first (references/research.md): a point with no idea of the film's own was not
+  if (selection.direction && !(s.becomes ?? []).some((y) => y.anim === "own")) warn.push(`story point "${id}" has no idea of the film's own: it was matched to a ready-made animation without one designed from its material (references/research.md, "The story first")`);
   return { s, b };
 });
 // the old way: the two proofs are acts 2 and 3 of isnail's story
@@ -103,18 +110,25 @@ const c = readNumber(n1.display) ?? fail(`can't read "${n1.display}" as a number
 // it counts up as the platform writes it (6.5万, 7,253, 46K): a long label only crowds the page
 if (usesAct2 && [...(n1.label ?? "")].length > 6) warn.push(`the counter's label "${n1.label}" is long for the spot under the post: a shorter word, as the app writes it, reads better`);
 
-// the opening: the user's pick, else the one least used in the films delivered so far (the skill's own and this machine's)
+// the opening: chosen by the story, never a menu (references/story-directions.md). The page floating ends with the
+// toy on the pinned post, ready for its number to rise; the page standing up ends with the toy out in front, ready
+// for any beat, on the side the films delivered so far (the skill's own and this machine's) used less
 function delivered() {
   const read = (p) => { try { return JSON.parse(readFileSync(p, "utf8")); } catch { return []; } };
   return [...read(join(SKILL, "engine/lib/ledger-base.json")), ...read(join(process.env.CHRISHKAI_VIDEO_HOME ?? join(homedir(), ".chrishkai-video"), "ledger.json"))];
 }
-let opening = picks.opening;
+const firstAnim = picked[0]?.b.anim;
+let opening = picks.opening ?? selection.direction?.opening?.id;
 if (!legacy && !opening) {
-  const used = Object.fromEntries(CAT.filter((a) => a.group === "opening").map((a) => [a.id, 0]));
-  for (const f of delivered()) if (f.opening in used) used[f.opening]++;
-  opening = Object.entries(used).sort((a, b) => a[1] - b[1])[0][0];
-  warn.push(`no opening was picked: took "${opening}", the one used least so far; show the user the three and let them choose`);
+  if (firstAnim === "act2") opening = "opening";
+  else {
+    const used = { "page-stand": 0, "page-stand-left": 0 };
+    for (const f of delivered()) if (f.opening in used) used[f.opening]++;
+    opening = Object.entries(used).sort((a, b) => a[1] - b[1])[0][0];
+  }
+  if (selection.direction) warn.push(`the direction names no opening: took "${opening}", which hands over to its first point; write it as direction.opening { id, why } so the story page says so`);
 }
+if (!legacy && opening === "opening" && firstAnim && firstAnim !== "act2") warn.push(`the opening with the page floating ends with the toy on the pinned post, ready for its number to rise, but the first point here is "${firstAnim}": an opening that stands the page up (page-stand, page-stand-left) hands over to it`);
 const segOf = (id, opts = {}) => {
   const a = anim(id);
   if (id === "own" || !a) return null;

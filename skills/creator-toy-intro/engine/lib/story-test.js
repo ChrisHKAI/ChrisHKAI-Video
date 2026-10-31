@@ -16,7 +16,7 @@ export function storyTestInput(facts) {
     creator: { name: facts.profile?.name, bio: facts.profile?.bio },
     toyReference: facts.toy ?? null,
     audience: facts.narrative ?? {}, direction, story,
-    opening: facts.picks?.opening ?? null,
+    opening: facts.picks?.opening ?? direction.opening ?? null,
     ending: facts.picks?.cta ?? direction.cta ?? null,
     facts: selected,
     posts: (facts.posts ?? []).filter((p) => postIds.has(p.id)),
@@ -37,7 +37,7 @@ export function storyTestIssues(facts, report) {
   if (!report) return [...issues, "no story test yet: run story-test.mjs, review the brief, and save research/story-test.json"];
   if (report.signature !== storyTestSignature(facts)) issues.push("story test is stale: the story, action, source material or ending changed; review it again");
   if (report.verdict !== "ready") issues.push("story test is not ready: revise the story from the review before making the toy");
-  for (const key of ["takeaway", "continuation", "specificity", "actionMeaning"]) {
+  for (const key of ["takeaway", "continuation", "specificity", "actionMeaning", "material"]) {
     if (!text(report[key])) issues.push(`story test needs a concrete ${key} answer`);
   }
   if (!Array.isArray(report.issues) || report.issues.length) issues.push("story test has unresolved issues (use an empty list only after resolving them)");

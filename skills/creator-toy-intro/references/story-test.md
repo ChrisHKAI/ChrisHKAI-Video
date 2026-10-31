@@ -50,6 +50,14 @@ not imply an unsupported event, endorsement, skill, income or causal claim.
      being the same film after swapping the creator's name?
    - **Action meaning:** what does each main action communicate, and does it
      survive the deletion test?
+   - **Material:** what is special about each beat's material, and does its
+     animation use it? Swap in another creator's material: if the animation
+     stays the same, it is a template, not an idea. A ready-made animation
+     has to beat the point's own idea; say why it does. Would a jury at Annie
+     (Best Sponsored Production), Annecy (Commissioned Films) or D&AD call a
+     piece a template or a repeat of another film, and what one image would
+     they remember (SKILL.md, "The bar")? Does the opening hand over to the
+     first beat?
 3. Save the actual review to `research/story-test.json`:
 
 ```json
@@ -60,6 +68,7 @@ not imply an unsupported event, endorsement, skill, income or causal claim.
   "continuation": "The specific reason to keep watching, or what is missing.",
   "specificity": "The distinctive evidence, or why a name swap still works.",
   "actionMeaning": "What the major actions communicate; identify empty motion.",
+  "material": "What each beat's animation takes from its material, which piece a jury would call a template, and the one image they would remember.",
   "issues": ["s1: the toy hops beside a count, but the tool is never shown; reveal the actual tool instead."]
 }
 ```

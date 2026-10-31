@@ -33,6 +33,13 @@ paid search, modelling or rendering. Answer in the creator's language.
    the deletion test: if the meaning survives unchanged when the action is removed,
    simplify/remove it unless it has a brief, explicit navigation or identity role.
    A supported visual metaphor is allowed; invented events or abilities are not.
+5. Material: for each beat, what is special about its material ("special"), and
+   does its animation use that? Swap in another creator's material: is it still
+   the same animation? Then it is a template, not an idea. A ready-made animation
+   must beat the point's own idea; say why it does, or that it does not. Would a
+   jury at Annie (Best Sponsored Production), Annecy (Commissioned Films) or D&AD
+   call any piece a template, or a repeat of another film, and what one image
+   would they remember? Does the opening hand over to the first beat?
 
 Check evidence and anatomy too: popularity does not establish expertise, cause,
 income or endorsements, and an object-shaped toy does not acquire hands to fit a
@@ -45,8 +52,8 @@ Return JSON for research/story-test.json, using this signature exactly:
 ${signature}
 
 Fields: signature, verdict (ready or revise), takeaway, continuation, specificity,
-actionMeaning, issues (up to three specific problems, each naming its beat and the
-smallest useful fix). All four answers must contain reasoning, not pass/yes.
+actionMeaning, material, issues (up to three specific problems, each naming its beat
+and the smallest useful fix). All five answers must contain reasoning, not pass/yes.
 Use verdict=ready with issues=[] only when the actual material supports it.
 This brief generator never approves a story. At most two review rounds: if still
 weak, narrow the story and explain the remaining limitation, never invent facts.

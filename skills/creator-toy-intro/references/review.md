@@ -74,8 +74,9 @@ Score each from 1 (fails) to 5 (nothing to fix):
    no meaning, apart from brief purposeful navigation/identity gestures. Do
    not infer that written action intent proves the animation implements it.
 5. **The lettering.** Does every line stay long enough to read (the brief
-   says how long each needs)? Can it be read against what is behind it?
-   Is it inside the safe box?
+   says how long each needs)? Can it be read against what is behind it and
+   the toy beside it? Do its strokes stay clean, not lumps? Is its face the
+   creator's own, or one that suits their material? Is it inside the safe box?
 6. **The look.** Does the dark stage stay dark? Do whites read as white
    without glowing? Does the toy look like vinyl? Is the light on the toy,
    not on the world?
@@ -84,11 +85,17 @@ Score each from 1 (fails) to 5 (nothing to fix):
    nothing, and whether the moments that matter are marked.
 8. **The finish.** Look for flicker, jumps at a join between parts, a frame
    that shows both sides of a cut, and anything cut off at an edge.
+9. **The jury.** Judge it as a jury at Annie (Best Sponsored Production),
+   Annecy (Commissioned Films) or D&AD would. Is there one idea, and does it
+   grow out of this creator's material, so that another creator's film could
+   not be the same? Name the one image they would remember, or say there is
+   none. Name any part they would call a template or a repeat of another film,
+   and what the material could have become instead.
 
 Answer in this form, in English:
 
 ```
-scores: creator 4, idea 3, pacing 2, motion 4, lettering 3, look 4, sound 4, finish 5
+scores: creator 4, idea 3, pacing 2, motion 4, lettering 3, look 4, sound 4, finish 5, jury 2
 drifts: 14.5 s, the wall holds and nothing new happens
 fix (the biggest effect on a viewer first, three at most):
 1. 13.0–18.4 s · pacing · the toy climbs three boxes the same way · climb two, a bar shorter
