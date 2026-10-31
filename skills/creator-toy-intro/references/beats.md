@@ -106,7 +106,7 @@ The beat is that answer as code.
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
 | `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face; anything else, in any face, through film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }`) |
 | `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
-| `kit` | `engine/lib/beatkit.js`: `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `confetti(…)`; `HIDDEN` |
+| `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width)` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`stack(n, …)` (where n cards go), `stagger(g, i, n, g0, g1)` (card i's arrival); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `confetti(…)`; `HIDDEN` |
 | `signature` | the toy's own move (toy.json `signature`) on a pose |
 | `math`, `quat`, `mulberry32`, `readFilmJSON` | the engine's helpers |
 
@@ -126,6 +126,30 @@ It returns, every time in the beat's own seconds `g` (0 to `len`):
 | `storyboard` | `{ part: { label, what, uses }, frames: [{ at, title, what }], hits: [{ at, label }] }`, each text per language (`zh-Hant`, `zh-Hans`, `en`) |
 
 Write a move the kit already has with the kit (a wave, a nod, a point): the film's own code is for what only this creator's story does.
+
+### Their pictures, many at once
+
+Most ideas built from the material show the creator's own pictures: their
+works flipping by, a fan of their covers round the toy, every one of their
+styles at once in a wall bigger than the frame. The kit makes any picture in
+the film a card and places many at once:
+
+```js
+const files = kit.pictureFiles("assets/work");                        // their pictures, in name order
+const spots = kit.layout.wall(files.length, { c: [0, 0.6, -0.35] });  // or grid, arc (round the toy), stack
+const cards = files.map((f, i) => kit.picture(f, spots[i].w ?? 0.3)); // each spots[i].w metres wide
+// declare(add): cards.forEach((c, i) => add({ name: `card${i}`, geo: c.geo, mat: c.mat, anim: true }));
+// sample(put, g): each arrives in turn between 0.7 and 3.6 s, out of the dark in front
+cards.forEach((c, i) => {
+  const u = kit.stagger(g, i, cards.length, 0.7, 3.6, 0.4);
+  put(`card${i}`, u > 0 ? c.at(at(...math.v3.lerp(FROM[i], spots[i].p, math.easeOut(u))), spots[i].q)
+                        : quat.trs(at(0, -2, 0), quat.qId(), kit.HIDDEN));
+});
+```
+
+The cards light themselves, like the page's panels, so the light stays on the
+toy. Lettering over a wall of pictures needs a plate of its own behind it (a
+dark `roundBox`): their colours are everywhere behind it, the toy's too.
 
 A beat usually opens with the toy dropping in from above (the cut from
 the last segment's leap) and ends with `kit.leapOut`, so the joins read as

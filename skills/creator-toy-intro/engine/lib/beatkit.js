@@ -8,6 +8,9 @@ import { makeCamera } from "./camera.js";
 import { clamp01, seg, smooth, easeInOut, lerp, lerpAngle, yawTo, TAU, v3 } from "./math.js";
 import { trs, qId, qEuler, mulT } from "./quat.js";
 
+// the creator's own pictures as cards, and layouts for many at once (pictures.js)
+export { picture, pictureFiles, layout, stagger, imageSize } from "./pictures.js";
+
 export const HIDDEN = 1e-4;
 export const POP = 1.3; // the toy's size on a beat's small stage, as on the end card
 export { squash, landSquash, crouch, hop, CENTER };
