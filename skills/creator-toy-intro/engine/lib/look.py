@@ -15,7 +15,8 @@ default:
 - The stage takes the other side of the toy (engine/lib/colors.py stage_for):
   dark, as the first films, or a mid slate when the toy is dark (a black
   hoodie, navy hair) and would melt into the dark; white lettering still reads
-  on it. look.stage ("dark", "mid") says which; the page keeps its own theme.
+  on it. look.stage ("dark", "mid", "grey", or a colour "#RRGGBB": the toy's
+  contrast colour) says which; the page keeps its own theme.
 
 "light": "classic" (or --look classic) keeps the first films' light: Standard,
 a rim light on everything, one even sky (each script's own numbers).

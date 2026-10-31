@@ -183,16 +183,29 @@ def delivered():
         return set()
 
 
+def stage_of(hex_):
+    """A stage in one colour (film.json look.stage "#RRGGBB": the toy's contrast colour, when neither dark nor
+    a mid tone sets the toy off, a grey logo with blue in it, say): the camera sees that colour, the floor is a
+    little darker at its edge and lighter in its middle (OKLab lightness, the hue kept)."""
+    lab = oklab(np.array([rgb(hex_)]))[0]
+    shade = lambda d: hexof(from_oklab([[max(0.0, min(1.0, lab[0] + d)), lab[1], lab[2]]])[0])  # noqa: E731
+    return {"sky": hex_.upper(), "floorEdge": shade(-0.08), "floorRing": shade(-0.03), "floorMid": shade(0.03),
+            "glass": shade(-0.05), "fade": hex_.upper(), "lookdev": shade(0.02)}
+
+
 def stage_for(film):
     """(name, palette) of the stage this film plays on: film.json look.stage when it says ("dark", "mid",
-    "grey"); else the dark stage, unless 15% or more of the toy melts into it and less melts into a mid one:
-    the slate, or the grey when what melts is blue (a delivered film keeps the dark one it was approved on)."""
+    "grey", or a colour "#RRGGBB": stage_of); else the dark stage, unless 15% or more of the toy melts into it
+    and less melts into a mid one: the slate, or the grey when what melts is blue (a delivered film keeps the
+    dark one it was approved on)."""
     film = Path(film)
     try:
         F = json.loads((film / "film.json").read_text())
     except Exception:
         F = {}
     name = (F.get("look") or {}).get("stage")
+    if isinstance(name, str) and name.startswith("#") and len(name) == 7:
+        return name.upper(), stage_of(name)
     if name not in STAGES and (F.get("step") == "done" or F.get("id") in delivered()):
         name = "dark"  # a delivered film keeps the stage it was approved on
     if name not in STAGES:
