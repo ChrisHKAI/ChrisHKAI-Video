@@ -1,5 +1,6 @@
-// The studio: a small local server for one film's storyboard page, so the
-// user can leave notes on the real frames. They click a spot on a preview
+// The studio: a small local server for one film's pages, the story page
+// (step 2, research/story/) and the storyboard page (step 4), so the user can
+// leave notes: on a card of the story page, or on the real frames. They click a spot on a preview
 // frame (Cycles) or on the paused animatic (EEVEE), write what to change,
 // and the note lands in build/comments.jsonl with its time, frame and place
 // in the frame (engine/scripts/comments.py reads it). Only this computer
@@ -18,8 +19,9 @@ const FILM = resolve(arg("--film", process.env.FILM ?? ""));
 if (!existsSync(join(FILM, "film.json"))) { console.error(`no film.json in ${FILM}: pass --film <film folder>`); process.exit(1); }
 const PORT = +arg("--port", 4173);
 const PAGE = join(FILM, "build/storyboard");
+const STORY = join(FILM, "research/story");
 const INBOX = join(FILM, "build/comments.jsonl");
-const TYPES = { ".html": "text/html; charset=utf-8", ".mp4": "video/mp4", ".jpg": "image/jpeg", ".png": "image/png" };
+const TYPES = { ".html": "text/html; charset=utf-8", ".mp4": "video/mp4", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif" };
 
 function send(res, file, req) {
   if (!file || !existsSync(file) || !statSync(file).isFile()) { res.writeHead(404, { "content-type": "text/plain" }); res.end(existsSync(join(PAGE, "index.html")) ? "not found" : "not found: build the storyboard page first (run.mjs storyboard)"); return; }
@@ -39,7 +41,7 @@ function json(res, code, body) { res.writeHead(code, { "content-type": "applicat
 
 createServer((req, res) => {
   const p = new URL(req.url, `http://${req.headers.host}`).pathname;
-  if (p === "/") { res.writeHead(302, { location: "/storyboard/" }); res.end(); return; }
+  if (p === "/") { res.writeHead(302, { location: existsSync(join(PAGE, "index.html")) ? "/storyboard/" : "/story/" }); res.end(); return; }
   if (p === "/api/comments" && req.method === "GET") return json(res, 200, readInbox());
   if (p === "/api/comments" && req.method === "POST") {
     let body = "";
@@ -47,16 +49,23 @@ createServer((req, res) => {
     req.on("end", () => {
       let c;
       try { c = JSON.parse(body); } catch { return json(res, 400, { error: "not JSON" }); }
-      if (typeof c.text !== "string" || !c.text.trim() || typeof c.t !== "number") return json(res, 400, { error: "a note needs text and t" });
+      if (typeof c.text !== "string" || !c.text.trim() || (typeof c.t !== "number" && c.source !== "story")) return json(res, 400, { error: "a note needs text and t" });
       const all = readInbox();
-      const keep = ["source", "t", "frame", "x", "y", "text"];
+      const keep = ["source", "t", "frame", "x", "y", "on", "text"];
       const rec = { id: `c${all.length + 1}`, created: new Date().toISOString(), status: "open", ...Object.fromEntries(keep.filter((k) => c[k] !== undefined).map((k) => [k, c[k]])) };
       mkdirSync(dirname(INBOX), { recursive: true });
       appendFileSync(INBOX, JSON.stringify(rec) + "\n");
-      console.log(`note ${rec.id}, ${rec.t.toFixed(2)} s (${rec.source}): ${rec.text}`);
+      console.log(rec.source === "story" ? `note ${rec.id}, story page, on ${rec.on}: ${rec.text}` : `note ${rec.id}, ${rec.t.toFixed(2)} s (${rec.source}): ${rec.text}`);
       json(res, 200, rec);
     });
     return;
+  }
+  if (p === "/story" || p.startsWith("/story/")) {
+    let rel;
+    try { rel = decodeURIComponent(p.slice(6).replace(/^\//, "")) || "index.html"; } catch { rel = ""; }
+    const file = resolve(STORY, rel);
+    if (p === "/story" || (!TYPES[extname(file).toLowerCase()] && existsSync(join(STORY, "index.html")))) { res.writeHead(302, { location: "/story/" }); res.end(); return; }
+    return send(res, file === STORY || file.startsWith(STORY + sep) ? file : null, req);
   }
   if (p === "/storyboard" || p.startsWith("/storyboard/")) {
     let rel;
@@ -70,6 +79,7 @@ createServer((req, res) => {
   res.end("not found");
 }).listen(PORT, "127.0.0.1", () => {
   console.log(`studio for ${FILM}`);
+  if (existsSync(join(STORY, "index.html"))) console.log(`  the story page  http://127.0.0.1:${PORT}/story/  (click a card to write a note)`);
   console.log(`  the storyboard  http://127.0.0.1:${PORT}/storyboard/  (click a frame or the paused animatic to write a note)`);
   console.log(`  notes land in   build/comments.jsonl (run.mjs comments lists them)`);
 });

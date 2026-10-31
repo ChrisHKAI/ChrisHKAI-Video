@@ -10,11 +10,12 @@
 //
 // usage: node engine/scripts/materials.mjs <film folder> [--lang zh-Hant|zh-Hans|en] [--html-only]
 // reads research/facts.json ("story", "slots.cta", "posts", "ideas")
-// → research/materials.html (everything), research/materials.png (the three
-//   choices) and research/materials-posts.png (the posts and the menu)
+// → research/story/index.html (the page the studio serves, as the storyboard's is: run.mjs studio, /story/;
+//   the user clicks a card to leave a note), research/materials.html (the same with file paths),
+//   research/materials.png (the choices) and research/materials-posts.png (the posts and the parts), for a chat
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { findChrome } from "../lib/tools.js";
 
@@ -201,6 +202,76 @@ ${(facts.extra ?? []).length ? `<div class="ns" style="margin-top:12px">${facts.
 <section><h2>${T.menu}</h2><div class="menu">${menu}</div></section>`;
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${STYLE}</head><body>${body}</body></html>`;
 writeFileSync(join(dir, "research/materials.html"), page(decide + more));
+// the page the studio serves (run.mjs studio → /story/), as the storyboard page is: its pictures beside it, and a
+// note on any card (a direction, a point, an idea, an ending, a post) goes to build/comments.jsonl
+{
+  const STORY = join(dir, "research/story");
+  rmSync(join(STORY, "img"), { recursive: true, force: true });
+  mkdirSync(join(STORY, "img"), { recursive: true });
+  const copied = new Map();
+  const local = (html) => html.replace(/file:\/\/([^'")]+)/g, (_, enc) => {
+    const abs = decodeURI(enc);
+    if (!copied.has(abs)) {
+      const name = `${copied.size}-${basename(abs)}`;
+      copyFileSync(abs, join(STORY, "img", name));
+      copied.set(abs, `img/${encodeURIComponent(name)}`);
+    }
+    return copied.get(abs);
+  });
+  const NW = {
+    "zh-Hant": { title: "意見", hint: "撳任何一張卡（主線、點子、收尾、帖），寫低想點改，寄出。", file: "撳任何一張卡寫低想點改：意見會複製，貼返俾 agent。", send: "寄出", copy: "複製", cancel: "取消", copied: "已複製，貼返俾 agent", none: "仲未有意見。", on: "喺" },
+    "zh-Hans": { title: "意见", hint: "点任何一张卡（主线、点子、收尾、帖子），写下想怎么改，发送。", file: "点任何一张卡写下想怎么改：意见会复制，贴给 agent。", send: "发送", copy: "复制", cancel: "取消", copied: "已复制，贴给 agent", none: "还没有意见。", on: "在" },
+    en: { title: "Notes", hint: "Click any card (a story, an idea, an ending, a post), write what to change, send.", file: "Click any card and write what to change: the note is copied, to paste to the agent.", send: "Send", copy: "Copy", cancel: "Cancel", copied: "Copied: paste it to the agent", none: "No notes yet.", on: "on" },
+  }[lang] ?? {};
+  const notes = `<section id="notes"><h2>${esc(NW.title)}</h2><div class="note nhint"></div><div class="nlist"></div></section>
+<style>.npop{position:absolute;z-index:20;width:300px;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;display:grid;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.npop textarea{width:100%;min-height:80px;border:1px solid #ddd;border-radius:6px;padding:6px;font:inherit}.npop .row{display:flex;gap:8px;justify-content:flex-end}
+.npop button{border:1px solid #ccc;background:#f4f2ee;border-radius:6px;padding:4px 12px;font:inherit;cursor:pointer}.npop button.go{background:#1C1B19;color:#fff;border-color:#1C1B19}
+.direction,.sc,.beat,.c,.card{cursor:pointer}.noted{outline:3px solid #e2463b;outline-offset:2px}.nlist{display:grid;gap:8px}.nlist .n{border:1px solid #eee;border-radius:8px;padding:8px 10px}.nlist .n small{color:#999}</style>
+<script>(() => {
+  const W = ${JSON.stringify(NW)}, live = location.protocol.startsWith("http");
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  document.querySelector("#notes .nhint").textContent = live ? W.hint : W.file;
+  const label = (el) => (el.querySelector("h3, .line, .bt b, .h, .t")?.textContent || el.textContent).trim().replace(/\s+/g, " ").slice(0, 60);
+  async function list() {
+    if (!live) return;
+    const all = await fetch("/api/comments").then((r) => r.json()).catch(() => []);
+    const mine = all.filter((n) => n.source === "story");
+    document.querySelector("#notes .nlist").innerHTML = mine.length ? mine.reverse().map((n) => '<div class="n"><small>' + esc(n.id + " · " + W.on + " " + n.on) + "</small><div>" + esc(n.text) + "</div>" + (n.reply ? "<small>→ " + esc(n.reply) + "</small>" : "") + "</div>").join("") : '<div class="note">' + esc(W.none) + "</div>";
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest(".npop, a, summary, details")) return;
+    const card = e.target.closest(".direction .beat, .direction, .sc, .c, .card");
+    if (!card) return;
+    document.querySelector(".npop")?.remove();
+    document.querySelectorAll(".noted").forEach((x) => x.classList.remove("noted"));
+    card.classList.add("noted");
+    const on = label(card), p = document.createElement("div");
+    p.className = "npop";
+    p.innerHTML = "<small>" + esc(W.on + " " + on) + "</small><textarea></textarea><div class=row><button class=no>" + esc(W.cancel) + "</button><button class=go>" + esc(live ? W.send : W.copy) + "</button></div>";
+    const b = card.getBoundingClientRect();
+    p.style.left = scrollX + Math.max(8, Math.min(e.clientX - 150, document.documentElement.clientWidth - 312)) + "px";
+    p.style.top = scrollY + Math.min(e.clientY + 12, b.bottom + 6) + "px";
+    document.body.appendChild(p);
+    p.querySelector("textarea").focus();
+    const close = () => { p.remove(); card.classList.remove("noted"); };
+    p.querySelector(".no").onclick = close;
+    p.querySelector(".go").onclick = async () => {
+      const text = p.querySelector("textarea").value.trim();
+      if (!text) return;
+      if (live) {
+        await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ source: "story", on, text }) }).catch(() => null);
+        close(); list();
+      } else {
+        await navigator.clipboard?.writeText("[" + W.on + " " + on + "] " + text).catch(() => null);
+        p.innerHTML = "<small>" + esc(W.copied) + "</small>"; setTimeout(close, 1500);
+      }
+    };
+  });
+  list();
+})();</script>`;
+  writeFileSync(join(STORY, "index.html"), local(page(decide + more + notes)));
+}
 const shown = directions.length ? story.filter((s) => directions.some((d) => (d.beats ?? []).some((b) => b.story === s.id))) : story;
 for (const s of shown) {
   const own = (s.becomes ?? []).filter(ownIdea);

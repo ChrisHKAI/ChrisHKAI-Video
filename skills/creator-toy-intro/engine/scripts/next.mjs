@@ -31,7 +31,7 @@ if (step === "research") {
     if (!facts.directions?.length && !chosen) todo.push("evidence map, one targeted gap search if needed, then up to three complete directions and a recommendation → facts.json directions (references/story-directions.md)");
     if (!facts.slots?.cta?.length && !facts.directions?.some((d) => d.cta?.slogan?.length)) todo.push("two or three endings: the closing line and the prop → facts.json slots.cta");
     if (facts.story?.length && !has("research/materials.png")) cmds.push("node <skill>/engine/scripts/materials.mjs <film> --lang " + (film.language ?? "zh-Hans"));
-    if (has("research/materials.png") && !chosen) show = "research/materials.png: ask for the story direction (another idea for a point, if they prefer one) and the ending, one round; the story chooses the opening";
+    if (has("research/materials.png") && !chosen) show = "the story page (run.mjs studio → /story/; research/materials.png for a chat): ask for the story direction (another idea for a point, if they prefer one) and the ending, one round; the story chooses the opening; notes on its cards: run.mjs comments";
     if (chosen && facts.toy?.confirmed) {
       let issues = [];
       try { issues = storyTestIssues(facts, json("research/story-test.json")); } catch (e) { issues = [e.message]; }

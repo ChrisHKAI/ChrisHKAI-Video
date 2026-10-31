@@ -258,10 +258,20 @@ with its pitch, the opening it starts with and why, and its points' ideas:
 the film's own with their sketches, the skill's with their preview strips;
 then the endings) and `research/materials-posts.png` (every post found, each
 point in detail, and the skill's animations as parts), and
-`research/materials.html` with both. It says which point still lacks an idea
-of the film's own, or its sketch: add them before the user sees the page.
-Show the first, and ask in one round (AskUserQuestion where the agent has
-it, else one message):
+`research/materials.html` with both, and `research/story/index.html`: the same
+page as the storyboard's is made, served by the studio with its pictures,
+where the user clicks any card (a direction, a point, an idea, an ending, a
+post) to leave a note (`build/comments.jsonl`, `run.mjs comments` lists
+them). It says which point still lacks an idea of the film's own, or its
+sketch: add them before the user sees the page. Serve it and give the user
+the address on a line of its own (words stuck to it become part of the link):
+
+```bash
+FILM=<film> node <skill>/engine/run.mjs studio   # → http://127.0.0.1:4173/story/
+```
+
+Where the chat shows pictures, show `materials.png` too. Then ask in one
+round (AskUserQuestion where the agent has it, else one message):
 - which direction (including its ordered story points), or changes to it;
   for older workspaces without directions, which story points in what order;
 - for a point with more than one idea, which (the first is the one you

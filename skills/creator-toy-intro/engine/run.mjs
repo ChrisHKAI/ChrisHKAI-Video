@@ -37,7 +37,7 @@
 //           storyboard  the page to sign off: parts, beat grid, previews, checks → build/storyboard/
 //                    (storyboard -- --frames prints the preview frames to render)
 //           animatic the whole film in EEVEE, small, with its score → build/storyboard/animatic.mp4
-//           studio   the storyboard page on a local server: the user clicks a spot on a real frame or
+//           studio   the story page (/story/) and the storyboard page on a local server: the user clicks a card, or a spot on a real frame or
 //                    the paused animatic and writes a note → build/comments.jsonl
 //                    (studio -- --port 4173; runs until stopped)
 //           comments the user's open notes, each with its frame marked → build/comments/<id>.jpg

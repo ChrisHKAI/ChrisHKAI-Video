@@ -58,7 +58,7 @@ shown = notes if "--all" in argv else [n for n in notes if n["status"] == "open"
 if not shown:
     print("no open notes" if notes else "no notes yet (FILM=<film> node engine/run.mjs studio)")
 for n in shown:
-    img = picture(n) if n.get("x") is not None else None
+    img = picture(n) if n.get("x") is not None and n.get("source") != "story" else None
     marked = ""
     if img:
         w, h = img.size
@@ -71,6 +71,12 @@ for n in shown:
         OUT.mkdir(parents=True, exist_ok=True)
         img.save(OUT / f"{n['id']}.jpg", quality=85)
         marked = f"  → build/comments/{n['id']}.jpg"
+    if n.get("source") == "story":  # a note on the story page: the card it is on
+        print(f"{n['id']} [{n['status']}] story page, on {n.get('on', '?')}")
+        print(f"   {n['text']}")
+        if n.get("reply"):
+            print(f"   → {n['reply']}")
+        continue
     src = "animatic" if n.get("source") == "animatic" else "preview frame"
     print(f"{n['id']} [{n['status']}] {n['t']:.2f} s, frame {n['frame']} ({src}), at ({n.get('x', 0):.2f}, {n.get('y', 0):.2f}){marked}")
     print(f"   {n['text']}")

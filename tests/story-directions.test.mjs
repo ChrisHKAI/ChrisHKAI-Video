@@ -353,6 +353,10 @@ test("the story page shows each point's ideas with their sketch and pitch, the o
   // what still lacks an idea of the film's own, or its sketch, is said before the user sees it
   assert.match(r.stdout, /s1: its own idea "The demo's screens assemble into the tool" has no sketch/);
   assert.match(r.stdout, /s2 "Learn the method": no idea of the film's own yet/);
+  // the page the studio serves: its pictures beside it, and a note on any card
+  const served = readFileSync(join(dir, "research/story/index.html"), "utf8");
+  assert.match(served, /id="notes"/);
+  assert.doesNotMatch(served, /file:\/\//);
   // older workspaces without directions keep the opening choice
   delete f.directions; f.picks = { story: ["s1"] };
   writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
