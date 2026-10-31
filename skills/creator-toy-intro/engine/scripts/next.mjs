@@ -21,7 +21,8 @@ if (step === "research") {
   // the user said yes to Grok Build in step 1: its X search runs first, before the browser
   if (film.grok === true && !has("research/grok.json")) cmds.push("node <skill>/engine/scripts/grok-search.mjs <film>   (first: the user chose Grok for the X search; in the background where you can, else wait a few minutes)");
   const facts = json("research/facts.json");
-  if (!facts) todo.push("the research: the profile, the posts and their numbers (with source and date), the profile picture → research/facts.json");
+  // Grok's answer is leads: its search may not reach the profile page or know the pinned post, the browser does
+  if (!facts) todo.push(`the research: the profile, the posts and their numbers (with source and date), the profile picture → research/facts.json${has("research/grok.json") ? "; Grok's leads are in research/grok.json: open the profile and each post in the browser too (the pinned post, today's counts as the page writes them)" : ""}`);
   else {
     if (!facts.toy?.confirmed) todo.push("ask which picture the toy is made from (the profile picture, or one they send) → facts.json toy");
     if (!facts.story?.length) todo.push("the creator's story: three to five things they are known for, each with its material, what is special about it, and two ideas at least designed from it (one the film's own, with a pitch and a sketch) → facts.json story (references/research.md)");

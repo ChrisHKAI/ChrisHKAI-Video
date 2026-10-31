@@ -53,8 +53,10 @@ Read only, always: never like, follow, comment or message.
   posts. Use one targeted follow-up only for important evidence gaps
   (`references/story-directions.md`; `grok-search.mjs <film> --gaps`).
   These are leads: open each post on the page and take its numbers from
-  there, as the page writes them. Grok's milestones and ideas become story
-  points (`story`, below).
+  there, as the page writes them, and open the profile itself: Grok's search
+  may not reach the profile page or know the pinned post, which the browser
+  shows at once. Grok's milestones and ideas become story points (`story`,
+  below).
 - 抖音, 小红书, Instagram: the profile page in the logged-in browser.
 - 视频号, 公众号 counts: desktop WeChat through computer use, where the agent
   has it; otherwise the user's screenshots.
@@ -97,10 +99,15 @@ goes to `extra`; in the film it rises from the name at the top.
 - Screenshots of the profile and each post in `research/shots/` (on a Mac
   `screencapture -x -R x,y,w,h <file>`, or the browser tool where it saves
   files). They are for the story page only and never go into the film:
-  the page is rebuilt by the theme, the pictures are the originals.
+  the page is rebuilt by the theme, the pictures are the originals. Where
+  nothing can save one (a browser pane that only shows the page), skip them:
+  the covers and the profile picture stand in on the story page.
 - Each number: the platform's own writing (`304万`, `1.1萬`, `46K`, `5,018`),
   its label as the app says it (阅读, 粉丝, 获赞), and its spot: a profile field
-  or a post's count. It counts up in the film just as it is written.
+  or a post's count. It counts up in the film just as it is written. Write it
+  in the film's language, the creator's own script (a 简 creator's `1.1万`
+  and `关注者`, even when your browser shows X in 繁 as `1.1萬`, or the API
+  gives `11375`); where the source wrote it otherwise, say so in its `note`.
 - Current counts are today's: read them from the page or the API now, never from
   an old post that mentions them ("破 3K star" is a milestone, not the count;
   the repo has 8,904 today). Each number keeps `source` (the URL it was read
@@ -112,6 +119,11 @@ goes to `extra`; in the film it rises from the name at the top.
   "style": "Black" }]`, a face on this computer), or put the face file they
   use in the film's `fonts/`: a beat's own line is set in it, not in the end
   card's heavy face.
+- Their words, whole: whatever the page or the film quotes in 「」, keep the
+  text it comes from, a post's full text in its `text`, anything else (an
+  article, a README, a line from a video) in `research/sources/<name>.txt`.
+  A quote stays in their script, word for word; a cut inside it is marked
+  ……. The story page checks every 「quote」 against these texts.
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.
 
 `research/` stays out of any git repository.
@@ -176,7 +188,10 @@ material asks for its own idea, never this one):
       "opts": { "from": "2025-10-28", "to": "2026-10-28", "count": { "to": 365, "label": "张" } } }] }
 ```
 
-`line` is what the viewer takes away, in the creator's language. `material`
+`line` is what the viewer takes away, in the creator's language. When the
+user's language differs from the creator's, `line`, quotes and the words on
+screen are the creator's (the film's); `says`, `special`, `pitch`, `why` and
+the page itself (`--lang`) are the user's. `material`
 is its pictures, files or folders of them (a folder shows its first picture
 on the page, in name order: put the telling one first). `special`
 is what is special about this material, and only it has: its quantity, its
@@ -245,25 +260,12 @@ historical milestones dated; today's counts are a separate fact.
 
 ## The story page
 
-Explain the proposed story before production, within the existing choice round.
-Default to a short in-chat outline (opening → connected events → ending) or the
-existing light material page. A polished PPT, slide deck or narrated sales pitch
-is not required. Make a timed text-and-footage rough cut only when useful or
-requested; do not add a mandatory deliverable or another approval round.
-
-Label this stage clearly in the user's language: “Story proposal — confirms the
-plot and order, not the final animation style.” Say what is actual supplied
-footage, what is a placeholder, and what remains to animate. A text-card video
-is a story rough cut, not an animation test or a rendered storyboard approval.
-For each beat describe what the viewer will see happen, not just the sentence
-on a slide. Keep explanations beside the proposal, not as final-film subtitles.
-
-For explanatory pages/cards, use a bright background (white, warm ivory or pale
-blue), dark readable text and restrained accents. Avoid default black/navy
-corporate decks. Follow explicit user preferences; this presentation palette
-does not choose the final film's palette. Do not rebuild a prettier deck when
-the user only wants to understand the story.
-
+The user sees and picks the story on one page, the story page, made by
+`materials.mjs` below and served like the storyboard's: no slide deck,
+narrated pitch or rough cut on top of it unless they ask for one, and no
+extra approval round. It says what it is (a story proposal: the plot and the
+order, not the final animation style), and each beat says what the viewer
+will see happen, not only its sentence.
 
 `node <skill>/engine/scripts/materials.mjs <film> --lang <the user's
 language>` writes `research/materials.png` (complete directions first, each
