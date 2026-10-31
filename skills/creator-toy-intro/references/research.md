@@ -29,9 +29,9 @@ Read only, always: never like, follow, comment or message.
   illustrator's drawings; a channel's videos; a product's own pages. Posts
   say what happened; the work is what the film can show. Keep its pictures in
   `assets/work/` (all of them when there are many: a quantity is material
-  too), and today's count of it in `extra` with its source and date. A
-  library that launched with 39 styles and has 66 today says 66 on screen; the
-  39 is a milestone with its date.
+  too), and today's count of it in `extra` with its source and date. A shop
+  that opened with 12 products and sells 80 today says 80 on screen; the 12 is
+  a milestone with its date.
 - Grok Build, when the user said yes to it in step 1 (film.json `grok`:
   true): run it first, before the browser, every time:
   `node <skill>/engine/scripts/grok-search.mjs <film>`. Run it in the

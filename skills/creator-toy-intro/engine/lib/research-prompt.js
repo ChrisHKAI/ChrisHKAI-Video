@@ -12,6 +12,7 @@ ${gaps ? `This is the second, targeted round. Answer only these evidence gaps, f
 3. Search beyond popular posts: beginnings, problems, failed attempts, a decision or changed approach, representative work and how it was made, and the creator's own explanation of whom they help. Fetch whole threads, including low-engagement posts where useful.
 4. Return story_leads with what, kind (origin/problem/decision/work/method/outcome), date, url and evidence_kind (creator_statement/observed/interpretation). Distinguish what the creator claims from independently observed evidence. Never invent motives or causal links.
 5. Include representative work even when engagement is low. For each suggested angle explain audience relevance and the specific source claim; note whether usable media was actually seen. Do not rank material by engagement alone.
-6. Suggest distinct intro-film angles in ideas, each linked to source URLs. Record missing evidence in notes rather than filling it in.`}
+6. Suggest distinct intro-film angles in ideas, each linked to source URLs. Record missing evidence in notes rather than filling it in.
+7. The work itself as it is today: what the creator made (a repository, a gallery, a product, a series), how big it is now (how many styles, tools, episodes, works), and where all of it can be seen; give today's source, not the launch post's figure.`}
 For each post keep URL, date, first line, counts exactly as shown (万, K, commas), and whether media exists. Preserve the source language. Report access limits and absent evidence. A chronological sequence alone does not prove cause and effect. These results are leads; the production agent will open and verify the sources before using them.`;
 }

@@ -270,7 +270,7 @@ film and names the three biggest problems with their times
   first (what is special about this material, and the animation that shows
   it). The skill's animations are parts; one that does not fit is left out,
   never forced (a lemon's illustrations are not a cover wall; a cloud is not
-  a number; sixty-six styles are not one cover).
+  a number; a hundred recipes are not one cover).
 - The opening is chosen by the story, never asked: it hands over to the first
   point. The page floating ends with the toy on the pinned post, so it opens a
   film whose first point rises from that post; the page standing up ends with

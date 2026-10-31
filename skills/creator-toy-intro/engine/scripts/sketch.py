@@ -11,8 +11,8 @@ Layouts:
   row    cards in a row going away: a sequence, a path
 
 usage: python3 engine/scripts/sketch.py <film> --out research/sketches/<name>.jpg --layout grid
-         --images "assets/work/*.jpg" [more files or globs] [--over assets/avatar.jpg] [--text "66 种风格"]
-         [--count 66] [--size 1200x675]
+         --images "assets/work/*.jpg" [more files or globs] [--over assets/avatar.jpg] [--text "120 幅画"]
+         [--count 120] [--size 1200x675]
 --over is the toy's picture (the avatar, or build/lookdev/front.png once the toy exists); --count repeats the
 pictures up to that many when the idea is a number of them.
 """
