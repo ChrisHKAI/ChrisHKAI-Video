@@ -137,7 +137,7 @@ for (const [i, step] of steps.entries()) {
       // the turnaround reads build/hero.json: write it from toy.json first, so a changed toy always shows
       if (!steps.slice(0, i).includes("hero")) run("node", [fromSkill("engine/scripts/dump-hero.mjs")]);
       run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
-      if (!more.includes("--avatar")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);
+      if (!more.includes("--avatar") && !more.includes("--parts")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);
       break;
     case "render": {
       // no --frames: the whole film, its frame count from film.json (duration × fps)

@@ -137,9 +137,33 @@ confirmed picture(s) beside them. They are lit as the film lights the toy
 light"), so what the user approves here is what the film shows. The back
 view keeps the rim on the toy's back, so the back of the head and the hood
 can be seen. A dark toy is shown on the mid-tone stage its film will play on
-(references/render.md, "The light"). Look at it first yourself: likeness,
+(references/render.md, "The light"). Before the views, it checks that the
+toy is in one piece (below). Look at it first yourself: likeness,
 proportions, nothing floating or sunk, the colours. Then show the user and
 change it from their words, a round at a time (about a minute each). Once
 they say it is right, keep a copy for the next film:
 `~/.chrishkai-video/characters/<name>/` (toy.json, and `build/toy/` for a
 sculpt), and move film.json `step` on to `story`.
+
+### In one piece
+
+A vinyl toy's parts are glued together. Before it renders, the look-dev checks
+the toy at rest, pointing and cheering, and writes `build/toy-parts.json`.
+`-- --parts` runs the check alone, in seconds, without the views. It finds
+three things, and `check` repeats them:
+
+- **floating**: a part, or a few together, that touches nothing of the rest.
+  It might be an eye in front of the face or a hat above the head. Or it is
+  an arm that comes off the shoulder only when it turns: then its joint `p`
+  is not where the arm meets the body. Move the part or the joint until it
+  touches. A part meant to stand apart (a halo, a spark, a prop held off the
+  hand) says `"apart": true`.
+- **hidden**: a part inside the others in every pose, never seen (an eye sunk
+  into the head). Bring it out, or drop it if it was only filling. Glass does
+  not hide what is behind it.
+- **coincide**: two parts of different colours or finishes whose surfaces lie
+  on each other, facing the same way. The render speckles where they meet. Sink one a little into the other,
+  lift it clear, or keep one of the two.
+
+The check does not judge size: whether the eyes are too big or the head too
+small is for the eye, against the picture (compare.jpg).
