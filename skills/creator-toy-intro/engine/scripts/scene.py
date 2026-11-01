@@ -186,7 +186,13 @@ def material(spec):
     result = [m]
     if kind == "ui":
         p = principled(nt, "#030303", 0.3, 0.1, coat=0.3, coat_rough=0.1)
-        t = tex_node(nt, image(spec["image"]), "EXTEND")
+        t = tex_node(nt, image(spec.get("movie") or spec["image"]), "EXTEND")
+        if spec.get("movie"):  # a film on the panel: it plays from frame "start", round and round
+            t.image.source = "MOVIE"
+            t.image_user.frame_duration = spec["frames"]
+            t.image_user.frame_start = spec.get("start", 1)
+            t.image_user.use_cyclic = True
+            t.image_user.use_auto_refresh = True
         L.new(t.outputs["Color"], p.inputs["Emission Color"])
         p.inputs["Emission Strength"].default_value = 1.0
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
