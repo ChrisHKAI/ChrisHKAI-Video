@@ -117,14 +117,28 @@ def film_colours(film):
         m = o.get("mat") or {}
         if m.get("type") == "paper" and isinstance(m.get("color"), str):
             papers.setdefault(group(o["name"]), m["color"])
-    text = {}
+    # lettering never shown on any frame (a template's own end card a film of its own beats never plays) is not read
+    tracks = anim.get("tracks") or {}
+    shown = lambda name: name not in tracks or any(max(abs(k[8]), abs(k[9]), abs(k[10])) > 1e-3 for k in tracks[name])  # noqa: E731
+    text, edges = {}, {}
     for o in anim["objects"]:
         m = o.get("mat") or {}
         # lettering: glyph outlines (curves) in a type material (confetti and a calendar's boxes share the material)
-        if m.get("type") == "type" and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve":
-            back = papers.get(group(o["name"])) if contrast(m["color"], STAGE) < READ else None
-            text.setdefault((m["color"].upper(), (back or STAGE).upper()), []).append(o["name"])
-    text_rows = sorted(({"hex": h, "on": b, "objects": len(n), "names": n[:4], "contrast": contrast(h, b)} for (h, b), n in text.items()), key=lambda r: r["contrast"])
+        if m.get("type") == "type" and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve" and shown(o["name"]):
+            # a beat may say what its lettering stands on ("on": a carpet, a sign) and the dark edge round it ("edge")
+            back = m.get("on") or (papers.get(group(o["name"])) if contrast(m["color"], STAGE) < READ else None)
+            key = (m["color"].upper(), (back or STAGE).upper())
+            text.setdefault(key, []).append(o["name"])
+            if isinstance(m.get("edge"), str):
+                edges[key] = m["edge"].upper()
+
+    def row(h, b, n):
+        r = {"hex": h, "on": b, "objects": len(n), "names": n[:4], "contrast": contrast(h, b)}
+        e = edges.get((h, b))
+        if e and r["contrast"] < READ:  # an edged letter reads by its edge on the ground and its face on the edge
+            r["edge"], r["contrast"] = e, min(contrast(e, b), contrast(h, e))
+        return r
+    text_rows = sorted((row(h, b, n) for (h, b), n in text.items()), key=lambda r: r["contrast"])
     # lettering on the stage beside the toy, in the toy's own colour (a gold line by a lemon): the two read as one
     main = [r for r in toy_rows if r["share"] >= 0.25]
     for r in text_rows:
