@@ -16,7 +16,7 @@
 //   at twice the page's pixels (--scale), and each story on a picture of its own (materials-A.png …, the endings
 //   on materials-endings.png): a chat shrinks one tall picture until it blurs
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { findChrome } from "../lib/tools.js";
@@ -50,7 +50,7 @@ const ideaWords = {
   en: { pitch: "In a sentence", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
 }[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const img = (p, base = dir) => (p && existsSync(join(base, p)) ? `file://${encodeURI(join(base, p))}` : null);
+const img = (p, base = dir) => (p && existsSync(join(base, p)) && statSync(join(base, p)).isFile() ? `file://${encodeURI(join(base, p))}` : null);
 const nums = (n) => Object.values(n ?? {}).map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("");
 const posts = facts.posts ?? [];
 const post = (id) => posts.find((p) => p.id === id);
@@ -75,13 +75,15 @@ const ownIdea = (b) => b?.anim === "own";
 const ideaPic = (b) => (ownIdea(b) ? img(b.sketch) : strip(b?.anim));
 const ideaLabel = (b) => { const a = anim(b?.anim); return a ? word(a.label) : b?.anim; };
 const storyCard = (s, k) => {
-  const pic = (s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot)).find(Boolean);
+  // its material whole, up to three pictures down the side (one cover-cropped into the card's tall side showed a sliver)
+  const pics = [...(s.material ?? []).map((m) => img(m)), ...(s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot))]
+    .filter((p, i, all) => p && all.indexOf(p) === i).slice(0, 3);
   const numbers = (s.numbers ?? []).map((n) => `<div class="num"><b>${esc(n.display)}</b> ${esc(n.label)}${n.source || n.read ? `<span class="src">${esc(host(n.source))}${n.read ? ` · ${T.read} ${esc(n.read)}` : ""}</span>` : ""}</div>`).join("");
   const turns = (s.becomes ?? []).slice(0, 3).map((b, j) => {
     const pv = ideaPic(b);
     return `<div class="turn"><div class="tl">${j ? "" : `${T.becomes}：`}<b>${esc(ideaLabel(b))}</b></div>${b.pitch ? `<div class="pitch">${esc(b.pitch)}</div>` : ""}${pv ? `<div class="pv${ownIdea(b) ? " sk" : ""}" style="background-image:url('${pv}')"></div>${ownIdea(b) ? `<div class="skn">${ideaWords.sketch}</div>` : ""}` : ""}${b.why ? `<div class="why">${esc(b.why)}</div>` : ""}</div>`;
   }).join("");
-  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.special ? `<div class="why"><b>${ideaWords.special}:</b> ${esc(s.special)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
+  return `<div class="sc"><div class="sp">${pics.map((p) => `<img src="${p}">`).join("")}<i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.special ? `<div class="why"><b>${ideaWords.special}:</b> ${esc(s.special)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
 const directions = facts.directions ?? [];
 const actionWords = {
@@ -146,8 +148,8 @@ h1 { font-size: 30px; margin-bottom: 16px; } h2 { font-size: 24px; margin: 6px 0
 .ns { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; } .n { font-size: 14px; color: #555; } .n b { font-size: 17px; color: #1C1B19; }
 section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top: 18px; }
 .stories { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.sc { border: 2px solid #EEE; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 170px 1fr; }
-.sp { background: #E6E2DA center/cover no-repeat; position: relative; min-height: 190px; }
+.sc { border: 2px solid #EEE; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 220px 1fr; }
+.sp { background: #F2EFE9; position: relative; min-height: 190px; padding: 52px 8px 8px; } .sp img { display: block; width: 100%; height: auto; border-radius: 6px; margin-bottom: 8px; }
 .sp i, .pic i { position: absolute; left: 10px; top: 10px; background: #1C1B19; color: #fff; font-style: normal; font-weight: 700; font-size: 22px; padding: 2px 13px; border-radius: 20px; }
 .sb { padding: 14px 16px; } .line { font-size: 19px; font-weight: 700; line-height: 1.4; }
 .num { font-size: 15px; margin-top: 6px; } .num b { font-size: 20px; } .src { color: #999; font-size: 12px; margin-left: 8px; }
