@@ -277,6 +277,15 @@ def material(spec):
         p = principled(nt, spec["color"], 0.22, 0.5, coat=0.8, coat_rough=0.05)
         p.inputs["Emission Color"].default_value = rgba(spec["color"])
         p.inputs["Emission Strength"].default_value = spec["emit"]
+        if spec.get("glass") or spec.get("shine"):  # crystal lettering, as a logo's glassy facets: a hard shine (and light through it)
+            p.inputs["Transmission Weight"].default_value = spec.get("glass") or 0.0
+            p.inputs["Roughness"].default_value = 0.03
+            p.inputs["IOR"].default_value = 1.45
+            p.inputs["Coat Weight"].default_value = 1.0
+            p.inputs["Coat Roughness"].default_value = 0.02
+        if spec.get("metal") is not None:  # metal lettering (a trophy's chrome, a plaque's brass): its roughness
+            p.inputs["Metallic"].default_value = 1.0
+            p.inputs["Roughness"].default_value = spec["metal"]
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
     elif kind == "paper":  # torn labels: matte paper with a little grain
         tc = nt.nodes.new("ShaderNodeTexCoord")
@@ -762,7 +771,8 @@ def curve_piece(o):
     ever; several are each filled on their own and joined into one mesh."""
     g = o["geo"]
     parts = islands(g["rings"])
-    if len(parts) <= 1:
+    side = (o.get("mat") or {}).get("side")  # its sides and bevel in a colour of their own (a glass face, a blue edge)
+    if len(parts) <= 1 and not side:
         data = ring_curve(o["name"], g["rings"], g)
     else:
         bm = bmesh.new()
@@ -780,6 +790,12 @@ def curve_piece(o):
         bm.free()
     for mat in material(o["mat"]):
         data.materials.append(mat)
+    if side:
+        data.materials.append(material({"type": "type", "color": side, "emit": 0})[0])
+        edge = len(data.materials) - 1
+        for f in data.polygons:  # all but the faces that look straight out (front and back) take the edge
+            if abs(f.normal.z) < 0.9:
+                f.material_index = edge
     return data
 
 
