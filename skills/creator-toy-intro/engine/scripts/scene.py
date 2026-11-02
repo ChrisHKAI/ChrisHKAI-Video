@@ -401,6 +401,18 @@ def material(spec):
         L.new(em.outputs[0], p.inputs["Emission Strength"])
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
         result = [m, edge_material()]
+    elif kind == "beam":  # light seen in the air or on the floor (a stage spot's cone, its pool): glows by the
+        # picture's alpha, clear elsewhere
+        tx = tex_node(nt, image(spec["image"]), "CLIP")
+        e = nt.nodes.new("ShaderNodeEmission")
+        e.inputs["Color"].default_value = rgba(spec.get("color", "#FFFFFF"))
+        e.inputs["Strength"].default_value = spec.get("strength", 1.0)
+        tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+        mix = nt.nodes.new("ShaderNodeMixShader")
+        L.new(tx.outputs["Alpha"], mix.inputs["Fac"])
+        L.new(tr.outputs["BSDF"], mix.inputs[1])
+        L.new(e.outputs["Emission"], mix.inputs[2])
+        L.new(mix.outputs["Shader"], out.inputs["Surface"])
     elif kind == "card2d":  # the 2D mascot sticker: the cover's own shading, cut out by alpha
         tx = tex_node(nt, image(spec["image"]), "CLIP")
         geo = nt.nodes.new("ShaderNodeNewGeometry")
