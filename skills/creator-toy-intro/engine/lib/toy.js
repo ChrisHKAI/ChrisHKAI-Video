@@ -3,7 +3,8 @@
 // Local axes follow Three.js: +y up, +z = the face; origin between the feet on
 // the ground; metres. Sides are the toy's own: R = its right = -x.
 //   parts:  { name, shape, pos, rot? (Euler XYZ, radians) or q? ([x, y, z, w]), mat (a colours key, "shine", or
-//             "paint" for a sculpted part's own colours), group (its joint), paint? (layers) }
+//             "paint" for a sculpted part's own colours), group (its joint), paint? (layers),
+//             apart? (true: meant to stand off the rest, a halo or a spark: engine/lib/toyparts.py) }
 //   shapes by kit: every kit roundBox (size, radius) | ellipsoid (r) | arc (radius, tube, arc);
 //             the pet kit blob (r, p, taper) | tube (pts, radii) | prism (sides, r, depth, bevel)
 //             | loop (pts, radii: a closed tube) | plate (w, d, t, corner, bevel, or an outline);

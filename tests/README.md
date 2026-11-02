@@ -76,3 +76,10 @@ in all three languages, checking horizontal overflow, column changes, the final
 choice prompt and full-page screenshot capture. The temporary fixture is removed
 afterwards. This tests browser layout, not the CLI PNG-export path or CJK font
 availability; inspect with installed Chinese fonts for final typography approval.
+
+Whether a toy is in one piece (`engine/lib/toyparts.py`: floating, hidden,
+lying on another part), in Blender on balls built for the purpose:
+
+```bash
+python3 tests/toy-parts.test.py
+```

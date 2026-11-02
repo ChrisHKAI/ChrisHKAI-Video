@@ -48,6 +48,13 @@ if (!toy) {
     if (p.mat && !["paint", "shine"].includes(p.mat) && toy.colors && !toy.colors[p.mat]) say("bad", `toy part "${p.name}" is coloured "${p.mat}", which toy.json "colors" does not define`, `add "${p.mat}": "#rrggbb" to "colors"`);
   }
   say("ok", `the toy: ${(toy.parts ?? []).length} parts on ${Object.keys(J).length} joints (${Object.keys(J).join(", ")})`);
+  // in one piece? (the look-dev checks it: engine/lib/toyparts.py)
+  const tp = fromFilm("build/toy-parts.json");
+  if (existsSync(tp) && statSync(tp).mtimeMs >= statSync(fromFilm(film.toy)).mtimeMs) {
+    const found = json("build/toy-parts.json")?.found ?? [];
+    for (const f of found) say(f.kind === "floating" && process.argv.includes("--render") ? "bad" : "warn", `the toy: ${f.text}`, "references/toy.md, \"In one piece\"");
+    if (!found.length) say("ok", "the toy is in one piece");
+  } else if (existsSync(tp)) say("warn", "the toy changed since its parts were checked", "FILM=<film> node <skill>/engine/run.mjs hero lookdev -- --parts");
 }
 
 // ── what research put in film.json ──────────────────────────────────────────

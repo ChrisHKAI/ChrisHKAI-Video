@@ -7,6 +7,7 @@ here is the toy the film shows.
 
 usage:
   blender -b --factory-startup -P scripts/lookdev.py -- [--samples 64] [--out build/lookdev] [--look classic] [--rim 4]
+      [--parts: only whether the toy is in one piece, build/toy-parts.json]
 """
 import json
 import math
@@ -22,6 +23,7 @@ from film import FILM, FILM_JSON  # noqa: E402  the film workspace (FILM env var
 import toyblend  # noqa: E402  the pet and sculpt kits' shapes and paint
 import look as lighting  # noqa: E402  the film's light (film.json "look"), so the toy is lit as the film lights it
 import device  # noqa: E402  which GPU Cycles renders on, as the film picks it
+import toyparts  # noqa: E402  whether the toy is in one piece
 
 ROOT = FILM
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
@@ -161,6 +163,9 @@ def arc_mesh(name, R, r, arc):
     return me
 
 
+PART_OBS = {}  # part name → its object
+
+
 def build_hero(name):
     hero = bpy.data.objects.new(name, None)
     scene.collection.objects.link(hero)
@@ -191,6 +196,7 @@ def build_hero(name):
         me.materials.append(material(p["mat"], p.get("paint"), tag, p.get("finish")))
         ob = bpy.data.objects.new(f"{name}_{p['name']}", me)
         scene.collection.objects.link(ob)
+        PART_OBS[p["name"]] = ob  # (a part named as its joint is "mascot_head.001" in Blender)
         jo, spec = joints[p["group"]]
         ob.parent = jo
         ob.location = Vector(p["pos"]) - Vector(spec["p"])
@@ -292,6 +298,18 @@ if "armR" not in J and "armL" not in J and "body" in J:
     # a toy with no arms (a fruit, a logo, a ball) points and cheers with its whole body
     POINT["body"] = (0.18, 0, -0.22)
     CHEER["body"] = (-0.14, 0, 0)
+if "--avatar" not in argv:
+    # is it in one piece, at rest and in the poses below? (engine/lib/toyparts.py → build/toy-parts.json)
+    results = []
+    for name, p in (("rest", REST), ("pointing", POINT), ("cheering", CHEER)):
+        pose(p)
+        results.append(toyparts.check(bpy, PART_OBS, HERO, name))
+    found = toyparts.write(ROOT / "build/toy-parts.json", results, HERO)
+    for f in found:
+        print(f"{'✗' if f['kind'] == 'floating' else '!'} toy: {f['text']}", flush=True)
+    print(f"toy parts: {'in one piece' if not found else f'{len(found)} to look at'} (build/toy-parts.json)", flush=True)
+    if "--parts" in argv:
+        raise SystemExit  # the check alone, in seconds: no views
 if "--avatar" in argv:
     # the flat profile picture: flat colours and an inked outline (inverted hull)
     scene.render.film_transparent = True
