@@ -46,7 +46,9 @@ Read only, always: never like, follow, comment or message.
   fails (the agent's sandbox has no network, Grok is not signed in), tell
   the user in a line what it needs (allow the network for it; `grok login`
   in their Terminal) instead of quietly going on without it. Say what it
-  found, never what it cost. With `grok` false, or no Grok Build on this
+  found, never what it cost. It runs Grok with only its searches; afterwards
+  it reads back from Grok's own record which tools ran (`tools` in grok.json),
+  and if anything else did, it says so: tell the user. With `grok` false, or no Grok Build on this
   computer, the browser alone, without asking. It writes
   `research/grok.json` with:
   - the pinned post;
