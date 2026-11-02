@@ -233,7 +233,8 @@ person"). Never write one the sources do not show.
 `line` is what the viewer takes away, in the creator's language. When the
 user's language differs from the creator's, `line`, quotes and the words on
 screen are the creator's (the film's); `says`, `special`, `pitch`, `why` and
-the page itself (`--lang`) are the user's. `material`
+the page itself (`--lang`) are the user's. The page marks each `line` as the
+film's words when its language is not the page's. `material`
 is its pictures, files or folders of them (a folder shows its first picture
 on the page, in name order: put the telling one first). `special`
 is what is special about this material, and only it has: its quantity, its

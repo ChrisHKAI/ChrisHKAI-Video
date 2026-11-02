@@ -552,3 +552,35 @@ test("a direction without a person at its heart is said: on the page, by the sto
   assert.doesNotMatch(again.stdout, /no person at its heart|names no moment|no personal moments/);
   assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /找过，没找到私人时刻/);
 });
+
+test("what production needs is its own row, the creator's line is marked when the page is in another language, and a black cover is left out", (t) => {
+  const f = facts();
+  f.directions[0].prepare = ["Install the gallery's Cinzel face"];
+  f.posts[0].cover = "assets/p1.png"; f.posts[0].shot = "research/shots/p1.png";
+  const dir = workspace(t, f);
+  // a black first frame as the cover, the post page's own shot beside it
+  mkdirSync(join(dir, "research/shots"), { recursive: true });
+  const made = spawnSync("python3", ["-c", "import sys\nfrom PIL import Image\nImage.new('RGB', (320, 180), (3, 3, 4)).save(sys.argv[1])\nImage.new('RGB', (320, 180), (200, 180, 120)).save(sys.argv[2])", join(dir, "assets/p1.png"), join(dir, "research/shots/p1.png")], { encoding: "utf8" });
+  assert.equal(made.status, 0, made.stderr);
+  const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]);
+  assert.equal(r.status, 0, r.stderr);
+  const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /<p class="prep"><b>製作前要準備:<\/b> Install the gallery's Cinzel face<\/p>/);
+  assert.doesNotMatch(html, /class="gap"[^<]*<b>[^<]*<\/b>[^<]*Cinzel/);
+  // film.json says zh-Hans (new-film's default), the page is zh-Hant: the line is marked as the film's words
+  assert.match(html, /<div class="line"><span class="lt">片入面嘅字<\/span>Tool demo/);
+  assert.match(r.stdout, /p1's cover \(assets\/p1\.png\) is all but black/);
+  assert.match(html, /shots\/p1\.png/);
+  assert.doesNotMatch(html, /url\('file:\/\/[^']*assets\/p1\.png'\)/);
+  // the same language: no mark
+  assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]).status, 0);
+  assert.doesNotMatch(readFileSync(join(dir, "research/materials.html"), "utf8"), /class="lt"/);
+});
+
+test("an ending picked from another direction is said until the direction takes it", () => {
+  const f = facts();
+  f.picks.cta = { slogan: ["Follow along"], prop: "a tiny tool" };
+  assert.match(resolveDirection(f).warnings.join("\n"), /the ending picked \("Follow along"\) is not direction "method"'s own \("Build along"\)/);
+  f.directions[0].cta = f.picks.cta;
+  assert.doesNotMatch(resolveDirection(f).warnings.join("\n"), /ending picked/);
+});

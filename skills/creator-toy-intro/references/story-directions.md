@@ -233,6 +233,10 @@ An opening of the film's own (`"opening": { "id": "own", ... }`) has no preview
 strip of the skill's: its `"sketch"` is made from their material, like a point's
 idea, and the story page shows it whole under the opening's line.
 
+What production needs before it can start (a face to install, frames to cut
+from their film, a picture to ask the user for) goes in the direction's
+`prepare`, a line each: the card shows it apart from `gaps`, which are evidence.
+
 Compare creator specificity, audience relevance, evidence and visual clarity in
 plain words. Recommend one supported direction with a concrete reason, not a
 made-up probability of going viral. Put unresolved central evidence questions in
@@ -283,7 +287,9 @@ the story order, its `opening` the opening, and its `cta` the default ending.
 "phrase" }`) with the same IDs and order as the direction. If the user changes
 the order or facts, update the direction, hook, opening and payoff to match
 before applying it. When the ending they pick is not the direction's own,
-check the payoff still answers the hook, and rewrite it if not.
+check the payoff still answers the hook, rewrite it if not, and write the
+picked ending into the direction's `cta` (until then `apply-research` and
+`check` say so).
 
 Older workspaces with only `picks.story` or `proof1/proof2` still work. For a new
 unattended film choose the supported recommendation, record `picks.direction`

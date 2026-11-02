@@ -56,9 +56,18 @@ const heartWords = {
   "zh-Hans": { heart: "片子的中心", who: "是谁", why: "为什么做", forWhom: "为谁做", moment: "那一刻", none: "还没写中心的人：这条主线现在只有数字和手法", moments: "找到的私人时刻", momentsNote: "家人、为什么开始、为某个人做的东西：用在哪条主线，没用的说明原因", usedIn: "用在", notUsed: "没用", noneFound: "找过，没找到私人时刻：片子的中心是创作者本人和一直在做的事", sep: "、" },
   en: { heart: "At its heart", who: "Who", why: "Why they do it", forWhom: "For whom", moment: "The moment", none: "No person at its heart yet: as it stands, this story is numbers and devices", moments: "Personal moments found", momentsNote: "Family, why they started, something made for one person: which story uses each, and why one is left out", usedIn: "In", notUsed: "Not used", noneFound: "Looked, and found no personal moment: the film's heart is the creator and what they keep doing", sep: ", " },
 }[lang];
+// what production needs before it starts (a face to install, frames to cut from their film): not evidence, so not a gap;
+// and the creator's own line, in their script, when the page is in another
+const prepWords = {
+  "zh-Hant": { prepare: "製作前要準備", theirs: "片入面嘅字" },
+  "zh-Hans": { prepare: "制作前要准备", theirs: "片里的字" },
+  en: { prepare: "To prepare before production", theirs: "on screen" },
+}[lang];
+const theirScript = film.language && film.language !== lang;
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // a picture: a file, or a folder of their work (research.md writes "assets/work/"), shown by its first picture
 const PIC = /\.(png|jpe?g|webp|gif)$/i;
+function posts0() { return facts.posts ?? []; }
 const picOf = (abs) => {
   if (!existsSync(abs)) return null;
   if (statSync(abs).isFile()) return PIC.test(abs) ? abs : null;
@@ -66,8 +75,18 @@ const picOf = (abs) => {
   return first ? join(abs, first) : null;
 };
 const img = (p, base = dir) => { const f = p && picOf(join(base, p)); return f ? `file://${encodeURI(f)}` : null; };
+// a near-black picture (a video's first frame) shows as a black square on the page: found once, with PIL
+const DARK = (() => {
+  const files = [...new Set(posts0().flatMap((p) => [p.cover, p.shot]).filter(Boolean).map((f) => join(dir, f)).filter((f) => existsSync(f) && statSync(f).isFile()))];
+  if (!files.length) return new Set();
+  const py = "import sys\nfrom PIL import Image, ImageStat\nfor f in sys.argv[1:]:\n    try:\n        s = ImageStat.Stat(Image.open(f).convert('L').resize((64, 64)))\n        print(f if s.mean[0] < 14 and s.stddev[0] < 12 else '')\n    except Exception:\n        print('')";
+  try { return new Set(execFileSync("python3", ["-c", py, ...files], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).split("\n").filter(Boolean)); } catch { return new Set(); }
+})();
+const lit = (f) => f && !DARK.has(join(dir, f));
+// a post's picture for a card: its cover, else its shot, never a black one while another is there
+const postPic = (p, order = ["cover", "shot"]) => order.map((k) => p?.[k]).filter(lit).map((f) => img(f)).find(Boolean) ?? null;
 const nums = (n) => Object.values(n ?? {}).map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("");
-const posts = facts.posts ?? [];
+const posts = posts0();
 const post = (id) => posts.find((p) => p.id === id);
 const pr = facts.profile ?? {};
 const PLATFORMS = JSON.parse(readFileSync(join(SKILL, "engine/lib/platforms.json"), "utf8")).platforms;
@@ -91,14 +110,14 @@ const ideaLabel = (b) => { const a = anim(b?.anim); return a ? word(a.label) : b
 const openingLabel = (id) => word(anim(id)?.label).replace(/^(開場|开场|Opening)\s*[：:]\s*/i, "") || id;
 const storyCard = (s, k) => {
   // its material whole, up to three pictures down the side (one cover-cropped into the card's tall side showed a sliver)
-  const pics = [...(s.material ?? []).map((m) => img(m)), ...(s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot))]
+  const pics = [...(s.material ?? []).map((m) => img(m)), ...(s.posts ?? []).map((id) => postPic(post(id)))]
     .filter((p, i, all) => p && all.indexOf(p) === i).slice(0, 3);
   const numbers = (s.numbers ?? []).map((n) => `<div class="num"><b>${esc(n.display)}</b> ${esc(n.label)}${n.source || n.read ? `<span class="src">${esc(host(n.source))}${n.read ? ` · ${T.read} ${esc(n.read)}` : ""}</span>` : ""}</div>`).join("");
   const turns = (s.becomes ?? []).slice(0, 3).map((b, j) => {
     const pv = ideaPic(b);
     return `<div class="turn"><div class="tl">${j ? "" : `${T.becomes}：`}<b>${esc(ideaLabel(b))}</b></div>${b.pitch ? `<div class="pitch">${esc(b.pitch)}</div>` : ""}${pv ? `<div class="pv${ownIdea(b) ? " sk" : ""}" style="background-image:url('${pv}')"></div>${ownIdea(b) ? `<div class="skn">${ideaWords.sketch}</div>` : ""}` : ""}${b.why ? `<div class="why">${esc(b.why)}</div>` : ""}</div>`;
   }).join("");
-  return `<div class="sc"><div class="sp">${pics.map((p) => `<img src="${p}">`).join("")}<i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.special ? `<div class="why"><b>${ideaWords.special}:</b> ${esc(s.special)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
+  return `<div class="sc"><div class="sp">${pics.map((p) => `<img src="${p}">`).join("")}<i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${theirScript ? `<span class="lt">${prepWords.theirs}</span>` : ""}${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.special ? `<div class="why"><b>${ideaWords.special}:</b> ${esc(s.special)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
 const directions = facts.directions ?? [];
 const actionWords = {
@@ -108,7 +127,7 @@ const actionWords = {
 }[lang];
 const beatRow = (b, n) => {
   const s = story.find((x) => x.id === b.story);
-  const pic = s && ((s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot)).find(Boolean));
+  const pic = s && ((s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => postPic(post(id))).find(Boolean));
   const idea = s?.becomes?.[b.idea ?? 0], others = Math.max(0, (s?.becomes?.length ?? 0) - 1);
   const pv = idea && ideaPic(idea);
   return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${idea?.pitch ? `<div class="pitch">${esc(idea.pitch)}</div>` : ""}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}${others ? `<div class="why">${esc(ideaWords.more.replace("{n}", others))}</div>` : ""}</div>${pv ? `<div class="pv bpv${ownIdea(idea) ? " sk" : ""}" style="background-image:url('${pv}')"></div>` : ""}</li>`;
@@ -173,7 +192,8 @@ const directionCard = (d, i) => {
   ${(d.cta?.slogan ?? []).length ? `<p><b>${D.ending}:</b> ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
   <p class="why">${esc(d.why)}</p>
   ${evidence.length ? `<details><summary>${D.evidence} (${evidence.length})</summary><ul>${evidence.map((e) => `<li>${link(e)}</li>`).join("")}</ul></details>` : ""}
-  ${d.gaps?.length ? `<p class="gap"><b>${D.gaps}:</b> ${d.gaps.map(esc).join("；")}</p>` : ""}</article>`;
+  ${d.gaps?.length ? `<p class="gap"><b>${D.gaps}:</b> ${d.gaps.map(esc).join("；")}</p>` : ""}
+  ${d.prepare?.length ? `<p class="prep"><b>${prepWords.prepare}:</b> ${d.prepare.map(esc).join("；")}</p>` : ""}</article>`;
 };
 const narrative = facts.narrative ?? {};
 const directionSection = directions.length ? `<section><h2>${D.title}</h2><div class="note">${D.note}</div>
@@ -182,8 +202,8 @@ const directionSection = directions.length ? `<section><h2>${D.title}</h2><div c
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(openingLabel(a.id))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
 const cta = (c, k) => `<div class="c"><span class="k">${k + 1}</span><div><div class="h">${(c.slogan ?? []).map(esc).join(" ／ ")}</div>${c.prop ? `<div class="num">${esc(c.prop)}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;
-const card = (p, i) => `<div class="card"><div class="pic" style="${img(p.shot ?? p.cover) ? `background-image:url('${img(p.shot ?? p.cover)}')` : ""}"><i>#${i + 1}</i>${p.pinned ? `<em>${T.pinned}</em>` : ""}${p.sponsored ? `<em class="ad">${T.sponsored}</em>` : ""}</div>
-  <div class="meta">${esc(p.date)}</div><div class="t">${esc(p.title)}</div><div class="ns">${nums(p.numbers)}</div></div>`;
+const card = (p, i) => { const pic = postPic(p, ["shot", "cover"]) ?? img(p.shot ?? p.cover); return `<div class="card"><div class="pic" style="${pic ? `background-image:url('${pic}')` : ""}"><i>#${i + 1}</i>${p.pinned ? `<em>${T.pinned}</em>` : ""}${p.sponsored ? `<em class="ad">${T.sponsored}</em>` : ""}</div>
+  <div class="meta">${esc(p.date)}</div><div class="t">${esc(p.title)}</div><div class="ns">${nums(p.numbers)}</div></div>`; };
 const menu = CAT.filter((a) => a.group === "middle").map((a) => `<div class="m"><b>${esc(word(a.label))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv sm" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div>`).join("");
 
 const W = 1200;
@@ -234,7 +254,8 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .direction { border-top: 1px solid #ddd; padding: 18px 0; line-height: 1.6; overflow-wrap: anywhere; }
 .direction h3 { font-size: 22px; } .direction p { margin: 8px 0; font-size: 17px; }
 .direction ol, .direction ul { padding-left: 24px; } .direction li { margin: 6px 0; }
-.badge { color: #267146; font-size: 15px; } .gap { color: #a33c19; } a { color: #205d93; }
+.badge { color: #267146; font-size: 15px; } .gap { color: #a33c19; } .prep { color: #555; }
+.lt { display: inline-block; vertical-align: 2px; margin-right: 8px; font-size: 12px; font-weight: 600; color: #7A5A0F; background: #FFF1CC; padding: 1px 8px; border-radius: 999px; } a { color: #205d93; }
 .hook-options { background: #F4F2EE; border-radius: 10px; padding: 12px 16px; margin: 12px 0; }
 .direction h3 { display: flex; align-items: center; gap: 10px; }
 .beats { list-style: none; padding: 0 !important; margin: 10px 0; }
@@ -389,6 +410,7 @@ for (const s of shown) {
   // a skill's animation shows this creator's numbers and words only when its opts give them
   for (const b of s.becomes ?? []) for (const x of optsIssues(b.anim, b.opts)) console.log(`! ${s.id}: ${x}`);
 }
+for (const p of posts) for (const k of ["cover", "shot"]) if (p[k] && DARK.has(join(dir, p[k]))) console.log(`! ${p.id}'s ${k} (${p[k]}) is all but black (a video's first frame?): the page leaves it out where another picture is there; take a frame of the video that shows it, or give the point its own material`);
 if (argv.includes("--html-only")) { console.log("wrote research/materials.html"); process.exit(0); }
 
 // the two pictures: the choices (what the user answers), then the evidence and the menu
