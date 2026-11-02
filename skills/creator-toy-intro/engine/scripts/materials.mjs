@@ -50,6 +50,12 @@ const ideaWords = {
   "zh-Hans": { pitch: "一句话", image: "让人记住的画面", ownOpening: "这部片自己的开场", length: "约 {n} 秒", special: "素材特别在", sketch: "示意：用创作者自己的素材拼，不是最终画面", opening: "开场（按故事选）", more: "还有 {n} 个点子，在详细页" },
   en: { pitch: "In a sentence", image: "The image people remember", ownOpening: "An opening of the film's own", length: "about {n} s", special: "What is special", sketch: "a sketch from their own material, not the final frame", opening: "Opening (chosen by the story)", more: "{n} more ideas on the detail page" },
 }[lang];
+// a person at the heart of each direction, and the personal moments the research found, used or not
+const heartWords = {
+  "zh-Hant": { heart: "片嘅中心", who: "係邊個", why: "點解做", forWhom: "為邊個做", moment: "嗰一刻", none: "未寫中心嘅人：呢條主線而家淨係數字同手法", moments: "搵到嘅私人時刻", momentsNote: "家人、點解開始、為某個人整嘅嘢：用咗喺邊條主線，冇用嘅講原因", usedIn: "用喺", notUsed: "冇用", noneFound: "搵過，冇搵到私人時刻：片嘅中心係創作者本人同一直做緊嘅嘢", sep: "、" },
+  "zh-Hans": { heart: "片子的中心", who: "是谁", why: "为什么做", forWhom: "为谁做", moment: "那一刻", none: "还没写中心的人：这条主线现在只有数字和手法", moments: "找到的私人时刻", momentsNote: "家人、为什么开始、为某个人做的东西：用在哪条主线，没用的说明原因", usedIn: "用在", notUsed: "没用", noneFound: "找过，没找到私人时刻：片子的中心是创作者本人和一直在做的事", sep: "、" },
+  en: { heart: "At its heart", who: "Who", why: "Why they do it", forWhom: "For whom", moment: "The moment", none: "No person at its heart yet: as it stands, this story is numbers and devices", moments: "Personal moments found", momentsNote: "Family, why they started, something made for one person: which story uses each, and why one is left out", usedIn: "In", notUsed: "Not used", noneFound: "Looked, and found no personal moment: the film's heart is the creator and what they keep doing", sep: ", " },
+}[lang];
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // a picture: a file, or a folder of their work (research.md writes "assets/work/"), shown by its first picture
 const PIC = /\.(png|jpe?g|webp|gif)$/i;
@@ -134,6 +140,19 @@ const seconds = (d) => {
   for (const x of d.beats ?? []) { const b = story.find((q) => q.id === x.story)?.becomes?.[x.idea ?? 0]; if (b) t += lenOf(b.anim, b); }
   return Math.round(t + pieceLen("endCard"));
 };
+// who is at a direction's heart, first on its card: the person, why, for whom, the moment the film shows
+const heartBlock = (h) => {
+  const rows = [[heartWords.who, h?.who], [heartWords.why, h?.why], [heartWords.forWhom, h?.forWhom], [heartWords.moment, h?.moment]].filter(([, v]) => v);
+  if (!h?.who) return `<p class="gap">${heartWords.none}</p>`;
+  return `<div class="heart"><span class="hl">${heartWords.heart}</span>${rows.map(([k, v]) => `<div class="row"><span class="lb">${k}</span><span class="val">${esc(v)}</span></div>`).join("")}</div>`;
+};
+// a moment is used by a direction whose points (or heart) hold its story point
+const usedBy = (m) => directions.flatMap((d, i) => (m.story && ((d.beats ?? []).some((b) => b.story === m.story) || d.heart?.story === m.story) ? [LETTER[i] ?? i + 1] : []));
+const momentRow = (m) => {
+  const by = usedBy(m), src = m.source && /^https?:\/\//i.test(m.source) ? `<a href="${esc(m.source)}">${esc(host(m.source))}</a>` : esc(m.source ?? "");
+  return `<li><div>${esc(m.what)}${m.date || src ? ` <span class="src">${[esc(m.date ?? ""), src].filter(Boolean).join(" · ")}</span>` : ""}</div><div class="why">${by.length ? `<b>${heartWords.usedIn}:</b> ${by.join(heartWords.sep)}` : `<b>${heartWords.notUsed}:</b> ${esc(m.why ?? "")}`}</div></li>`;
+};
+const momentSection = () => (Array.isArray(facts.moments) ? `<div class="moments"><b>${heartWords.moments}</b><div class="note">${heartWords.momentsNote}</div>${facts.moments.length ? `<ul>${facts.moments.map(momentRow).join("")}</ul>` : `<p class="why">${heartWords.noneFound}</p>`}</div>` : "");
 const directionCard = (d, i) => {
   const evidence = (d.beats ?? []).flatMap((b) => {
     const s = story.find((s) => s.id === b.story);
@@ -143,6 +162,7 @@ const directionCard = (d, i) => {
   const link = (e) => /^https?:\/\//i.test(e.url) ? `<a href="${esc(e.url)}">${esc(e.label || e.url)}</a>` : esc(e.label || e.url);
   return `<article class="direction"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}${TPL ? ` <span class="len">${esc(ideaWords.length.replace("{n}", seconds(d)))}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p>
+  ${heartBlock(d.heart)}
   ${d.pitch ? `<p class="pitch"><b>${ideaWords.pitch}:</b> ${esc(d.pitch)}</p>` : ""}
   ${d.image ? `<p class="pitch"><b>${ideaWords.image}:</b> ${esc(d.image)}</p>` : ""}
   ${openingLine(d.opening)}
@@ -158,7 +178,7 @@ const directionCard = (d, i) => {
 const narrative = facts.narrative ?? {};
 const directionSection = directions.length ? `<section><h2>${D.title}</h2><div class="note">${D.note}</div>
   ${narrative.audience || narrative.goal ? `<div class="brief">${narrative.audience ? `<div class="row"><span class="lb">${D.audience}</span><span class="val">${esc(narrative.audience)}</span></div>` : ""}${narrative.goal ? `<div class="row"><span class="lb">${D.goal}</span><span class="val">${esc(narrative.goal)}</span></div>` : ""}${narrative.inferred ? `<span class="tag">${D.assumed}</span>` : ""}</div>` : ""}
-  ${directions.map(directionCard).join("")}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
+  ${directions.map(directionCard).join("")}${momentSection()}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(openingLabel(a.id))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
 const cta = (c, k) => `<div class="c"><span class="k">${k + 1}</span><div><div class="h">${(c.slogan ?? []).map(esc).join(" ／ ")}</div>${c.prop ? `<div class="num">${esc(c.prop)}</div>` : ""}<div class="why">${esc(c.why)}</div></div></div>`;
@@ -205,6 +225,12 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .brief .lb { color: #8A8780; font-size: 14px; font-weight: 600; }
 .brief .val { font-size: 17px; line-height: 1.6; }
 .brief .tag { justify-self: start; font-size: 13px; color: #7A5A0F; background: #FFF1CC; padding: 3px 10px; border-radius: 999px; }
+/* the person at a direction's heart, and the moments found: warm boxes, rows like the brief's */
+.heart, .moments { background: #FFF6EC; border: 1px solid #F1DEC4; border-radius: 12px; padding: 12px 18px; margin: 10px 0; display: grid; gap: 6px; }
+.heart .hl { color: #9A5B13; font-size: 14px; font-weight: 700; }
+.heart .row { display: grid; grid-template-columns: 7em 1fr; gap: 14px; align-items: baseline; }
+.heart .lb { color: #8A8780; font-size: 14px; font-weight: 600; } .heart .val { font-size: 16px; line-height: 1.55; }
+.moments { margin-top: 18px; } .moments .note { margin: 0; } .moments ul { padding-left: 20px; } .moments li { margin: 6px 0; font-size: 16px; }
 .direction { border-top: 1px solid #ddd; padding: 18px 0; line-height: 1.6; overflow-wrap: anywhere; }
 .direction h3 { font-size: 22px; } .direction p { margin: 8px 0; font-size: 17px; }
 .direction ol, .direction ul { padding-left: 24px; } .direction li { margin: 6px 0; }
@@ -219,7 +245,7 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .sb, .op > div, .pro > div { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 700px) {
   body { padding: 20px 14px; }
-  .brief .row { grid-template-columns: 1fr; gap: 2px; }
+  .brief .row, .heart .row { grid-template-columns: 1fr; gap: 2px; }
   h1 { font-size: 26px; } h2 { font-size: 21px; }
   section { padding: 18px 16px; }
   .pro { padding: 14px; gap: 12px; }
@@ -342,6 +368,18 @@ writeFileSync(join(dir, "research/materials.html"), page(decide + more));
 }
 for (const [i, d] of directions.entries()) if (d.opening?.id === "own" && (!d.opening.pitch || !img(d.opening.sketch))) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": its own opening needs a pitch and a sketch on the page ("opening": { "id": "own", "beat", "pitch", "sketch", "why" })`);
 for (const [i, d] of directions.entries()) if (!d.image) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": no image people remember yet ("image": references/story-directions.md)`);
+// a person at each direction's heart, and the moment it shows (references/story-directions.md, "Start from the person")
+const lookedNone = Array.isArray(facts.moments) && !facts.moments.length;
+for (const [i, d] of directions.entries()) {
+  const tag = `direction ${LETTER[i] ?? i + 1} "${d.title}"`, h = d.heart ?? {};
+  const points = (d.beats ?? []).map((b) => story.find((s) => s.id === b.story)).filter(Boolean);
+  if (!h.who) console.log(`! ${tag}: no person at its heart yet ("heart": who, why, for whom, the moment and the point that holds it): as it stands it is numbers and devices`);
+  else if (!h.moment && !lookedNone) console.log(`! ${tag}: its heart names no moment ("heart.moment", from "moments"); if you looked and found none, say so with "moments": []`);
+  else if (h.story && !points.some((s) => s.id === h.story)) console.log(`! ${tag}: its heart's moment (${h.story}) is not one of its points, so the film never shows it`);
+  if (points.length > 1 && points.every((s) => (s.numbers ?? []).length) && !points.some((s) => s.id === h.story)) console.log(`! ${tag}: every point is a number and none holds its heart's moment: a film that proves popularity`);
+}
+if (directions.length && !Array.isArray(facts.moments)) console.log(`! no personal moments written down ("moments": each one found, used or not; [] when you looked and found none: references/research.md)`);
+for (const m of facts.moments ?? []) if (!usedBy(m).length && !m.why) console.log(`! moment "${m.what}": in no direction, and no reason why ("why"): the page shows the user every one left out`);
 const shown = directions.length ? story.filter((s) => directions.some((d) => (d.beats ?? []).some((b) => b.story === s.id))) : story;
 for (const s of shown) {
   const own = (s.becomes ?? []).filter(ownIdea);

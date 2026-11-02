@@ -60,7 +60,9 @@ not imply an unsupported event, endorsement, skill, income or causal claim.
      first beat?
    - **Heart:** who is at its heart (a person: who they are, why they do it,
      for whom), and what would a stranger feel? A film of numbers and devices
-     can be clever and still move no one.
+     can be clever and still move no one. Does the film show the moment its
+     `heart` names? Of the `moments` found, was a stronger one left out, and is
+     its reason good (never its views)?
 3. Save the actual review to `research/story-test.json`:
 
 ```json

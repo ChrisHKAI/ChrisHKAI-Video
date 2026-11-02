@@ -20,6 +20,8 @@ export function storyTestInput(facts) {
     ending: facts.picks?.cta ?? direction.cta ?? null,
     facts: selected,
     posts: (facts.posts ?? []).filter((p) => postIds.has(p.id)),
+    // the personal moments found, used or not: was a stronger one left out? (only when written, so older reviews stay current)
+    ...(facts.moments ? { moments: facts.moments } : {}),
   };
 }
 

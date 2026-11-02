@@ -18,6 +18,8 @@ export function resolveDirection(facts) {
   const warnings = direction.gaps.length
     ? [`direction "${direction.id}" has open evidence gaps (${direction.gaps.join("; ")}): keep its claims to what the sources support, and tell the user`]
     : [];
+  // a person at its heart, not a number (SKILL.md, "The bar"): who, why, for whom, the moment
+  if (!direction.heart?.who?.trim()) warnings.push(`direction "${direction.id}" has no person at its heart (heart: who, why, for whom, the moment): as it stands it is numbers and devices (references/story-directions.md)`);
   if (!Array.isArray(direction.beats) || direction.beats.length < 1 || direction.beats.length > 4) throw new Error(`direction "${direction.id}" needs 1–4 story beats`);
   const ids = direction.beats.map((b, i) => {
     if (!(facts.story ?? []).some((s) => s.id === b.story)) throw new Error(`direction "${direction.id}" names missing story "${b.story}"`);

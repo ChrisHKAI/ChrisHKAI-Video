@@ -61,7 +61,7 @@ Read only, always: never like, follow, comment or message.
   there, as the page writes them, and open the profile itself: Grok's search
   may not reach the profile page or know the pinned post, which the browser
   shows at once. Grok's milestones and ideas become story points (`story`,
-  below).
+  below); its personal leads, once opened on the page, become `moments`.
 - 抖音, 小红书, Instagram: the profile page in the logged-in browser.
 - 视频号, 公众号 counts: desktop WeChat through computer use, where the agent
   has it; otherwise the user's screenshots.
@@ -178,9 +178,11 @@ theme: `ip`, `title`, `category`, `tags`, `collections`, `highlights`,
 
 ## The story first
 
-Before any animation, write down what the creator is known for and proud
-of: three to five story points in `story`, each a thing a viewer should
-learn about them. Look in:
+Before any animation, the person: who they are, why they do it, for whom,
+and the moments that show it (`moments`, below). Then what the creator is
+known for and proud of: three to five story points in `story`, each a thing a
+viewer should learn about them, chosen to carry that person, with the numbers
+as evidence of how far it went. Look in:
 - their bio and pinned post: what they say they do;
 - their most-viewed and most-discussed posts: what people come for;
 - milestones they posted about (a number reached, a date, a first);
@@ -188,7 +190,7 @@ learn about them. Look in:
 - a role or a title, a turn in their path, a line they are known for;
 - a moment that is theirs alone: their family, why they started, something
   they made for one person, a message that moved them. It may have few views
-  and still be the heart of the film;
+  and still be the heart of the film. Write each one found in `moments`;
 - Grok's milestones and ideas, and the user's own words.
 
 Each story point (an illustrator's, to show the thinking: every creator's
@@ -207,6 +209,17 @@ material asks for its own idea, never this one):
     { "anim": "calendar", "pitch": "一年翻过去", "why": "a flip calendar runs a year; the count reaches 365",
       "opts": { "from": "2025-10-28", "to": "2026-10-28", "count": { "to": 365, "label": "张" } } }] }
 ```
+
+`moments` lists every personal moment the research found, used or not, in
+the user's language: `[{ "what": "drew her sister a cat every day she was in
+hospital", "date": "2025-03-14", "source": "<post URL>", "read": "2026-10-28",
+"story": "s1" }]` (`story`: the point it became, if it became one). One that no
+direction uses says why (`"why": "she asked readers not to share that
+thread"`); views are never the reason. The story page lists them all under the
+directions, so the user sees what was found and what was left out. `[]` means
+you looked and found none: the page says so, and the heart is the creator and
+what they keep doing (`references/story-directions.md`, "Start from the
+person"). Never write one the sources do not show.
 
 `line` is what the viewer takes away, in the creator's language. When the
 user's language differs from the creator's, `line`, quotes and the words on

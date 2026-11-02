@@ -42,6 +42,8 @@ paid search, modelling or rendering. Answer in the creator's language.
    would they remember? Does the opening hand over to the first beat?
 6. Heart: who is at its heart (a person: who they are, why they do it, for whom),
    and what would a stranger feel? Numbers and clever devices alone move no one.
+   Does the film show the moment its heart names? If the packet lists personal
+   moments ("moments"), was a stronger one left out, and is its reason good?
 
 Check evidence and anatomy too: popularity does not establish expertise, cause,
 income or endorsements, and an object-shaped toy does not acquire hands to fit a

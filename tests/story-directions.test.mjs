@@ -26,7 +26,7 @@ function facts() {
       { id: "s2", line: "Learn the method", posts: ["p2"], becomes: [{ anim: "phrase", opts: { text: "Learn the method" } }] },
     ],
     narrative: { audience: "Editors", goal: "Remember a useful tool", inferred: true },
-    directions: [{ id: "method", title: "Learn by making", premise: "Useful tools for editors", hook: { question: "What can I make?", visual: "Reveal the demo", text: "Make this" }, beats: [{ story: "s1", role: "Show the work", action: { does: "Reveal the work", means: "See what the creator makes" } }, { story: "s2", role: "Explain the method", connection: "The tutorial explains the demo", action: { does: "Indicate the tutorial steps", means: "See how the work was made" } }], payoff: "Know what to learn", why: "Specific work and direct sources", gaps: [], cta: { slogan: ["Build along"], prop: "a tiny tool" } }],
+    directions: [{ id: "method", title: "Learn by making", premise: "Useful tools for editors", heart: { who: "An editor who builds the checks they need", why: "Their own exports kept failing", forWhom: "Editors like them", moment: "The night a failed export made them write the first check", story: "s1" }, hook: { question: "What can I make?", visual: "Reveal the demo", text: "Make this" }, beats: [{ story: "s1", role: "Show the work", action: { does: "Reveal the work", means: "See what the creator makes" } }, { story: "s2", role: "Explain the method", connection: "The tutorial explains the demo", action: { does: "Indicate the tutorial steps", means: "See how the work was made" } }], payoff: "Know what to learn", why: "Specific work and direct sources", gaps: [], cta: { slogan: ["Build along"], prop: "a tiny tool" } }],
     recommendedDirection: "method", picks: { direction: "method", opening: "page-stand" },
   };
 }
@@ -502,4 +502,50 @@ test("a pinned post that is a paid partnership is marked on the page and kept ou
   writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
   applied = run(dir, "apply-research.mjs", [dir]);
   assert.match(applied.stdout, /"Tool demo", is a paid partnership/);
+});
+
+test("each direction has a person at its heart, shown first on its card; the moments found are listed, used or not", (t) => {
+  const f = facts();
+  f.moments = [
+    { what: "The night a failed export made them write the first check", date: "2026-03-02", source: "https://example.org/p1", story: "s1" },
+    { what: "A reader wrote that the check saved her thesis film", source: "https://example.org/p9" },
+  ];
+  const dir = workspace(t, f);
+  let r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  assert.equal(r.status, 0, r.stderr);
+  let html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  // the heart comes before the pitch and the opening, in rows
+  assert.match(html, /<div class="heart"><span class="hl">片子的中心<\/span><div class="row"><span class="lb">是谁<\/span><span class="val">An editor who builds the checks they need/);
+  assert.match(html, /找到的私人时刻[\s\S]*The night a failed export[\s\S]*用在:<\/b> A[\s\S]*A reader wrote[\s\S]*没用:/);
+  assert.match(r.stdout, /moment "A reader wrote that the check saved her thesis film": in no direction, and no reason why/);
+  assert.doesNotMatch(r.stdout, /no person at its heart/);
+  assert.doesNotMatch(r.stdout, /every point is a number/);
+  // the reason given, the warning goes; the review packet carries the moments
+  f.moments[1].why = "Not in a post we could open";
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
+  r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "en"]);
+  assert.doesNotMatch(r.stdout, /no reason why/);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /Not used:<\/b> Not in a post we could open/);
+  assert.match(run(dir, "story-test.mjs", [dir]).stdout + readFileSync(join(dir, "research/story-test.md"), "utf8"), /saved her thesis film/);
+});
+
+test("a direction without a person at its heart is said: on the page, by the story page's check and by apply-research", (t) => {
+  const f = facts();
+  delete f.directions[0].heart;
+  f.story[1].numbers = [metric("500")];
+  const dir = workspace(t, f);
+  const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /<p class="gap">还没写中心的人/);
+  assert.match(r.stdout, /no person at its heart yet/);
+  assert.match(r.stdout, /every point is a number and none holds its heart's moment/);
+  assert.match(r.stdout, /no personal moments written down/);
+  assert.match(resolveDirection(f).warnings.join("\n"), /no person at its heart/);
+  // looked and found none: the page says so, and a heart without a moment stands
+  f.directions[0].heart = { who: "An editor who builds the checks they need", why: "Their own exports kept failing" };
+  f.moments = [];
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  const again = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  assert.doesNotMatch(again.stdout, /no person at its heart|names no moment|no personal moments/);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /找过，没找到私人时刻/);
 });
