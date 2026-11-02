@@ -194,9 +194,8 @@ shape references facts already present in `story`; replace all sample content:
 ```
 
 An opening of the film's own (`"opening": { "id": "own", ... }`) has no preview
-strip of the skill's: give it `"pitch"`, `"sketch"` (made from their material,
-like a point's idea) and `"material"` (the page or picture it starts from), and
-the story page shows it as the direction's first row, before its beats.
+strip of the skill's: its `"sketch"` is made from their material, like a point's
+idea, and the story page shows it whole under the opening's line.
 
 Compare creator specificity, audience relevance, evidence and visual clarity in
 plain words. Recommend one supported direction with a concrete reason, not a
