@@ -77,8 +77,9 @@ if SOUND == "band":  # the arrangement below on real instruments, each as loud a
 music, drums, bass, keys, sfx, verb = Bus(), Bus(), Bus(), Bus(), Bus(), Bus()
 
 
-CHORDS = {"G": ["G2", "B2", "D3", "G3"], "Em": ["E2", "G2", "B2", "E3"], "C": ["C3", "E3", "G3", "C4"], "D": ["D3", "F#3", "A3", "D4"], "Am": ["A2", "C3", "E3", "A3"]}
-ROOT_OF = {"G": "G1", "Em": "E1", "C": "C1", "D": "D1", "Am": "A1"}
+# any chord name a beat writes (Dmaj7, F#m, Bbsus4 …) is voiced like these (synth.Chords)
+CHORDS = Chords({"G": ["G2", "B2", "D3", "G3"], "Em": ["E2", "G2", "B2", "E3"], "C": ["C3", "E3", "G3", "C4"], "D": ["D3", "F#3", "A3", "D4"], "Am": ["A2", "C3", "E3", "A3"]}, "pad")
+ROOT_OF = Chords({"G": "G1", "Em": "E1", "C": "C1", "D": "D1", "Am": "A1"}, "root")
 DROP = EV["pop"]
 kick_times = []
 

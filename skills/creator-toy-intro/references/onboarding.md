@@ -87,7 +87,9 @@ asking again; a new request of theirs wins over it.
      and make the X film (the 9:16 one plays on phones).
    - only when the link is not an X profile: the creator's X handle, if they
      have one; the film's page is the X profile either way.
-   - only when doctor found Grok Build and the creator is on X: whether to
+   - only when doctor found Grok Build and the creator is active on X (posts
+     there and has followers; a company's X page with a post or two and no
+     followers is not, so do not ask, use the browser): whether to
      use it to search X for their best posts and milestones (yes, the
      recommended answer: it reaches X's own search and each post's thread),
      or the browser alone.

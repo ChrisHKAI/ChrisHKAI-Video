@@ -146,12 +146,14 @@ for (const [i, step] of steps.entries()) {
       break;
     }
     case "estimate": {
-      // three frames at the final settings: how long the full render takes, before committing to it
-      const n = film.format.duration * film.format.fps, at = [0.3, 0.55, 0.85].map((k) => Math.round(n * k));
+      // three frames at the final settings: how long the full render takes, before committing to it; a fourth
+      // goes first and is not counted, as it carries Cycles' start (kernels, BVH, textures): counted, it made
+      // a 1.3 h film read as 6.4 h
+      const n = film.format.duration * film.format.fps, at = [0.2, 0.3, 0.55, 0.85].map((k) => Math.round(n * k));
       const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", at.join(","), "--samples", "48", "--scale", "100", "--out", "build/estimate", ...more]);
       console.log(`\n▶ ${cmd} ${args.join(" ")}`);
       const r = spawnSync(cmd, args, { cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), encoding: "utf8", maxBuffer: 1 << 26 });
-      const secs = [...(r.stdout ?? "").matchAll(/rendered frame \d+ in ([\d.]+)s/g)].map((m) => +m[1]);
+      const secs = [...(r.stdout ?? "").matchAll(/rendered frame \d+ in ([\d.]+)s/g)].map((m) => +m[1]).slice(1);
       if (r.status !== 0 || !secs.length) { console.error((r.stderr || r.stdout || "").slice(-2000)); process.exit(r.status || 1); }
       const per = secs.reduce((x, y) => x + y, 0) / secs.length;
       // which GPU it ran on (engine/lib/device.py), or the warning that it ran on the CPU

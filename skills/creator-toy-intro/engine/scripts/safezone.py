@@ -11,6 +11,7 @@ hold is among them, is also checked by itself.
 usage: FILM=<film folder> python3 engine/scripts/safezone.py [--in build/previs] [--frames 16,391,871] [--publish douyin,ig]
 writes build/safezone-check.jpg
 """
+import subprocess
 import sys
 from pathlib import Path
 
@@ -34,6 +35,13 @@ COLOURS = {"x": "#1D9BF0", "douyin": "#FE2C55", "xhs": "#FF9F0A", "channels": "#
 publish = platforms(argv)
 
 frames = sorted(SRC.glob("*.png"))
+if "--frames" not in argv and "--in" not in argv:
+    # the storyboard's current frames only: build/previs keeps frames from an older story too
+    try:
+        now = subprocess.run([sys.executable, str(Path(__file__).with_name("storyboard.py")), "--frames"], capture_output=True, text=True, check=True).stdout.strip().splitlines()[-1]
+        frames = [f for f in (SRC / f"{int(n):04d}.png" for n in now.split(",")) if f.exists()] or frames
+    except (subprocess.CalledProcessError, ValueError, IndexError):
+        pass
 if "--frames" in argv:
     frames = [SRC / f"{int(f):04d}.png" for f in arg("--frames", "").split(",")]
     frames = [f for f in frames if f.exists()] or sys.exit(f"none of those frames in {SRC}")

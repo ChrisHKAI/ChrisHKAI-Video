@@ -6,6 +6,8 @@ compressor and limiter. One seeded generator, so a film always sounds the same.
 usage (a template's score):
     import synth; synth.setup(duration, beat); from synth import *
 """
+import re
+
 import numpy as np
 from scipy import signal
 from scipy.ndimage import minimum_filter1d
@@ -31,6 +33,53 @@ def note(name):
     names = {"C": 0, "C#": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "F": 5, "F#": 6, "G": 7, "G#": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11}
     pitch, octave = name[:-1], int(name[-1])
     return 440.0 * 2 ** ((names[pitch] + 12 * (octave + 1) - 69) / 12)
+
+
+SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+QUALITY = [("maj7", (4, 7, 11)), ("m7b5", (3, 6, 10)), ("m7", (3, 7, 10)), ("m6", (3, 7, 9)), ("dim7", (3, 6, 9)), ("dim", (3, 6)),
+           ("aug", (4, 8)), ("+", (4, 8)), ("sus2", (2, 7)), ("sus4", (5, 7)), ("sus", (5, 7)), ("add9", (4, 7, 14)),
+           ("m9", (3, 7, 10, 14)), ("9", (4, 7, 10, 14)), ("m", (3, 7)), ("7", (4, 7, 10)), ("6", (4, 7, 9)), ("", (4, 7))]
+
+
+def chord_tones(name):
+    """Any chord name (G, F#m, Dmaj7, Bbsus4, C/E …): its root's pitch class and the intervals above it."""
+    m = re.fullmatch(r"([A-G][#b]?)(.*?)(?:/[A-G][#b]?)?", name.strip())
+    if not m:
+        raise ValueError(f"chord {name!r}: write a root A–G, then m, 7, maj7, m7, sus2, sus4, dim, aug, 6, add9 or 9")
+    root = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#", "Cb": "B", "Fb": "E"}.get(m[1], m[1])
+    q = next((iv for k, iv in QUALITY if m[2] == k), None)
+    if q is None:
+        raise ValueError(f"chord {name!r}: {m[2]!r} is not a chord quality the score knows (m, 7, maj7, m7, sus2, sus4, dim, aug, 6, add9, 9)")
+    return SHARPS.index(root), q
+
+
+def name_of(midi):
+    return f"{SHARPS[midi % 12]}{midi // 12 - 1}"
+
+
+class Chords(dict):
+    """A chord table that voices any chord name it was not given (kind: "pad", "bed" or "root")."""
+
+    def __init__(self, table, kind):
+        super().__init__(table)
+        self.kind = kind
+
+    def __missing__(self, name):
+        pc, iv = chord_tones(name)
+        if self.kind == "root":
+            v = [name_of(24 + pc)]
+        else:
+            r = 40 + (pc - 4) % 12  # the root between E2 and D#3, as the table's own chords
+            if self.kind == "pad":
+                v = [r] + [r + i for i in iv][:3]
+                v += [r + 12] * (4 - len(v))
+            else:  # the bed's open voicing: root, fifth, the third an octave up, then the seventh (or the fifth) above
+                fifth = next((i for i in iv if i in (6, 7, 8)), 7)
+                top = next((i + 12 for i in iv if i in (9, 10, 11)), fifth + 12)
+                v = [r, r + fifth, r + iv[0] + 12, r + top]
+            v = [name_of(m) for m in v]
+        self[name] = v
+        return v
 
 
 def sos(kind, freq, order=2):
@@ -644,8 +693,8 @@ def limit(x, ceiling_db=-1.0, look=0.004, release=0.06):
 # groove / the effects alone / the effects over a bed): the effects carry the
 # picture and one quiet layer of long chords holds it together. No drums, no
 # plucks, no bass line; a chord changes with the picture, under an effect.
-BED_CHORDS = {"G": ["G2", "D3", "B3", "F#4"], "C": ["C3", "G3", "B3", "E4"], "Em": ["E2", "B2", "G3", "D4"],
-              "Am": ["A2", "E3", "G3", "C4"], "D": ["D3", "A3", "F#4", "A4"]}
+BED_CHORDS = Chords({"G": ["G2", "D3", "B3", "F#4"], "C": ["C3", "G3", "B3", "E4"], "Em": ["E2", "B2", "G3", "D4"],
+                     "Am": ["A2", "E3", "G3", "C4"], "D": ["D3", "A3", "F#4", "A4"]}, "bed")
 
 
 def bed(bus, changes, dur, xf=0.8):

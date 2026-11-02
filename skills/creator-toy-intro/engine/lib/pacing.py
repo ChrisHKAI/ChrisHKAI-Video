@@ -151,6 +151,8 @@ def check(film):
         i = j
 
     hits = [c["t"] for c in tl["cues"] if c["kind"] in HITS or c.get("big")]
+    # a beat's own hits (its module's music.hits, from its start): the score puts a big kick on each
+    hits = sorted(hits + [s["f0"] + h for s in tl.get("SEGMENTS") or [] for h in (s.get("music") or {}).get("hits", []) if h > 0])
     mid = [t for t in hits if 0.3 * dur <= t <= 0.45 * dur]
     lines = None
     if reads is not None:
