@@ -45,6 +45,7 @@ EV = TL["STORY"]["EV"] if SEGS else TL["EV"]
 SDUR = TL["STORY"]["DURATION"] if SEGS else DUR
 LANG = arg("--lang", "zh-Hant")
 SRC = FILM / arg("--in", "build/previs")
+PIECES = {**json.loads((TEMPLATE / "story.json").read_text()).get("pieces", {}), **FILM_JSON.get("story", {}).get("pieces", {})}
 OUT = FILM / "build/storyboard"
 
 
@@ -70,14 +71,23 @@ def film_t(s):
     return None
 
 
+# the way the toy leaves act 3, as the template plays it (timeline.js EXIT): the other way's frame never shows
+ACT3, EXITP = PIECES.get("act3"), PIECES.get("exit")
+PLAYS_ACT3 = not SEGS or bool(ACT3) and any(g["kind"] == "story" and g["s0"] < ACT3[1] - 1e-6 and g["s1"] > ACT3[0] + 1e-6 for g in SEGS)
+EXIT = FILM_JSON.get("story", {}).get("exit") or ("sticker" if FILM_JSON.get("sticker2d") and PLAYS_ACT3 else "jump")
+# a piece that plays only the exit (a bar of it after act 3, before a beat) is described as the exit, not as act 3 again
+EXIT_PART = {"label": {"zh-Hant": "離開封面", "zh-Hans": "离开封面", "en": "Leaving the cover"},
+             "what": {"zh-Hant": "{exit}，鏡頭對正封面", "zh-Hans": "{exit}，镜头对正封面", "en": "{exit}; the camera squares up to the cover"},
+             "uses": {"zh-Hant": "{proof2}", "zh-Hans": "{proof2}", "en": "{proof2}"},
+             "why": {"zh-Hant": "睇清楚佢原本嘅封面", "zh-Hans": "看清创作者原本的封面", "en": "their cover, as they published it"}}
 frame_n = lambda ft: max(1, min(round(ft * FPS) + 1, DUR * FPS))  # noqa: E731
-frames = [(f, frame_n(ft)) for f in SB["frames"] if (ft := film_t(when(f.get("ev", f.get("at")), f.get("i", 0), f.get("dt", 0)))) is not None]
+frames = [(f, frame_n(ft)) for f in SB["frames"] if f.get("exit", EXIT) == EXIT and (ft := film_t(when(f.get("ev", f.get("at")), f.get("i", 0), f.get("dt", 0)))) is not None]
 # the parts in film time: (part, from, to); a part the film cuts into pieces shows once per piece
 PARTS = []
 for pt in SB["parts"]:
     a, b = when(pt["from"]), when(pt["to"])
     if not SEGS:
-        PARTS.append((pt, a, b))
+        PARTS.append(({**pt, "story": True}, a, b))
         continue
     for g in SEGS:
         lo, hi = max(a, g.get("s0", 0)), min(b, g.get("s1", 0))
@@ -87,7 +97,13 @@ for pt in SB["parts"]:
             if hi - lo < 0.5 * (b - a) and lo <= a + 1e-6 and PARTS and abs(PARTS[-1][2] - (lo - g["s0"] + g["f0"])) < 1e-6:
                 PARTS[-1] = (PARTS[-1][0], PARTS[-1][1], hi - g["s0"] + g["f0"])
                 continue
-            PARTS.append(({**pt, "why": g["why"]} if g.get("why") else pt, lo - g["s0"] + g["f0"], hi - g["s0"] + g["f0"]))
+            if EXITP and g["s0"] >= EXITP[0] - 1e-6 and a < EXITP[0] - 1e-6:
+                pt = EXIT_PART
+            elif EXITP and hi <= EXITP[0] + 1e-6 and "{exit}" in json.dumps(pt.get("what", "")):
+                # the piece stops before the toy leaves: its words stop there too
+                pt = {**pt, "what": {k: re.sub(r"[，,;；]\s*\{exit\}", "", v) for k, v in pt["what"].items()}}
+            # "story": its text names the story's own seconds, retimed to where the film plays them (below)
+            PARTS.append(({**pt, "story": True, **({"why": g["why"]} if g.get("why") else {})}, lo - g["s0"] + g["f0"], hi - g["s0"] + g["f0"]))
 HITS = [(h, ft) for h in SB["hits"] if (ft := film_t(when(h["ev"]))) is not None]
 for g in SEGS or []:
     if g["kind"] != "beat":
@@ -120,6 +136,9 @@ pr, posts, cta = FILM_JSON["profile"], FILM_JSON["posts"], FILM_JSON["cta"]
 SIG = (toy.get("signature") or {}).get("move") or ("wobble" if toy.get("body") == "object" else "wave")
 # the counter, unless the film has none (no film.json "counter", or story "counter": false)
 counter = FILM_JSON.get("counter") if FILM_JSON.get("story", {}).get("counter", True) is not False else None
+# nor when no piece of the film plays the count (a film that leaves act 2 out): no line, no sign-off for a number it never shows
+if counter and SEGS and "count" in EV and film_t(when("count")) is None:
+    counter = None
 short = lambda s, n=16: s if len(s) <= n else s[:n] + "…"  # noqa: E731
 W_, H_ = FILM_JSON["format"]["size"]
 orient = orientation(W_, H_)
@@ -282,8 +301,7 @@ def retime(text, story_part):
         ft = film_t(float(m.group(1)))
         return f"{ft:.1f}{m.group(2)}{m.group(3)}" if ft is not None else m.group(0)
     return re.sub(r"(\d+\.\d)(\s?)(秒|s\b)", at, text)
-STORY_PARTS = {id(pt) for pt in SB["parts"]}
-rows = "".join(f'<tr><td><b>{e(t(pt["label"]))}</b><br><code>{a:.1f}–{b:.1f} s</code></td><td>{e(retime(t(pt.get("what", "")), id(pt) in STORY_PARTS))}</td><td>{e(t(pt.get("why", "")) or "—")}</td><td>{e(t(pt.get("uses", "")))}</td></tr>' for pt, a, b in PARTS)
+rows = "".join(f'<tr><td><b>{e(t(pt["label"]))}</b><br><code>{a:.1f}–{b:.1f} s</code></td><td>{e(retime(t(pt.get("what", "")), pt.get("story")))}</td><td>{e(t(pt.get("why", "")) or "—")}</td><td>{e(t(pt.get("uses", "")))}</td></tr>' for pt, a, b in PARTS)
 
 # the beat grid: a cell a beat, bands for the parts, a red line on each hit
 beats = round(DUR * BPM / 60)
@@ -297,7 +315,7 @@ animatic = f'<section><h2>{W["animatic"]}</h2><video controls src="animatic.mp4"
 # the film's sound is its own score under its effects, in the animatic: no menu of versions (references/sound.md)
 sounds = ""
 checks_html = "".join(f'<li class="{"ok" if ok else "warn"}"><b>{W["ok"] if ok else W["warn"]}</b>{e(msg)}</li>' for ok, msg in checks)
-decide = "".join(f"<li>{e(t(d))}</li>" for d in SB["decisions"])
+decide = "".join(f"<li>{e(t(d))}</li>" for d in SB["decisions"] if counter or "{counter}" not in json.dumps(d))
 specs = [f"{W_}×{H_} · {FPS} fps", f"{DUR} s · {BPM} BPM", FILL["publish"], "Blender Cycles"]
 title = W["title"].format(**FILL)
 

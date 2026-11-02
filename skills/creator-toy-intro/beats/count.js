@@ -125,7 +125,7 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, signature, ki
       part: {
         label: { "zh-Hant": "數字", "zh-Hans": "数字", en: "The number" },
         what: { "zh-Hant": `${final}：由 ${start} 跳上去，喺重拍鎖定，公仔跳起`, "zh-Hans": `${final}：从 ${start} 跳上去，在重拍锁定，公仔跳起`, en: `${final}: counts up from ${start} and locks on the downbeat; the toy jumps for joy` },
-        uses: { "zh-Hant": "用家講嘅數字", "zh-Hans": "用户给的数字", en: "the user's number" },
+        uses: { "zh-Hant": "資料入面有出處嘅數字", "zh-Hans": "资料里有出处的数字", en: "a sourced number from the research" },
         why: { "zh-Hant": "一個數字證明佢講嘅嘢", "zh-Hans": "一个数字证明说的是真的", en: "a number that proves the point" },
       },
       frames: [

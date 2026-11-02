@@ -108,7 +108,7 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
       part: {
         label: { "zh-Hant": "一句話", "zh-Hans": "一句话", en: "The line" },
         what: { "zh-Hant": `「${line}」逐個字由地下彈出，最後一個字落喺重拍，公仔跳起`, "zh-Hans": `「${line}」逐个字从地下弹出，最后一个字落在重拍，公仔跳起`, en: `"${line}" rises a letter at a time; the last lands on the downbeat and the toy jumps for joy` },
-        uses: { "zh-Hant": "用家嘅原話", "zh-Hans": "用户的原话", en: "the user's own words" },
+        uses: { "zh-Hant": "佢自己嘅原話", "zh-Hans": "创作者自己的原话", en: "their own words" },
         why: { "zh-Hant": "佢自己一句話，大到記得住", "zh-Hans": "创作者自己的一句话，大到记得住", en: "their own words, big enough to remember" },
       },
       frames: [

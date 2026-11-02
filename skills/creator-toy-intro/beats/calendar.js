@@ -202,7 +202,7 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, kit, math, qu
       part: {
         label: { "zh-Hant": "日子", "zh-Hans": "日子", en: "The days" },
         what: { "zh-Hant": `月曆由 ${span} 越翻越快${C ? "，數字跟住升" : ""}，喺重拍停低${STAMP.length ? `，蓋上「${STAMP.join("")}」` : ""}`, "zh-Hans": `日历从 ${span} 越翻越快${C ? "，数字跟着升" : ""}，在重拍停下${STAMP.length ? `，盖上「${STAMP.join("")}」` : ""}`, en: `A flip calendar runs ${span}, faster and faster${C ? ", the count climbing beside it" : ""}, and stops on the downbeat${STAMP.length ? ` under a stamp: ${STAMP.join("")}` : ""}` },
-        uses: { "zh-Hant": "冇素材，由 idea 嚟", "zh-Hans": "没有素材，由 idea 来", en: "no picture: from the idea itself" },
+        uses: C?.keys ? { "zh-Hant": "佢自己帖入面嘅日子同數字", "zh-Hans": "创作者自己帖子里的日期和数字", en: "the dates and numbers from their own posts" } : { "zh-Hant": "兩個日子，冇圖", "zh-Hans": "两个日期，没有图", en: "two dates, no picture" },
         why: { "zh-Hant": "用咗幾耐：一段日子變成睇得見嘅嘢", "zh-Hans": "花了多久：一段日子变成看得见的东西", en: "how long it took, made something you can see" },
       },
       frames: [
