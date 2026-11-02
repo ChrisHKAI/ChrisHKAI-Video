@@ -122,6 +122,13 @@ goes to `extra`; in the film it rises from the name at the top.
   in the film's language, the creator's own script (a 简 creator's `1.1万`
   and `关注者`, even when your browser shows X in 繁 as `1.1萬`, or the API
   gives `11375`); where the source wrote it otherwise, say so in its `note`.
+  From the API (`api.fxtwitter.com`), a post's reposts as X's page counts
+  them are its retweets and quotes together (284 + 166: the page's 450).
+- Dates as the creator lived them: the day in their own time zone (their IP
+  region, where they say they live; most creators here are on UTC+8). The page
+  shows a post's date in the browser's zone and Grok and the APIs give UTC, so
+  a post at 2026-09-27 17:30 UTC is 9月28日 in Beijing: convert, and keep the
+  UTC time in the `note` when the day differs.
 - Current counts are today's: read them from the page or the API now, never from
   an old post that mentions them ("破 3K star" is a milestone, not the count;
   the repo has 8,904 today). Each number keeps `source` (the URL it was read
@@ -327,7 +334,10 @@ FILM=<film> node <skill>/engine/run.mjs studio   # prints http://127.0.0.1:<port
 Where the chat shows pictures, show them too, one story a picture
 (`materials-A.png`, `-B`, `-C`, then `materials-endings.png`, at twice the
 page's pixels): one tall picture is shrunk by a chat until it blurs. Then ask in one
-round (AskUserQuestion where the agent has it, else one message):
+round (AskUserQuestion where the agent has it, else one message). AskUserQuestion
+takes four questions at most: the direction, the ideas, the ending and what to keep
+out, with the ideas as one question ("the recommended idea for every point", or
+another for a point, said in their own words), never a second round:
 - which direction (including its ordered story points), or changes to it;
   for older workspaces without directions, which story points in what order;
 - for a point with more than one idea, which (the first is the one you
