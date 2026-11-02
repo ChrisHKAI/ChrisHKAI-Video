@@ -101,6 +101,10 @@ if (past("research")) {
   }
   const slogan = (film.cta?.slogan ?? []).map((s) => s.text).join("");
   if (film.cta && !slogan) say("bad", "the end card has no slogan", "film.json cta.slogan: one or two short parts");
+  // an idea alone is not a prop: the template would play its own (isnail's snail) in its place, and say nothing
+  const prop = film.cta?.prop, segs = film.story?.segments;
+  const endCard = !segs || segs.some((s) => s.story === "endCard" || (Array.isArray(s.story) && s.story[1] === "end"));
+  if (endCard && prop?.idea && !prop.module && !prop.kind) say("warn", `the end card's prop is an idea only ("${prop.idea}"): until its module is written, the end card plays the skill's snail`, "write it (references/props.md) and set cta.prop.module, or pick a ready-made one: cta.prop.kind \"plinth\"");
 }
 
 // the platform's own marks on the page (film.json branding): copied from the creator's own page, never shipped

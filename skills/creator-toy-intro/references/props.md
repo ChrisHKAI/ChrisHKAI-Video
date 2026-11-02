@@ -17,10 +17,16 @@ with the closing line). You build it here, as code, for this creator.
 | 24.38 | the cut to the end card's stage | `cut` |
 | 24.39–24.70 | the prop arrives (isnail's mark drops in spinning) | `logo` |
 | 24.70–25.10 | it becomes itself (the snail grows under the mark, eyes pop) | `snail`, `eyes` |
-| 24.83–25.15 | the toy falls onto it and lands | `ride` |
+| 24.83–25.15 | the toy falls onto it and lands (`ride` is the landing, 25.15) | `ride` |
 | 25.25–25.75 | the toy's signature move, riding it | `push2` |
 | 25.90–27.90 | it travels along the floor path while the line slaps down letter by letter | `glide`, `letters` |
 | 28.00 | the toy points at the camera; name and handle slap up | `final`, `name` |
+
+An event is one time (a number: `E.ride`, `E.cut`, `E.final`) or a span
+(`[start, end]`: `E.logo`, `E.snail`, `E.glide`), as the template's
+`story.json` `events` has it; read it the same way (`E.ride[1]` is
+undefined, and the prop stops moving: export-anim stops on it and names
+the object).
 
 ## Ready-made, to fill in
 

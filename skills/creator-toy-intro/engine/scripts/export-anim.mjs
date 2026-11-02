@@ -53,7 +53,12 @@ for (const [idx, s] of TIMES) {
   const t = idx / (T.FPS * SUB);
   const regular = s !== null;
   const whole = regular && s % SUB === 0;
-  const put = (name, tr) => tracks[name].push([idx, ...pack(tr)]);
+  // a NaN would be written as null, which Blender reads as "unchanged": the object silently stops moving
+  const put = (name, tr) => {
+    const v = pack(tr), bad = ["position", "rotation", "scale"].filter((_, k) => v.slice([0, 3, 7][k], [3, 7, 10][k]).some((x) => !Number.isFinite(x)));
+    if (bad.length) throw new Error(`${name} at ${t.toFixed(3)} s: its ${bad.join(" and ")} is not a number (NaN): an event read as a span or a time it is not (story.json events: one time is a number, a span [start, end]), or a value missing from film.json`);
+    tracks[name].push([idx, ...v]);
+  };
   const putColor = (name, color) => { if (whole) colors[name].push([s / SUB, ...hex(color).map((v) => +v.toFixed(4)), 1]); };
 
   W.sample(t, { put, putColor, regular, whole, scalars, hex });

@@ -117,7 +117,10 @@ test("selected direction reaches film segments, ending and the preflight check",
   assert.equal(film.cta.prop.idea, "a tiny tool");
   assert.equal(film.counter.display, "1.2万");
   writeFileSync(join(dir, "toy.json"), JSON.stringify({ joints: {}, parts: [] }));
-  assert.equal(run(dir, "check.mjs").status, 0);
+  const preflight = run(dir, "check.mjs");
+  assert.equal(preflight.status, 0);
+  // the prop is an idea only: said, never silently the skill's snail
+  assert.match(preflight.stdout, /the end card's prop is an idea only \("a tiny tool"\)/);
   f.directions[0].payoff = "Changed promise";
   delete f.posts[0].numbers.views.source;
   writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
