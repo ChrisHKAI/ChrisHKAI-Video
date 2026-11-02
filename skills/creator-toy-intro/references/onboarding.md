@@ -101,7 +101,8 @@ asking again; a new request of theirs wins over it.
    the search first, check reminds when it has not run),
    in the user's current folder; tell them where it is. It writes
    `film.json` (`step: "research"`) and the empty `research/`, `assets/`,
-   `recipes/`.
+   `recipes/`. The film's file is named after the handle, not the folder
+   (`lemomo-intro/out/lemomo-ai.mp4`; `--id <name>` for another).
 6. Tell the user, once, how long it all takes and where it stops for
    them, so the wait is never a surprise: the research about 10–20 min
    (then they pick the story), the toy 10–20 min (they approve it), the

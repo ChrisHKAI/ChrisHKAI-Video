@@ -66,7 +66,7 @@ const film = {
 if (argv.includes("--dry-run")) { console.log(JSON.stringify(film, null, 2)); process.exit(0); }
 for (const d of ["research", "assets", "recipes"]) mkdirSync(join(dir, d), { recursive: true });
 writeFileSync(join(dir, "film.json"), JSON.stringify(film, null, 2) + "\n");
-console.log(`wrote ${join(dir, "film.json")}`);
-console.log(JSON.stringify(film, null, 2));
+// one line, not the whole film.json (--dry-run prints that)
+console.log(`wrote ${join(dir, "film.json")}: ${theme} ${aspect}, ${film.language}, publish ${publish.join(", ")}, Grok ${film.grok === undefined ? "not asked" : film.grok ? "yes" : "no"}; the film will be ${film.output}`);
 if (link?.short) console.log("The link is a share link: open it in the browser to reach the profile page.");
 if (link && !link.themes) console.log(`${link.platform ?? "This site"} has no stage theme yet: the film plays on ${theme}.`);
