@@ -117,14 +117,28 @@ def film_colours(film):
         m = o.get("mat") or {}
         if m.get("type") == "paper" and isinstance(m.get("color"), str):
             papers.setdefault(group(o["name"]), m["color"])
-    text = {}
+    # lettering never shown on any frame (a template's own end card a film of its own beats never plays) is not read
+    tracks = anim.get("tracks") or {}
+    shown = lambda name: name not in tracks or any(max(abs(k[8]), abs(k[9]), abs(k[10])) > 1e-3 for k in tracks[name])  # noqa: E731
+    text, edges = {}, {}
     for o in anim["objects"]:
         m = o.get("mat") or {}
         # lettering: glyph outlines (curves) in a type material (confetti and a calendar's boxes share the material)
-        if m.get("type") == "type" and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve":
-            back = papers.get(group(o["name"])) if contrast(m["color"], STAGE) < READ else None
-            text.setdefault((m["color"].upper(), (back or STAGE).upper()), []).append(o["name"])
-    text_rows = sorted(({"hex": h, "on": b, "objects": len(n), "names": n[:4], "contrast": contrast(h, b)} for (h, b), n in text.items()), key=lambda r: r["contrast"])
+        if m.get("type") == "type" and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve" and shown(o["name"]):
+            # a beat may say what its lettering stands on ("on": a carpet, a sign) and the dark edge round it ("edge")
+            back = m.get("on") or (papers.get(group(o["name"])) if contrast(m["color"], STAGE) < READ else None)
+            key = (m["color"].upper(), (back or STAGE).upper())
+            text.setdefault(key, []).append(o["name"])
+            if isinstance(m.get("edge"), str):
+                edges[key] = m["edge"].upper()
+
+    def row(h, b, n):
+        r = {"hex": h, "on": b, "objects": len(n), "names": n[:4], "contrast": contrast(h, b)}
+        e = edges.get((h, b))
+        if e and r["contrast"] < READ:  # an edged letter reads by its edge on the ground and its face on the edge
+            r["edge"], r["contrast"] = e, min(contrast(e, b), contrast(h, e))
+        return r
+    text_rows = sorted((row(h, b, n) for (h, b), n in text.items()), key=lambda r: r["contrast"])
     # lettering on the stage beside the toy, in the toy's own colour (a gold line by a lemon): the two read as one
     main = [r for r in toy_rows if r["share"] >= 0.25]
     for r in text_rows:
@@ -183,16 +197,32 @@ def delivered():
         return set()
 
 
+def stage_of(hex_):
+    """A stage in one colour (film.json look.stage "#RRGGBB": the toy's contrast colour, when neither dark nor
+    a mid tone sets the toy off, a grey logo with blue in it, say): the camera sees that colour, the floor is a
+    little darker at its edge and lighter in its middle (OKLab lightness, the hue kept)."""
+    lab = oklab(np.array([rgb(hex_)]))[0]
+    shade = lambda d: hexof(from_oklab([[max(0.0, min(1.0, lab[0] + d)), lab[1], lab[2]]])[0])  # noqa: E731
+    return {"sky": hex_.upper(), "floorEdge": shade(-0.08), "floorRing": shade(-0.03), "floorMid": shade(0.03),
+            "glass": shade(-0.05), "fade": hex_.upper(), "lookdev": shade(0.02),
+            # a light stage (a white like the logo's own paper): the camera sees it as it is and the floor runs into
+            # it with no horizon, the toy's contact shadow on it (engine/lib/look.py light_floor)
+            "light": bool(lab[0] >= 0.85)}
+
+
 def stage_for(film):
     """(name, palette) of the stage this film plays on: film.json look.stage when it says ("dark", "mid",
-    "grey"); else the dark stage, unless 15% or more of the toy melts into it and less melts into a mid one:
-    the slate, or the grey when what melts is blue (a delivered film keeps the dark one it was approved on)."""
+    "grey", or a colour "#RRGGBB": stage_of); else the dark stage, unless 15% or more of the toy melts into it
+    and less melts into a mid one: the slate, or the grey when what melts is blue (a delivered film keeps the
+    dark one it was approved on)."""
     film = Path(film)
     try:
         F = json.loads((film / "film.json").read_text())
     except Exception:
         F = {}
     name = (F.get("look") or {}).get("stage")
+    if isinstance(name, str) and name.startswith("#") and len(name) == 7:
+        return name.upper(), stage_of(name)
     if name not in STAGES and (F.get("step") == "done" or F.get("id") in delivered()):
         name = "dark"  # a delivered film keeps the stage it was approved on
     if name not in STAGES:

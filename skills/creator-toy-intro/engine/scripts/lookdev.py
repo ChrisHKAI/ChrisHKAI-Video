@@ -212,6 +212,37 @@ fm.use_nodes = True
 fp = fm.node_tree.nodes["Principled BSDF"]
 fp.inputs["Base Color"].default_value = rgba(LOOK.stage["lookdev"])  # the film's stage: dark, or mid for a dark toy
 fp.inputs["Roughness"].default_value = 0.45
+if LOOK.stage.get("light"):  # a light stage (a white like the logo's paper): the floor runs into it, no horizon
+    fm.node_tree.nodes.remove(fp)
+    lighting.light_floor(fm.node_tree, LOOK, fm.node_tree.nodes["Material Output"], distance=0.09)
+    # and the toy's soft shadow on it, as the film lays one under the toy (scene.py "blob")
+    blob_me = bpy.data.meshes.new("blob")
+    blob_me.from_pydata([(-1, 0, -1), (1, 0, -1), (1, 0, 1), (-1, 0, 1)], [], [(0, 3, 2, 1)])
+    uv = blob_me.uv_layers.new(name="UVMap")
+    for lp, (u, v) in zip(blob_me.loops, [(0, 0), (0, 1), (1, 1), (1, 0)]):
+        uv.data[lp.index].uv = (u, v)
+    blob = bpy.data.objects.new("blob", blob_me)
+    scene.collection.objects.link(blob)
+    blob.parent = root
+    blob.location = (0, 0.0006, 0)
+    blob.scale = (0.62 * HERO.get("height", 0.113), 1, 0.3 * HERO.get("height", 0.113))
+    bmat = bpy.data.materials.new("blob")
+    bmat.use_nodes = True
+    bt = bmat.node_tree
+    bp = bt.nodes["Principled BSDF"]
+    bp.inputs["Base Color"].default_value = (0, 0, 0, 1)
+    tc, mp, grad, ramp = (bt.nodes.new(n) for n in ("ShaderNodeTexCoord", "ShaderNodeMapping", "ShaderNodeTexGradient", "ShaderNodeValToRGB"))
+    grad.gradient_type = "SPHERICAL"
+    mp.inputs["Location"].default_value = (-1, -1, 0)
+    mp.inputs["Scale"].default_value = (2, 2, 1)
+    ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
+    ramp.color_ramp.elements[1].position = 0.9
+    ramp.color_ramp.elements[1].color = (0.58, 0.58, 0.58, 1)
+    bt.links.new(tc.outputs["UV"], mp.inputs["Vector"])
+    bt.links.new(mp.outputs["Vector"], grad.inputs["Vector"])
+    bt.links.new(grad.outputs["Fac"], ramp.inputs["Fac"])
+    bt.links.new(ramp.outputs["Color"], bp.inputs["Alpha"])
+    blob_me.materials.append(bmat)
 floor_me.materials.append(fm)
 
 hero, J = build_hero("mascot")

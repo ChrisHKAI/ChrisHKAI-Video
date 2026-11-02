@@ -102,7 +102,7 @@ film.json `"look"` changes the defaults:
 | `softbox` | 1.4 | how bright the reflected softbox is |
 | `view` | `"Khronos PBR Neutral"` | the colour transform |
 | `light` | | `"classic"`: the first films' look (Standard, a rim on everything, one even sky) |
-| `stage` | by the toy | `"dark"`, `"mid"` (blue slate) or `"grey"`: the stage's tone, when the user wants another than the toy picks |
+| `stage` | by the toy | `"dark"`, `"mid"` (blue slate) or `"grey"`: the stage's tone, when the user wants another than the toy picks; or a colour `"#RRGGBB"`, the toy's contrast colour, when none of the three sets it off (a dark grey logo with blue in it melts into the dark and clashes with the slate). A light colour (a white like the logo's own paper, `"#FFFFFF"`) is shown as itself: the camera sees it as that colour, the floor runs into it with no horizon and the toy's soft shadow on it, and the finish leaves out the bloom; its lettering takes the toy's dark |
 
 `-- --look classic` and `-- --rim 6` try a look on a few frames first
 (`--frames … --samples 24 --scale 50`). The toy's look-dev (step 3) shares

@@ -186,7 +186,13 @@ def material(spec):
     result = [m]
     if kind == "ui":
         p = principled(nt, "#030303", 0.3, 0.1, coat=0.3, coat_rough=0.1)
-        t = tex_node(nt, image(spec["image"]), "EXTEND")
+        t = tex_node(nt, image(spec.get("movie") or spec["image"]), "EXTEND")
+        if spec.get("movie"):  # a film on the panel: it plays from frame "start", round and round
+            t.image.source = "MOVIE"
+            t.image_user.frame_duration = spec["frames"]
+            t.image_user.frame_start = spec.get("start", 1)
+            t.image_user.use_cyclic = True
+            t.image_user.use_auto_refresh = True
         L.new(t.outputs["Color"], p.inputs["Emission Color"])
         p.inputs["Emission Strength"].default_value = 1.0
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
@@ -271,6 +277,15 @@ def material(spec):
         p = principled(nt, spec["color"], 0.22, 0.5, coat=0.8, coat_rough=0.05)
         p.inputs["Emission Color"].default_value = rgba(spec["color"])
         p.inputs["Emission Strength"].default_value = spec["emit"]
+        if spec.get("glass") or spec.get("shine"):  # crystal lettering, as a logo's glassy facets: a hard shine (and light through it)
+            p.inputs["Transmission Weight"].default_value = spec.get("glass") or 0.0
+            p.inputs["Roughness"].default_value = 0.03
+            p.inputs["IOR"].default_value = 1.45
+            p.inputs["Coat Weight"].default_value = 1.0
+            p.inputs["Coat Roughness"].default_value = 0.02
+        if spec.get("metal") is not None:  # metal lettering (a trophy's chrome, a plaque's brass): its roughness
+            p.inputs["Metallic"].default_value = 1.0
+            p.inputs["Roughness"].default_value = spec["metal"]
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
     elif kind == "paper":  # torn labels: matte paper with a little grain
         tc = nt.nodes.new("ShaderNodeTexCoord")
@@ -300,6 +315,8 @@ def material(spec):
         p.inputs["Emission Strength"].default_value = 0.12
         L.new(bump.outputs["Normal"], p.inputs["Normal"])
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
+    elif kind in ("stage", "floor") and LOOK.stage.get("light"):  # a light stage: white paper, the toy's shadow on it
+        lighting.light_floor(nt, LOOK, out)
     elif kind == "stage":  # the CTA floor: glass in the stage's tone that mirrors the line, fading out far away
         tc = nt.nodes.new("ShaderNodeTexCoord")
         grad = nt.nodes.new("ShaderNodeTexGradient")
@@ -384,6 +401,18 @@ def material(spec):
         L.new(em.outputs[0], p.inputs["Emission Strength"])
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
         result = [m, edge_material()]
+    elif kind == "beam":  # light seen in the air or on the floor (a stage spot's cone, its pool): glows by the
+        # picture's alpha, clear elsewhere
+        tx = tex_node(nt, image(spec["image"]), "CLIP")
+        e = nt.nodes.new("ShaderNodeEmission")
+        e.inputs["Color"].default_value = rgba(spec.get("color", "#FFFFFF"))
+        e.inputs["Strength"].default_value = spec.get("strength", 1.0)
+        tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+        mix = nt.nodes.new("ShaderNodeMixShader")
+        L.new(tx.outputs["Alpha"], mix.inputs["Fac"])
+        L.new(tr.outputs["BSDF"], mix.inputs[1])
+        L.new(e.outputs["Emission"], mix.inputs[2])
+        L.new(mix.outputs["Shader"], out.inputs["Surface"])
     elif kind == "card2d":  # the 2D mascot sticker: the cover's own shading, cut out by alpha
         tx = tex_node(nt, image(spec["image"]), "CLIP")
         geo = nt.nodes.new("ShaderNodeNewGeometry")
@@ -501,6 +530,12 @@ def material(spec):
         keyed.append(("blob", nt, k))
     else:
         raise ValueError(kind)
+    if spec.get("sampled") is False:
+        # a glow that only shows itself (a lit facet on the toy, a line of light, a picture card beside it): not
+        # sampled as a light, or Cycles spends the toy's light samples on it and the toy, a few mm behind it, comes
+        # out dark and blotched on some frames
+        for mm in result:
+            mm.cycles.emission_sampling = "NONE"
     mats[key] = result
     return result
 
@@ -748,7 +783,8 @@ def curve_piece(o):
     ever; several are each filled on their own and joined into one mesh."""
     g = o["geo"]
     parts = islands(g["rings"])
-    if len(parts) <= 1:
+    side = (o.get("mat") or {}).get("side")  # its sides and bevel in a colour of their own (a glass face, a blue edge)
+    if len(parts) <= 1 and not side:
         data = ring_curve(o["name"], g["rings"], g)
     else:
         bm = bmesh.new()
@@ -766,6 +802,12 @@ def curve_piece(o):
         bm.free()
     for mat in material(o["mat"]):
         data.materials.append(mat)
+    if side:
+        data.materials.append(material({"type": "type", "color": side, "emit": 0})[0])
+        edge = len(data.materials) - 1
+        for f in data.polygons:  # all but the faces that look straight out (front and back) take the edge
+            if abs(f.normal.z) < 0.9:
+                f.material_index = edge
     return data
 
 

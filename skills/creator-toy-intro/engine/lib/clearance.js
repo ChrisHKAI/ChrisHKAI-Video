@@ -13,7 +13,8 @@ import { inflateRawSync } from "node:zlib";
 
 const MM = 0.001;
 // what is not a solid: particles, flat pictures, the floor, the camera
-const SKIP_NAME = /^(flake|spark|bit|glow|confetti|burst|strip|floor|cta_floor|fx|camera)/;
+// (a beat's objects carry its prefix, beat<k>_: its sparks and glows are no more solid than the story's)
+const SKIP_NAME = /^(beat\d+_)?(flake|spark|bit|glow|confetti|burst|strip|floor|cta_floor|fx|camera)/;
 const SKIP_GEO = new Set(["plane", "octa", "arc"]);
 
 export function clearance(anim, { toy = "hero", tol = null, every = 1, file = (p) => p } = {}) {
@@ -129,7 +130,13 @@ function partBox(p, file) {
     case "arc": return sym([p.radius + p.tube, p.radius + p.tube, p.tube]);
     case "tube": case "loop": return path(p.pts, p.radii);
     case "prism": { const m = Math.max(p.r, p.depth / 2); return sym([m, m, m]); }
-    case "plate": { const m = Math.max(p.w ?? 0, p.d ?? 0) / 2 || 0.01; return sym([m, m, m]); }
+    case "plate": {
+      if (p.outline) { // a slab of any outline (a logo's pieces): its own bounds, x and z, t thick along y
+        const xs = p.outline.map((q) => q[0]), zs = p.outline.map((q) => q[1]);
+        return [[Math.min(...xs), -p.t / 2, Math.min(...zs)], [Math.max(...xs), p.t / 2, Math.max(...zs)]];
+      }
+      const m = Math.max(p.w ?? 0, p.d ?? 0) / 2 || 0.01; return sym([m, m, m]);
+    }
     case "mesh": {
       const v = npy(file(p.file), "verts.npy");
       if (!v.length) return [null, null];
@@ -155,7 +162,21 @@ function probesOf(g, file) {
     case "ellipsoid": case "blob": return box(r3(g.r), 0.5);
     case "tube": case "loop": return g.pts.map((p, i) => [p, (g.radii[i] ?? g.radii.at(-1)) * 0.9]);
     case "prism": return [[[0, 0, 0], 0.9 * Math.min(g.r, g.depth / 2)]];
-    case "plate": return [[[0, 0, 0], 0.9 * (g.t ?? 0) / 2]];
+    case "plate": {
+      if (!g.outline) return [[[0, 0, 0], 0.9 * (g.t ?? 0) / 2]];
+      // a slab of any outline: its middle, and points two thirds of the way out to each corner, each reaching
+      // half its thickness (its origin may sit anywhere: a logo's pieces keep the logo's own coordinates)
+      // (each reaches no further than the outline's nearest edge either: a sphere half a thick slab wide would
+      // poke out of a thin piece's edge, into whatever it stands on)
+      const n = g.outline.length, c = g.outline.reduce((a, q) => [a[0] + q[0] / n, a[1] + q[1] / n], [0, 0]);
+      const edge = (x, z) => Math.min(...g.outline.map((a, i) => {
+        const b = g.outline[(i + 1) % n], dx = b[0] - a[0], dz = b[1] - a[1];
+        const k = Math.max(0, Math.min(1, ((x - a[0]) * dx + (z - a[1]) * dz) / (dx * dx + dz * dz || 1)));
+        return Math.hypot(x - a[0] - k * dx, z - a[1] - k * dz);
+      }));
+      const probe = (x, z) => [[x, 0, z], 0.9 * Math.min(g.t / 2, edge(x, z))];
+      return [probe(c[0], c[1]), ...g.outline.map((q) => probe(c[0] + (q[0] - c[0]) * 0.66, c[1] + (q[1] - c[1]) * 0.66))];
+    }
     case "mesh": { // a sculpted part: some of its own vertices
       const v = npy(file(g.file), "verts.npy"), n = v.length / 3, step = Math.max(1, Math.floor(n / 120));
       const out = [];

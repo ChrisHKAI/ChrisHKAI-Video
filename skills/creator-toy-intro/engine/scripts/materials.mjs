@@ -84,13 +84,15 @@ const ideaLabel = (b) => { const a = anim(b?.anim); return a ? word(a.label) : b
 // an opening as the viewer sees it: its catalog label without the "開場：" it starts with (the heading says it)
 const openingLabel = (id) => word(anim(id)?.label).replace(/^(開場|开场|Opening)\s*[：:]\s*/i, "") || id;
 const storyCard = (s, k) => {
-  const pic = (s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot)).find(Boolean);
+  // its material whole, up to three pictures down the side (one cover-cropped into the card's tall side showed a sliver)
+  const pics = [...(s.material ?? []).map((m) => img(m)), ...(s.posts ?? []).map((id) => img(post(id)?.cover) ?? img(post(id)?.shot))]
+    .filter((p, i, all) => p && all.indexOf(p) === i).slice(0, 3);
   const numbers = (s.numbers ?? []).map((n) => `<div class="num"><b>${esc(n.display)}</b> ${esc(n.label)}${n.source || n.read ? `<span class="src">${esc(host(n.source))}${n.read ? ` · ${T.read} ${esc(n.read)}` : ""}</span>` : ""}</div>`).join("");
   const turns = (s.becomes ?? []).slice(0, 3).map((b, j) => {
     const pv = ideaPic(b);
     return `<div class="turn"><div class="tl">${j ? "" : `${T.becomes}：`}<b>${esc(ideaLabel(b))}</b></div>${b.pitch ? `<div class="pitch">${esc(b.pitch)}</div>` : ""}${pv ? `<div class="pv${ownIdea(b) ? " sk" : ""}" style="background-image:url('${pv}')"></div>${ownIdea(b) ? `<div class="skn">${ideaWords.sketch}</div>` : ""}` : ""}${b.why ? `<div class="why">${esc(b.why)}</div>` : ""}</div>`;
   }).join("");
-  return `<div class="sc"><div class="sp" style="${pic ? `background-image:url('${pic}')` : ""}"><i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.special ? `<div class="why"><b>${ideaWords.special}:</b> ${esc(s.special)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
+  return `<div class="sc"><div class="sp">${pics.map((p) => `<img src="${p}">`).join("")}<i>${(facts.directions ?? []).length ? `#${k + 1}` : LETTER[k] ?? k + 1}</i></div><div class="sb"><div class="line">${esc(s.line)}</div>${s.says ? `<div class="why">${esc(s.says)}</div>` : ""}${s.special ? `<div class="why"><b>${ideaWords.special}:</b> ${esc(s.special)}</div>` : ""}${s.selection?.reason ? `<div class="why"><b>${editorialWords.reason}:</b> ${esc(s.selection.reason)}</div>` : ""}${numbers}${turns}</div></div>`;
 };
 const directions = facts.directions ?? [];
 const actionWords = {
@@ -106,12 +108,11 @@ const beatRow = (b, n) => {
   return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${idea?.pitch ? `<div class="pitch">${esc(idea.pitch)}</div>` : ""}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}${others ? `<div class="why">${esc(ideaWords.more.replace("{n}", others))}</div>` : ""}</div>${pv ? `<div class="pv bpv${ownIdea(idea) ? " sk" : ""}" style="background-image:url('${pv}')"></div>` : ""}</li>`;
 };
 // the opening a direction chose: its why (what the viewer sees, in this story's words); one of the film's own
-// ({ id: "own", beat, pitch, sketch, why }) by its pitch and its sketch, as a point's own idea is
+// ({ id: "own", beat, pitch, sketch, why }) with a sketch is drawn as the beats' row 0 instead (openingRow)
 const openingLine = (o) => {
-  if (!o?.id) return "";
-  const own = o.id === "own", pv = own && img(o.sketch);
-  const words = own ? [o.pitch, o.why].filter(Boolean).join(" · ") || ideaWords.ownOpening : o.why || openingLabel(o.id);
-  return `<p class="why"><b>${ideaWords.opening}:</b> ${esc(words)}</p>${pv ? `<div class="pv osk" style="background-image:url('${pv}')"></div><div class="skn">${ideaWords.sketch}</div>` : ""}`;
+  if (!o?.id || (o.id === "own" && img(o.sketch))) return "";
+  const words = o.id === "own" ? [o.pitch, o.why].filter(Boolean).join(" · ") || ideaWords.ownOpening : o.why || openingLabel(o.id);
+  return `<p class="why"><b>${ideaWords.opening}:</b> ${esc(words)}</p>`;
 };
 // how long a direction plays, as apply-research cuts it: its opening, each beat's idea, the end card
 const BAR = (60 / (film.format?.bpm ?? 120)) * 4;
@@ -132,6 +133,13 @@ const seconds = (d) => {
   for (const x of d.beats ?? []) { const b = story.find((q) => q.id === x.story)?.becomes?.[x.idea ?? 0]; if (b) t += lenOf(b.anim, b); }
   return Math.round(t + pieceLen("endCard"));
 };
+// a direction's own opening (opening.id "own"), drawn like a beat: its picture, what happens, its sketch
+const openingRow = (o) => {
+  const pv = img(o?.sketch);
+  if (!pv) return "";
+  const pic = img(o.material);
+  return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>0. ${esc(ideaWords.opening)}</b>${o.pitch ? `<div class="pitch">${esc(o.pitch)}</div>` : ""}${o.why ? `<div class="why">${esc(o.why)}</div>` : ""}</div><div class="pv bpv sk" style="background-image:url('${pv}')"></div></li>`;
+};
 const directionCard = (d, i) => {
   const evidence = (d.beats ?? []).flatMap((b) => {
     const s = story.find((s) => s.id === b.story);
@@ -146,7 +154,7 @@ const directionCard = (d, i) => {
   ${openingLine(d.opening)}
   <p><b>${D.visual}:</b> ${esc(d.hook?.visual)} · <b>${D.text}:</b> 「${esc(d.hook?.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(d.hook?.question)}</span></p>
   ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.visual}:</b> ${esc(h.visual)} · <b>${D.text}:</b> 「${esc(h.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(h.question)} · ${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
-  <ol class="beats">${(d.beats ?? []).map(beatRow).join("")}</ol>
+  <ol class="beats">${openingRow(d.opening)}${(d.beats ?? []).map(beatRow).join("")}</ol>
   <p><b>${D.payoff}:</b> ${esc(d.payoff)}</p>
   ${(d.cta?.slogan ?? []).length ? `<p><b>${D.ending}:</b> ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
   <p class="why">${esc(d.why)}</p>
@@ -176,14 +184,14 @@ h1 { font-size: 30px; margin-bottom: 16px; } h2 { font-size: 24px; margin: 6px 0
 .ns { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 6px; } .n { font-size: 14px; color: #555; } .n b { font-size: 17px; color: #1C1B19; }
 section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top: 18px; }
 .stories { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.sc { border: 2px solid #EEE; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 170px 1fr; }
-.sp { background: #E6E2DA center/contain no-repeat; position: relative; min-height: 190px; }
+.sc { border: 2px solid #EEE; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 220px 1fr; }
+.sp { background: #F2EFE9; position: relative; min-height: 190px; padding: 52px 8px 8px; } .sp img { display: block; width: 100%; height: auto; border-radius: 6px; margin-bottom: 8px; }
 .sp i, .pic i { position: absolute; left: 10px; top: 10px; background: #1C1B19; color: #fff; font-style: normal; font-weight: 700; font-size: 22px; padding: 2px 13px; border-radius: 20px; }
 .sb { padding: 14px 16px; } .line { font-size: 19px; font-weight: 700; line-height: 1.4; }
 .num { font-size: 15px; margin-top: 6px; } .num b { font-size: 20px; } .src { color: #999; font-size: 12px; margin-left: 8px; }
 .turn { margin-top: 10px; } .tl { font-size: 15px; } .tl b { color: #E8432E; }
 .pv { height: 52px; margin-top: 6px; border-radius: 6px; background: #111 left center/auto 100% no-repeat; } .pv.sm { height: 44px; }
-.pv.sk { height: 120px; background: #EDEAE4 center/cover no-repeat; } .bpv.sk { height: 110px; } .skn { color: #999; font-size: 12px; margin-top: 3px; }
+.pv.sk { height: 120px; background: #EDEAE4 center/cover no-repeat; } .bpv.sk { height: 146px; background-size: contain; } .skn { color: #999; font-size: 12px; margin-top: 3px; }
 .pitch { font-size: 15px; font-weight: 600; color: #1C1B19; margin-top: 4px; line-height: 1.45; }
 .why { color: #666; font-size: 14px; margin-top: 4px; line-height: 1.5; }
 .ops { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; } .op { display: flex; gap: 10px; } .op b { font-size: 16px; } .op .pv { height: 62px; background-size: 100% auto; }
@@ -206,7 +214,7 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .beats { list-style: none; padding: 0 !important; margin: 10px 0; }
 .beat { display: grid; grid-template-columns: 120px minmax(0, 1fr) 260px; gap: 14px; align-items: center; padding: 8px 0; border-top: 1px solid #EEE; margin: 0 !important; }
 .bp { height: 80px; border-radius: 8px; background: #E6E2DA center/contain no-repeat; }
-.osk { width: 360px; height: 203px; margin: 4px 0 2px; background: #111 center/contain no-repeat; } .len { color: #888; font-size: 15px; font-weight: 400; }
+.len { color: #888; font-size: 15px; font-weight: 400; }
 .bt { font-size: 16px; line-height: 1.5; min-width: 0; } .bpv { height: 62px; margin: 0; background-size: 100% auto; }
 .sb, .op > div, .pro > div { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 700px) {

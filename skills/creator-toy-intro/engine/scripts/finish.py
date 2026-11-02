@@ -34,7 +34,12 @@ def arg(name, default):
 SRC = ROOT / arg("--in", "build/render")
 FIN = ROOT / "build/final"
 OUT = ROOT / arg("--out", FILM_JSON.get("output", "out/film.mp4"))
-BLOOM = (float(arg("--bloom-from", 0.85)), float(arg("--bloom", 0.3)))  # from what brightness, how strong
+import colors  # noqa: E402
+
+# a light stage (white paper) is all over 0.85: no bloom there, and a vignette that only just tones its corners
+LIGHT = colors.stage_for(FILM)[1].get("light", False)
+BLOOM = (float(arg("--bloom-from", 0.85)), float(arg("--bloom", 0.0 if LIGHT else 0.3)))  # from what brightness, how strong
+VIGNETTE = 0.05 if LIGHT else 0.22
 _vignette = {}
 
 
@@ -46,7 +51,7 @@ def look(job):
     if (H, W) not in _vignette:
         yy, xx = np.mgrid[0:H, 0:W]
         r = np.hypot((xx - W / 2) / (W / 2), (yy - H * 0.47) / (H / 2) * 1.0)
-        _vignette[(H, W)] = (1 - 0.22 * np.clip((r - 0.45) / 0.9, 0, 1) ** 1.6)[..., None]
+        _vignette[(H, W)] = (1 - VIGNETTE * np.clip((r - 0.45) / 0.9, 0, 1) ** 1.6)[..., None]
     lin = srgb ** 2.2
     lum = lin @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
     bright = lin * (np.clip((lum - BLOOM[0]) / (1 - BLOOM[0]), 0, 1)[..., None])
