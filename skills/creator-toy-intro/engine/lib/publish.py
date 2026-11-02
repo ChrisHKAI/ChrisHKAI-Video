@@ -65,4 +65,11 @@ def font(size, cjk=False):
             return ImageFont.truetype(f, size)
         except OSError:
             pass
+    if cjk:  # newer macOS keeps PingFang under AssetsV2, not /System/Library/Fonts
+        try:
+            from fonts import face
+            path, index, _ = face("cjk", "zh-Hans")
+            return ImageFont.truetype(path, size, index=index)
+        except Exception:
+            pass
     return ImageFont.load_default()
