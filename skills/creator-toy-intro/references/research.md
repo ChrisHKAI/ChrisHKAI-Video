@@ -269,7 +269,8 @@ What the skill's animations need, so that one is never forced:
 
 Each one's `takes` (in the catalog) says what an idea's `opts` give it:
 `count` `{ to, label }` (and `from`, `unit`…), `calendar` `{ from, to }` (and
-`count`, `stamp`), `phrase` `{ text }`; `act2` may name `{ post, number }`
+`count`, its `keys` their dated milestones `[["2026-09-11", 1000], …]`, and
+`stamp`), `phrase` `{ text }`; `act2` may name `{ post, number }`
 (the post whose number rises and which number: `"views"`), `act3` `{ post }`,
 else the point's first post. The values the catalog's `film` entry shows are
 another film's example: they never reach this one, so an idea that leaves out

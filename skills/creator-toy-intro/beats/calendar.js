@@ -7,10 +7,14 @@
 //
 // film.json, in story.segments:
 //   { "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24",
-//     "count": { "to": 10000, "label": "关注者" }, "stamp": "万粉" }
+//     "count": { "to": 10000, "label": "关注者", "keys": [["2026-09-11", 1000], ["2026-10-17", 8500]] }, "stamp": "万粉" }
 // "count" (optional: as the count beat's, from 0) and "stamp" (optional,
 // a word or two) are left out to show the days alone. Three bars at least;
-// it locks a bar before its end.
+// it locks a bar before its end. A count beside a date is a claim: "keys" are
+// the creator's own dated milestones, and the count reads each on its day,
+// holding it until the day before the next (then it rolls on); without keys
+// it only eases from "from" to "to", and a paused frame may read a number
+// they never had.
 export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, kit, math, quat, pop, mulberry32 }) {
   const { seg, smooth, lerp, easeOut, easeIn, easeInOut, backOut, v3 } = math;
   const { trs, qId, qEuler, qMul, qAxis, mulT, apply } = quat;
@@ -71,7 +75,17 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, kit, math, qu
   const C_EM = 0.04, L_EM = C_EM * 0.45;
   const NUM = C ? kit.readout({ fmt: (v) => kit.formatCount(v, FMT), from: C.from ?? 0, to: C.to, em: C_EM, adv: glyph.adv }) : null;
   const LABEL = C ? [...String(C.label ?? "")].filter((c) => !/\s/.test(c)) : [];
-  const countAt = (g) => (g >= LOCK ? C.to : g < FLIP[0] ? (C.from ?? 0) : Math.floor((C.from ?? 0) + (C.to - (C.from ?? 0)) * Math.pow(flipS(g), 1.8)));
+  // the creator's dated milestones, as [day of the span, value], from the first day to the last
+  const KEYS = C?.keys ? [[0, C.from ?? 0], ...C.keys.map(([d, v]) => [Math.round((day(d) - D0) / 864e5), v]), [DAYS, C.to]] : null;
+  if (KEYS?.some(([d, v], i) => i && (d < KEYS[i - 1][0] || v < KEYS[i - 1][1] || d > DAYS))) throw new Error(`beat "calendar": count.keys must run in date order within ${opts.from}–${opts.to}, each value at least the one before and at most "to"`);
+  const onDay = (n) => {
+    const i = KEYS.findIndex(([d]) => d >= n);
+    if (i <= 0) return KEYS[Math.max(0, i)][1];
+    // it rolls on while the page before turns, and reads the milestone by the time its day shows (the day rounds at .5)
+    const [d0, v0] = KEYS[i - 1], [d1, v1] = KEYS[i], roll = Math.min(1, d1 - d0);
+    return v0 + (v1 - v0) * smooth(seg(n, d1 - roll, d1 - roll / 2));
+  };
+  const countAt = (g) => (g >= LOCK ? C.to : g < FLIP[0] ? (C.from ?? 0) : Math.floor(KEYS ? onDay(nAt(g)) : (C.from ?? 0) + (C.to - (C.from ?? 0)) * Math.pow(flipS(g), 1.8)));
   function countGroup(g) {
     const u = seg(g, LABEL_IN - 0.2, LABEL_IN + 0.2);
     const punch = g > LOCK ? 0.09 * Math.exp(-(g - LOCK) * 9) * Math.cos((g - LOCK) * 30) : 0;

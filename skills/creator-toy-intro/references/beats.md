@@ -50,7 +50,7 @@ top of each file.
 | --- | --- | --- |
 | `page-stand` | an opening: the page fills the frame like a screen, turns and parts into slabs, the toy puffs out of the picture on the 2.0 s downbeat (the other opening is the story's own `opening`: the page floats while the picture peels off like a sticker) | `{ "beat": "page-stand", "bars": 2, "turn": "right" }` |
 | `count` | a number: counts up in 3D as the platform writes it (`10,000`, `1.5万`, `380+`), a label of any length, locks on a downbeat | `{ "beat": "count", "bars": 3, "to": 10000, "label": "关注者" }` |
-| `calendar` | a span of time, from the idea alone: a flip calendar runs from one day to another, a count beside it, a stamp on the lock | `{ "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24", "count": { "to": 10000, "label": "关注者" }, "stamp": "万粉" }` |
+| `calendar` | a span of time, from the idea alone: a flip calendar runs from one day to another, a count beside it, a stamp on the lock. A count beside a date is a claim: `count.keys` are their own dated milestones, each read on its day (without them a paused frame may show a number they never had) | `{ "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24", "count": { "to": 10000, "label": "关注者", "keys": [["2026-09-11", 1000], ["2026-10-17", 8500]] }, "stamp": "万粉" }` |
 | `phrase` | the user's own words: a line rises a letter at a time | `{ "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人" }` |
 
 None of these is the limit. The films made their own when the material
