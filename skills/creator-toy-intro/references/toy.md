@@ -26,7 +26,7 @@ The toy has the body its original has, no more, no less (toy.json `body`):
 | --- | --- | --- |
 | a person, a chibi, a mascot drawn with arms and legs | `person` | about three heads tall, mitten hands, its own legs |
 | an animal | `animal` | its own body: four paws, a tail, ears, as the picture has them |
-| a fruit, a ball, a logo, an object, a face drawn with no limbs | `object` | its own shape alone: no arms, no legs. A lemon is a lemon with a face. |
+| a fruit, a ball, a logo, an object, a face drawn with no limbs | `object` | its own shape alone: no arms, no legs. A lemon is a lemon with a face (`characters/lemon/`). |
 
 Never add a limb the original does not have, and never leave out one it has.
 Something in between (a mascot with stubby feet and no arms) gets exactly
