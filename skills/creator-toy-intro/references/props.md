@@ -58,7 +58,7 @@ A prop is a module in the film's workspace, set in film.json
 - `topAt(t)`: where the toy's feet stand on it (world, metres).
 - `cues(add)`: its sounds, `add(time, kind, options)`, with the synth's
   kinds (`whooshDown`, `land`, `squelch`, `boing`, `glide`, `pop`,
-  `slide`, `ding`, `coins`, `glint`…).
+  `slide`, `ding` (its pitch in `note`, `"E6"` by default), `coins`, `glint`…).
 
 `ctx` gives `film`, the story's events `E`, `cta`, the floor `path` ([x0,
 x1] in stage metres, where the line appears), `readFilmJSON`, and `lib`
