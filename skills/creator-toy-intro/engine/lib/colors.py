@@ -286,3 +286,38 @@ def creator_colours(pictures, k=10, seed=7):
         if all(abs((r["hue"] - a["hue"] + 180) % 360 - 180) > 25 for a in accents):
             accents.append(r)
     return rows, accents
+
+
+def set_against(rows, toy=None, n=4):
+    """Colours to set against the creator's own (the stage, a carpet, ropes, a plinth), never red by habit: their own
+    background when it is plain (a logo's white paper); the hue opposite their main one, light, for the toy's darks
+    to read on, and deep, for its lights; a deep of their own family; a neutral in their hue. rows: creator_colours'
+    rows; toy: the toy's main colours (hexes; else their accents). Each [{hex, why, worst}], worst the lowest
+    contrast of the toy's colours on it: a sheet to show the user, who picks."""
+    toy = [t.upper() for t in (toy or [])] or [r["hex"] for r in rows if r["chroma"] >= 0.05][:3] or [rows[0]["hex"]]
+    loud = [r for r in rows if r["chroma"] >= 0.04] or rows
+    a = sum(math.cos(math.radians(r["hue"])) * r["share"] * r["chroma"] for r in loud)
+    b = sum(math.sin(math.radians(r["hue"])) * r["share"] * r["chroma"] for r in loud)
+    hue, opp = math.degrees(math.atan2(b, a)) % 360, (math.degrees(math.atan2(b, a)) + 180) % 360
+    at = lambda L, c, h: hexof(from_oklab([[L, c * math.cos(math.radians(h)), c * math.sin(math.radians(h))]])[0]).upper()  # noqa: E731
+    worst = lambda h, among=toy: round(min(contrast(t, h) for t in among), 2)  # noqa: E731
+    light_of = lambda h: float(oklab(np.array([rgb(h)]))[0][0])  # noqa: E731
+    darks, lights = [t for t in toy if light_of(t) < 0.6], [t for t in toy if light_of(t) >= 0.6]
+
+    def best(Ls, among, chroma=0.09):  # the lightness in Ls where `among` stands best on the opposite hue
+        c = lambda L: min(chroma, (1 - L) * 0.4 + 0.01)  # noqa: E731  less chroma near white: a pale tint, not a clipped cyan
+        tries = [(L, worst(at(L, c(L), opp), among)) for L in Ls]
+        top = max(w for _, w in tries)
+        L = max(L for L, w in tries if w >= top * 0.95)
+        return at(L, c(L), opp)
+    out = []
+    plain = next((r for r in rows if r["chroma"] < 0.03 and r["light"] > 0.88 and r["share"] >= 0.1), None)
+    if plain:
+        out.append({"hex": plain["hex"].upper(), "why": "their own background"})
+    if darks:
+        out.append({"hex": best([L / 100 for L in range(62, 97, 2)], darks), "why": "the hue opposite theirs, light: the toy's darks read on it"})
+    if lights:
+        out.append({"hex": best([L / 100 for L in range(14, 42, 2)], lights, 0.07), "why": "the hue opposite theirs, deep: the toy's lights read on it"})
+    out.append({"hex": at(0.26, 0.06, hue), "why": "a deep of their own family"})
+    out.append({"hex": at(0.55, 0.012, hue), "why": "a neutral in their hue"})
+    return [{**c, "worst": worst(c["hex"])} for c in out[:n]]
