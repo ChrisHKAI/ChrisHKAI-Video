@@ -58,6 +58,22 @@ score (a few minutes on an Apple GPU, more on others; run it in the
 background), joins the page when it is done, as `animatic.mp4` beside it
 (publish the two together):
 
+The animatic is EEVEE's draft: coloured patches of light on a glossy floor
+(the glow of their picture cards, mirrored) and ragged light beams are that
+engine's, not the film's. The page says so under the animatic; say it to the
+user too, before they ask.
+
+When the user wants another pace ("faster", "1.1x"), compare it before
+re-timing anything: `FILM=<film> python3 <skill>/engine/scripts/animatic.py
+--speeds 1.1,1.2,1.3` writes the cut sped up beside the animatic, picture and
+sound; once they pick one, re-time the beats and the score to it.
+
+When a scene changes after the storyboard (a new idea, a set redesigned),
+go back to the story page first: a sketch of that scene from their material,
+one scene at a time, the user's word on it, then the beat. A sketch costs
+minutes; a round of renders, far more (the Kontec film settled four rounds
+this way).
+
 A beat's set that carries colour (a carpet, ropes, a plinth, the names on
 them) takes it from the creator's colours, never red by habit: `run.mjs
 palette` draws colours set against theirs (their own background, the hue

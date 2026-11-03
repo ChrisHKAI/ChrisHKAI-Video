@@ -80,6 +80,20 @@ claims to climb is not an act-3 cover: give its point another animation, or
 write the climb this cover wants as a beat (references/beats.md). The words
 on a box come with it as its ink piece (`"of"`: the box's piece).
 
+The toy has to fit where it stands. The wall is about 640 × 256 mm and a
+toy about 100 mm tall (toy.json `height`: a lemon was 106 mm), so every
+piece it stands on needs the toy's height of clear space above it, with
+nothing deeper over it there; the stairs go up and back: each higher box
+shallower than the one below, or set to one side. A dense cover (a grid of
+thumbnails, small type everywhere) has no such spots: that is a cover for
+another animation, said in step 2, not forced here. `regions.py` numbers the
+blocks; pick the ledge and the boxes where there is room above them.
+
+When `box7` is cut out of the title (a number inside the headline, punched
+out last), keep the title shallow (about 5–12 mm, not 30): the camera looks
+at the wall from the side (az 14–28°), and a deep title hides the box beside
+it and leaves a dark pit in the headline where the box was cut.
+
 The toy leaves at the end of act 3 by becoming the drawing of itself on
 this cover when there is one (`references/exits.md`).
 
