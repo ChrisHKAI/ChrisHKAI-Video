@@ -28,7 +28,7 @@ cta = F["cta"]
 CHARS = {
     "latin": "0123456789",  # the counter's digits
     "cjk": F["counter"]["unit"] + F["counter"]["label"],
-    "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta["handle"]]),
+    "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta.get("handle") or {"text": ""}]),
 }
 # a count written as the platform writes it (6.5万, 7,253, 46K, a label like "star"): its latin
 # characters in the digits' face, the rest in the unit's

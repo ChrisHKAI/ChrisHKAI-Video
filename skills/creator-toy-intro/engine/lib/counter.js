@@ -123,7 +123,7 @@ export function counterText({ display, label, adv, em, key, prefix = "stat_", ga
       for (const [k, tr] of Object.entries(NUM.at(shown(v), mulT(group, trs([numRight, 0, 0]))))) out[prefix + k] = tr;
       let x = numRight + gap;
       LABEL.forEach((c, i) => { out[`${prefix}l${i}`] = mulT(group, trs([x, 0, 0])); x += adv(key(c)) * em.label; });
-      const p = Math.max(v / to, 1e-4);
+      const p = to > 0 ? Math.max(v / to, 1e-4) : 1e-4; // a count of 0 (a film with no number to raise) keeps its bar hidden
       if (bar) out[bar] = mulT(group, trs([left + (width * p) / 2, -0.011, 0], qId(), [p, 1, 1]));
       return out;
     },

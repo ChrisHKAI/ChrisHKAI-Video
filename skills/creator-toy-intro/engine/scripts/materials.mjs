@@ -91,7 +91,10 @@ const post = (id) => posts.find((p) => p.id === id);
 const pr = facts.profile ?? {};
 const PLATFORMS = JSON.parse(readFileSync(join(SKILL, "engine/lib/platforms.json"), "utf8")).platforms;
 const where = PLATFORMS[facts.platform]?.name ?? facts.platform ?? "";
-const word = (d) => (typeof d === "string" ? d : d?.[lang] ?? d?.["zh-Hant"] ?? d?.en ?? "");
+// a company's picture is its logo, and a page that is not a profile its website (facts.json kind "company")
+const BRAND = facts.kind === "company" ? [[/头像|頭像/g, "logo"], ...(film.source?.platform ? [] : [[/主页/g, "官网"], [/主頁/g, "官網"]])] : [];
+const brand = (t) => BRAND.reduce((s, [a, b]) => s.replace(a, b), t);
+const word = (d) => brand(typeof d === "string" ? d : d?.[lang] ?? d?.["zh-Hant"] ?? d?.en ?? "");
 const LETTER = "ABCDEFGH";
 const host = (u) => { try { return new URL(u).host.replace(/^www\./, ""); } catch { return u ? String(u).slice(0, 28) : ""; } };
 

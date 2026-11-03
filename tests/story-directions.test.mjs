@@ -621,3 +621,40 @@ test("act 3 with a beat after it plays a bar of its exit and leaps; last, its wh
   film = JSON.parse(readFileSync(join(dir, "film.json")));
   assert.deepEqual(film.story.segments.slice(2, 4).map((s) => s.story), ["act3", "exit"]);
 });
+
+test("a company: no posts with an opening of its own, its logo and website named, the handle left off on request", (t) => {
+  const f = facts();
+  f.kind = "company";
+  f.posts = [];
+  f.story.forEach((s) => { delete s.posts; });
+  delete f.picks.opening; // the direction's own opening decides
+  f.directions[0].opening = { id: "page-stand", why: "the page stands up" };
+  let dir = workspace(t, f);
+  // the page would show a post it does not have: said, nothing written
+  let applied = run(dir, "apply-research.mjs", [dir]);
+  assert.notEqual(applied.status, 0);
+  assert.match(applied.stderr, /no posts, but the film opens on their page \("page-stand"\): give it their work as posts/);
+  // its own opening: the film goes on, with no page, no handle under the name
+  f.directions[0].opening = { id: "own", beat: "beats/site.js", pitch: "Their site lights up", sketch: "research/sketches/site.png" };
+  f.directions[0].cta = { slogan: ["Connecting Intelligence", "& Creativity"], prop: "their logo", handle: false };
+  dir = workspace(t, f);
+  mkdirSync(join(dir, "beats"), { recursive: true });
+  writeFileSync(join(dir, "beats/site.js"), "export function makeBeat() {}");
+  applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.match(applied.stdout, /no posts \(the page is never shown\)/);
+  const film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.equal(film.kind, "company");
+  assert.equal(film.cta.handle.text, "");
+  assert.equal(film.posts.pinned.title, undefined);
+  // the story page names its logo, and its website when the link is not a profile
+  const page = JSON.parse(readFileSync(join(dir, "film.json"))); delete page.source.platform;
+  writeFileSync(join(dir, "film.json"), JSON.stringify(page));
+  f.directions[0].opening = { id: "page-stand" }; // no words of its own: the catalog's, in a company's words
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]).status, 0);
+  const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /logo鼓起变成公仔/);
+  assert.doesNotMatch(html, /头像鼓起/);
+  assert.match(html, /官网像屏幕一样平放/);
+});

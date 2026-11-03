@@ -127,7 +127,7 @@ export function reads() {
     { text: film.profile.name, at: [0, E.hops[0][0]] }, // the page, before he hops onto it
     { text: `${film.counter.display ?? `${VIEWS_COUNT}${film.counter.unit}`} ${film.counter.label}`, at: [E.count[0], E.leap[0]] },
     { text: SLOGAN, at: [E.letters, END] },
-    { text: `${film.cta.name.text} ${film.cta.handle.text}`, at: [E.name, END] },
+    { text: `${film.cta.name.text} ${film.cta.handle?.text ?? ""}`.trim(), at: [E.name, END] },
   ];
 }
 
@@ -218,7 +218,7 @@ export function soundCues() {
   [...starts.map((start) => EV.letters + start * LETTER_STEP - 0.06), E.name, E.name + 0.18].forEach((at, i) => add(at, "slap", { i }));
   const nameLen = [...film.cta.name.text].length;
   for (let i = 0; i < nameLen; i++) add(E.name + 0.05 + 0.05 * i, "namePop", { i });
-  add(E.name + 0.22, "namePop", { i: nameLen, handle: true });
+  if (film.cta.handle?.text) add(E.name + 0.22, "namePop", { i: nameLen, handle: true });
   if (CROWN) {
     add(E.crown[1], "crown");
     add(E.crown[1] + 0.05, "sparkle");

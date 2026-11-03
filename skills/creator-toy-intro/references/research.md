@@ -89,14 +89,46 @@ The user may add screenshots of their own any time (total plays, follower
 growth from the app's dashboard). A number with no spot on the profile page
 goes to `extra`; in the film it rises from the name at the top.
 
+### A company or a brand
+
+A film for a company (a studio, an agency, a product) is researched by what
+it makes, not by its profile. Write `"kind": "company"` in facts.json: the
+story page and the storyboard then say "logo" for the picture and "website"
+for a page that is not a profile.
+- Its work first: case studies, campaigns, the products, what its site
+  shows, each with its pictures in `assets/work/`. Then its own line (the
+  words on its site, its tagline) and its brand world: the logo, its colours,
+  its type, the look of its pictures.
+- Its films before its stills: reels, a demo, a showreel, its site's media
+  library (a WordPress site lists its videos at
+  `/wp-json/wp/v2/media?media_type=video`, often more than its work pages
+  show). A picture card plays a film (references/beats.md); a client's or
+  partner's footage only with the user's word that it may be used.
+- Its counts are optional: a company's 334 followers are not its story.
+  Keep a count only when it says something (clients served, a product's
+  users), and never count followers up on screen.
+- Its own words on screen, never the brief's paraphrase: the brief says "AI +
+  creative", its site says "Connecting Intelligence & Creativity"; the film
+  says the second. Where the brief's words and theirs differ, show the user
+  both on the story page (a line in `selectionNotes`) and let them pick.
+- The heart is still a person (references/story-directions.md): its founder,
+  its team, what it made for one client. Never invent one.
+- Posts are optional: a company with no posts worth a page has `"posts": []`;
+  its film then opens with an opening of its own (its site, its Instagram)
+  and needs no number rising from a post.
+
 ## What to keep
 
 - The profile picture first, full size, as `assets/avatar.<ext>`. On X, drop
-  the `_normal` / `_400x400` size from the image URL for the original.
+  the `_normal` / `_400x400` size from the image URL for the original. A
+  company's logo, as large as its site or its brand kit has it (an SVG or a
+  transparent PNG).
 - Then, before anything is built from it, show it and ask which picture the
   toy is made from: this one, or another the user sends. Many profile
   pictures are real people, and some are not the person at all (a logo, a
-  pet, a friend's photo), so this is always asked, never assumed. A real
+  pet, a friend's photo), so this is always asked, never assumed, unless the
+  user's request already says it (a company's brief: "the toy is our logo"):
+  then record it as confirmed, with that request as its `source`. A real
   person's toy reads better from a clearer photo (half or full body, plain
   light), so offer that too. Record the answer in `toy` (below); step 3 (the
   toy) can start right away while the research goes on: a changed story
@@ -296,7 +328,9 @@ service, a link: their bio, pinned post and links say); each pairs a line
 with a prop that ties that to who they are, the way isnail's 公众号 mark
 becomes the shell of a snail because he is 蜗牛King: `{ "slogan":
 ["公众号变现", "找蜗牛"], "prop": "his 公众号 mark becomes a snail's shell; the
-toy rides it", "why": "…" }`.
+toy rides it", "why": "…" }`. Under the name the end card shows their handle;
+an ending with `"handle": false` leaves it off (a company that wants its name
+and its line alone), and one with no handle shows the name alone, never twice.
 
 ## Choose a complete direction
 

@@ -151,13 +151,23 @@ FILL = {
     "prop": (PROP.get(cta.get("prop", {}).get("kind")) or PROP[None]).get(LANG, ""),
     # toy.json's own move by name; any other name is a wave (toy.md), a wobble on a toy with no arms
     "signature": W.get(SIG) if isinstance(W.get(SIG), str) else W["wobble" if toy.get("body") == "object" else "wave"],
-    "proof1": "「" + short(posts["pinned"]["title"]) + "」", "proof2": "「" + short(posts["retro"]["title"]) + "」",
+    "proof1": "「" + short(posts["pinned"].get("title", "")) + "」", "proof2": "「" + short(posts["retro"].get("title", "")) + "」",
     "publish": "、".join(PLATFORMS[p]["name"] for p in publish), "aspect": W[orient],
     "exit": {"sticker": {"zh-Hant": "公仔壓返入封面變貼紙", "zh-Hans": "公仔压回封面变贴纸", "en": "the toy presses back into the cover as a sticker"},
              "jump": {"zh-Hant": "公仔跳出畫面", "zh-Hans": "公仔跳出画面", "en": "the toy leaps out of the frame"}}[
         FILM_JSON.get("story", {}).get("exit") or ("sticker" if FILM_JSON.get("sticker2d") else "jump")].get(LANG, ""),
 }
-t = lambda d: (d if isinstance(d, str) else (d.get(LANG) or d.get("zh-Hant") or next(iter(d.values()), ""))).format(**FILL)  # noqa: E731
+# a company's picture is its logo, and a page that is not a profile its website (film.json kind "company")
+BRAND = ([("头像", "logo"), ("頭像", "logo")] + ([] if (FILM_JSON.get("source") or {}).get("platform") else [("主页", "官网"), ("主頁", "官網")])) if FILM_JSON.get("kind") == "company" else []
+
+
+def brand(s):
+    for a, b in BRAND:
+        s = s.replace(a, b)
+    return s
+
+
+t = lambda d: brand((d if isinstance(d, str) else (d.get(LANG) or d.get("zh-Hant") or next(iter(d.values()), ""))).format(**FILL))  # noqa: E731
 e = html.escape
 
 # notes on the real frames (storyboard-notes.js, inlined): through the studio they land in

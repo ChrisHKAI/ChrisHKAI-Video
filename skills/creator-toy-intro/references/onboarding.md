@@ -76,7 +76,9 @@ asking again; a new request of theirs wins over it.
      from screenshots, the app they show.
    - the script, 简 or 繁: from the profile's own text once seen (step 2);
      `zh-Hans` until then.
-   Not worked out: which picture the toy is made from. Step 2 always asks,
+   Not worked out: which picture the toy is made from, unless the request
+   says it ("make the toy from our logo", a picture they attached): then
+   record that and do not ask again. Otherwise step 2 always asks,
    as soon as the profile picture is in (many are real people, some are not
    the creator at all).
 4. Ask, in one round (AskUserQuestion where the agent has it, else one
