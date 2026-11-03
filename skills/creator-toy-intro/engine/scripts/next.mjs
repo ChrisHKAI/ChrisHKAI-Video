@@ -6,7 +6,9 @@
 //
 // usage: FILM=<film folder> node engine/scripts/next.mjs   (run.mjs next)
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { film, fromFilm } from "../lib/film.js";
+import { join } from "node:path";
+import { film, fromFilm, fromTemplate } from "../lib/film.js";
+import { HOME } from "../lib/tools.js";
 import { storyTestIssues } from "../lib/story-test.js";
 
 const has = (p) => existsSync(fromFilm(p));
@@ -46,7 +48,11 @@ if (step === "research") {
   }
 } else if (step === "toy") {
   read = "references/toy.md";
-  if (!has(film.toy)) todo.push(`the toy, with the body its picture has (person, animal, object) → ${film.toy}`);
+  // a toy made for this creator before (references/toy.md): the start, still shown to the user
+  const slug = (s) => String(s ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const mine = slug(film.source?.handle ?? film.profile?.handle);
+  const saved = mine && existsSync(join(HOME, "characters")) ? readdirSync(join(HOME, "characters")).filter((d) => slug(d).startsWith(mine) || (slug(d.split("-")[0]).length >= 4 && mine.startsWith(slug(d.split("-")[0])))) : [];
+  if (!has(film.toy)) todo.push(`the toy, with the body its picture has (person, animal, object) → ${film.toy}${saved.length ? `; one made for them before: ${saved.map((d) => join(HOME, "characters", d)).join(", ")} (start from it, show the user anyway)` : ""}`);
   else {
     cmds.push("FILM=<film> node <skill>/engine/run.mjs lookdev");
     if (has("build/lookdev/compare.jpg") && newer("build/lookdev/compare.jpg", film.toy)) show = "build/lookdev/compare.jpg: change it from their words until they say it is right; then film.json step → story";
@@ -55,6 +61,11 @@ if (step === "research") {
 } else if (step === "story") {
   read = "references/storyboard.md (and cover-wall.md, props.md, beats.md for what the film plays)";
   for (const seg of film.story?.segments ?? []) if (seg.beat?.startsWith("beats/") && !has(seg.beat)) todo.push(`write ${seg.beat} (references/beats.md, "A beat of your own")`);
+  // act 3 (a cover the toy climbs) needs its wall cut from that cover: the template only stops on it in run.mjs anim
+  const act3 = (() => { try { return JSON.parse(readFileSync(fromTemplate("story.json"), "utf8")).pieces?.act3; } catch { return null; } })();
+  const segs = film.story?.segments;
+  const playsAct3 = act3 && (!segs?.length || segs.some((s) => s.story === "act3" || (Array.isArray(s.story) && s.story[0] < act3[1] && s.story[1] > act3[0])));
+  if (playsAct3 && !film.story?.wall) todo.push("act 3's wall: a recipe that cuts the second post's cover into pieces, and film.json story.wall with their roles (references/cover-wall.md)");
   if (!film.cta?.prop?.module && !film.cta?.prop?.kind) todo.push(`the end card's prop: ${film.cta?.prop?.idea ?? "their idea"} (references/props.md; or the ready-made "plinth")`);
   cmds.push("FILM=<film> node <skill>/engine/run.mjs data check");
   // the film's own score, written once the cut is set, before the animatic (references/sound.md)

@@ -83,7 +83,9 @@ Use `ready` and an empty `issues` list only after the story earns them. The
 script checks completeness and freshness, not whether a story is compelling.
 Do not paste canned answers, change the signature to reuse an old review, or
 remove an issue just to unblock production. Resolve at most three problems,
-then review once more. If it remains weak, narrow the claim/direction to supported
+then review once more. Each round's review is kept: when the story changed,
+`story-test.mjs` copies the last `story-test.json` to
+`story-test-round1.json` (then `-round2` …) before you save the next. If it remains weak, narrow the claim/direction to supported
 work and explain the limitation; do not enter an endless review loop or invent
 facts. Preserve the user's explicit choices and explain any necessary change.
 

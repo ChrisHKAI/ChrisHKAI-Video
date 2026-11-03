@@ -584,3 +584,21 @@ test("an ending picked from another direction is said until the direction takes 
   f.directions[0].cta = f.picks.cta;
   assert.doesNotMatch(resolveDirection(f).warnings.join("\n"), /ending picked/);
 });
+
+test("apply-research again keeps an approved toy approved; each story-test round's review is kept", (t) => {
+  const f = facts(), dir = workspace(t, f);
+  assert.equal(run(dir, "apply-research.mjs", [dir]).status, 0);
+  assert.equal(JSON.parse(readFileSync(join(dir, "film.json"))).step, "toy");
+  const film = JSON.parse(readFileSync(join(dir, "film.json"))); film.step = "story";
+  writeFileSync(join(dir, "film.json"), JSON.stringify(film));
+  const again = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(JSON.parse(readFileSync(join(dir, "film.json"))).step, "story");
+  assert.match(again.stdout, /next step: the storyboard \(the toy is approved; the story changed\)/);
+  // the story changes: the review of the one before is kept as round 1, once
+  f.directions[0].payoff = "Know what to build first";
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  const brief = run(dir, "story-test.mjs", [dir]);
+  assert.match(brief.stdout, /kept as research\/story-test-round1\.json/);
+  assert.equal(readFileSync(join(dir, "research/story-test-round1.json"), "utf8"), readFileSync(join(dir, "research/story-test.json"), "utf8"));
+  assert.doesNotMatch(run(dir, "story-test.mjs", [dir]).stdout, /round2/);
+});

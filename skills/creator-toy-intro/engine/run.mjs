@@ -37,6 +37,7 @@
 //           storyboard  the page to sign off: parts, beat grid, previews, checks → build/storyboard/
 //                    (storyboard -- --frames prints the preview frames to render)
 //           animatic the whole film in EEVEE, small, with its score → build/storyboard/animatic.mp4
+//                    (-- --stop ends one still rendering; a new one ends an older one first)
 //           studio   the story page (/story/) and the storyboard page on a local server: the user clicks a card, or a spot on a real frame or
 //                    the paused animatic and writes a note → build/comments.jsonl
 //                    (from port 4173 up, the first free one: it prints its address; one already serving this film is
@@ -46,9 +47,9 @@
 //           own      a copy in the film to change for this film alone (own -- template scene.py):
 //                    template → <film>/template/ (film.json "template": "./template"),
 //                    scene.py → <film>/engine/scene.py (render, estimate and animatic use it)
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { film, FILM, fromFilm, fromSkill, fromTemplate, importTemplate, OWN_TEMPLATE } from "./lib/film.js";
 import { HOME, findBlender, findPython, toolEnv } from "./lib/tools.js";
 
@@ -80,6 +81,29 @@ const run = (cmd, args, env = {}) => {
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
+// a long render in a process group of its own, its id in a file: the next one (or `-- --stop`) ends it, so a render of
+// an older story never runs on beside the new one
+const stopGroup = (pidFile) => {
+  if (!existsSync(pidFile)) return false;
+  const { pgid } = JSON.parse(readFileSync(pidFile, "utf8"));
+  rmSync(pidFile, { force: true });
+  try { process.kill(process.platform === "win32" ? pgid : -pgid, "SIGTERM"); return true; } catch { return false; }
+};
+const runGroup = (cmd, args, pidFile) => new Promise((done) => {
+  console.log(`\n▶ ${cmd} ${args.join(" ")}`);
+  const c = spawn(cmd, args, { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), detached: process.platform !== "win32" });
+  mkdirSync(dirname(pidFile), { recursive: true });
+  writeFileSync(pidFile, JSON.stringify({ pgid: c.pid, started: new Date().toISOString() }));
+  const stop = () => stopGroup(pidFile);
+  process.on("SIGINT", stop); process.on("SIGTERM", stop);
+  c.on("exit", (code, signal) => {
+    process.off("SIGINT", stop); process.off("SIGTERM", stop);
+    if (existsSync(pidFile) && JSON.parse(readFileSync(pidFile, "utf8")).pgid === c.pid) rmSync(pidFile, { force: true });
+    if (code !== 0) { console.error(signal ? "stopped" : `exited with ${code}`); process.exit(code ?? 1); }
+    done();
+  });
+});
+
 // render, estimate and animatic start only once check passes (-- --force: start anyway)
 const force = extra.includes("--force");
 if (force) extra.splice(extra.indexOf("--force"), 1);
@@ -93,7 +117,7 @@ for (const [i, step] of steps.entries()) {
   const more = i === steps.length - 1 ? extra : [];
   // the animatic is part of making the storyboard; the full render waits for the page and the user's sign-off
   // (preview frames, the animatic and the estimate need only that nothing breaks)
-  if (step === "animatic" || step === "estimate" || step === "sample") gate(false);
+  if ((step === "animatic" && !more.includes("--stop")) || step === "estimate" || step === "sample") gate(false);
   if (step === "render") gate(!more.includes("--frames") || !more.includes("--samples"));
   switch (step) {
     case "check": run("node", [fromSkill("engine/scripts/check.mjs"), ...more]); break;
@@ -196,10 +220,18 @@ for (const [i, step] of steps.entries()) {
       if (existsSync(fromFilm("build/anim.json"))) spawnSync("node", [fromSkill("engine/scripts/clearance.mjs")], { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
       run(PY, [fromSkill("engine/scripts/storyboard.py"), ...more]);
       break;
-    case "animatic":
-      run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `1-${film.format.duration * film.format.fps}`, "--engine", "eevee", "--samples", "4", "--scale", "33", "--out", "build/eev", ...more]));
+    case "animatic": {
+      // -- --stop ends the one rendering; a new one ends an older one first (its story may be stale)
+      const PID = fromFilm("build/animatic.pid");
+      if (more.includes("--stop")) { console.log(stopGroup(PID) ? "stopped the animatic that was rendering" : "no animatic is rendering"); break; }
+      if (stopGroup(PID)) console.log("an animatic was still rendering (an older story?): stopped it");
+      const animAt = () => (existsSync(fromFilm("build/anim.json")) ? statSync(fromFilm("build/anim.json")).mtimeMs : 0);
+      const t0 = animAt();
+      await runGroup(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `1-${film.format.duration * film.format.fps}`, "--engine", "eevee", "--samples", "4", "--scale", "33", "--out", "build/eev", ...more]), PID);
+      if (animAt() !== t0) console.log("! build/anim.json changed while the animatic rendered: it shows the motion from before; run it again");
       run(PY, [fromSkill("engine/scripts/animatic.py")]);
       break;
+    }
     case "studio": run("node", [fromSkill("engine/scripts/studio.mjs"), "--film", FILM, ...more]); break;
     case "comments": run(PY, [fromSkill("engine/scripts/comments.py"), ...more]); break;
     case "pace": run(PY, [fromSkill("engine/scripts/pace.py"), ...more]); break;

@@ -58,6 +58,10 @@ score (a few minutes on an Apple GPU, more on others; run it in the
 background), joins the page when it is done, as `animatic.mp4` beside it
 (publish the two together):
 
+A new animatic ends one still rendering (an older story's), and
+`run.mjs animatic -- --stop` ends it by itself; if the motion changes while
+it renders, it says so, and the animatic shows the motion from before.
+
 ```bash
 FILM=<film> node <skill>/engine/run.mjs animatic && FILM=<film> node <skill>/engine/run.mjs storyboard
 ```

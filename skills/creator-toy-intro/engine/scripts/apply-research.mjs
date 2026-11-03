@@ -199,12 +199,13 @@ const next = {
   ...(picks.avoid?.length ? { avoid: picks.avoid } : {}),
   toyFrom: facts.toy.images,
   source: { ...(film.source ?? {}), read: facts.read },
-  step: "toy",
+  // the toy, unless it is approved already (step story or later): the changed story then needs a new storyboard
+  step: ["story", "render", "done"].includes(film.step) ? "story" : "toy",
 };
 if (argv.includes("--dry-run")) console.log(JSON.stringify(next, null, 2));
 else {
   writeFileSync(join(dir, "film.json"), JSON.stringify(next, null, 2) + "\n");
   const shape = legacy ? "isnail's story" : segments.map((s) => s.beat ? `${s.beat}${s.turn === "left" ? " (left)" : ""}` : s.story).join(" → ");
-  console.log(`film.json: ${shape}; the page shows #${facts.posts.indexOf(p1) + 1} and #${facts.posts.indexOf(p2) + 1}, counter ${n1.display} ${n1.label}, ${others.length} grid tiles, end card; next step: the toy`);
+  console.log(`film.json: ${shape}; the page shows #${facts.posts.indexOf(p1) + 1} and #${facts.posts.indexOf(p2) + 1}, counter ${n1.display} ${n1.label}, ${others.length} grid tiles, end card; next step: ${next.step === "story" ? "the storyboard (the toy is approved; the story changed)" : "the toy"}`);
 }
 for (const w of warn) console.log(`! ${w}`);

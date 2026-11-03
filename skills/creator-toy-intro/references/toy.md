@@ -142,8 +142,13 @@ toy is in one piece (below). Look at it first yourself: likeness,
 proportions, nothing floating or sunk, the colours. Then show the user and
 change it from their words, a round at a time (about a minute each). Once
 they say it is right, keep a copy for the next film:
-`~/.chrishkai-video/characters/<name>/` (toy.json, and `build/toy/` for a
-sculpt), and move film.json `step` on to `story`.
+`~/.chrishkai-video/characters/<handle>-<what it is>/` (toy.json, and
+`build/toy/` for a sculpt), and move film.json `step` on to `story`.
+
+A creator who has a toy already (a folder of theirs there, which `next`
+names): start from it, copy it into the film, and run the look-dev. Show it
+to the user all the same, a round like any other: their picture may have
+changed, and this film's story may ask for something of the toy.
 
 ### In one piece
 
