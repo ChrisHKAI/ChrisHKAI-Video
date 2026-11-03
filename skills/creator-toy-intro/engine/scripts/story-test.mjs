@@ -1,7 +1,7 @@
 // Cheap text-only review before toy modelling. This writes a brief, not a score
 // or an automatic approval. The agent/reviewer supplies the qualitative answers.
 // usage: node engine/scripts/story-test.mjs <film> [--check]
-import { readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { storyTestInput, storyTestSignature, storyTestIssues } from "../lib/story-test.js";
 
@@ -42,6 +42,8 @@ paid search, modelling or rendering. Answer in the creator's language.
    would they remember? Does the opening hand over to the first beat?
 6. Heart: who is at its heart (a person: who they are, why they do it, for whom),
    and what would a stranger feel? Numbers and clever devices alone move no one.
+   Does the film show the moment its heart names? If the packet lists personal
+   moments ("moments"), was a stronger one left out, and is its reason good?
 
 Check evidence and anatomy too: popularity does not establish expertise, cause,
 income or endorsements, and an object-shaped toy does not acquire hands to fit a
@@ -65,6 +67,19 @@ weak, narrow the story and explain the remaining limitation, never invent facts.
 ${JSON.stringify(input, null, 2)}
 `;
     writeFileSync(join(dir, "research/story-test.md"), brief);
-    console.log("wrote research/story-test.md; review it and save research/story-test.json, then run --check");
+    // the review of the story before this one is kept, as round 1, 2 …: the next review overwrites story-test.json
+    const saved = join(dir, "research/story-test.json");
+    let kept = "";
+    if (existsSync(saved)) {
+      let old = null;
+      try { old = JSON.parse(readFileSync(saved, "utf8")); } catch { /* not a review */ }
+      const rounds = readdirSync(join(dir, "research")).filter((f) => /^story-test-round\d+\.json$/.test(f));
+      const same = rounds.some((f) => readFileSync(join(dir, "research", f), "utf8") === readFileSync(saved, "utf8"));
+      if (old && old.signature !== signature && !same) {
+        kept = `research/story-test-round${rounds.length + 1}.json`;
+        copyFileSync(saved, join(dir, kept));
+      }
+    }
+    console.log(`wrote research/story-test.md; review it and save research/story-test.json, then run --check${kept ? ` (the last review, of the story before this one, is kept as ${kept})` : ""}`);
   }
 } catch (e) { console.error(e.message); process.exit(1); }

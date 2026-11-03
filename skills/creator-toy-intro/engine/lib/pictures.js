@@ -65,6 +65,16 @@ export const layout = {
       return { p: [c[0] + r * Math.sin(a), c[1] + y, c[2] - r * Math.cos(a) + r * 0.35], q: qAxis([0, 1, 0], -a), w: Math.min(0.24, (2 * r * Math.sin((span * Math.PI) / 360)) / Math.max(n, 2)) };
     });
   },
+  // a corridor: two walls along a path the toy walks (a red carpet's nominees), each wall's cards facing in across
+  // it, rows high; half = the path's half width, length its length from z0 away from the camera (-z), y the
+  // lowest row's middle. Cards alternate left and right, so the first pairs face each other as the toy walks in
+  corridor(n, { half = 0.32, length = 2.4, z0 = 0.2, rows = 2, y = 0.2, aspect = 16 / 9, gap = 0.08, c = [0, 0, 0] } = {}) {
+    const perWall = Math.ceil(n / 2), cols = Math.ceil(perWall / rows), cw = length / cols, w = cw * (1 - gap), ch = w / aspect + cw * gap;
+    return Array.from({ length: n }, (_, i) => {
+      const side = i % 2 ? 1 : -1, j = Math.floor(i / 2), k = j % cols, r = Math.floor(j / cols);
+      return { p: [c[0] + side * half, c[1] + y + r * ch, c[2] + z0 - (k + 0.5) * cw], q: qAxis([0, 1, 0], -side * Math.PI / 2), w };
+    });
+  },
   // a deck going away from the camera, each card a step behind the last
   stack(n, { step = [0.012, 0.01, -0.035], c = [0, 0.3, 0] } = {}) {
     return Array.from({ length: n }, (_, i) => ({ p: [c[0] + step[0] * i, c[1] + step[1] * i, c[2] + step[2] * i], q: qId() }));

@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe } from "../lib/clearance.js";
+import { clearance, describe, sunkLetters } from "../lib/clearance.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -101,6 +101,10 @@ if (past("research")) {
   }
   const slogan = (film.cta?.slogan ?? []).map((s) => s.text).join("");
   if (film.cta && !slogan) say("bad", "the end card has no slogan", "film.json cta.slogan: one or two short parts");
+  // an idea alone is not a prop: the template would play its own (isnail's snail) in its place, and say nothing
+  const prop = film.cta?.prop, segs = film.story?.segments;
+  const endCard = !segs || segs.some((s) => s.story === "endCard" || (Array.isArray(s.story) && s.story[1] === "end"));
+  if (endCard && prop?.idea && !prop.module && !prop.kind) say("warn", `the end card's prop is an idea only ("${prop.idea}"): until its module is written, the end card plays the skill's snail`, "write it (references/props.md) and set cta.prop.module, or pick a ready-made one: cta.prop.kind \"plinth\"");
 }
 
 // the platform's own marks on the page (film.json branding): copied from the creator's own page, never shipped
@@ -176,7 +180,10 @@ if (past("toy") && toy && film.profile) {
   // previewing, a stop before the full render
   const animPath = fromFilm("build/anim.json");
   if (existsSync(animPath) && statSync(animPath).mtimeMs >= statSync(fromFilm("film.json")).mtimeMs) {
-    const { contacts, height } = clearance(JSON.parse(readFileSync(animPath, "utf8")), { file: (p) => fromFilm(p) });
+    const motion = JSON.parse(readFileSync(animPath, "utf8"));
+    const { contacts, height } = clearance(motion, { file: (p) => fromFilm(p) });
+    // letters standing on a floor by their baseline sink their lowest strokes into it
+    for (const m of sunkLetters(motion)) say("warn", `lettering sinks: ${m.text}`, "stand it by its lowest point, not its baseline (kit.line: ln.stand; references/beats.md)");
     const into = describe(contacts, height).filter((m) => m.kind === "into");
     for (const m of into) say(process.argv.includes("--render") ? "bad" : "warn", `the toy goes through something: ${m.text}`, "references/clearance.md says how to keep it clear");
     if (!into.length) say("ok", "the toy goes through nothing");

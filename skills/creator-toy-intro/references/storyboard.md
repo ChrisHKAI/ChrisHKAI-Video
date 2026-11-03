@@ -58,6 +58,39 @@ score (a few minutes on an Apple GPU, more on others; run it in the
 background), joins the page when it is done, as `animatic.mp4` beside it
 (publish the two together):
 
+The animatic is EEVEE's draft: coloured patches of light on a glossy floor
+(the glow of their picture cards, mirrored) and ragged light beams are that
+engine's, not the film's. The page says so under the animatic; say it to the
+user too, before they ask.
+
+When the user wants another pace ("faster", "1.1x"), compare it before
+re-timing anything: `FILM=<film> python3 <skill>/engine/scripts/animatic.py
+--speeds 1.1,1.2,1.3` writes the cut sped up beside the animatic, picture and
+sound; once they pick one, re-time the beats and the score to it.
+
+When a scene changes after the storyboard (a new idea, a set redesigned),
+go back to the story page first: a sketch of that scene from their material,
+one scene at a time, the user's word on it, then the beat. A sketch costs
+minutes; a round of renders, far more (the Kontec film settled four rounds
+this way).
+
+A beat's set that carries colour (a carpet, ropes, a plinth, the names on
+them) takes it from the creator's colours, never red by habit: `run.mjs
+palette` draws colours set against theirs (their own background, the hue
+opposite theirs light and deep, a deep of their own family), each with the
+toy's colours on it. Show the user the sheet, three or four, as the stage's
+colour is chosen; the logo's own colour on what stands beside the toy melts
+into it.
+
+A segment where the work is the hero and the toy stands small on purpose (a
+wall of their pictures filling the frame) says so in film.json:
+`story.segments[i].wide: true`; the pace check then lets the toy be small
+there.
+
+A new animatic ends one still rendering (an older story's), and
+`run.mjs animatic -- --stop` ends it by itself; if the motion changes while
+it renders, it says so, and the animatic shows the motion from before.
+
 ```bash
 FILM=<film> node <skill>/engine/run.mjs animatic && FILM=<film> node <skill>/engine/run.mjs storyboard
 ```

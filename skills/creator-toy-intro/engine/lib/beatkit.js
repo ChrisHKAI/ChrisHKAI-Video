@@ -10,6 +10,8 @@ import { trs, qId, qEuler, mulT } from "./quat.js";
 
 // the creator's own pictures as cards, and layouts for many at once (pictures.js)
 export { picture, pictureFiles, layout, stagger, imageSize } from "./pictures.js";
+// a line of 3D lettering: laid out, outlined, standing by its lowest point (lettering.js)
+export { line, declareLine, putLine } from "./lettering.js";
 
 export const HIDDEN = 1e-4;
 export const POP = 1.3; // the toy's size on a beat's small stage, as on the end card

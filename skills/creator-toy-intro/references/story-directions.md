@@ -5,6 +5,7 @@
 - [Opening variants](#opening-variants)
 - [Targeted gap search](#2-search-the-important-gaps-once)
 - [Complete directions](#3-propose-distinct-complete-directions)
+- [Start from the person](#start-from-the-person)
 - [Selection and handoff](#4-one-choice-then-the-existing-film-pipeline)
 
 Read after collecting the first round of sources, before building the story
@@ -27,8 +28,9 @@ exactly what it supports. Separate interpretations from facts. Engagement is a
 discovery signal, not proof of expertise, quality, motive or causation.
 
 Look for: a beginning, a problem, a decision, a method, representative work,
-a personal moment (family, why they started, something made for one person),
-an outcome and what the audience gains. Missing categories are allowed. Never
+a personal moment (family, why they started, something made for one person:
+each one found goes in `facts.moments`, references/research.md), an outcome and
+what the audience gains. Missing categories are allowed. Never
 invent a struggle, quotation, motive, turning point or success to fill an arc.
 Historical milestones keep their event date and value; current profile counts
 keep today's reading. Do not replace a past milestone with today's count.
@@ -108,14 +110,41 @@ adversity story when the sources support a clear portfolio introduction.
 ## 3. Propose distinct complete directions
 
 Aim for three directions, not three rewrites of one opener. Use fewer when the
-sources only support fewer; say why. Examples of lenses, not mandatory templates:
+sources only support fewer; say why. Each starts from its person (below).
+Examples of lenses, not mandatory templates:
 
+- **Person:** a moment that is theirs (a question someone asked them, why they
+  started, something made for one person) → what they made of it → what it
+  says about them, and what the viewer gets from it.
 - **Method:** an audience problem → a representative work showing the approach
   → what the viewer can learn.
 - **Journey:** a dated starting point → a documented choice or changed approach
   → an outcome. Use causal language only when the source supports it.
 - **Positioning:** a specific audience need → evidence of relevant work → the
   creator's useful promise.
+
+### Start from the person
+
+Write each direction from its heart outwards. First the person: who they are,
+why they do it, for whom, and the moment that shows it, from `facts.moments`.
+Then the points that carry that moment; only then the numbers. A count says
+how far something went: it is evidence and scale, never the story. A film
+built the other way round (the biggest numbers first, a person added to
+explain them) proves popularity and moves no one.
+
+Record it as `heart: { who, why, forWhom, moment, story }`, in the user's
+language; `story` is the point that holds the moment, so the film shows it.
+Every part comes from the sources, like any fact: a part they do not show is
+left out, never guessed, and a motive the creator never stated is a gap, not a
+heart. When the research found no personal moment (`moments: []`), the heart
+is the creator and what they keep doing, said plainly (`who`, `why`), and the
+page says none was found; never invent one. A heart need not be family: the
+readers they answer every night, the tool they built because they needed it.
+
+Every direction has a heart, whatever its lens: directions differ in how they
+tell it. The story page shows it first on each card, above the pitch, and
+`materials.mjs` says which direction has none, which never shows its moment,
+and which is only numbers.
 
 Each direction must say what the viewer should remember, the question or promise
 that holds attention, how each fact advances it, and how the ending pays it off.
@@ -171,31 +200,42 @@ shape references facts already present in `story`; replace all sample content:
 
 ```json
 {
-  "id": "method",
-  "title": "Learn by building",
-  "premise": "Their public examples make a difficult workflow approachable.",
-  "pitch": "The workflow builds itself in front of you, out of their own example",
-  "image": "Their example assembling itself, step by step, around the toy",
-  "opening": { "id": "page-stand", "why": "the page lies flat, then stands up; the toy comes out in front of it, ready to reveal the work" },
+  "id": "for-her-father",
+  "title": "Made for her father",
+  "premise": "She builds reading tools for people with weak eyes; the first was for her father.",
+  "heart": {
+    "who": "A developer who builds reading tools",
+    "why": "Her father could no longer read his phone",
+    "forWhom": "Her father first, now anyone whose eyes are failing",
+    "moment": "The evening she rebuilt his phone's screen by hand, button by button",
+    "story": "s1"
+  },
+  "pitch": "Every button she made bigger was made bigger for him first",
+  "image": "Her father's phone screen growing, button by button, until the toy can stand on the letters",
+  "opening": { "id": "page-stand", "why": "the page lies flat, then stands up; the toy comes out in front of it, ready to show his phone" },
   "hook": {
-    "question": "What can I make with this workflow?",
-    "visual": "The toy reveals the finished example from the creator's post.",
-    "text": "Start with something you can make"
+    "question": "Why would someone rebuild a phone's screen by hand?",
+    "visual": "The toy pushes one tiny button on a phone screen, and it grows.",
+    "text": "It started with one phone"
   },
   "beats": [
-    { "story": "s1", "role": "Show the representative work", "connection": "", "action": { "does": "Reveal the actual project", "means": "The viewer sees what this creator makes" } },
-    { "story": "s2", "role": "Reveal its documented method", "connection": "The tutorial explains how that work was made.", "action": { "does": "Point out the steps in the creator's tutorial", "means": "The viewer sees the documented approach behind the work" } }
+    { "story": "s1", "role": "The moment it began", "connection": "", "action": { "does": "Push each button of her father's screen until it is big enough to read", "means": "The viewer sees why she builds what she builds" } },
+    { "story": "s2", "role": "What it became", "connection": "The tool she made for him is the one she shares now.", "action": { "does": "Step from his phone onto the app's own screen", "means": "The viewer sees the same idea, now for everyone" } }
   ],
-  "payoff": "The viewer knows what they can learn from this creator.",
-  "why": "Specific work, direct sources, and a clear visual demonstration.",
+  "payoff": "The viewer knows whom she builds for, and that they can use it too.",
+  "why": "Her own post tells the evening with her father; the app's page shows the same big buttons.",
   "gaps": [],
-  "cta": { "slogan": ["Build along", "with this creator"], "prop": "a miniature of their own project" }
+  "cta": { "slogan": ["Bigger letters", "for everyone"], "prop": "her father's old phone, its buttons grown big" }
 }
 ```
 
 An opening of the film's own (`"opening": { "id": "own", ... }`) has no preview
 strip of the skill's: its `"sketch"` is made from their material, like a point's
 idea, and the story page shows it whole under the opening's line.
+
+What production needs before it can start (a face to install, frames to cut
+from their film, a picture to ask the user for) goes in the direction's
+`prepare`, a line each: the card shows it apart from `gaps`, which are evidence.
 
 Compare creator specificity, audience relevance, evidence and visual clarity in
 plain words. Recommend one supported direction with a concrete reason, not a
@@ -230,12 +270,13 @@ At step 4 implement the selected hook only; alternatives are not extra scenes.
 ## 4. One choice, then the existing film pipeline
 
 `materials.mjs` shows the direction cards as the story choice, lettered A/B/C:
-audience/goal, recommendation, the pitch, the image, the opening, the first
+audience/goal, recommendation, the person at its heart, the pitch, the image, the opening, the first
 picture and its words, each fact with its picture, its connection, what the
 viewer learns and its ideas (the film's own with their sketches, the skill's
 with their preview strips), the payoff, the ending, evidence links and gaps.
 The fact cards move to the second picture (`materials-posts.png`) for detail
-and custom choices. Endings are numbered, so an answer reads "story A,
+and custom choices. Under the directions it lists the personal moments found
+(`moments`): which direction uses each, and why one is left out. Endings are numbered, so an answer reads "story A,
 ending 1".
 
 Ask for a direction (with another idea for a point, if they prefer one) and
@@ -246,7 +287,9 @@ the story order, its `opening` the opening, and its `cta` the default ending.
 "phrase" }`) with the same IDs and order as the direction. If the user changes
 the order or facts, update the direction, hook, opening and payoff to match
 before applying it. When the ending they pick is not the direction's own,
-check the payoff still answers the hook, and rewrite it if not.
+check the payoff still answers the hook, rewrite it if not, and write the
+picked ending into the direction's `cta` (until then `apply-research` and
+`check` say so).
 
 Older workspaces with only `picks.story` or `proof1/proof2` still work. For a new
 unattended film choose the supported recommendation, record `picks.direction`

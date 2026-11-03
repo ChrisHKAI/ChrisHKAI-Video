@@ -181,7 +181,7 @@
     "zh-Hans": "没有图也行的想法：从某天到某天做到某件事。日历越翻越快，数字跟着升，停下盖章",
     "en": "An idea with no picture: from one day to another they got somewhere. The pages fly faster, a count climbs beside them, a stamp lands"
    },
-   "needs": "two dates; optionally a count and a stamp of one or two words",
+   "needs": "two dates; optionally a count (with their dated milestones in count.keys, so the number beside each date is one they had) and a stamp of one or two words",
    "example": "cgnot996: 7月10日 → 10月24日, 10,000 关注者, 万粉",
    "film": {
     "beat": "calendar",
@@ -223,7 +223,7 @@
    },
    "takes": {
     "required": ["text"],
-    "optional": ["color", "em"]
+    "optional": ["color", "em", "early"]
    },
    "preview": "beats/previews/phrase.jpg"
   },

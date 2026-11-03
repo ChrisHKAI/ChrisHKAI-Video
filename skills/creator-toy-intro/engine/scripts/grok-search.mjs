@@ -76,6 +76,22 @@ function answerOf(text) {
   return objs.reduce((best, o) => (size(o) >= size(best ?? {}) ? o : best), null);
 }
 
+// what Grok ran, from its own transcript of the session (grok export: local, no search, no cost): every tool call is a
+// line under a "Tools" heading, "- WebSearch: keyword(…)". Its searches show as WebSearch; anything else slipped past
+// DENY (Grok ignores a name it does not know, so a renamed tool is not removed) and must be added to it
+function toolsUsed(sessionId) {
+  if (!grok || !sessionId) return null;
+  const r = spawnSync(grok, ["export", sessionId], { encoding: "utf8", input: "", timeout: 60000, maxBuffer: 1 << 26 });
+  if (r.status !== 0 || !r.stdout) return null;
+  const kinds = {};
+  let inTools = false;
+  for (const line of r.stdout.split("\n")) {
+    if (/^#+\s/.test(line)) inTools = /^#+\s*Tools\s*$/i.test(line);
+    else if (inTools) { const m = line.match(/^- ([A-Za-z_][\w ]*?):/); if (m) kinds[m[1]] = (kinds[m[1]] ?? 0) + 1; }
+  }
+  return kinds;
+}
+
 mkdirSync(join(dir, "research"), { recursive: true });
 const t0 = Date.now();
 let raw;
@@ -109,9 +125,14 @@ if (empty && (out.num_turns ?? 2) <= 1) {
   console.error(`grok answered before searching (one turn, nothing found): run it again; see research/${stem}-raw.json`);
   process.exit(1);
 }
-const lead = { handle, searched: new Date().toISOString().slice(0, 10), minutes: argv.includes("--from-raw") ? null : +((Date.now() - t0) / 60000).toFixed(1), costUSD: out.total_cost_usd ?? null, ...found };
+const tools = toolsUsed(out.sessionId);
+const lead = { handle, searched: new Date().toISOString().slice(0, 10), minutes: argv.includes("--from-raw") ? null : +((Date.now() - t0) / 60000).toFixed(1), costUSD: out.total_cost_usd ?? null, ...(tools ? { tools } : {}), ...found };
 writeFileSync(join(dir, `research/${stem}.json`), JSON.stringify(lead, null, 2) + "\n");
 // what it found; its minutes and cost stay in the file (costUSD), for the record, not for the user
-console.log(`research/${stem}.json: pinned ${found.pinned ? "yes" : "no"}, ${found.top?.length ?? 0} top posts, ${found.milestones?.length ?? 0} milestones, ${found.story_leads?.length ?? 0} story leads, ${found.gap_answers?.length ?? 0} gap answers`);
+// gap answers only from a --gaps run: the first round may answer some of its own questions, which is not that search
+console.log(`research/${stem}.json: pinned ${found.pinned ? "yes" : "no"}, ${found.top?.length ?? 0} top posts, ${found.milestones?.length ?? 0} milestones, ${found.story_leads?.length ?? 0} story leads${followup ? `, ${found.gap_answers?.length ?? 0} gap answers` : ""}`);
+const odd = Object.keys(tools ?? {}).filter((k) => k !== "WebSearch");
+if (odd.length) console.error(`! Grok used tools beyond its searches (${odd.map((k) => `${k} ×${tools[k]}`).join(", ")}): one slipped past the list it is denied, perhaps renamed. Tell the user, see what it did (grok export ${out.sessionId}), and add its name to DENY in engine/scripts/grok-search.mjs`);
+else if (!tools && !argv.includes("--from-raw")) console.log(`could not read back which tools Grok used (grok export ${out.sessionId ?? "<session>"}): check it ran only its searches`);
 if (found.notes) console.log(`grok's note: ${found.notes}`);
 console.log("leads only: open each post on the page and take its numbers from there (references/research.md)");

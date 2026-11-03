@@ -4,10 +4,16 @@
 // (references/clearance.md says how); none means nothing is in the way.
 // check.mjs runs it too.
 //
-// usage: FILM=<film folder> node engine/scripts/clearance.mjs [--json] [--tol <mm>]
+// usage: node engine/scripts/clearance.mjs <film folder> [--json] [--tol <mm>]   (or FILM=<film folder>)
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { fromFilm } from "../lib/film.js";
-import { clearance, describe } from "../lib/clearance.js";
+import { resolve } from "node:path";
+
+// the folder as an argument, like the other scripts take it: film.js reads FILM when it loads
+const folder = process.argv.slice(2).find((a, i, all) => !a.startsWith("--") && all[i - 1] !== "--tol");
+if (folder) process.env.FILM = resolve(folder);
+if (!process.env.FILM) { console.error("usage: node engine/scripts/clearance.mjs <film folder> [--json] [--tol <mm>]"); process.exit(1); }
+const { fromFilm } = await import("../lib/film.js");
+const { clearance, describe } = await import("../lib/clearance.js");
 
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const path = fromFilm("build/anim.json");

@@ -696,7 +696,8 @@ const N = { ...T.CTA_LAYOUT.name, ...CTA_TEXT.name }, HD = { ...T.CTA_LAYOUT.han
 export const LABELS = [
   ...sloganLabels,
   label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + 0.05 + 0.05 * i),
-  label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + 0.18, (i) => E.name + 0.22 + 0.025 * i),
+  // no handle (none, or the ending leaves it off: film.json cta.handle.text ""): the name alone
+  ...(HD.text ? [label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + 0.18, (i) => E.name + 0.22 + 0.025 * i)] : []),
 ];
 LABELS.forEach(tear);
 const labelAt = (L, t) => labelT(L, t, cta);

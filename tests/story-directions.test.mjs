@@ -26,7 +26,7 @@ function facts() {
       { id: "s2", line: "Learn the method", posts: ["p2"], becomes: [{ anim: "phrase", opts: { text: "Learn the method" } }] },
     ],
     narrative: { audience: "Editors", goal: "Remember a useful tool", inferred: true },
-    directions: [{ id: "method", title: "Learn by making", premise: "Useful tools for editors", hook: { question: "What can I make?", visual: "Reveal the demo", text: "Make this" }, beats: [{ story: "s1", role: "Show the work", action: { does: "Reveal the work", means: "See what the creator makes" } }, { story: "s2", role: "Explain the method", connection: "The tutorial explains the demo", action: { does: "Indicate the tutorial steps", means: "See how the work was made" } }], payoff: "Know what to learn", why: "Specific work and direct sources", gaps: [], cta: { slogan: ["Build along"], prop: "a tiny tool" } }],
+    directions: [{ id: "method", title: "Learn by making", premise: "Useful tools for editors", heart: { who: "An editor who builds the checks they need", why: "Their own exports kept failing", forWhom: "Editors like them", moment: "The night a failed export made them write the first check", story: "s1" }, hook: { question: "What can I make?", visual: "Reveal the demo", text: "Make this" }, beats: [{ story: "s1", role: "Show the work", action: { does: "Reveal the work", means: "See what the creator makes" } }, { story: "s2", role: "Explain the method", connection: "The tutorial explains the demo", action: { does: "Indicate the tutorial steps", means: "See how the work was made" } }], payoff: "Know what to learn", why: "Specific work and direct sources", gaps: [], cta: { slogan: ["Build along"], prop: "a tiny tool" } }],
     recommendedDirection: "method", picks: { direction: "method", opening: "page-stand" },
   };
 }
@@ -117,7 +117,10 @@ test("selected direction reaches film segments, ending and the preflight check",
   assert.equal(film.cta.prop.idea, "a tiny tool");
   assert.equal(film.counter.display, "1.2万");
   writeFileSync(join(dir, "toy.json"), JSON.stringify({ joints: {}, parts: [] }));
-  assert.equal(run(dir, "check.mjs").status, 0);
+  const preflight = run(dir, "check.mjs");
+  assert.equal(preflight.status, 0);
+  // the prop is an idea only: said, never silently the skill's snail
+  assert.match(preflight.stdout, /the end card's prop is an idea only \("a tiny tool"\)/);
   f.directions[0].payoff = "Changed promise";
   delete f.posts[0].numbers.views.source;
   writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
@@ -502,4 +505,156 @@ test("a pinned post that is a paid partnership is marked on the page and kept ou
   writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
   applied = run(dir, "apply-research.mjs", [dir]);
   assert.match(applied.stdout, /"Tool demo", is a paid partnership/);
+});
+
+test("each direction has a person at its heart, shown first on its card; the moments found are listed, used or not", (t) => {
+  const f = facts();
+  f.moments = [
+    { what: "The night a failed export made them write the first check", date: "2026-03-02", source: "https://example.org/p1", story: "s1" },
+    { what: "A reader wrote that the check saved her thesis film", source: "https://example.org/p9" },
+  ];
+  const dir = workspace(t, f);
+  let r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  assert.equal(r.status, 0, r.stderr);
+  let html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  // the heart comes before the pitch and the opening, in rows
+  assert.match(html, /<div class="heart"><span class="hl">片子的中心<\/span><div class="row"><span class="lb">是谁<\/span><span class="val">An editor who builds the checks they need/);
+  assert.match(html, /找到的私人时刻[\s\S]*The night a failed export[\s\S]*用在:<\/b> A[\s\S]*A reader wrote[\s\S]*没用:/);
+  assert.match(r.stdout, /moment "A reader wrote that the check saved her thesis film": in no direction, and no reason why/);
+  assert.doesNotMatch(r.stdout, /no person at its heart/);
+  assert.doesNotMatch(r.stdout, /every point is a number/);
+  // the reason given, the warning goes; the review packet carries the moments
+  f.moments[1].why = "Not in a post we could open";
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  writeFileSync(join(dir, "research/story-test.json"), JSON.stringify(readyReport(f)));
+  r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "en"]);
+  assert.doesNotMatch(r.stdout, /no reason why/);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /Not used:<\/b> Not in a post we could open/);
+  assert.match(run(dir, "story-test.mjs", [dir]).stdout + readFileSync(join(dir, "research/story-test.md"), "utf8"), /saved her thesis film/);
+});
+
+test("a direction without a person at its heart is said: on the page, by the story page's check and by apply-research", (t) => {
+  const f = facts();
+  delete f.directions[0].heart;
+  f.story[1].numbers = [metric("500")];
+  const dir = workspace(t, f);
+  const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /<p class="gap">还没写中心的人/);
+  assert.match(r.stdout, /no person at its heart yet/);
+  assert.match(r.stdout, /every point is a number and none holds its heart's moment/);
+  assert.match(r.stdout, /no personal moments written down/);
+  assert.match(resolveDirection(f).warnings.join("\n"), /no person at its heart/);
+  // looked and found none: the page says so, and a heart without a moment stands
+  f.directions[0].heart = { who: "An editor who builds the checks they need", why: "Their own exports kept failing" };
+  f.moments = [];
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  const again = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]);
+  assert.doesNotMatch(again.stdout, /no person at its heart|names no moment|no personal moments/);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /找过，没找到私人时刻/);
+});
+
+test("what production needs is its own row, the creator's line is marked when the page is in another language, and a black cover is left out", (t) => {
+  const f = facts();
+  f.directions[0].prepare = ["Install the gallery's Cinzel face"];
+  f.posts[0].cover = "assets/p1.png"; f.posts[0].shot = "research/shots/p1.png";
+  const dir = workspace(t, f);
+  // a black first frame as the cover, the post page's own shot beside it
+  mkdirSync(join(dir, "research/shots"), { recursive: true });
+  const made = spawnSync("python3", ["-c", "import sys\nfrom PIL import Image\nImage.new('RGB', (320, 180), (3, 3, 4)).save(sys.argv[1])\nImage.new('RGB', (320, 180), (200, 180, 120)).save(sys.argv[2])", join(dir, "assets/p1.png"), join(dir, "research/shots/p1.png")], { encoding: "utf8" });
+  assert.equal(made.status, 0, made.stderr);
+  const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hant"]);
+  assert.equal(r.status, 0, r.stderr);
+  const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /<p class="prep"><b>製作前要準備:<\/b> Install the gallery's Cinzel face<\/p>/);
+  assert.doesNotMatch(html, /class="gap"[^<]*<b>[^<]*<\/b>[^<]*Cinzel/);
+  // film.json says zh-Hans (new-film's default), the page is zh-Hant: the line is marked as the film's words
+  assert.match(html, /<div class="line"><span class="lt">片入面嘅字<\/span>Tool demo/);
+  assert.match(r.stdout, /p1's cover \(assets\/p1\.png\) is all but black/);
+  assert.match(html, /shots\/p1\.png/);
+  assert.doesNotMatch(html, /url\('file:\/\/[^']*assets\/p1\.png'\)/);
+  // the same language: no mark
+  assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]).status, 0);
+  assert.doesNotMatch(readFileSync(join(dir, "research/materials.html"), "utf8"), /class="lt"/);
+});
+
+test("an ending picked from another direction is said until the direction takes it", () => {
+  const f = facts();
+  f.picks.cta = { slogan: ["Follow along"], prop: "a tiny tool" };
+  assert.match(resolveDirection(f).warnings.join("\n"), /the ending picked \("Follow along"\) is not direction "method"'s own \("Build along"\)/);
+  f.directions[0].cta = f.picks.cta;
+  assert.doesNotMatch(resolveDirection(f).warnings.join("\n"), /ending picked/);
+});
+
+test("apply-research again keeps an approved toy approved; each story-test round's review is kept", (t) => {
+  const f = facts(), dir = workspace(t, f);
+  assert.equal(run(dir, "apply-research.mjs", [dir]).status, 0);
+  assert.equal(JSON.parse(readFileSync(join(dir, "film.json"))).step, "toy");
+  const film = JSON.parse(readFileSync(join(dir, "film.json"))); film.step = "story";
+  writeFileSync(join(dir, "film.json"), JSON.stringify(film));
+  const again = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(JSON.parse(readFileSync(join(dir, "film.json"))).step, "story");
+  assert.match(again.stdout, /next step: the storyboard \(the toy is approved; the story changed\)/);
+  // the story changes: the review of the one before is kept as round 1, once
+  f.directions[0].payoff = "Know what to build first";
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  const brief = run(dir, "story-test.mjs", [dir]);
+  assert.match(brief.stdout, /kept as research\/story-test-round1\.json/);
+  assert.equal(readFileSync(join(dir, "research/story-test-round1.json"), "utf8"), readFileSync(join(dir, "research/story-test.json"), "utf8"));
+  assert.doesNotMatch(run(dir, "story-test.mjs", [dir]).stdout, /round2/);
+});
+
+test("act 3 with a beat after it plays a bar of its exit and leaps; last, its whole exit", (t) => {
+  let f = facts();
+  f.story[0].becomes = [{ anim: "act3", opts: { post: "p1" } }];
+  let dir = workspace(t, f);
+  let applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  let film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.deepEqual(film.story.segments[2].story.map((v) => +v.toFixed(3)), [20.383, 22.383]);
+  assert.equal(film.story.exit, "jump");
+  // act 3 last: the whole exit, into the end card
+  f = facts();
+  f.story[1].becomes = [{ anim: "act3", opts: { post: "p2" } }];
+  dir = workspace(t, f);
+  applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.deepEqual(film.story.segments.slice(2, 4).map((s) => s.story), ["act3", "exit"]);
+});
+
+test("a company: no posts with an opening of its own, its logo and website named, the handle left off on request", (t) => {
+  const f = facts();
+  f.kind = "company";
+  f.posts = [];
+  f.story.forEach((s) => { delete s.posts; });
+  delete f.picks.opening; // the direction's own opening decides
+  f.directions[0].opening = { id: "page-stand", why: "the page stands up" };
+  let dir = workspace(t, f);
+  // the page would show a post it does not have: said, nothing written
+  let applied = run(dir, "apply-research.mjs", [dir]);
+  assert.notEqual(applied.status, 0);
+  assert.match(applied.stderr, /no posts, but the film opens on their page \("page-stand"\): give it their work as posts/);
+  // its own opening: the film goes on, with no page, no handle under the name
+  f.directions[0].opening = { id: "own", beat: "beats/site.js", pitch: "Their site lights up", sketch: "research/sketches/site.png" };
+  f.directions[0].cta = { slogan: ["Connecting Intelligence", "& Creativity"], prop: "their logo", handle: false };
+  dir = workspace(t, f);
+  mkdirSync(join(dir, "beats"), { recursive: true });
+  writeFileSync(join(dir, "beats/site.js"), "export function makeBeat() {}");
+  applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  assert.match(applied.stdout, /no posts \(the page is never shown\)/);
+  const film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.equal(film.kind, "company");
+  assert.equal(film.cta.handle.text, "");
+  assert.equal(film.posts.pinned.title, undefined);
+  // the story page names its logo, and its website when the link is not a profile
+  const page = JSON.parse(readFileSync(join(dir, "film.json"))); delete page.source.platform;
+  writeFileSync(join(dir, "film.json"), JSON.stringify(page));
+  f.directions[0].opening = { id: "page-stand" }; // no words of its own: the catalog's, in a company's words
+  writeFileSync(join(dir, "research/facts.json"), JSON.stringify(f));
+  assert.equal(run(dir, "materials.mjs", [dir, "--html-only", "--lang", "zh-Hans"]).status, 0);
+  const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.match(html, /logo鼓起变成公仔/);
+  assert.doesNotMatch(html, /头像鼓起/);
+  assert.match(html, /官网像屏幕一样平放/);
 });

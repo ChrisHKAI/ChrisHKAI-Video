@@ -76,7 +76,9 @@ asking again; a new request of theirs wins over it.
      from screenshots, the app they show.
    - the script, 简 or 繁: from the profile's own text once seen (step 2);
      `zh-Hans` until then.
-   Not worked out: which picture the toy is made from. Step 2 always asks,
+   Not worked out: which picture the toy is made from, unless the request
+   says it ("make the toy from our logo", a picture they attached): then
+   record that and do not ask again. Otherwise step 2 always asks,
    as soon as the profile picture is in (many are real people, some are not
    the creator at all).
 4. Ask, in one round (AskUserQuestion where the agent has it, else one
@@ -101,7 +103,8 @@ asking again; a new request of theirs wins over it.
    the search first, check reminds when it has not run),
    in the user's current folder; tell them where it is. It writes
    `film.json` (`step: "research"`) and the empty `research/`, `assets/`,
-   `recipes/`.
+   `recipes/`. The film's file is named after the handle, not the folder
+   (`lemomo-intro/out/lemomo-ai.mp4`; `--id <name>` for another).
 6. Tell the user, once, how long it all takes and where it stops for
    them, so the wait is never a surprise: the research about 10–20 min
    (then they pick the story), the toy 10–20 min (they approve it), the

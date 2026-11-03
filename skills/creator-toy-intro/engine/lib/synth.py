@@ -67,7 +67,9 @@ class Chords(dict):
     def __missing__(self, name):
         pc, iv = chord_tones(name)
         if self.kind == "root":
-            v = [name_of(24 + pc)]
+            # one note, as the table's own roots are ("G1"), in octave 1; a slash chord's bass is the note after the slash
+            slash = re.search(r"/([A-G][#b]?)$", name.strip())
+            v = name_of(24 + (chord_tones(slash[1])[0] if slash else pc))
         else:
             r = 40 + (pc - 4) % 12  # the root between E2 and D#3, as the table's own chords
             if self.kind == "pad":
@@ -608,7 +610,7 @@ def place(cue, sfx, verb):
     elif k == "sink":
         sig = sink(cue["dur"]); pan = 0; send = 0.2
     elif k == "ding":
-        sig = bell(note(cue["note"]), 0.9, 0.22); send = 0.4
+        sig = bell(note(cue.get("note", "E6")), 0.9, 0.22); send = 0.4  # its pitch: "note" (default E6)
     elif k == "lock":
         sig = lock(cue.get("big", False)); pan = 0; send = 0.4; g = 1.0
     elif k == "sparkle":

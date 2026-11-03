@@ -8,7 +8,8 @@
 //   { "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人", "color": "#F2C14E" }
 // "text" is the line (the glyph step cuts its characters); "color" the
 // letters' (default the end card's gold, or cream when the toy is that gold
-// itself: kit.apart); "em" their size in metres (0.062). The letters are in
+// itself: kit.apart); "em" their size in metres (0.062); "early": true to start the
+// letters while the toy drops in (a long line on few bars). The letters are in
 // the creator's own face when the film names one (film.json type.display,
 // engine/lib/fonts.py), else the end card's heavy face.
 export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signature, kit, math, quat }) {
@@ -38,8 +39,11 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
   const LAND = 0.55, RISE = 0.22;
   const steps = TEXT.map((c) => (/[\x00-\x7f]/.test(c) ? beat / 4 : beat / 2));
   const span = steps.slice(0, -1).reduce((a, b) => a + b, 0);
+  // "early": the letters start rising while the toy drops in, so a long line locks on the first downbeat it can
+  // (an 8-letter line fits 2 bars) instead of waiting a bar with the toy alone
+  const FIRST = opts.early ? 0.2 : LAND + 0.2;
   let LOCK = bar;
-  while (LOCK - span < LAND + 0.2) LOCK += bar;
+  while (LOCK - span < FIRST) LOCK += bar;
   const LEAP = [len - 0.5, len];
   if (LOCK > LEAP[0] - 0.8) throw new Error(`beat "phrase": ${TEXT.length} letters need "bars": ${Math.ceil((LOCK + 1.3) / bar)} or more`);
   const T0 = steps.map((_, i) => LOCK - span + steps.slice(0, i).reduce((a, b) => a + b, 0));
@@ -108,7 +112,7 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
       part: {
         label: { "zh-Hant": "一句話", "zh-Hans": "一句话", en: "The line" },
         what: { "zh-Hant": `「${line}」逐個字由地下彈出，最後一個字落喺重拍，公仔跳起`, "zh-Hans": `「${line}」逐个字从地下弹出，最后一个字落在重拍，公仔跳起`, en: `"${line}" rises a letter at a time; the last lands on the downbeat and the toy jumps for joy` },
-        uses: { "zh-Hant": "用家嘅原話", "zh-Hans": "用户的原话", en: "the user's own words" },
+        uses: { "zh-Hant": "佢自己嘅原話", "zh-Hans": "创作者自己的原话", en: "their own words" },
         why: { "zh-Hant": "佢自己一句話，大到記得住", "zh-Hans": "创作者自己的一句话，大到记得住", en: "their own words, big enough to remember" },
       },
       frames: [

@@ -46,7 +46,9 @@ Read only, always: never like, follow, comment or message.
   fails (the agent's sandbox has no network, Grok is not signed in), tell
   the user in a line what it needs (allow the network for it; `grok login`
   in their Terminal) instead of quietly going on without it. Say what it
-  found, never what it cost. With `grok` false, or no Grok Build on this
+  found, never what it cost. It runs Grok with only its searches; afterwards
+  it reads back from Grok's own record which tools ran (`tools` in grok.json),
+  and if anything else did, it says so: tell the user. With `grok` false, or no Grok Build on this
   computer, the browser alone, without asking. It writes
   `research/grok.json` with:
   - the pinned post;
@@ -61,7 +63,7 @@ Read only, always: never like, follow, comment or message.
   there, as the page writes them, and open the profile itself: Grok's search
   may not reach the profile page or know the pinned post, which the browser
   shows at once. Grok's milestones and ideas become story points (`story`,
-  below).
+  below); its personal leads, once opened on the page, become `moments`.
 - 抖音, 小红书, Instagram: the profile page in the logged-in browser.
 - 视频号, 公众号 counts: desktop WeChat through computer use, where the agent
   has it; otherwise the user's screenshots.
@@ -87,14 +89,46 @@ The user may add screenshots of their own any time (total plays, follower
 growth from the app's dashboard). A number with no spot on the profile page
 goes to `extra`; in the film it rises from the name at the top.
 
+### A company or a brand
+
+A film for a company (a studio, an agency, a product) is researched by what
+it makes, not by its profile. Write `"kind": "company"` in facts.json: the
+story page and the storyboard then say "logo" for the picture and "website"
+for a page that is not a profile.
+- Its work first: case studies, campaigns, the products, what its site
+  shows, each with its pictures in `assets/work/`. Then its own line (the
+  words on its site, its tagline) and its brand world: the logo, its colours,
+  its type, the look of its pictures.
+- Its films before its stills: reels, a demo, a showreel, its site's media
+  library (a WordPress site lists its videos at
+  `/wp-json/wp/v2/media?media_type=video`, often more than its work pages
+  show). A picture card plays a film (references/beats.md); a client's or
+  partner's footage only with the user's word that it may be used.
+- Its counts are optional: a company's 334 followers are not its story.
+  Keep a count only when it says something (clients served, a product's
+  users), and never count followers up on screen.
+- Its own words on screen, never the brief's paraphrase: the brief says "AI +
+  creative", its site says "Connecting Intelligence & Creativity"; the film
+  says the second. Where the brief's words and theirs differ, show the user
+  both on the story page (a line in `selectionNotes`) and let them pick.
+- The heart is still a person (references/story-directions.md): its founder,
+  its team, what it made for one client. Never invent one.
+- Posts are optional: a company with no posts worth a page has `"posts": []`;
+  its film then opens with an opening of its own (its site, its Instagram)
+  and needs no number rising from a post.
+
 ## What to keep
 
 - The profile picture first, full size, as `assets/avatar.<ext>`. On X, drop
-  the `_normal` / `_400x400` size from the image URL for the original.
+  the `_normal` / `_400x400` size from the image URL for the original. A
+  company's logo, as large as its site or its brand kit has it (an SVG or a
+  transparent PNG).
 - Then, before anything is built from it, show it and ask which picture the
   toy is made from: this one, or another the user sends. Many profile
   pictures are real people, and some are not the person at all (a logo, a
-  pet, a friend's photo), so this is always asked, never assumed. A real
+  pet, a friend's photo), so this is always asked, never assumed, unless the
+  user's request already says it (a company's brief: "the toy is our logo"):
+  then record it as confirmed, with that request as its `source`. A real
   person's toy reads better from a clearer photo (half or full body, plain
   light), so offer that too. Record the answer in `toy` (below); step 3 (the
   toy) can start right away while the research goes on: a changed story
@@ -122,6 +156,13 @@ goes to `extra`; in the film it rises from the name at the top.
   in the film's language, the creator's own script (a 简 creator's `1.1万`
   and `关注者`, even when your browser shows X in 繁 as `1.1萬`, or the API
   gives `11375`); where the source wrote it otherwise, say so in its `note`.
+  From the API (`api.fxtwitter.com`), a post's reposts as X's page counts
+  them are its retweets and quotes together (284 + 166: the page's 450).
+- Dates as the creator lived them: the day in their own time zone (their IP
+  region, where they say they live; most creators here are on UTC+8). The page
+  shows a post's date in the browser's zone and Grok and the APIs give UTC, so
+  a post at 2026-09-27 17:30 UTC is 9月28日 in Beijing: convert, and keep the
+  UTC time in the `note` when the day differs.
 - Current counts are today's: read them from the page or the API now, never from
   an old post that mentions them ("破 3K star" is a milestone, not the count;
   the repo has 8,904 today). Each number keeps `source` (the URL it was read
@@ -138,7 +179,10 @@ goes to `extra`; in the film it rises from the name at the top.
   `research/sources/`: an article, a README, a line from a video as a
   `.txt`, a post's API answer as it came (`fx-<id>.json`).
   A quote stays in their script, word for word; a cut inside it is marked
-  ……. The story page checks every 「quote」 against these texts.
+  ……. The story page checks every 「quote」 against these texts. A page that
+  sets words in capitals by its style (THE NOMINEES FOR BEST STYLE) has them
+  in their own case in its source (The Nominees for Best Style): keep the
+  source's text; the check reads letters whatever their case.
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.
   A bio line that carries one (「199 付费答疑群 +V: …」) is left out of
   `profile.bio`; the rest of the page stays as theirs.
@@ -178,9 +222,11 @@ theme: `ip`, `title`, `category`, `tags`, `collections`, `highlights`,
 
 ## The story first
 
-Before any animation, write down what the creator is known for and proud
-of: three to five story points in `story`, each a thing a viewer should
-learn about them. Look in:
+Before any animation, the person: who they are, why they do it, for whom,
+and the moments that show it (`moments`, below). Then what the creator is
+known for and proud of: three to five story points in `story`, each a thing a
+viewer should learn about them, chosen to carry that person, with the numbers
+as evidence of how far it went. Look in:
 - their bio and pinned post: what they say they do;
 - their most-viewed and most-discussed posts: what people come for;
 - milestones they posted about (a number reached, a date, a first);
@@ -188,7 +234,7 @@ learn about them. Look in:
 - a role or a title, a turn in their path, a line they are known for;
 - a moment that is theirs alone: their family, why they started, something
   they made for one person, a message that moved them. It may have few views
-  and still be the heart of the film;
+  and still be the heart of the film. Write each one found in `moments`;
 - Grok's milestones and ideas, and the user's own words.
 
 Each story point (an illustrator's, to show the thinking: every creator's
@@ -208,10 +254,22 @@ material asks for its own idea, never this one):
       "opts": { "from": "2025-10-28", "to": "2026-10-28", "count": { "to": 365, "label": "张" } } }] }
 ```
 
+`moments` lists every personal moment the research found, used or not, in
+the user's language: `[{ "what": "drew her sister a cat every day she was in
+hospital", "date": "2025-03-14", "source": "<post URL>", "read": "2026-10-28",
+"story": "s1" }]` (`story`: the point it became, if it became one). One that no
+direction uses says why (`"why": "she asked readers not to share that
+thread"`); views are never the reason. The story page lists them all under the
+directions, so the user sees what was found and what was left out. `[]` means
+you looked and found none: the page says so, and the heart is the creator and
+what they keep doing (`references/story-directions.md`, "Start from the
+person"). Never write one the sources do not show.
+
 `line` is what the viewer takes away, in the creator's language. When the
 user's language differs from the creator's, `line`, quotes and the words on
 screen are the creator's (the film's); `says`, `special`, `pitch`, `why` and
-the page itself (`--lang`) are the user's. `material`
+the page itself (`--lang`) are the user's. The page marks each `line` as the
+film's words when its language is not the page's. `material`
 is its pictures, files or folders of them (a folder shows its first picture
 on the page, in name order: put the telling one first). `special`
 is what is special about this material, and only it has: its quantity, its
@@ -256,7 +314,8 @@ What the skill's animations need, so that one is never forced:
 
 Each one's `takes` (in the catalog) says what an idea's `opts` give it:
 `count` `{ to, label }` (and `from`, `unit`…), `calendar` `{ from, to }` (and
-`count`, `stamp`), `phrase` `{ text }`; `act2` may name `{ post, number }`
+`count`, its `keys` their dated milestones `[["2026-09-11", 1000], …]`, and
+`stamp`), `phrase` `{ text }`; `act2` may name `{ post, number }`
 (the post whose number rises and which number: `"views"`), `act3` `{ post }`,
 else the point's first post. The values the catalog's `film` entry shows are
 another film's example: they never reach this one, so an idea that leaves out
@@ -269,7 +328,9 @@ service, a link: their bio, pinned post and links say); each pairs a line
 with a prop that ties that to who they are, the way isnail's 公众号 mark
 becomes the shell of a snail because he is 蜗牛King: `{ "slogan":
 ["公众号变现", "找蜗牛"], "prop": "his 公众号 mark becomes a snail's shell; the
-toy rides it", "why": "…" }`.
+toy rides it", "why": "…" }`. Under the name the end card shows their handle;
+an ending with `"handle": false` leaves it off (a company that wants its name
+and its line alone), and one with no handle shows the name alone, never twice.
 
 ## Choose a complete direction
 
@@ -313,7 +374,10 @@ FILM=<film> node <skill>/engine/run.mjs studio   # prints http://127.0.0.1:<port
 Where the chat shows pictures, show them too, one story a picture
 (`materials-A.png`, `-B`, `-C`, then `materials-endings.png`, at twice the
 page's pixels): one tall picture is shrunk by a chat until it blurs. Then ask in one
-round (AskUserQuestion where the agent has it, else one message):
+round (AskUserQuestion where the agent has it, else one message). AskUserQuestion
+takes four questions at most: the direction, the ideas, the ending and what to keep
+out, with the ideas as one question ("the recommended idea for every point", or
+another for a point, said in their own words), never a second round:
 - which direction (including its ordered story points), or changes to it;
   for older workspaces without directions, which story points in what order;
 - for a point with more than one idea, which (the first is the one you

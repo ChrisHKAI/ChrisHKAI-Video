@@ -1,5 +1,5 @@
 {
-  "_about": "The isnail-30 story as the storyboard page shows it: its five parts, the moments to render as previews, the hits marked on the beat grid and what the user signs off. Times are story events (story.json) plus an offset, so a film that moves an event moves its frame. {name} {handle} {counter} {slogan} {prop} {signature} {proof1} {proof2} {publish} {aspect} are filled from film.json.",
+  "_about": "The isnail-30 story as the storyboard page shows it: its five parts, the moments to render as previews (one with \"exit\" only when the toy leaves act 3 that way), the hits marked on the beat grid and what the user signs off. Times are story events (story.json) plus an offset, so a film that moves an event moves its frame. {name} {handle} {counter} {slogan} {prop} {signature} {proof1} {proof2} {publish} {aspect} are filled from film.json.",
   "parts": [
     { "from": 0, "to": "pop", "label": { "zh-Hant": "開場", "zh-Hans": "开场", "en": "Hook" },
       "why": { "zh-Hant": "頭兩秒畀觀眾一個留低嘅理由：佢自己個主頁活咗起嚟", "zh-Hans": "头两秒给观众一个留下的理由：创作者自己的主页活了起来", "en": "a reason to stay in the first two seconds: their own page comes alive" },
@@ -35,7 +35,8 @@
     { "ev": "stand", "dt": 0.3, "title": { "zh-Hant": "第二篇帖升起", "zh-Hans": "第二篇帖升起", "en": "The second post" }, "what": { "zh-Hant": "第二篇帖升起，封面企起做牆", "zh-Hans": "第二篇帖升起，封面立起成墙", "en": "The second post rises and its cover stands" } },
     { "ev": "slam", "dt": 0.1, "title": { "zh-Hant": "標題砸落", "zh-Hans": "标题砸下", "en": "The slam" }, "what": { "zh-Hant": "封面標題砸落，鏡頭震", "zh-Hans": "封面标题砸下，镜头震", "en": "The cover's title slams down" } },
     { "ev": "rise46", "dt": 1.0, "title": { "zh-Hant": "逐件推出", "zh-Hans": "逐件推出", "en": "Piece by piece" }, "what": { "zh-Hant": "封面上嘅字同數字逐件推出，公仔逐級爬", "zh-Hans": "封面上的字和数字逐件推出，公仔逐级爬", "en": "The cover's words and numbers push out; the toy climbs" } },
-    { "ev": "flat", "dt": 0.3, "title": { "zh-Hant": "變返貼紙", "zh-Hans": "变回贴纸", "en": "Back into the cover" }, "what": { "zh-Hant": "公仔壓返入封面，變返平面", "zh-Hans": "公仔压回封面，变回平面", "en": "The toy presses back into the cover" } },
+    { "ev": "toSticker", "dt": 0.45, "exit": "jump", "title": { "zh-Hant": "跳出畫面", "zh-Hans": "跳出画面", "en": "The leap" }, "what": { "zh-Hant": "公仔蹲低，一跳跳出畫面", "zh-Hans": "公仔蹲下，一跃跳出画面", "en": "The toy crouches and leaps out of the frame" } },
+    { "ev": "flat", "dt": 0.3, "exit": "sticker", "title": { "zh-Hant": "變返貼紙", "zh-Hans": "变回贴纸", "en": "Back into the cover" }, "what": { "zh-Hant": "公仔壓返入封面，變返平面", "zh-Hans": "公仔压回封面，变回平面", "en": "The toy presses back into the cover" } },
     { "ev": "ride", "dt": 0.4, "title": { "zh-Hant": "騎上{prop}", "zh-Hans": "骑上{prop}", "en": "On {prop}" }, "what": { "zh-Hant": "公仔再彈出，跌落{prop}上面", "zh-Hans": "公仔再弹出，落在{prop}上", "en": "The toy pops out again and lands on {prop}" } },
     { "ev": "letters", "dt": 0.9, "title": { "zh-Hant": "口號逐隻字", "zh-Hans": "口号逐字", "en": "The slogan" }, "what": { "zh-Hant": "「{slogan}」每半拍拍落一隻字", "zh-Hans": "「{slogan}」每半拍拍下一个字", "en": "\"{slogan}\", a letter every half beat" } },
     { "ev": "final", "dt": 1.0, "title": { "zh-Hant": "指住你", "zh-Hans": "指着你", "en": "Pointing at you" }, "what": { "zh-Hant": "{name} {handle}，最後一格停住做封面", "zh-Hans": "{name} {handle}，最后一帧停住当封面", "en": "{name} {handle}; the last frame holds as the cover" } }

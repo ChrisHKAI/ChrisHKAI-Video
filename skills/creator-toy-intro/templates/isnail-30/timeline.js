@@ -12,6 +12,7 @@ import { film, fromFilm, fromSkill, readFilmJSON } from "#engine/film.js";
 import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "#engine/math.js";
 import { trs, qId, qEuler, apply, mulT } from "#engine/quat.js";
 import { makeSegments } from "#engine/segments.js";
+import { line, declareLine, putLine } from "#engine/lettering.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
@@ -69,7 +70,10 @@ export const RETRO_COVER = L.ANCHORS.secondCover;
 // apply-research writes { "story": [24, "end"] }) cuts to its stage on that downbeat, so its hits stay on
 // the film's downbeats and nothing of the story before the cut shows
 const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < S.events.cut - 1e-6 && s.s0 > S.events.cut - BAR && s.s1 > S.events.cut)?.s0;
-export const EV = END_FROM !== undefined ? { ...S.events, cut: END_FROM } : S.events;
+// and the prop arrives on that cut as it does on the story's own, so the stage is never empty before it; from the
+// toy's landing on (ride) everything keeps its downbeat
+const early = (v) => (Array.isArray(v) ? v.map(early) : +(v - (S.events.cut - END_FROM)).toFixed(4));
+export const EV = END_FROM !== undefined ? { ...S.events, cut: END_FROM, ...Object.fromEntries(["logo", "snail", "eyes"].filter((k) => k in S.events).map((k) => [k, early(S.events[k])])) } : S.events;
 export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
 // the slogan's letters land a half beat apart; a long one closes up (16th notes, say) so its last letter is
 // down before the final lock, and the line holds to the end
@@ -91,9 +95,19 @@ export const CROWN = (film.profile.nameEmoji ?? "").includes("👑");
 // the end card's prop: the film's own module (film.json cta.prop.module, written
 // for this creator) or a built-in one by kind (props/<kind>.js; isnail's snail)
 const PROP_URL = film.cta.prop?.module ? pathToFileURL(fromFilm(film.cta.prop.module)).href : new URL(`./props/${film.cta.prop?.kind ?? "snail"}.js`, import.meta.url).href;
+// the lettering a prop carves (film.json cta.prop.text: its words get their glyphs), as a beat has it
+const PROP_GLYPHS = readFilmJSON("build/glyphs.json", null) ?? {};
+const propGlyph = {
+  has: (k) => !!PROP_GLYPHS[k],
+  adv: (k) => PROP_GLYPHS[k]?.advance ?? 0.6,
+  geo: (k, em, depth, bevel) => {
+    if (!PROP_GLYPHS[k]) throw new Error(`no lettering for "${k}": put the prop's words in film.json cta.prop.text, then run.mjs glyphs`);
+    return { type: "curve", rings: PROP_GLYPHS[k].rings.map((r) => r.map(([x, y]) => [+(x * em).toFixed(6), +(y * em).toFixed(6)])), depth, bevel };
+  },
+};
 export const PROP = (await import(PROP_URL)).makeProp({
-  film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON,
-  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4 },
+  film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON, glyph: propGlyph,
+  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine },
 });
 export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // camera keys: target = [UI x, UI y, height mm] or a tracker name; dist m,
@@ -113,7 +127,7 @@ export function reads() {
     { text: film.profile.name, at: [0, E.hops[0][0]] }, // the page, before he hops onto it
     { text: `${film.counter.display ?? `${VIEWS_COUNT}${film.counter.unit}`} ${film.counter.label}`, at: [E.count[0], E.leap[0]] },
     { text: SLOGAN, at: [E.letters, END] },
-    { text: `${film.cta.name.text} ${film.cta.handle.text}`, at: [E.name, END] },
+    { text: `${film.cta.name.text} ${film.cta.handle?.text ?? ""}`.trim(), at: [E.name, END] },
   ];
 }
 
@@ -204,7 +218,7 @@ export function soundCues() {
   [...starts.map((start) => EV.letters + start * LETTER_STEP - 0.06), E.name, E.name + 0.18].forEach((at, i) => add(at, "slap", { i }));
   const nameLen = [...film.cta.name.text].length;
   for (let i = 0; i < nameLen; i++) add(E.name + 0.05 + 0.05 * i, "namePop", { i });
-  add(E.name + 0.22, "namePop", { i: nameLen, handle: true });
+  if (film.cta.handle?.text) add(E.name + 0.22, "namePop", { i: nameLen, handle: true });
   if (CROWN) {
     add(E.crown[1], "crown");
     add(E.crown[1] + 0.05, "sparkle");

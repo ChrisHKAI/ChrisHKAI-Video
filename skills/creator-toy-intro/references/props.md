@@ -17,10 +17,16 @@ with the closing line). You build it here, as code, for this creator.
 | 24.38 | the cut to the end card's stage | `cut` |
 | 24.39–24.70 | the prop arrives (isnail's mark drops in spinning) | `logo` |
 | 24.70–25.10 | it becomes itself (the snail grows under the mark, eyes pop) | `snail`, `eyes` |
-| 24.83–25.15 | the toy falls onto it and lands | `ride` |
+| 24.83–25.15 | the toy falls onto it and lands (`ride` is the landing, 25.15) | `ride` |
 | 25.25–25.75 | the toy's signature move, riding it | `push2` |
 | 25.90–27.90 | it travels along the floor path while the line slaps down letter by letter | `glide`, `letters` |
 | 28.00 | the toy points at the camera; name and handle slap up | `final`, `name` |
+
+An event is one time (a number: `E.ride`, `E.cut`, `E.final`) or a span
+(`[start, end]`: `E.logo`, `E.snail`, `E.glide`), as the template's
+`story.json` `events` has it; read it the same way (`E.ride[1]` is
+undefined, and the prop stops moving: export-anim stops on it and names
+the object).
 
 ## Ready-made, to fill in
 
@@ -52,14 +58,23 @@ A prop is a module in the film's workspace, set in film.json
 - `topAt(t)`: where the toy's feet stand on it (world, metres).
 - `cues(add)`: its sounds, `add(time, kind, options)`, with the synth's
   kinds (`whooshDown`, `land`, `squelch`, `boing`, `glide`, `pop`,
-  `slide`, `ding`, `coins`, `glint`…).
+  `slide`, `ding` (its pitch in `note`, `"E6"` by default), `coins`, `glint`…).
 
 `ctx` gives `film`, the story's events `E`, `cta`, the floor `path` ([x0,
-x1] in stage metres, where the line appears), `readFilmJSON`, and `lib`
-(lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId,
-qEuler, apply, mulT, HIDDEN). Worked example:
+x1] in stage metres, where the line appears), `readFilmJSON`, `glyph`
+(the lettering, as a beat has it) and `lib` (lerp, seg, smooth, easeOut,
+easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN, and
+`line`, `declareLine`, `putLine`: a line of lettering, outlined, standing
+by its lowest point, references/beats.md). Words a prop carves (a
+trophy's 「最佳风格 · 你的」) go in film.json `cta.prop.text`, so the glyph
+step makes them. Worked example:
 `templates/isnail-30/props/snail.js` (the built-in `cta.prop.kind:
 "snail"`).
+
+Its height: the end card's camera is framed for the snail, whose top (where
+the toy's feet stand, `topAt`) is about 0.08 m above the stage. A prop much
+taller than that is cut by the frame: keep its top near 0.08 m, or move the
+end card's camera (film.json `story.camera2`).
 
 ## Check
 
