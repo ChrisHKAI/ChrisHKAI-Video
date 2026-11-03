@@ -602,3 +602,22 @@ test("apply-research again keeps an approved toy approved; each story-test round
   assert.equal(readFileSync(join(dir, "research/story-test-round1.json"), "utf8"), readFileSync(join(dir, "research/story-test.json"), "utf8"));
   assert.doesNotMatch(run(dir, "story-test.mjs", [dir]).stdout, /round2/);
 });
+
+test("act 3 with a beat after it plays a bar of its exit and leaps; last, its whole exit", (t) => {
+  let f = facts();
+  f.story[0].becomes = [{ anim: "act3", opts: { post: "p1" } }];
+  let dir = workspace(t, f);
+  let applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  let film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.deepEqual(film.story.segments[2].story.map((v) => +v.toFixed(3)), [20.383, 22.383]);
+  assert.equal(film.story.exit, "jump");
+  // act 3 last: the whole exit, into the end card
+  f = facts();
+  f.story[1].becomes = [{ anim: "act3", opts: { post: "p2" } }];
+  dir = workspace(t, f);
+  applied = run(dir, "apply-research.mjs", [dir]);
+  assert.equal(applied.status, 0, applied.stderr);
+  film = JSON.parse(readFileSync(join(dir, "film.json")));
+  assert.deepEqual(film.story.segments.slice(2, 4).map((s) => s.story), ["act3", "exit"]);
+});

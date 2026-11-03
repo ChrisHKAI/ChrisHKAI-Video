@@ -139,6 +139,7 @@ const segOf = (id, opts = {}) => {
   return segmentOf(id, opts);
 };
 let segments = film.story?.segments;
+let act3Then = false; // act 3 with a beat after it: its exit plays a bar, and the toy leaps (references/exits.md)
 if (!legacy) {
   // an opening of the film's own (direction.opening { id: "own", beat, pitch, sketch }): a beat written for this film
   const ownOpening = () => {
@@ -150,7 +151,7 @@ if (!legacy) {
   segments = [opening === "own" ? ownOpening() : segOf(opening) ?? fail(`unknown opening "${opening}": one of ${CAT.filter((a) => a.group === "opening").map((a) => a.id).join(", ")}, or "own" (one written for this film)`)];
   // why each part is there, for the storyboard page: what the viewer learns from it (the direction's action.means)
   const whyOf = (id) => { const m = selection.direction?.beats?.find((x) => x.story === id)?.action?.means; return m ? { why: m } : {}; };
-  for (const { s, b } of picked) {
+  for (const [k, { s, b }] of picked.entries()) {
     if (b.anim === "own") {
       // an animation written for this film (references/beats.md, "A beat of your own")
       segments.push({ beat: b.beat ?? `beats/${s.id}.js`, bars: b.bars ?? 3, ...(b.opts ?? {}), ...whyOf(s.id) });
@@ -159,8 +160,15 @@ if (!legacy) {
     }
     const seg = segOf(b.anim, b.opts) ?? fail(`story point "${s.id}" becomes "${b.anim}", which beats/catalog.json does not have (or "own" for one written for this film)`);
     segments.push({ ...seg, ...whyOf(s.id) });
-    // act 3 hands over to the end card through its exit (the toy becomes the drawing of itself, or leaps)
-    if (b.anim === "act3") segments.push({ story: "exit" });
+    // act 3 hands over to the end card through its exit (the toy becomes the drawing of itself, or leaps); to a beat
+    // after it, through a bar of it: the leap, not 4 s squared up on the cover the viewer has just read
+    if (b.anim === "act3" && k === picked.length - 1) segments.push({ story: "exit" });
+    else if (b.anim === "act3") {
+      const tpl0 = JSON.parse(readFileSync(join(/^\.|[\\/]/.test(film.template ?? "isnail-30") ? resolve(dir, film.template) : join(SKILL, "templates", film.template ?? "isnail-30"), "story.json"), "utf8"));
+      const [x0] = tpl0.pieces.exit, bar1 = (60 / (film.format?.bpm ?? 120)) * 4;
+      segments.push({ story: [x0, x0 + bar1] });
+      act3Then = true;
+    }
   }
   // the end card's hits sit on the story's downbeats: after pieces that add up to whole bars it starts on the
   // downbeat before its cut (the story's own end card starts 0.383 s after one, where act 3 leaves it)
@@ -175,7 +183,7 @@ if (!legacy) {
 }
 // a beat right before the end card: the toy drops onto the prop from above
 const beforeEnd = segments?.[segments.length - 2];
-const exit = !legacy && beforeEnd && !beforeEnd.story ? "jump" : film.story?.exit;
+const exit = !legacy && ((beforeEnd && !beforeEnd.story) || act3Then) ? "jump" : film.story?.exit;
 
 const others = facts.posts.filter((p) => p !== p1 && p !== p2 && p.cover);
 const ending = picks.cta ?? selection.direction?.cta;

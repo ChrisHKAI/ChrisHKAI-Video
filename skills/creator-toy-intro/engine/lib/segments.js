@@ -36,7 +36,7 @@ export function makeSegments({ list, storyDuration, bar, pieces = {} }) {
     // what keeps every hit on a downbeat: a beat lasts whole bars, and a piece of the
     // story plays a whole number of bars from where the story has it
     const whole = (v) => Math.abs(v / bar - Math.round(v / bar)) < 1e-3;
-    if (on && s.kind === "beat" && !whole(s.len)) warnings.push(`segment ${i} (beat "${entry.beat}") is ${s.len.toFixed(3)} s, not whole bars (${bar} s): what follows leaves the downbeats`);
+    if (on && s.kind === "beat" && !whole(s.len)) warnings.push(`segment ${i} (beat "${entry.beat}") is ${s.len.toFixed(3)} s, not whole bars (${bar} s): what follows leaves the downbeats (an end card after it needs no extra: apply-research starts it on the downbeat before its cut)`);
     if (on && s.kind === "story" && !whole(s.f0 - s.s0)) warnings.push(`segment ${i} plays the story ${(s.f0 - s.s0).toFixed(3)} s from where the story has it, not whole bars: its hits leave the downbeats`);
     return s;
   });

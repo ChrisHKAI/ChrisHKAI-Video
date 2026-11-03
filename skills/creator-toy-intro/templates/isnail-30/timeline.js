@@ -70,7 +70,10 @@ export const RETRO_COVER = L.ANCHORS.secondCover;
 // apply-research writes { "story": [24, "end"] }) cuts to its stage on that downbeat, so its hits stay on
 // the film's downbeats and nothing of the story before the cut shows
 const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < S.events.cut - 1e-6 && s.s0 > S.events.cut - BAR && s.s1 > S.events.cut)?.s0;
-export const EV = END_FROM !== undefined ? { ...S.events, cut: END_FROM } : S.events;
+// and the prop arrives on that cut as it does on the story's own, so the stage is never empty before it; from the
+// toy's landing on (ride) everything keeps its downbeat
+const early = (v) => (Array.isArray(v) ? v.map(early) : +(v - (S.events.cut - END_FROM)).toFixed(4));
+export const EV = END_FROM !== undefined ? { ...S.events, cut: END_FROM, ...Object.fromEntries(["logo", "snail", "eyes"].filter((k) => k in S.events).map((k) => [k, early(S.events[k])])) } : S.events;
 export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
 // the slogan's letters land a half beat apart; a long one closes up (16th notes, say) so its last letter is
 // down before the final lock, and the line holds to the end

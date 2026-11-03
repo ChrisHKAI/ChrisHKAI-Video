@@ -71,6 +71,11 @@ step makes them. Worked example:
 `templates/isnail-30/props/snail.js` (the built-in `cta.prop.kind:
 "snail"`).
 
+Its height: the end card's camera is framed for the snail, whose top (where
+the toy's feet stand, `topAt`) is about 0.08 m above the stage. A prop much
+taller than that is cut by the frame: keep its top near 0.08 m, or move the
+end card's camera (film.json `story.camera2`).
+
 ## Check
 
 Previews at 24.5, 24.9, 25.3, 26.5 and 29 s: the prop reads as what it

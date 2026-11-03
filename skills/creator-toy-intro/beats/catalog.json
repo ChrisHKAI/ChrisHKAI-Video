@@ -223,7 +223,7 @@
    },
    "takes": {
     "required": ["text"],
-    "optional": ["color", "em"]
+    "optional": ["color", "em", "early"]
    },
    "preview": "beats/previews/phrase.jpg"
   },
