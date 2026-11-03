@@ -9,6 +9,7 @@ Rings are in em units (y up, baseline 0); Blender extrudes them as curves.
 usage: FILM=<film folder> python3 engine/scripts/glyphs.py   → build/glyphs.json
 """
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -58,6 +59,9 @@ for s in BEATS:
     CHARS["display"] += words({k: v for k, v in s.items() if k != "beat"})
 if BEATS:
     CHARS["heavy"] += "0123456789,.+%月日"
+# what the end card's prop carves (film.json cta.prop.text: a plinth's line, a trophy's name)
+CHARS["heavy"] += words((cta.get("prop") or {}).get("text", ""))
+CHARS["display"] += words((cta.get("prop") or {}).get("text", ""))
 # what a film's own template or scene shows beyond these: film.json "glyphs" adds characters
 # to a face ({"latin": ",", "heavy": "官方认证"}: a count written 10,000, a film-local scene's words)
 for role, chars in F.get("glyphs", {}).items():
@@ -69,6 +73,30 @@ for role, chars in CHARS.items():
     path, index, name = face(role, lang, prefs.get(role, ()), [str(FILM / "fonts")])
     FONTS[role] = (path, index, chars)
     print(f"{role:6s} {name}  ({Path(path).name} #{index})")
+
+
+COS_NEEDLE = math.cos(math.radians(4))
+
+
+def unspike(ring):
+    """A ring without its needles: an outline that runs out and back on itself under 4 degrees wide (Lantinghei
+    Heavy's 格 has one, 0.58 degrees), which a bevel turns into a long thin line shooting out of the letter; and
+    without a point repeated. A needle is many points thin, so its tip goes again and again until none is left."""
+    pts = [p for i, p in enumerate(ring) if i == 0 or p != ring[i - 1]]
+    if len(pts) > 1 and pts[0] == pts[-1]:
+        pts = pts[:-1]
+    was = -1
+    while len(pts) != was and len(pts) >= 3:
+        was = len(pts)
+        keep = []
+        for i, b in enumerate(pts):
+            a, c = pts[i - 1], pts[(i + 1) % len(pts)]
+            v1, v2 = (a[0] - b[0], a[1] - b[1]), (c[0] - b[0], c[1] - b[1])
+            l1, l2 = math.hypot(*v1), math.hypot(*v2)
+            if l1 > 1e-9 and l2 > 1e-9 and (v1[0] * v2[0] + v1[1] * v2[1]) / (l1 * l2) < COS_NEEDLE:
+                keep.append(b)
+        pts = keep
+    return pts
 
 
 class Flatten(BasePen):
@@ -97,9 +125,7 @@ class Flatten(BasePen):
             self.cur.append((a * p0[0] + b * p1[0] + c * p2[0], a * p0[1] + b * p1[1] + c * p2[1]))
 
     def _closePath(self):
-        ring = self.cur
-        if len(ring) > 1 and ring[0] == ring[-1]:
-            ring = ring[:-1]
+        ring = unspike(self.cur)
         if len(ring) >= 3:
             self.rings.append(ring)
         self.cur = []

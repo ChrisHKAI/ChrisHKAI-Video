@@ -124,7 +124,8 @@ def film_colours(film):
     for o in anim["objects"]:
         m = o.get("mat") or {}
         # lettering: glyph outlines (curves) in a type material (confetti and a calendar's boxes share the material)
-        if m.get("type") == "type" and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve" and shown(o["name"]):
+        # (an outline behind a letter, "outline": true, is its edge, not lettering of its own: the face is read by it)
+        if m.get("type") == "type" and not m.get("outline") and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve" and shown(o["name"]):
             # a beat may say what its lettering stands on ("on": a carpet, a sign) and the dark edge round it ("edge")
             back = m.get("on") or (papers.get(group(o["name"])) if contrast(m["color"], STAGE) < READ else None)
             key = (m["color"].upper(), (back or STAGE).upper())

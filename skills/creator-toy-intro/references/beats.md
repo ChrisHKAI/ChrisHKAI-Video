@@ -106,7 +106,7 @@ The beat is that answer as code.
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
 | `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face; anything else, in any face, through film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }`) |
 | `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
-| `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width)` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`stack(n, …)` (where n cards go), `stagger(g, i, n, g0, g1)` (card i's arrival); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `confetti(…)`; `HIDDEN` |
+| `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width)` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`stack(n, …)` (where n cards go), `stagger(g, i, n, g0, g1)` (card i's arrival); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `line`, `declareLine`, `putLine` (a line of lettering, outlined, standing by its lowest point: "Lettering" below); `confetti(…)`; `HIDDEN` |
 | `signature` | the toy's own move (toy.json `signature`) on a pose |
 | `math`, `quat`, `mulberry32`, `readFilmJSON` | the engine's helpers |
 
@@ -151,6 +151,56 @@ cards.forEach((c, i) => {
 The cards light themselves, like the page's panels, so the light stays on the
 toy. Lettering over a wall of pictures needs a plate of its own behind it (a
 dark `roundBox`): their colours are everywhere behind it, the toy's too.
+
+A card can play a film instead of a still: `kit.picture(firstFrame, w, {
+movie: "assets/work/reel.mp4", frames: 240, start: 1 })` plays its frames from
+the film's frame `start`, round and round. Look for the creator's own footage
+before settling on stills (their reels, a demo, their site's media library).
+
+### Lettering
+
+`kit.line(glyph, text, em, { face })` lays a line out (`face: "display"` is
+the creator's own face, film.json `type.display`; else the end card's heavy
+face); `kit.declareLine(add, name, ln, { color, outline, depth, finish })`
+makes its letters; `kit.putLine(put, name, ln, base, q, k, { outline })`
+places them each sample:
+
+```js
+const ln = kit.line(glyph, "66 种风格", 0.06);
+// declare: white, a dark edge round each letter
+kit.declareLine(add, "count", ln, { color: "#F7F4EC", outline: "#141216" });
+// sample: standing on the floor by its lowest point, not its baseline
+kit.putLine(put, "count", ln, (it) => at(it.x, ln.stand, 0), quat.qId(), () => 1, { outline: true });
+```
+
+- A number on screen is white with a dark edge, floating, with its label
+  (the film's rule): `outline: true` (dark glossy) or the logo's own dark
+  (`"#141216"`). So is any lettering on a light or busy ground, where a face
+  alone reads at under 3:1. The edge is a second copy of each letter behind
+  it, bevelled wide; its material says `"outline": true`, so the colour check
+  reads the face by its edge, never the edge as lettering of its own.
+- Lettering that stands on a floor stands by its lowest point (`ln.stand`
+  above it): set by its baseline, a descender or a low stroke sinks into the
+  floor. `check` says which letters sink, how deep and when.
+- A finish (`finish`, the type material's own fields): `glass` (0–1: light
+  through it, a logo's glassy facets), `shine: true` (a hard shine), `metal`
+  (its roughness: chrome 0.08, brass 0.3), `side: "#hex"` (its sides and bevel
+  in a colour of their own: a glass face with a blue edge). When the lettering
+  carries a brand, offer the user a sheet of finishes rendered side by side at
+  full quality (glass, glass with an edge, chrome, enamel, a lit sign; a short
+  render), and their own colour, before settling on one.
+
+### Light and glow
+
+- `{ type: "beam", image, color, strength }`: light seen in the air or as a
+  pool on the floor (a stage spot's cone), glowing by the picture's alpha and
+  clear elsewhere. The animatic's engine draws it rough (a ragged "Christmas
+  tree"); the previews and the render are clean. Where the animatic must look
+  right too, build the glow from a few dozen opaque emissive discs instead.
+- `"sampled": false` on any glowing material (a lit facet, a line of light, a
+  picture card right beside the toy): it shows itself but is not sampled as a
+  light. Without it Cycles spends the toy's light samples on it, and the toy,
+  a few millimetres behind it, comes out dark and blotched on some frames.
 
 A beat usually opens with the toy dropping in from above (the cut from
 the last segment's leap) and ends with `kit.leapOut`, so the joins read as

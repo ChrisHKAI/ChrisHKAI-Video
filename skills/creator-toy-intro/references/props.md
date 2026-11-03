@@ -61,9 +61,13 @@ A prop is a module in the film's workspace, set in film.json
   `slide`, `ding` (its pitch in `note`, `"E6"` by default), `coins`, `glint`…).
 
 `ctx` gives `film`, the story's events `E`, `cta`, the floor `path` ([x0,
-x1] in stage metres, where the line appears), `readFilmJSON`, and `lib`
-(lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId,
-qEuler, apply, mulT, HIDDEN). Worked example:
+x1] in stage metres, where the line appears), `readFilmJSON`, `glyph`
+(the lettering, as a beat has it) and `lib` (lerp, seg, smooth, easeOut,
+easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN, and
+`line`, `declareLine`, `putLine`: a line of lettering, outlined, standing
+by its lowest point, references/beats.md). Words a prop carves (a
+trophy's 「最佳风格 · 你的」) go in film.json `cta.prop.text`, so the glyph
+step makes them. Worked example:
 `templates/isnail-30/props/snail.js` (the built-in `cta.prop.kind:
 "snail"`).
 

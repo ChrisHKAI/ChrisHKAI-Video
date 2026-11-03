@@ -88,6 +88,62 @@ export function clearance(anim, { toy = "hero", tol = null, every = 1, file = (p
 // the contacts of one film, a moment each: "6.6–7.9 s: half the toy is inside piece2_grid, 38 mm deep".
 // kind "into" (a good share of the toy, or deep: the viewer sees it go through) or "touch" (a hand, a
 // heel or an ear a few mm in, which the eye forgives)
+// lettering standing on a floor, sunk into it (a descender, a stroke under the baseline set on the floor): at rest
+// and at full size, its lowest point more than tol below the floor it stands over (kit.line's stand keeps it up)
+export function sunkLetters(anim, { tol = 0.0015, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const floors = anim.objects.filter((o) => o.geo?.type === "plane" && /(^|_)floor$/.test(o.name));
+  const letters = anim.objects.filter((o) => o.geo?.type === "curve" && o.mat?.type === "type" && !o.mat.outline && o.geo.rings?.length)
+    .map((o) => ({ o, pts: o.geo.rings.flatMap((r) => r.filter((_, i) => i % 3 === 0)).map(([x, y]) => [x, y, 0]), bevel: o.geo.bevel ?? 0 }));
+  if (!floors.length || !letters.length) return [];
+  const frames = [];
+  for (let f = 0; f < anim.frames; f += every) frames.push(f);
+  const at = frames.map((f) => { const memo = new Map(); return { f, memo }; });
+  // full size: the letter's largest size over the film
+  const full = new Map(letters.map(({ o }) => [o.name, Math.max(...at.map(({ f, memo }) => Math.min(...worldOf(o.name, f * SUB, memo).s.map(Math.abs))))]));
+  const open = new Map(), out = [];
+  const close = (name) => { const c = open.get(name); if (c) { out.push(c); open.delete(name); } };
+  for (const [k, { f, memo }] of at.entries()) {
+    for (const { o, pts, bevel } of letters) {
+      const w = worldOf(o.name, f * SUB, memo), size = Math.min(...w.s.map(Math.abs));
+      const prev = k ? worldOf(o.name, at[k - 1].f * SUB, at[k - 1].memo) : w;
+      if (size < 0.98 * full.get(o.name) || Math.abs(w.p[1] - prev.p[1]) > 3e-4) { close(o.name); continue; }
+      const low = Math.min(...pts.map((p) => apply(w, p)[1])) - bevel * size;
+      let depth = 0;
+      for (const fl of floors) {
+        const fw = worldOf(fl.name, f * SUB, memo);
+        if (Math.abs(w.p[0] - fw.p[0]) > (fl.geo.w / 2) * fw.s[0] || Math.abs(w.p[2] - fw.p[2]) > (fl.geo.h / 2) * fw.s[2]) continue;
+        const d = fw.p[1] - low;
+        if (d > tol && d < 0.05) depth = Math.max(depth, d);
+      }
+      if (!depth) { close(o.name); continue; }
+      const t = f / anim.fps, c = open.get(o.name);
+      if (c) { c.to = t; c.mm = Math.max(c.mm, depth / MM); } else open.set(o.name, { name: o.name, from: t, to: t, mm: depth / MM });
+    }
+  }
+  for (const name of [...open.keys()]) close(name);
+  // a moment in passing (a line rising past the floor, still for a sample) is not standing on it: a fifth of a second at least
+  out.splice(0, out.length, ...out.filter((c) => c.to - c.from >= 0.13));
+  // one line a word: letters named alike (count0, count1 …) and sunk at the same time go together
+  const words = new Map();
+  for (const c of out) {
+    const key = `${c.name.replace(/\d+$/, "")}|${c.from.toFixed(1)}`;
+    const w = words.get(key) ?? { names: [], from: c.from, to: c.to, mm: 0 };
+    w.names.push(c.name); w.to = Math.max(w.to, c.to); w.mm = Math.max(w.mm, c.mm);
+    words.set(key, w);
+  }
+  return [...words.values()].map((w) => ({ ...w, mm: +w.mm.toFixed(1), text: `${w.names.length > 1 ? `${w.names[0]}… (${w.names.length} letters)` : w.names[0]} ${w.mm.toFixed(0)} mm into the floor at ${w.from.toFixed(1)}–${w.to.toFixed(1)} s` }));
+}
+
 export function describe(contacts, height) {
   const merged = [];
   for (const c of contacts) {

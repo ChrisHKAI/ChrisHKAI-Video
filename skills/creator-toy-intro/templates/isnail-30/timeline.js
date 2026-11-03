@@ -12,6 +12,7 @@ import { film, fromFilm, fromSkill, readFilmJSON } from "#engine/film.js";
 import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "#engine/math.js";
 import { trs, qId, qEuler, apply, mulT } from "#engine/quat.js";
 import { makeSegments } from "#engine/segments.js";
+import { line, declareLine, putLine } from "#engine/lettering.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
@@ -91,9 +92,19 @@ export const CROWN = (film.profile.nameEmoji ?? "").includes("👑");
 // the end card's prop: the film's own module (film.json cta.prop.module, written
 // for this creator) or a built-in one by kind (props/<kind>.js; isnail's snail)
 const PROP_URL = film.cta.prop?.module ? pathToFileURL(fromFilm(film.cta.prop.module)).href : new URL(`./props/${film.cta.prop?.kind ?? "snail"}.js`, import.meta.url).href;
+// the lettering a prop carves (film.json cta.prop.text: its words get their glyphs), as a beat has it
+const PROP_GLYPHS = readFilmJSON("build/glyphs.json", null) ?? {};
+const propGlyph = {
+  has: (k) => !!PROP_GLYPHS[k],
+  adv: (k) => PROP_GLYPHS[k]?.advance ?? 0.6,
+  geo: (k, em, depth, bevel) => {
+    if (!PROP_GLYPHS[k]) throw new Error(`no lettering for "${k}": put the prop's words in film.json cta.prop.text, then run.mjs glyphs`);
+    return { type: "curve", rings: PROP_GLYPHS[k].rings.map((r) => r.map(([x, y]) => [+(x * em).toFixed(6), +(y * em).toFixed(6)])), depth, bevel };
+  },
+};
 export const PROP = (await import(PROP_URL)).makeProp({
-  film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON,
-  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4 },
+  film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON, glyph: propGlyph,
+  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine },
 });
 export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // camera keys: target = [UI x, UI y, height mm] or a tracker name; dist m,
