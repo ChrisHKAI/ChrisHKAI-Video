@@ -374,7 +374,8 @@ writeFileSync(join(dir, "research/materials.html"), page(decide + more));
 // texts, the bio, a source's text, Grok's answer, research/sources/), a cut inside it marked …… (references/research.md)
 {
   const strings = (v) => (typeof v === "string" ? [v] : Array.isArray(v) ? v.flatMap(strings) : v && typeof v === "object" ? Object.values(v).flatMap(strings) : []);
-  const flat = (t) => t.replace(/[\s\p{P}\p{S}]/gu, "");
+  // case aside: a page that sets its words in capitals by style (CSS) keeps them in their own case in its source
+  const flat = (t) => t.replace(/[\s\p{P}\p{S}]/gu, "").toLowerCase();
   const kept = [pr.name, ...(pr.bio ?? []), ...posts.flatMap((p) => [p.title, p.text]), ...story.flatMap((s) => (s.sources ?? []).map((x) => x.text))];
   try { kept.push(...strings(JSON.parse(readFileSync(join(dir, "research/grok.json"), "utf8")))); } catch { /* no Grok answer */ }
   const SRC = join(dir, "research/sources");

@@ -50,14 +50,43 @@ LABEL = {"opening": "opening", "toy": "the toy arrives", "proof": "the proof loc
 
 
 def moments():
-    """This film's time for each kind of moment (s), from build/timeline.json."""
+    """This film's time for each kind of moment (s), from build/timeline.json: the story's own events where the film
+    plays them; in a film of its own beats, each beat's own moment (its last storyboard frame: where it locks)."""
     tl = json.loads((FILM / "build/timeline.json").read_text())
-    E, dur = tl.get("EV", {}), tl["DURATION"]
-    beats = [s for s in tl.get("SEGMENTS", []) if s["kind"] == "beat"]
-    at = lambda k: E.get(k) if isinstance(E.get(k), (int, float)) else None  # noqa: E731
-    proof = at("lock") or (beats[0]["f1"] - 0.5 if beats else dur * 0.33)
-    payoff = at("peak") or (beats[-1]["f1"] - 0.5 if len(beats) > 1 else dur * 0.66)
+    dur, segs = tl["DURATION"], tl.get("SEGMENTS") or []
+    story = tl["STORY"]["EV"] if segs else tl.get("EV", {})
+
+    def at(k):  # a story event in film time, or None when no piece of the film plays it
+        v = story.get(k)
+        if not isinstance(v, (int, float)):
+            return None
+        if not segs:
+            return v
+        return next((v - s["s0"] + s["f0"] for s in segs if s["kind"] == "story" and s["s0"] - 1e-6 <= v <= s["s1"] + 1e-6), None)
+    # the beats between the opening and the end card (a film of its own beats opens and ends with one too)
+    beats = [s for s in segs if s["kind"] == "beat"]
+    middle = [s for s in beats if s["f0"] > 1e-3 and s["f1"] < dur - 1e-3] or beats
+
+    def times(s):  # a beat's storyboard frames in film time
+        return [s["f0"] + f["at"] for f in (s.get("storyboard") or {}).get("frames") or []] or [s["f1"] - 0.5]
+    if len(middle) > 1:
+        mine = (times(middle[0])[-1], times(middle[-1])[-1])
+    elif middle:
+        ts = times(middle[0])
+        mine = (ts[len(ts) // 2] if len(ts) > 1 else ts[0], ts[-1])
+    else:
+        mine = (dur * 0.33, dur * 0.66)
+    proof = at("lock") or mine[0]
+    payoff = at("peak") or mine[1]
     return {"opening": 0.5, "toy": (at("pop") or 2.0) + 1.5, "proof": proof, "payoff": payoff, "end": dur - 0.5}, tl["FPS"]
+
+
+def luma_of(path):
+    """A picture's mean brightness (0–255), or None."""
+    try:
+        return float((np.asarray(Image.open(path).convert("L"), dtype=np.float32)).mean())
+    except Exception:
+        return None
 
 
 def stats(im):
@@ -116,6 +145,16 @@ def main():
     sheet.save(OUT, quality=88)
     (OUT.with_suffix(".json")).write_text(json.dumps({"at": at, "numbers": numbers}, indent=1))
     print("wrote", OUT.relative_to(FILM))
+    # a light stage (white paper, a logo's own background) is outside the dark references by design: its brightness
+    # and contrast are not held to theirs (the user's own references can be: --refs)
+    import colors  # noqa: E402
+    sky = colors.stage_for(FILM)[1]["sky"]
+    light = not OWN and float(np.dot([int(sky[i:i + 2], 16) for i in (1, 3, 5)], [0.2126, 0.7152, 0.0722])) > 150
+    if light:
+        print(f"a light stage ({sky}): brightness and contrast are not held to the dark references; colourfulness is, and the toy must still stand out (the colour check)")
+    # a dark cover makes a dark frame whatever the light: said as the cover's, not as the light's
+    covers = {k: luma_of(FILM / ((FILM_JSON.get("posts") or {}).get(k) or {}).get("cover", "")) for k in ("pinned", "retro")}
+    darkest = min((v for v in covers.values() if v is not None), default=None)
     # where this film's numbers fall outside the references' own range, said in a line each
     for kind, row in numbers.items():
         me = row.get("this film")
@@ -123,9 +162,14 @@ def main():
         if not me or not refs:
             continue
         for k, word in (("bright", "brightness"), ("contrast", "contrast"), ("colour", "colourfulness")):
+            if light and k != "colour":
+                continue
             lo, hi = min(v[k] for v in refs), max(v[k] for v in refs)
             if me[k] < lo * 0.8 or me[k] > hi * 1.25:
-                print(f"! {LABEL[kind]}: {word} {me[k]:.0f}, the references {lo:.0f}–{hi:.0f}")
+                why = ""
+                if k == "bright" and me[k] < lo * 0.8 and kind in ("proof", "payoff") and darkest is not None and darkest < 50:
+                    why = f": the cover itself is dark (brightness {darkest:.0f}), so the frame is dark by its material, not its light; frame it closer, or keep it (references/storyboard.md)"
+                print(f"! {LABEL[kind]}: {word} {me[k]:.0f}, the references {lo:.0f}–{hi:.0f}{why}")
     if missing:
         print(f"render these first: FILM={FILM} node engine/run.mjs render -- --frames {','.join(map(str, sorted(set(missing))))} --samples 24 --scale 50 --out {SRC.relative_to(FILM)}")
 

@@ -200,7 +200,7 @@ export function timeline() {
   const r4 = (v) => +v.toFixed(4);
   const SEGMENTS = T.SEG.list.map((s) => {
     // why: what the viewer gets from it (the chosen direction's "means", carried by apply-research)
-    const why = s.entry.why ? { why: s.entry.why } : {};
+    const why = { ...(s.entry.why ? { why: s.entry.why } : {}), ...(s.entry.wide ? { wide: true } : {}) };
     if (s.kind === "story") return { kind: "story", f0: r4(s.f0), f1: r4(s.f1), s0: s.s0, s1: s.s1, ...why };
     const B = BEATS.find((x) => x.i === s.i);
     return { kind: "beat", beat: s.entry.beat, f0: r4(s.f0), f1: r4(s.f1), music: B.b.music ?? {}, storyboard: B.b.storyboard ?? {}, ...why };

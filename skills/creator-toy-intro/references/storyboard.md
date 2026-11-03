@@ -58,6 +58,11 @@ score (a few minutes on an Apple GPU, more on others; run it in the
 background), joins the page when it is done, as `animatic.mp4` beside it
 (publish the two together):
 
+A segment where the work is the hero and the toy stands small on purpose (a
+wall of their pictures filling the frame) says so in film.json:
+`story.segments[i].wide: true`; the pace check then lets the toy be small
+there.
+
 A new animatic ends one still rendering (an older story's), and
 `run.mjs animatic -- --stop` ends it by itself; if the motion changes while
 it renders, it says so, and the animatic shows the motion from before.

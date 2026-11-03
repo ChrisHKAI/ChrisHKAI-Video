@@ -147,7 +147,10 @@ goes to `extra`; in the film it rises from the name at the top.
   `research/sources/`: an article, a README, a line from a video as a
   `.txt`, a post's API answer as it came (`fx-<id>.json`).
   A quote stays in their script, word for word; a cut inside it is marked
-  ……. The story page checks every 「quote」 against these texts.
+  ……. The story page checks every 「quote」 against these texts. A page that
+  sets words in capitals by its style (THE NOMINEES FOR BEST STYLE) has them
+  in their own case in its source (The Nominees for Best Style): keep the
+  source's text; the check reads letters whatever their case.
 - Never keep phone numbers, WeChat IDs, prices or invite codes for the screen.
   A bio line that carries one (「199 付费答疑群 +V: …」) is left out of
   `profile.bio`; the rest of the page stays as theirs.

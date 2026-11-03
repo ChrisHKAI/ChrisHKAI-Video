@@ -114,6 +114,26 @@ def stretches(mask, rate, at_least=LONG):
     return out
 
 
+def lettering_shown(anim, segments):
+    """Each beat's lettering as the viewer sees it: [(beat k, t0, t1, names)] where its letters are at their size
+    (glyph curves in a type material under the beat's prefix, not an outline), from anim.json in film time."""
+    rate = anim["fps"] * anim["sub"]
+    beats = [s for s in segments or [] if s["kind"] == "beat"]
+    out = []
+    for k, seg in enumerate(beats):
+        names = [o["name"] for o in anim["objects"] if o["name"].startswith(f"beat{k}_") and (o.get("geo") or {}).get("type") == "curve"
+                 and (o.get("mat") or {}).get("type") == "type" and not (o.get("mat") or {}).get("outline") and o["name"] in anim["tracks"]]
+        if not names:
+            continue
+        size = np.max([np.min(np.abs(track(anim, n)[:, 7:10]), axis=1) for n in names], axis=0)
+        lo, hi = int(seg["f0"] * rate), int(seg["f1"] * rate)
+        on = np.zeros(len(size), bool)
+        on[lo:hi] = size[lo:hi] > 0.5 * max(float(size[lo:hi].max(initial=0)), 1e-6)
+        for a, z in stretches(on, rate, 0.5):
+            out.append((k, a, z, names))
+    return out
+
+
 def check(film):
     """Everything the page and the review report, for one film folder."""
     b = Path(film) / "build"
@@ -162,13 +182,25 @@ def check(film):
             n = need(r["text"])
             lines.append({"text": r["text"], "at": [t0, t1], "shown": round(t1 - t0, 2), "need": round(n, 2),
                           "ok": t1 - t0 >= n - 0.05, "toEnd": t1 >= dur - 0.05})
-    # the toy as a speck, or out of the frame while it is meant to be in it
+    # lettering a beat shows that its reads do not cover: the reading time is checked only on what a beat says it shows
+    unread = []
+    for k, a, z, names in lettering_shown(anim, tl.get("SEGMENTS")):
+        cover = [r["at"] for r in reads or [] if r["at"][1] > a and r["at"][0] < z]
+        said = sum(min(z, t1) - max(a, t0) for t0, t1 in cover)
+        if z - a - said > 0.5:
+            unread.append({"beat": k, "at": [a, z], "said": round(said, 2), "names": names[:3]})
+    # the toy as a speck, or out of the frame while it is meant to be in it; not in a segment where the work is the
+    # hero and the toy stands small on purpose (film.json story.segments[i].wide: a wall of their 66 pictures)
     small, off = [], []
     seen = toy_on_screen(film, anim)
     if seen is not None:
         share, on, shown = seen
         rate = anim["fps"] * anim["sub"]
-        small = [(a, z, round(float(np.median(share[int(a * rate):int(z * rate)])), 3)) for a, z in stretches(on & (share < SMALL), rate)]
+        wide = np.zeros(len(share), bool)
+        for s in tl.get("SEGMENTS") or []:
+            if s.get("wide"):
+                wide[int(s["f0"] * rate):int(s["f1"] * rate)] = True
+        small = [(a, z, round(float(np.median(share[int(a * rate):int(z * rate)])), 3)) for a, z in stretches(on & (share < SMALL) & ~wide, rate)]
         off = stretches(shown & ~on, rate, 2 * LONG)
     return {"duration": dur, "bar": bar, "dead": dead, "alone": alone, "hook": hits[0] if hits else None,
-            "mid": mid[0] if mid else None, "reads": lines, "cuts": cuts, "starts": len(starts), "small": small, "off": off}
+            "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "off": off}

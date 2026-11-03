@@ -38,6 +38,11 @@ puts the frames side by side for you.
 
    A light X page may be bright (铁柱's opening is 200). The toy must still
    stand out: the colour check's 3:1, and a rim light where it melts in.
+   A light stage (white paper, a logo's own background: film.json
+   `look.stage`) is outside these ranges by design: compare holds only its
+   colourfulness to the references (or all of it to the user's own, `--refs`).
+   A cover that is dark itself (black with gold type) makes a dark frame
+   whatever the light: compare says so; frame it closer, or keep it.
    (compare prints every frame outside the references' range; the storyboard
    page's colour checks)
 5. **Lettering that reads.** The end card's heavy face on cream torn paper
