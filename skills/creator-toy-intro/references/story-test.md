@@ -44,6 +44,8 @@ not imply an unsupported event, endorsement, skill, income or causal claim.
 2. Read that brief with fresh eyes, or give only the brief to a fresh reviewer.
    No research, paid calls, modelling or rendering is needed. Answer:
    - **Takeaway:** how would a stranger introduce this creator in one sentence?
+     And could they finish "when I need ___, I find ___ with them" from what the
+     film shows (the direction's `viewer`, references/story-directions.md)?
    - **Continuation:** why would they watch the next beat, or the payoff of a
      one-beat story?
    - **Specificity:** what work, method, words or detail prevents this from

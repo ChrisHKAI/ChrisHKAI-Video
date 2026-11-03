@@ -146,6 +146,22 @@ tell it. The story page shows it first on each card, above the pitch, and
 `materials.mjs` says which direction has none, which never shows its moment,
 and which is only numbers.
 
+### What the viewer comes to them for
+
+Every direction also answers, for a stranger watching it: when I have what
+need, what do I find with this creator? Record it as `viewer: { who, need,
+finds, when, next }`, in the user's language: who it is for (else the page uses
+`narrative.audience`), the need they arrive with ("I want to make a poster with
+AI and don't know where to start"), what they find here (the posts, tests and
+tutorials that answer it, from the sources), when they will think of the
+creator again, and where to look next (the account, the post, the site). The
+opening, the beats and the ending answer it together: a row of their work alone
+does not say what it is for. "What they offer" means what a viewer can read,
+watch or use there; a paid course, commissions or consulting go in only when a
+source shows them. When no direction can answer it, write a clearer one rather
+than keep three that can't. `materials.mjs` names every direction without
+`need`, `finds` and `when`.
+
 Each direction must say what the viewer should remember, the question or promise
 that holds attention, how each fact advances it, and how the ending pays it off.
 Use two or three factual beats for a typical 30-second film (one to four allowed).
@@ -210,6 +226,13 @@ shape references facts already present in `story`; replace all sample content:
     "moment": "The evening she rebuilt his phone's screen by hand, button by button",
     "story": "s1"
   },
+  "viewer": {
+    "who": "People whose eyes are failing, and the children who set up their phones",
+    "need": "Their phone's letters are too small to read, and the settings don't help enough",
+    "finds": "Her free reading tools, and the posts showing how to set each one up",
+    "when": "When a parent can no longer read their phone",
+    "next": "Her account's pinned post, which lists the tools"
+  },
   "pitch": "Every button she made bigger was made bigger for him first",
   "image": "Her father's phone screen growing, button by button, until the toy can stand on the letters",
   "opening": { "id": "page-stand", "why": "the page lies flat, then stands up; the toy comes out in front of it, ready to show his phone" },
@@ -225,7 +248,7 @@ shape references facts already present in `story`; replace all sample content:
   "payoff": "The viewer knows whom she builds for, and that they can use it too.",
   "why": "Her own post tells the evening with her father; the app's page shows the same big buttons.",
   "gaps": [],
-  "cta": { "slogan": ["Bigger letters", "for everyone"], "prop": "her father's old phone, its buttons grown big" }
+  "cta": { "slogan": ["Bigger letters", "for everyone"], "prop": "her father's old phone, its buttons grown big", "sketch": "research/sketches/ending.jpg" }
 }
 ```
 
@@ -269,8 +292,15 @@ At step 4 implement the selected hook only; alternatives are not extra scenes.
 
 ## 4. One choice, then the existing film pipeline
 
-`materials.mjs` shows the direction cards as the story choice, lettered A/B/C:
-audience/goal, recommendation, the person at its heart, the pitch, the image, the opening, the first
+`materials.mjs` shows the direction cards as the story choice, lettered A/B/C.
+Above them a table sets the directions side by side, one row each for the
+pitch, the heart, who it is for, their need, what they find, when they come
+back, where to look next, the order of the beats, the image, the length and
+the ending (a row none of them fills is left out); a single direction gets the
+same rows as one short block instead. Each card then has its audience/goal,
+recommendation, the person at its heart, what the viewer comes for, a row of
+small pictures from the opening to the ending (each one a link to that part;
+the ending's is `cta.sketch`, when there is one), the pitch, the image, the opening, the first
 picture and its words, each fact with its picture, its connection, what the
 viewer learns and its ideas (the film's own with their sketches, the skill's
 with their preview strips), the payoff, the ending, evidence links and gaps.

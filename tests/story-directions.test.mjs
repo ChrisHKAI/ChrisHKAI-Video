@@ -400,7 +400,7 @@ test("a point's material may be a folder of their work: the page shows its first
   const r = run(dir, "materials.mjs", [dir, "--html-only"]);
   assert.equal(r.status, 0, r.stderr);
   const served = readFileSync(join(dir, "research/story/index.html"), "utf8");
-  assert.match(served, /img\/0-2\.png/);
+  assert.match(served, /img\/\d+-2\.png/); // numbered in the order the page first shows each picture
   assert.doesNotMatch(served, /notes\.txt|file:\/\//);
 });
 
@@ -657,4 +657,41 @@ test("a company: no posts with an opening of its own, its logo and website named
   assert.match(html, /logo鼓起变成公仔/);
   assert.doesNotMatch(html, /头像鼓起/);
   assert.match(html, /官网像屏幕一样平放/);
+});
+
+test("the story page: directions side by side, what a viewer comes for, links to every part, how far the film has come", (t) => {
+  const f = facts();
+  const one = f.directions[0];
+  f.directions = ["A", "B", "C"].map((k, i) => ({ ...structuredClone(one), id: `d${i}`, title: `Story ${k}` }));
+  f.directions[0].viewer = { need: "Their exports keep failing", finds: "The checks they built, and how to run them", when: "Before the next export", next: "The pinned tutorial" };
+  f.recommendedDirection = "d0"; f.picks.direction = "d0";
+  let dir = workspace(t, f);
+  let r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "en"]);
+  assert.equal(r.status, 0, r.stderr);
+  // the two without a viewer are named; the one with it is not
+  assert.match(r.stdout, /direction B "Story B": doesn't say yet what a viewer comes to them for .*lacks need, finds, when/);
+  assert.doesNotMatch(r.stdout, /direction A "Story A": doesn't say/);
+  const served = readFileSync(join(dir, "research/story/index.html"), "utf8");
+  assert.match(served, /<table class="compare">/);
+  assert.match(served, /What they need<\/th><td>Their exports keep failing<\/td><td><\/td>/);
+  // every link to a part of the page has its part
+  const ids = new Set([...served.matchAll(/ id="([^"]+)"/g)].map((m) => m[1]));
+  const links = [...served.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(links.includes("dir-C") && links.includes("notes") && links.includes("dir-A-b2"));
+  assert.deepEqual(links.filter((id) => !ids.has(id)), []);
+  // the chat's file has no notes, so no link to them; progress from film.json step
+  const file = readFileSync(join(dir, "research/materials.html"), "utf8");
+  assert.doesNotMatch(file, /href="#notes"/);
+  assert.match(served, /<dt>Story<\/dt><dd>waiting for your pick/);
+  assert.match(served, /<dt>Toy<\/dt><dd>not made yet/);
+  // one direction: no table and no B or C, its viewer at a glance, said once
+  const f1 = facts();
+  f1.directions[0].viewer = { who: "Video editors", need: "Their exports keep failing", finds: "The checks they built", when: "Before the next export" };
+  dir = workspace(t, f1);
+  r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "en"]);
+  assert.equal(r.status, 0, r.stderr);
+  const single = readFileSync(join(dir, "research/story/index.html"), "utf8");
+  assert.doesNotMatch(single, /class="compare"|href="#dir-B"|Pick one \(A \/ B \/ C\)/);
+  assert.match(single, /class="glance"><h3>This story at a glance/);
+  assert.equal(single.match(/Video editors/g).length, 1); // at a glance, not again on the card or in the brief
 });

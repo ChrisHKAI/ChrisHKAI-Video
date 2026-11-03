@@ -359,9 +359,17 @@ then the endings) and `research/materials-posts.png` (every post found, each
 point in detail, and the skill's animations as parts), and
 `research/materials.html` with both, and `research/story/index.html`: the same
 page as the storyboard's is made, served by the studio with its pictures,
-where the user clicks any card (a direction, a point, an idea, an ending, a
-post) to leave a note (`build/comments.jsonl`, `run.mjs comments` lists
-them). It says which point still lacks an idea of the film's own, or its
+where each card (a direction, a point, an idea, an ending, a post) has its own
+note button (`build/comments.jsonl`, `run.mjs comments` lists them). A click
+on a picture opens it large, with that card's note beside it; a note not yet
+sent is kept in the browser, through a jump or a reload. Along the top, links
+to the page's own parts (the comparison or the viewers' need, each direction,
+the ending, the material, the posts, the notes) stay in view and mark the part
+being read; a link opens what is folded round its part. Under the creator's
+profile the page says how far the film has come: the story, the toy, the
+storyboard and the film, each approved, waiting for the user with a preview
+(the toy's turnaround, the storyboard's link), or not made yet, from film.json
+`step` and what is built; a preview is never shown as approved. It says which point still lacks an idea of the film's own, or its
 sketch: add them before the user sees the page. Serve it and give the user
 the address it prints, on a line of its own (words stuck to it become part of
 the link). Each film's studio takes a port of its own (another film's may hold

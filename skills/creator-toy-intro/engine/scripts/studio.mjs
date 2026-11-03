@@ -88,7 +88,7 @@ const open = (port) => new Promise((ok, no) => { const s = createServer(serve); 
 const filmAt = (port) => fetch(`http://127.0.0.1:${port}/api/film`, { signal: AbortSignal.timeout(1000) }).then((r) => (r.ok ? r.json() : {})).then((j) => j.film, () => null);
 function say(port, already) {
   console.log(`studio for ${FILM}${already ? ": already running" : port !== FIRST ? ` (${FIRST}${port - FIRST > 1 ? `–${port - 1}` : ""} taken by another film's studio or program)` : ""}`);
-  if (existsSync(join(STORY, "index.html"))) console.log(`  the story page  http://127.0.0.1:${port}/story/  (click a card to write a note)`);
+  if (existsSync(join(STORY, "index.html"))) console.log(`  the story page  http://127.0.0.1:${port}/story/  (a card's note button writes a note; a picture opens large)`);
   console.log(`  the storyboard  http://127.0.0.1:${port}/storyboard/  (click a frame or the paused animatic to write a note)`);
   console.log(`  notes land in   build/comments.jsonl (run.mjs comments lists them)`);
 }

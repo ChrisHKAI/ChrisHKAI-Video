@@ -34,9 +34,9 @@ const T = {
   en: { title: "Your film: the story first", story: "① What does the film tell about them?", storyNote: "pick two or three, in the order they come", becomes: "On screen", read: "read", opening: "② How does it open?", openNote: "pick one", ending: "③ How does it end?", endNote: "the last line and the prop the toy sits on", other: "Other: just say", posts: "The posts found (the evidence)", pinned: "pinned", sponsored: "paid partnership", menu: "The skill's animations (parts to start from)", ask: "Tell me your picks: the story (say A, C), the opening, the ending; and anything that must not appear (a number, a picture, an old name)", idea: "idea", none: "No story yet: the agent first finds what they are known for and proud of (research.md)" },
 }[lang] ?? {};
 const D = {
-  "zh-Hans": { title: "① 片子讲哪一条主线？", note: "选一条（A／B／C）。每条都已经排好要讲的几件事和次序", audience: "给谁看", goal: "看完记住什么／做什么", assumed: "根据资料推断，可修改", recommended: "推荐", hook: "开场让人想知道", visual: "第一个画面", text: "画面上的字", payoff: "最后回答了什么", ending: "收尾一句和道具", means: "观众会明白", evidence: "依据", gaps: "还缺证据：选这条的话，会只讲资料能证明的部分", ask: "选好就告诉我，例如：主线 A、收尾 1（想某件事换另一个点子也说）。有什么不想出现在片里（某个数字、某张图、旧名字），也一起说" },
-  "zh-Hant": { title: "① 條片講邊條主線？", note: "揀一條（A／B／C）。每條都已經排好要講嘅幾件事同次序", audience: "畀邊個睇", goal: "睇完記得乜／做乜", assumed: "按資料推斷，可以改", recommended: "推薦", hook: "開場令人想知道", visual: "第一個畫面", text: "畫面上嘅字", payoff: "最後答咗乜", ending: "收尾一句同道具", means: "觀眾會明白", evidence: "依據", gaps: "仲欠證據：揀呢條嘅話，只會講資料證明到嘅部分", ask: "揀好就話我知，例如：主線 A、收尾 1（想某件事換第二個點子都講）。有冇嘢唔想出現喺片入面（某個數字、某張相、舊名），都一齊講" },
-  en: { title: "① Which story does the film tell?", note: "Pick one (A / B / C): each already orders the facts it tells", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "What makes them want to know", visual: "First picture", text: "Words on screen", payoff: "What the end answers", ending: "Closing line and prop", means: "Viewer learns", evidence: "Evidence", gaps: "Evidence missing: choosing this, the film says only what the sources support", ask: "Tell me your picks, say: story A, ending 1 (and another idea for a point, if you prefer one). And anything that must not appear (a number, a picture, an old name)" },
+  "zh-Hans": { title: "① 片子讲哪一条主线？", note: "选一条（A／B／C）。每条都已经排好要讲的几件事和次序", one: "这一条主线已经排好要讲的几件事和次序：看看行不行，想改哪里就说", audience: "给谁看", goal: "看完记住什么／做什么", assumed: "根据资料推断，可修改", recommended: "推荐", hook: "开场让人想知道", visual: "第一个画面", text: "画面上的字", payoff: "最后回答了什么", ending: "收尾一句和道具", means: "观众会明白", evidence: "依据", gaps: "还缺证据：选这条的话，会只讲资料能证明的部分", ask: "选好就告诉我，例如：主线 A、收尾 1（想某件事换另一个点子也说）。有什么不想出现在片里（某个数字、某张图、旧名字），也一起说" },
+  "zh-Hant": { title: "① 條片講邊條主線？", note: "揀一條（A／B／C）。每條都已經排好要講嘅幾件事同次序", one: "呢條主線已經排好要講嘅幾件事同次序：睇吓啱唔啱，想改邊度就講", audience: "畀邊個睇", goal: "睇完記得乜／做乜", assumed: "按資料推斷，可以改", recommended: "推薦", hook: "開場令人想知道", visual: "第一個畫面", text: "畫面上嘅字", payoff: "最後答咗乜", ending: "收尾一句同道具", means: "觀眾會明白", evidence: "依據", gaps: "仲欠證據：揀呢條嘅話，只會講資料證明到嘅部分", ask: "揀好就話我知，例如：主線 A、收尾 1（想某件事換第二個點子都講）。有冇嘢唔想出現喺片入面（某個數字、某張相、舊名），都一齊講" },
+  en: { title: "① Which story does the film tell?", note: "Pick one (A / B / C): each already orders the facts it tells", one: "This story already orders the facts it tells: say whether it works, and what to change", audience: "Audience", goal: "What viewers remember / do", assumed: "Inferred from the sources; editable", recommended: "Recommended", hook: "What makes them want to know", visual: "First picture", text: "Words on screen", payoff: "What the end answers", ending: "Closing line and prop", means: "Viewer learns", evidence: "Evidence", gaps: "Evidence missing: choosing this, the film says only what the sources support", ask: "Tell me your picks, say: story A, ending 1 (and another idea for a point, if you prefer one). And anything that must not appear (a number, a picture, an old name)" },
 }[lang] ?? null;
 if (!D) throw new Error("--lang must be zh-Hant, zh-Hans or en");
 const editorialWords = {
@@ -62,6 +62,13 @@ const prepWords = {
   "zh-Hant": { prepare: "製作前要準備", theirs: "片入面嘅字" },
   "zh-Hans": { prepare: "制作前要准备", theirs: "片里的字" },
   en: { prepare: "To prepare before production", theirs: "on screen" },
+}[lang];
+// what a viewer comes to them for (direction "viewer": who, need, finds, when, next), the table that sets the
+// directions side by side, the page's own links along its top, and how far the film has come
+const viewWords = {
+  "zh-Hant": { who: "畀邊個睇", need: "佢哋需要乜", finds: "喺佢度搵到乜", when: "幾時會再搵佢", next: "下一步去邊度睇", none: "未講觀眾嚟搵佢做乜", glance: "一眼睇晒呢條主線", compare: "三條主線並排比較", compare2: "兩條主線並排比較", item: "比較項目", pitch: "一句講晒", heart: "片嘅中心", order: "故事次序", image: "記住嘅畫面", length: "片長", ending: "收尾", look: "睇詳細 ↓", strip: "由開場到收尾，撳小圖跳去嗰段", openPiece: "開場", endPiece: "收尾", s: "秒", navNeed: "觀眾需要", navCompare: "主線比較", navOne: "主線", navEnd: "收尾", navPoints: "素材", navOpen: "開場", navPosts: "帖（原始素材）", navParts: "動畫零件", navNotes: "意見", progress: "製作進度", pStory: "故事", pToy: "公仔", pBoard: "分鏡動畫", pFilm: "正式影片", ok: "已確認", pick: "等你揀", preview: "有預覽，等你確認", todo: "未做", ready: "等出片", done: "已完成", openBoard: "睇分鏡同動畫預覽" },
+  "zh-Hans": { who: "给谁看", need: "他们需要什么", finds: "在他这里找到什么", when: "什么时候会再找他", next: "下一步去哪里看", none: "还没说观众来找他做什么", glance: "一眼看懂这条主线", compare: "三条主线并排比较", compare2: "两条主线并排比较", item: "比较项目", pitch: "一句话", heart: "片子的中心", order: "故事次序", image: "记住的画面", length: "片长", ending: "收尾", look: "看详细 ↓", strip: "从开场到收尾，点小图跳到那一段", openPiece: "开场", endPiece: "收尾", s: "秒", navNeed: "观众需要", navCompare: "主线比较", navOne: "主线", navEnd: "收尾", navPoints: "素材", navOpen: "开场", navPosts: "帖子（原始素材）", navParts: "动画零件", navNotes: "意见", progress: "制作进度", pStory: "故事", pToy: "公仔", pBoard: "分镜动画", pFilm: "正式影片", ok: "已确认", pick: "等你选", preview: "有预览，等你确认", todo: "还没做", ready: "等出片", done: "已完成", openBoard: "看分镜和动画预览" },
+  en: { who: "Who it is for", need: "What they need", finds: "What they find here", when: "When they come back", next: "Where to look next", none: "doesn't say yet what a viewer comes to them for", glance: "This story at a glance", compare: "The three stories side by side", compare2: "The two stories side by side", item: "", pitch: "In a sentence", heart: "At its heart", order: "In order", image: "The image people remember", length: "Length", ending: "Ending", look: "Details ↓", strip: "Opening to ending: click a picture to go to that part", openPiece: "Opening", endPiece: "Ending", s: "s", navNeed: "Viewers' need", navCompare: "Compare", navOne: "The story", navEnd: "Ending", navPoints: "Material", navOpen: "Opening", navPosts: "Posts (the sources)", navParts: "Animation parts", navNotes: "Notes", progress: "Progress", pStory: "Story", pToy: "Toy", pBoard: "Storyboard", pFilm: "The film", ok: "approved", pick: "waiting for your pick", preview: "preview ready, waiting for you", todo: "not made yet", ready: "ready to render", done: "done", openBoard: "Open the storyboard and previews" },
 }[lang];
 const theirScript = film.language && film.language !== lang;
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -128,12 +135,15 @@ const actionWords = {
   "zh-Hans": ["公仔做什么", "观众明白什么"],
   en: ["Toy action", "Viewer learns"],
 }[lang];
-const beatRow = (b, n) => {
+// a point's own picture: its material, else its post's
+const pointPic = (s) => s && ((s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => postPic(post(id))).find(Boolean));
+const dirKey = (i) => `dir-${LETTER[i] ?? i + 1}`;
+const beatRow = (b, n, key) => {
   const s = story.find((x) => x.id === b.story);
-  const pic = s && ((s.material ?? []).map((m) => img(m)).find(Boolean) ?? (s.posts ?? []).map((id) => postPic(post(id))).find(Boolean));
+  const pic = pointPic(s);
   const idea = s?.becomes?.[b.idea ?? 0], others = Math.max(0, (s?.becomes?.length ?? 0) - 1);
   const pv = idea && ideaPic(idea);
-  return `<li class="beat"><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${idea?.pitch ? `<div class="pitch">${esc(idea.pitch)}</div>` : ""}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}${others ? `<div class="why">${esc(ideaWords.more.replace("{n}", others))}</div>` : ""}</div>${pv ? `<div class="pv bpv${ownIdea(idea) ? " sk" : ""}" style="background-image:url('${pv}')"></div>` : ""}</li>`;
+  return `<li class="beat"${key ? ` id="${key}-b${n + 1}"` : ""}><div class="bp" style="${pic ? `background-image:url('${pic}')` : ""}"></div><div class="bt"><b>${n + 1}. ${esc(b.role)}</b>: ${esc(s?.line ?? b.story)}${idea?.pitch ? `<div class="pitch">${esc(idea.pitch)}</div>` : ""}${b.connection ? `<div class="why">${esc(b.connection)}</div>` : ""}${b.action?.means ? `<div class="why"><b>${D.means}:</b> ${esc(b.action.means)}</div>` : ""}${b.action?.does ? `<div class="why"><b>${actionWords[0]}:</b> ${esc(b.action.does)}</div>` : ""}${others ? `<div class="why">${esc(ideaWords.more.replace("{n}", others))}</div>` : ""}</div>${pv ? `<div class="pv bpv${ownIdea(idea) ? " sk" : ""}" style="background-image:url('${pv}')"></div>` : ""}</li>`;
 };
 // the opening a direction chose: its why (what the viewer sees, in this story's words); one of the film's own
 // ({ id: "own", beat, pitch, sketch, why }) by its pitch and its sketch, as a point's own idea is
@@ -156,12 +166,14 @@ const lenOf = (id, b = {}) => {
   if (!a) return 0;
   return a.kind === "story" ? pieceLen(a.film.story) + (id === "act3" ? pieceLen("exit") : 0) : (b.opts?.bars ?? a.film.bars ?? 3) * BAR;
 };
-const seconds = (d) => {
+// its parts in order with their lengths: the opening, each beat, the end card
+const partsOf = (d) => {
   const o = d.opening?.id ?? "page-stand";
-  let t = o === "own" ? (d.opening.bars ?? 2) * BAR : lenOf(o);
-  for (const x of d.beats ?? []) { const b = story.find((q) => q.id === x.story)?.becomes?.[x.idea ?? 0]; if (b) t += lenOf(b.anim, b); }
-  return Math.round(t + pieceLen("endCard"));
+  return [o === "own" ? (d.opening.bars ?? 2) * BAR : lenOf(o),
+    ...(d.beats ?? []).map((x) => { const b = story.find((q) => q.id === x.story)?.becomes?.[x.idea ?? 0]; return b ? lenOf(b.anim, b) : 0; }),
+    pieceLen("endCard")];
 };
+const seconds = (d) => Math.round(partsOf(d).reduce((a, b) => a + b, 0));
 // who is at a direction's heart, first on its card: the person, why, for whom, the moment the film shows
 const heartBlock = (h) => {
   const rows = [[heartWords.who, h?.who], [heartWords.why, h?.why], [heartWords.forWhom, h?.forWhom], [heartWords.moment, h?.moment]].filter(([, v]) => v);
@@ -175,32 +187,78 @@ const momentRow = (m) => {
   return `<li><div>${esc(m.what)}${m.date || src ? ` <span class="src">${[esc(m.date ?? ""), src].filter(Boolean).join(" · ")}</span>` : ""}</div><div class="why">${by.length ? `<b>${heartWords.usedIn}:</b> ${by.join(heartWords.sep)}` : `<b>${heartWords.notUsed}:</b> ${esc(m.why ?? "")}`}</div></li>`;
 };
 const momentSection = () => (Array.isArray(facts.moments) ? `<div class="moments"><b>${heartWords.moments}</b><div class="note">${heartWords.momentsNote}</div>${facts.moments.length ? `<ul>${facts.moments.map(momentRow).join("")}</ul>` : `<p class="why">${heartWords.noneFound}</p>`}</div>` : "");
+// what a viewer comes to them for: who, what they need, what they find here (from the evidence: their posts and
+// tutorials, never a service the sources don't show), when they come back, where to look
+const VIEWER = ["who", "need", "finds", "when", "next"];
+const viewerOf = (d) => ({ ...d.viewer, who: d.viewer?.who ?? narrative.audience });
+const viewerBlock = (d) => {
+  const v = viewerOf(d), rows = VIEWER.filter((k) => v[k]);
+  if (!d.viewer?.need && !d.viewer?.finds) return "";
+  return `<div class="brief viewer">${rows.map((k) => `<div class="row"><span class="lb">${viewWords[k]}</span><span class="val">${esc(v[k])}</span></div>`).join("")}</div>`;
+};
+// the story in small pictures, opening to ending, each a link to its part of the card
+const stripOf = (d, i) => {
+  const key = dirKey(i), len = TPL ? partsOf(d) : [];
+  let t = 0;
+  const when = (k) => { if (!TPL) return ""; const a = t; t += len[k]; return `${Math.round(a)}–${Math.round(t)} ${viewWords.s}`; };
+  const o = d.opening ?? {};
+  const tiles = [{ href: `${key}-open`, label: viewWords.openPiece, pic: o.id === "own" ? img(o.sketch) : strip(o.id ?? "page-stand"), time: when(0) },
+    ...(d.beats ?? []).map((b, n) => {
+      const s = story.find((x) => x.id === b.story), idea = s?.becomes?.[b.idea ?? 0];
+      return { href: `${key}-b${n + 1}`, label: b.role ?? s?.line, pic: (ownIdea(idea) && img(idea.sketch)) || pointPic(s), time: when(n + 1) };
+    }),
+    { href: `${key}-end`, label: viewWords.endPiece, pic: img(d.cta?.sketch), text: (d.cta?.slogan ?? []).join(" ／ "), time: when((d.beats ?? []).length + 1) }];
+  return `<div class="strip"><div class="note">${viewWords.strip}</div><ol>${tiles.map((x) => `<li><a href="#${x.href}"><span class="sth"${x.pic ? ` style="background-image:url('${x.pic}')"` : ""}>${x.pic ? "" : esc(x.text ?? "")}</span>${x.time ? `<small>${esc(x.time)}</small>` : ""}<b>${esc(x.label)}</b></a></li>`).join("")}</ol></div>`;
+};
+// two or three directions side by side, row by row; one direction, its viewer at a glance
+const compareTable = () => {
+  if (directions.length < 2) {
+    const d = directions[0], v = d ? viewerOf(d) : {}, rows = VIEWER.filter((k) => v[k] && (k !== "who" || d.viewer));
+    return rows.length > 1 ? `<div class="glance"><h3>${viewWords.glance}</h3>${rows.map((k) => `<div class="row"><span class="lb">${viewWords[k]}</span><span class="val">${esc(v[k])}</span></div>`).join("")}</div>` : "";
+  }
+  const order = (d) => (d.beats ?? []).map((b) => b.role ?? story.find((s) => s.id === b.story)?.line).filter(Boolean).join(" → ");
+  const rows = [
+    [ideaWords.pitch, (d) => d.pitch], [viewWords.heart, (d) => d.heart?.who],
+    ...VIEWER.map((k) => [viewWords[k], (d) => viewerOf(d)[k]]),
+    [viewWords.order, order], [viewWords.image, (d) => d.image],
+    ...(TPL ? [[viewWords.length, (d) => ideaWords.length.replace("{n}", seconds(d))]] : []),
+    [viewWords.ending, (d) => (d.cta?.slogan ?? []).join(" ／ ")],
+  ].filter(([, f]) => directions.some((d) => f(d)));
+  const th = directions.map((d, i) => `<th scope="col"><a href="#${dirKey(i)}"><span class="k">${LETTER[i] ?? i + 1}</span>${esc(d.title)}</a>${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</th>`).join("");
+  return `<h3 class="ctitle">${directions.length === 2 ? viewWords.compare2 : viewWords.compare}</h3><div class="tscroll"><table class="compare"><thead><tr><th>${viewWords.item}</th>${th}</tr></thead><tbody>${rows.map(([label, f]) => `<tr><th scope="row">${label}</th>${directions.map((d) => `<td>${esc(f(d) ?? "")}</td>`).join("")}</tr>`).join("")}<tr><th></th>${directions.map((d, i) => `<td><a href="#${dirKey(i)}">${viewWords.look}</a></td>`).join("")}</tr></tbody></table></div>`;
+};
 const directionCard = (d, i) => {
+  const key = dirKey(i);
   const evidence = (d.beats ?? []).flatMap((b) => {
     const s = story.find((s) => s.id === b.story);
     return [...(s?.sources ?? []).map((x) => ({ url: x.url, label: x.supports || x.url })),
       ...(s?.posts ?? []).map((id) => ({ url: post(id)?.url, label: post(id)?.title }))];
   }).filter((e, i, all) => e.url && all.findIndex((x) => x.url === e.url) === i);
   const link = (e) => /^https?:\/\//i.test(e.url) ? `<a href="${esc(e.url)}">${esc(e.label || e.url)}</a>` : esc(e.label || e.url);
-  return `<article class="direction"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}${TPL ? ` <span class="len">${esc(ideaWords.length.replace("{n}", seconds(d)))}</span>` : ""}</h3>
+  return `<article class="direction" id="${key}"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}${TPL ? ` <span class="len">${esc(ideaWords.length.replace("{n}", seconds(d)))}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p>
   ${heartBlock(d.heart)}
+  ${directions.length > 1 ? viewerBlock(d) : ""}
+  ${stripOf(d, i)}
   ${d.pitch ? `<p class="pitch"><b>${ideaWords.pitch}:</b> ${esc(d.pitch)}</p>` : ""}
   ${d.image ? `<p class="pitch"><b>${ideaWords.image}:</b> ${esc(d.image)}</p>` : ""}
-  ${openingLine(d.opening)}
-  <p><b>${D.visual}:</b> ${esc(d.hook?.visual)} · <b>${D.text}:</b> 「${esc(d.hook?.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(d.hook?.question)}</span></p>
+  <div id="${key}-open">${openingLine(d.opening)}
+  <p><b>${D.visual}:</b> ${esc(d.hook?.visual)} · <b>${D.text}:</b> 「${esc(d.hook?.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(d.hook?.question)}</span></p></div>
   ${d.hookAlternatives?.length ? `<div class="hook-options"><b>${editorialWords.alternatives}</b>${d.hookAlternatives.slice(0, 2).map((h) => `<p><b>${D.visual}:</b> ${esc(h.visual)} · <b>${D.text}:</b> 「${esc(h.text)}」<br><span class="why"><b>${D.hook}:</b> ${esc(h.question)} · ${editorialWords.why}: ${esc(h.why)}</span></p>`).join("")}</div>` : ""}
-  <ol class="beats">${(d.beats ?? []).map(beatRow).join("")}</ol>
-  <p><b>${D.payoff}:</b> ${esc(d.payoff)}</p>
-  ${(d.cta?.slogan ?? []).length ? `<p><b>${D.ending}:</b> ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}
+  <ol class="beats">${(d.beats ?? []).map((b, n) => beatRow(b, n, key)).join("")}</ol>
+  <div id="${key}-end"><p><b>${D.payoff}:</b> ${esc(d.payoff)}</p>
+  ${(d.cta?.slogan ?? []).length ? `<p><b>${D.ending}:</b> ${(d.cta.slogan ?? []).map(esc).join(" ／ ")}${d.cta.prop ? ` · ${esc(d.cta.prop)}` : ""}</p>` : ""}${img(d.cta?.sketch) ? `<div class="pv osk" style="background-image:url('${img(d.cta.sketch)}')"></div><div class="skn">${ideaWords.sketch}</div>` : ""}</div>
   <p class="why">${esc(d.why)}</p>
   ${evidence.length ? `<details><summary>${D.evidence} (${evidence.length})</summary><ul>${evidence.map((e) => `<li>${link(e)}</li>`).join("")}</ul></details>` : ""}
   ${d.gaps?.length ? `<p class="gap"><b>${D.gaps}:</b> ${d.gaps.map(esc).join("；")}</p>` : ""}
   ${d.prepare?.length ? `<p class="prep"><b>${prepWords.prepare}:</b> ${d.prepare.map(esc).join("；")}</p>` : ""}</article>`;
 };
 const narrative = facts.narrative ?? {};
-const directionSection = directions.length ? `<section><h2>${D.title}</h2><div class="note">${D.note}</div>
-  ${narrative.audience || narrative.goal ? `<div class="brief">${narrative.audience ? `<div class="row"><span class="lb">${D.audience}</span><span class="val">${esc(narrative.audience)}</span></div>` : ""}${narrative.goal ? `<div class="row"><span class="lb">${D.goal}</span><span class="val">${esc(narrative.goal)}</span></div>` : ""}${narrative.inferred ? `<span class="tag">${D.assumed}</span>` : ""}</div>` : ""}
+// who it is for, once: the table (or the one story's glance) says it, else the brief
+const whoShown = directions.length > 1 || !!directions[0]?.viewer;
+const directionSection = directions.length ? `<section id="compare"><h2>${D.title}</h2><div class="note">${directions.length > 1 ? D.note : D.one}</div>
+  ${compareTable()}
+  ${(narrative.audience && !whoShown) || narrative.goal ? `<div class="brief">${narrative.audience && !whoShown ? `<div class="row"><span class="lb">${D.audience}</span><span class="val">${esc(narrative.audience)}</span></div>` : ""}${narrative.goal ? `<div class="row"><span class="lb">${D.goal}</span><span class="val">${esc(narrative.goal)}</span></div>` : ""}${narrative.inferred ? `<span class="tag">${D.assumed}</span>` : ""}</div>` : ""}
   ${directions.map(directionCard).join("")}${momentSection()}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(openingLabel(a.id))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
@@ -267,7 +325,33 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .osk { width: 360px; height: 203px; margin: 4px 0 2px; background: #111 center/contain no-repeat; } .len { color: #888; font-size: 15px; font-weight: 400; }
 .bt { font-size: 16px; line-height: 1.5; min-width: 0; } .bpv { height: 62px; margin: 0; background-size: 100% auto; }
 .sb, .op > div, .pro > div { min-width: 0; overflow-wrap: anywhere; }
+/* the directions side by side, the viewer they serve, the story in small pictures */
+.ctitle { font-size: 18px; margin: 4px 0 8px; } .tscroll { overflow-x: auto; margin-bottom: 18px; }
+.compare { border-collapse: collapse; width: 100%; font-size: 15px; line-height: 1.5; table-layout: fixed; }
+.compare th, .compare td { border-top: 1px solid #EEE; padding: 9px 10px; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.compare thead th { font-size: 17px; border-top: 0; } .compare thead th:first-child, .compare tbody th { width: 9em; color: #8A8780; font-size: 14px; font-weight: 600; }
+.compare thead a { color: inherit; text-decoration: none; display: flex; gap: 8px; align-items: center; } .compare .k { width: 26px; height: 26px; font-size: 14px; }
+.glance { background: #FAF9F7; border: 1px solid #EEEAE2; border-radius: 12px; padding: 14px 18px; margin: 2px 0 18px; display: grid; gap: 8px; }
+.glance h3 { font-size: 18px; } .glance .row { display: grid; grid-template-columns: 10em 1fr; gap: 16px; align-items: baseline; } .glance .lb { color: #8A8780; font-size: 14px; font-weight: 600; } .glance .val { font-size: 17px; line-height: 1.6; }
+.viewer { margin: 10px 0; }
+.strip { margin: 10px 0; } .strip .note { margin-bottom: 6px; font-size: 14px; }
+.strip ol { list-style: none; padding: 0 !important; display: flex; gap: 10px; overflow-x: auto; }
+.strip li { flex: 0 0 150px; margin: 0 !important; } .strip a { display: grid; gap: 3px; color: inherit; text-decoration: none; font-size: 13px; line-height: 1.35; }
+.sth { display: flex; align-items: center; justify-content: center; text-align: center; padding: 6px; height: 84px; border-radius: 8px; background: #E6E2DA center/cover no-repeat; font-size: 13px; font-weight: 600; }
+.strip small { color: #999; } .strip b { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+/* how far the film has come */
+.progress { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: baseline; margin-top: 12px; font-size: 15px; } .progress .pt { font-weight: 700; }
+.progress div { display: flex; gap: 6px; align-items: center; } .progress div dt { color: #8A8780; } .progress dd { font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.pth { display: inline-block; width: 64px; height: 36px; border-radius: 4px; background: #ddd center/cover; }
+/* the page's own links, kept in view */
+.snav { position: sticky; top: 0; z-index: 15; display: flex; gap: 6px; overflow-x: auto; white-space: nowrap; background: rgba(244,242,238,.96); margin: -36px -40px 16px; padding: 10px 40px; border-bottom: 1px solid #E4E0D8; }
+.snav a { color: #1C1B19; text-decoration: none; font-size: 15px; padding: 5px 12px; border-radius: 999px; background: #fff; border: 1px solid #E4E0D8; }
+.snav a[aria-current] { background: #1C1B19; color: #fff; border-color: #1C1B19; }
+[id] { scroll-margin-top: 62px; }
 @media (max-width: 700px) {
+  .snav { margin: -20px -14px 14px; padding: 8px 14px; } .snav a { font-size: 14px; }
+  .glance .row { grid-template-columns: 1fr; gap: 2px; }
+  .compare { width: 640px; } .strip li { flex-basis: 120px; } .sth { height: 68px; }
   body { padding: 20px 14px; }
   .brief .row, .heart .row { grid-template-columns: 1fr; gap: 2px; }
   h1 { font-size: 26px; } h2 { font-size: 21px; }
@@ -289,20 +373,187 @@ const proposalNote = {
   "zh-Hans": "故事提案：先确认情节和顺序，不代表最终动画风格。下面的示例用于讲解；正式效果以实际动画预览为准。",
   en: "Story proposal: confirm the plot and order, not the final animation style. Examples explain the plan; actual animation previews establish the final treatment.",
 }[lang];
+// how far the film has come, from film.json "step" and what is built: what the user has approved, what has a
+// preview waiting for them, what is not made yet (a preview is not an approval)
+const progress = () => {
+  const has = (p) => p && existsSync(join(dir, p));
+  const ORDER = ["research", "toy", "story", "render", "done"];
+  const at = Math.max(0, ORDER.indexOf(film.step ?? (film.profile ? "done" : "research")));
+  const V = viewWords, toyPic = img("build/lookdev/compare.jpg");
+  const rows = [
+    [V.pStory, at >= 1 ? V.ok : directions.length || story.length ? V.pick : V.todo],
+    [V.pToy, at >= 2 ? V.ok : toyPic ? V.preview : V.todo, toyPic ? `<span class="pth" style="background-image:url('${toyPic}')"></span>` : ""],
+    [V.pBoard, at >= 3 ? V.ok : has("build/storyboard/animatic.mp4") || has("build/storyboard/index.html") ? V.preview : V.todo,
+      has("build/storyboard/index.html") ? `<a data-board href="../build/storyboard/index.html">${V.openBoard}</a>` : ""],
+    [V.pFilm, at >= 4 && has(film.output) ? V.done : at >= 3 ? V.ready : V.todo],
+  ];
+  return `<dl class="progress"><dt class="pt">${V.progress}</dt>${rows.map(([k, v, x]) => `<div><dt>${k}</dt><dd>${v}${x ? ` ${x}` : ""}</dd></div>`).join("")}</dl>`;
+};
+// the page's links along its top, to the parts it has: kept in view while it scrolls, the part in view marked
+const navOf = (notes) => {
+  const V = viewWords, links = directions.length
+    ? [["compare", directions.length > 1 ? V.navCompare : V.navNeed], ...(directions.length > 1 ? directions.map((d, i) => [dirKey(i), `${LETTER[i] ?? i + 1} ${d.title}`]) : [[dirKey(0), V.navOne]]), ["endings", V.navEnd], ["points", V.navPoints]]
+    : [["points", V.navPoints], ["openings", V.navOpen], ["endings", V.navEnd]];
+  return `<nav class="snav">${[...links, ["posts", V.navPosts], ["parts", V.navParts], ...(notes ? [["notes", V.navNotes]] : [])].map(([id, t]) => `<a href="#${id}">${esc(t)}</a>`).join("")}</nav>`;
+};
 const head = `<h1>${T.title}</h1><p class="note">${esc(proposalNote)}</p>
-<div class="pro"><div class="av" style="${img(pr.avatar) ? `background-image:url('${img(pr.avatar)}')` : ""}"></div><div><div class="nm">${esc(pr.name)}</div><div class="hd">${pr.handle ? "@" + esc(pr.handle) + " · " : ""}${esc(where)}</div><div class="bio">${(pr.bio ?? []).map(esc).join("<br>")}</div><div class="ns">${nums(pr.numbers)}</div></div></div>`;
-const storySection = `<section><h2>${directions.length ? editorialWords.points : T.story}</h2><div class="note">${directions.length ? editorialWords.pointsNote : T.storyNote}</div>${story.length ? `<div class="stories">${story.map(storyCard).join("")}</div>` : `<div class="why">${T.none}</div>`}</section>`;
+<div class="pro"><div class="av" style="${img(pr.avatar) ? `background-image:url('${img(pr.avatar)}')` : ""}"></div><div><div class="nm">${esc(pr.name)}</div><div class="hd">${pr.handle ? "@" + esc(pr.handle) + " · " : ""}${esc(where)}</div><div class="bio">${(pr.bio ?? []).map(esc).join("<br>")}</div><div class="ns">${nums(pr.numbers)}</div></div></div>
+${progress()}`;
+const storySection = `<section id="points"><h2>${directions.length ? editorialWords.points : T.story}</h2><div class="note">${directions.length ? editorialWords.pointsNote : T.storyNote}</div>${story.length ? `<div class="stories">${story.map(storyCard).join("")}</div>` : `<div class="why">${T.none}</div>`}</section>`;
 const endings = facts.slots?.cta ?? [];
 const decide = `${head}
 ${directions.length ? directionSection : storySection}
-${directions.length ? "" : `<section><h2>${T.opening}</h2><div class="note">${T.openNote}</div><div class="ops">${openings.map(opening).join("")}</div></section>`}
-<section><h2>${directions.length ? T.ending.replace("③", "②") : T.ending}</h2><div class="note">${directions.length && !endings.length ? editorialWords.ownEnding : T.endNote}</div>${endings.slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
+${directions.length ? "" : `<section id="openings"><h2>${T.opening}</h2><div class="note">${T.openNote}</div><div class="ops">${openings.map(opening).join("")}</div></section>`}
+<section id="endings"><h2>${directions.length ? T.ending.replace("③", "②") : T.ending}</h2><div class="note">${directions.length && !endings.length ? editorialWords.ownEnding : T.endNote}</div>${endings.slice(0, 3).map(cta).join("")}<div class="c o"><span class="k">+</span><div class="h">${T.other}</div></div></section>
 <div class="ask">${directions.length ? D.ask : T.ask}</div>`;
-const more = `${directions.length ? storySection : ""}<section><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
+const more = `${directions.length ? storySection : ""}<section id="posts"><h2>${T.posts}</h2><div class="grid">${posts.map(card).join("")}</div>
 ${(facts.extra ?? []).length ? `<div class="ns" style="margin-top:12px">${facts.extra.map((v) => `<span class="n"><b>${esc(v.display)}</b> ${esc(v.label)}</span>`).join("")}</div>` : ""}</section>
-<section><h2>${T.menu}</h2><div class="menu">${menu}</div></section>`;
+<section id="parts"><h2>${T.menu}</h2><div class="menu">${menu}</div></section>`;
 const page = (body) => `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">${STYLE}</head><body>${body}</body></html>`;
-writeFileSync(join(dir, "research/materials.html"), page(decide + more));
+// the pages' own behaviour (not the chat pictures'): a picture opens large, with its card's note beside it; a note
+// is written in a box of its own, under the card's 写意见, and kept while unsent (this browser's storage); a link
+// along the top or in the table goes to its part, opening what is folded, and the part in view is marked
+const NW = {
+  "zh-Hant": { title: "意見", hint: "撳卡上面嘅「寫意見」，寫低想點改，寄出；撳圖睇大圖。", file: "撳卡上面嘅「寫意見」寫低想點改：意見會複製，貼返俾 agent。撳圖睇大圖。", write: "寫意見", draft: "有未寄出嘅意見", send: "寄出", copy: "複製", cancel: "收起（保留）", copied: "已複製，貼返俾 agent", select: "複製唔到：揀晒上面啲字自己複製", failed: "寄唔到，啲字仲喺度，再試一次", none: "仲未有意見。", on: "喺", full: "原尺寸", fit: "配合畫面", close: "關閉 ×" },
+  "zh-Hans": { title: "意见", hint: "点卡片上的「写意见」，写下想怎么改，发送；点图片看大图。", file: "点卡片上的「写意见」写下想怎么改：意见会复制，贴给 agent。点图片看大图。", write: "写意见", draft: "有未发送的意见", send: "发送", copy: "复制", cancel: "收起（保留）", copied: "已复制，贴给 agent", select: "没能复制：请选中上面的文字自己复制", failed: "没发送成功，文字还在，再试一次", none: "还没有意见。", on: "在", full: "原尺寸", fit: "适合窗口", close: "关闭 ×" },
+  en: { title: "Notes", hint: "Click Note on a card, write what to change, send; click a picture to see it large.", file: "Click Note on a card and write what to change: the note is copied, to paste to the agent. Click a picture to see it large.", write: "Note", draft: "unsent note", send: "Send", copy: "Copy", cancel: "Hide (kept)", copied: "Copied: paste it to the agent", select: "Could not copy: select the text above and copy it", failed: "Not sent: the text is still here, try again", none: "No notes yet.", on: "on", full: "Full size", fit: "Fit", close: "Close ×" },
+}[lang] ?? {};
+const NOTES = `<section id="notes"><h2>${esc(NW.title)}</h2><div class="note nhint"></div><div class="nlist"></div></section>`;
+const UI = `<style>.nbtn{border:1px solid #ccc;background:#fff;border-radius:999px;padding:2px 12px;font:inherit;font-size:14px;cursor:pointer;margin-top:6px}.nbtn.has::after{content:" ●";color:#e2463b}
+.direction>.nbtn{margin:4px 0}.nform{display:grid;gap:8px;margin-top:8px;padding:10px;border:1px solid #ddd;border-radius:10px;background:#fff}
+.nform textarea{width:100%;min-height:90px;border:1px solid #ddd;border-radius:6px;padding:6px;font:inherit}.nform .row{display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap}
+.nform .fb{flex:1;color:#7A5A0F;font-size:14px}.nform button,.zv button{border:1px solid #ccc;background:#f4f2ee;border-radius:6px;padding:4px 12px;font:inherit;cursor:pointer}.nform button.go{background:#1C1B19;color:#fff;border-color:#1C1B19}
+.noted{outline:3px solid #e2463b;outline-offset:2px}.nlist{display:grid;gap:8px}.nlist .n{border:1px solid #eee;border-radius:8px;padding:8px 10px}.nlist .n small{color:#999}
+.zoomable{cursor:zoom-in}.zv{margin:auto;border:0;border-radius:12px;padding:0;width:min(1180px,96vw);max-height:94vh;background:#fff}.zv::backdrop{background:rgba(0,0,0,.6)}
+.zv .zh{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid #eee}.zv .zh b{flex:1;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zv .zb{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;padding:14px;max-height:calc(94vh - 56px)}.zv .zb.solo{grid-template-columns:1fr}
+.zv .zi{overflow:auto;max-height:calc(94vh - 84px);background:#F2EFE9;border-radius:8px;display:flex;align-items:center;justify-content:center}.zv .zi img{max-width:100%;max-height:calc(94vh - 84px);object-fit:contain;display:block}
+.zv .zi.full{display:block}.zv .zi.full img{max-width:none;max-height:none}.zv .zn .nform{margin:0}
+@media (max-width:700px){.zv .zb{grid-template-columns:1fr;overflow:auto}.zv .zi,.zv .zi img{max-height:60vh}}</style>
+<script>(() => {
+  const W = ${JSON.stringify(NW)}, live = location.protocol.startsWith("http"), notes = !!document.getElementById("notes");
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  const CARDS = ".direction .beat, .direction, .sc, .c, .card";
+  const label = (el) => (el.querySelector("h3, .line, .bt b, .h, .t")?.textContent || el.textContent).trim().replace(/\\s+/g, " ").slice(0, 60);
+  // the notes not yet sent, by card: kept in this browser, so going to another part or closing the box loses none
+  const KEY = "story-notes:" + location.pathname;
+  let drafts = {};
+  try { drafts = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch { drafts = {}; }
+  const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(drafts)); } catch { /* private window: kept while the page is open */ } };
+  const mark = () => document.querySelectorAll(".nbtn").forEach((b) => { b.classList.toggle("has", !!drafts[b.dataset.on]); b.title = drafts[b.dataset.on] ? W.draft : ""; });
+  async function list() {
+    if (!live || !notes) return;
+    const all = await fetch("/api/comments").then((r) => r.json()).catch(() => []);
+    const mine = all.filter((n) => n.source === "story");
+    document.querySelector("#notes .nlist").innerHTML = mine.length ? mine.reverse().map((n) => '<div class="n"><small>' + esc(n.id + " · " + W.on + " " + n.on) + "</small><div>" + esc(n.text) + "</div>" + (n.reply ? "<small>→ " + esc(n.reply) + "</small>" : "") + "</div>").join("") : '<div class="note">' + esc(W.none) + "</div>";
+  }
+  // a note's own box, for the card it is on
+  function form(on, done) {
+    const f = document.createElement("form");
+    f.className = "nform";
+    f.innerHTML = "<small>" + esc(W.on + " " + on) + "</small><textarea></textarea><div class=row><span class=fb></span><button type=button class=no>" + esc(W.cancel) + "</button><button class=go>" + esc(live ? W.send : W.copy) + "</button></div>";
+    const t = f.querySelector("textarea"), fb = f.querySelector(".fb");
+    t.value = drafts[on] || "";
+    t.addEventListener("input", () => { if (t.value) drafts[on] = t.value; else delete drafts[on]; keep(); mark(); });
+    f.querySelector(".no").onclick = () => done();
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const text = t.value.trim();
+      if (!text) { t.focus(); return; }
+      let ok;
+      if (live) {
+        ok = await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ source: "story", on, text }) }).then((r) => r.ok, () => false);
+        fb.textContent = ok ? "" : W.failed;
+      } else {
+        ok = await (navigator.clipboard?.writeText("[" + W.on + " " + on + "] " + text) ?? Promise.reject()).then(() => true, () => false);
+        fb.textContent = ok ? W.copied : W.select;
+      }
+      if (!ok) return;
+      delete drafts[on]; keep(); mark(); list();
+      setTimeout(() => done(), live ? 0 : 1200);
+    };
+    return f;
+  }
+  if (notes) {
+    document.querySelector("#notes .nhint").textContent = live ? W.hint : W.file;
+    for (const card of document.querySelectorAll(CARDS)) {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "nbtn"; b.textContent = W.write; b.dataset.on = label(card);
+      const h = card.matches(".direction") && card.querySelector(":scope > h3");
+      if (h) h.after(b); else (card.querySelector(":scope > .bt, :scope > .sb, :scope > div:last-child") ?? card).appendChild(b);
+    }
+    mark();
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest(".nbtn");
+      if (!b) return;
+      const card = b.closest(CARDS), open = b.nextElementSibling?.matches?.(".nform") && b.nextElementSibling;
+      if (open) { open.remove(); card.classList.remove("noted"); return; }
+      const f = form(b.dataset.on, () => { f.remove(); card.classList.remove("noted"); });
+      b.after(f); card.classList.add("noted"); f.querySelector("textarea").focus();
+    });
+    list();
+  }
+  // a picture, large: its card's note beside it (under it on a phone)
+  const pic = (el) => el.tagName === "IMG" ? el.src : (getComputedStyle(el).backgroundImage.match(/url\\(["']?(.*?)["']?\\)/) || [])[1];
+  const zv = document.createElement("dialog");
+  zv.className = "zv";
+  document.body.appendChild(zv);
+  for (const el of document.querySelectorAll(".sp img, .bp, .pv, .pic, .av, .pth")) if (pic(el)) el.classList.add("zoomable");
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest(".zoomable");
+    if (!el) return;
+    e.preventDefault();
+    const card = el.closest(CARDS), on = card ? label(card) : "";
+    zv.innerHTML = "<div class=zh><b></b><button type=button class=zf>" + esc(W.full) + "</button><button type=button class=zc>" + esc(W.close) + "</button></div><div class='zb" + (notes && card ? "" : " solo") + "'><div class=zi><img alt=''></div><div class=zn></div></div>";
+    zv.querySelector(".zh b").textContent = on;
+    zv.querySelector(".zi img").src = pic(el);
+    if (notes && card) zv.querySelector(".zn").appendChild(form(on, () => zv.close()));
+    zv.querySelector(".zc").onclick = () => zv.close();
+    zv.querySelector(".zf").onclick = (x) => { const full = zv.querySelector(".zi").classList.toggle("full"); x.target.textContent = full ? W.fit : W.full; };
+    zv.showModal();
+  });
+  zv.addEventListener("click", (e) => { if (e.target === zv) zv.close(); });
+  zv.addEventListener("close", () => { zv.innerHTML = ""; document.querySelectorAll(".nform textarea").forEach((t) => { const on = t.closest(".nform").previousElementSibling?.dataset?.on; if (on) t.value = drafts[on] || ""; }); });
+  // the storyboard page: the studio's, or the file beside this one
+  for (const a of document.querySelectorAll("a[data-board]")) a.href = live ? "/storyboard/" : (/\\/research\\/story\\//.test(location.pathname) ? "../../build/storyboard/index.html" : "../build/storyboard/index.html");
+  // a link to a part of the page: what is folded round it opens, the link along the top is marked
+  const nav = document.querySelector(".snav"), links = nav ? [...nav.querySelectorAll("a")] : [];
+  const targets = links.map((a) => document.getElementById(decodeURIComponent(a.hash.slice(1))));
+  let chosen = null;
+  for (const ev of ["wheel", "touchmove", "keydown"]) addEventListener(ev, () => { chosen = null; }, { passive: true });
+  function go(hash, push) {
+    let id; try { id = decodeURIComponent(hash.slice(1)); } catch { return; }
+    const t = id && document.getElementById(id);
+    if (!t) return;
+    for (let p = t; p; p = p.parentElement) if (p.tagName === "DETAILS") p.open = true;
+    if (push && location.hash !== "#" + id) history.pushState(null, "", "#" + encodeURIComponent(id));
+    t.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
+  function current() {
+    if (!links.length) return;
+    const top = nav.getBoundingClientRect().bottom + 24, end = innerHeight + scrollY >= document.documentElement.scrollHeight - 2;
+    let k = 0;
+    targets.forEach((t, i) => { if (t && t.getBoundingClientRect().top <= top) k = i; });
+    // at the page's end several short parts are in view: the one a link went to, else the last
+    if (end) k = chosen != null && targets[chosen]?.getBoundingClientRect().top < innerHeight ? chosen : targets.reduce((m, t, i) => (t && t.getBoundingClientRect().top < innerHeight ? i : m), k);
+    links.forEach((a, i) => (i === k ? a.setAttribute("aria-current", "location") : a.removeAttribute("aria-current")));
+    const a = links[k]; // the marked link kept in view along a narrow page's top, without scrolling the page
+    if (a.offsetLeft < nav.scrollLeft || a.offsetLeft + a.offsetWidth > nav.scrollLeft + nav.clientWidth) nav.scrollLeft = a.offsetLeft - 14;
+  }
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a[href^="#"]');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault(); go(a.hash, true);
+    const i = links.findIndex((x) => x.hash === a.hash);
+    chosen = i < 0 ? null : i;
+  });
+  let tick = false;
+  addEventListener("scroll", () => { if (!tick) { tick = true; requestAnimationFrame(() => { tick = false; current(); }); } }, { passive: true });
+  addEventListener("popstate", () => go(location.hash, false));
+  addEventListener("load", () => { if (location.hash) go(location.hash, false); current(); });
+  current();
+})();</script>`;
+writeFileSync(join(dir, "research/materials.html"), page(navOf(false) + decide + more + UI));
 // the page the studio serves (run.mjs studio → /story/), as the storyboard page is: its pictures beside it, and a
 // note on any card (a direction, a point, an idea, an ending, a post) goes to build/comments.jsonl
 {
@@ -319,59 +570,7 @@ writeFileSync(join(dir, "research/materials.html"), page(decide + more));
     }
     return copied.get(abs);
   });
-  const NW = {
-    "zh-Hant": { title: "意見", hint: "撳任何一張卡（主線、點子、收尾、帖），寫低想點改，寄出。", file: "撳任何一張卡寫低想點改：意見會複製，貼返俾 agent。", send: "寄出", copy: "複製", cancel: "取消", copied: "已複製，貼返俾 agent", none: "仲未有意見。", on: "喺" },
-    "zh-Hans": { title: "意见", hint: "点任何一张卡（主线、点子、收尾、帖子），写下想怎么改，发送。", file: "点任何一张卡写下想怎么改：意见会复制，贴给 agent。", send: "发送", copy: "复制", cancel: "取消", copied: "已复制，贴给 agent", none: "还没有意见。", on: "在" },
-    en: { title: "Notes", hint: "Click any card (a story, an idea, an ending, a post), write what to change, send.", file: "Click any card and write what to change: the note is copied, to paste to the agent.", send: "Send", copy: "Copy", cancel: "Cancel", copied: "Copied: paste it to the agent", none: "No notes yet.", on: "on" },
-  }[lang] ?? {};
-  const notes = `<section id="notes"><h2>${esc(NW.title)}</h2><div class="note nhint"></div><div class="nlist"></div></section>
-<style>.npop{position:absolute;z-index:20;width:300px;background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px;display:grid;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.18)}
-.npop textarea{width:100%;min-height:80px;border:1px solid #ddd;border-radius:6px;padding:6px;font:inherit}.npop .row{display:flex;gap:8px;justify-content:flex-end}
-.npop button{border:1px solid #ccc;background:#f4f2ee;border-radius:6px;padding:4px 12px;font:inherit;cursor:pointer}.npop button.go{background:#1C1B19;color:#fff;border-color:#1C1B19}
-.direction,.sc,.beat,.c,.card{cursor:pointer}.noted{outline:3px solid #e2463b;outline-offset:2px}.nlist{display:grid;gap:8px}.nlist .n{border:1px solid #eee;border-radius:8px;padding:8px 10px}.nlist .n small{color:#999}</style>
-<script>(() => {
-  const W = ${JSON.stringify(NW)}, live = location.protocol.startsWith("http");
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  document.querySelector("#notes .nhint").textContent = live ? W.hint : W.file;
-  const label = (el) => (el.querySelector("h3, .line, .bt b, .h, .t")?.textContent || el.textContent).trim().replace(/\s+/g, " ").slice(0, 60);
-  async function list() {
-    if (!live) return;
-    const all = await fetch("/api/comments").then((r) => r.json()).catch(() => []);
-    const mine = all.filter((n) => n.source === "story");
-    document.querySelector("#notes .nlist").innerHTML = mine.length ? mine.reverse().map((n) => '<div class="n"><small>' + esc(n.id + " · " + W.on + " " + n.on) + "</small><div>" + esc(n.text) + "</div>" + (n.reply ? "<small>→ " + esc(n.reply) + "</small>" : "") + "</div>").join("") : '<div class="note">' + esc(W.none) + "</div>";
-  }
-  document.addEventListener("click", (e) => {
-    if (e.target.closest(".npop, a, summary, details")) return;
-    const card = e.target.closest(".direction .beat, .direction, .sc, .c, .card");
-    if (!card) return;
-    document.querySelector(".npop")?.remove();
-    document.querySelectorAll(".noted").forEach((x) => x.classList.remove("noted"));
-    card.classList.add("noted");
-    const on = label(card), p = document.createElement("div");
-    p.className = "npop";
-    p.innerHTML = "<small>" + esc(W.on + " " + on) + "</small><textarea></textarea><div class=row><button class=no>" + esc(W.cancel) + "</button><button class=go>" + esc(live ? W.send : W.copy) + "</button></div>";
-    const b = card.getBoundingClientRect();
-    p.style.left = scrollX + Math.max(8, Math.min(e.clientX - 150, document.documentElement.clientWidth - 312)) + "px";
-    p.style.top = scrollY + Math.min(e.clientY + 12, b.bottom + 6) + "px";
-    document.body.appendChild(p);
-    p.querySelector("textarea").focus();
-    const close = () => { p.remove(); card.classList.remove("noted"); };
-    p.querySelector(".no").onclick = close;
-    p.querySelector(".go").onclick = async () => {
-      const text = p.querySelector("textarea").value.trim();
-      if (!text) return;
-      if (live) {
-        await fetch("/api/comments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ source: "story", on, text }) }).catch(() => null);
-        close(); list();
-      } else {
-        await navigator.clipboard?.writeText("[" + W.on + " " + on + "] " + text).catch(() => null);
-        p.innerHTML = "<small>" + esc(W.copied) + "</small>"; setTimeout(close, 1500);
-      }
-    };
-  });
-  list();
-})();</script>`;
-  writeFileSync(join(STORY, "index.html"), local(page(decide + more + notes)));
+  writeFileSync(join(STORY, "index.html"), local(page(navOf(true) + decide + more + NOTES + UI)));
 }
 // their words in 「」 are theirs, word for word: each quote is looked for in the texts kept (the posts' lines and
 // texts, the bio, a source's text, Grok's answer, research/sources/), a cut inside it marked …… (references/research.md)
@@ -402,6 +601,11 @@ for (const [i, d] of directions.entries()) {
   else if (!h.moment && !lookedNone) console.log(`! ${tag}: its heart names no moment ("heart.moment", from "moments"); if you looked and found none, say so with "moments": []`);
   else if (h.story && !points.some((s) => s.id === h.story)) console.log(`! ${tag}: its heart's moment (${h.story}) is not one of its points, so the film never shows it`);
   if (points.length > 1 && points.every((s) => (s.numbers ?? []).length) && !points.some((s) => s.id === h.story)) console.log(`! ${tag}: every point is a number and none holds its heart's moment: a film that proves popularity`);
+}
+// what a viewer comes to them for, in each direction: a stranger says in a sentence "when I need X, I find Y there"
+for (const [i, d] of directions.entries()) {
+  const lack = ["need", "finds", "when"].filter((k) => !d.viewer?.[k]);
+  if (lack.length) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": doesn't say yet what a viewer comes to them for ("viewer": who, need, finds, when, next; lacks ${lack.join(", ")}: references/story-directions.md)`);
 }
 if (directions.length && !Array.isArray(facts.moments)) console.log(`! no personal moments written down ("moments": each one found, used or not; [] when you looked and found none: references/research.md)`);
 for (const m of facts.moments ?? []) if (!usedBy(m).length && !m.why) console.log(`! moment "${m.what}": in no direction, and no reason why ("why"): the page shows the user every one left out`);
@@ -446,7 +650,7 @@ const height2 = shot(more, H2, "materials-posts.png");
 const parts = [];
 for (const [i, d] of directions.entries()) {
   const png = `materials-${LETTER[i] ?? i + 1}.png`;
-  shot(`<section>${directionCard(d, i)}</section>`, 1200, png);
+  shot(`<section>${directions.length > 1 ? "" : compareTable()}${directionCard(d, i)}</section>`, 1200, png); // one direction: its viewer at a glance, above it
   parts.push(png);
 }
 if (directions.length) {
