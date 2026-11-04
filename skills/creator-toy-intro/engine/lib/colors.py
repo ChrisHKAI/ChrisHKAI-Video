@@ -112,24 +112,30 @@ def film_colours(film):
     # dark lettering printed on a paper of its own group (label0_l0 on label0_sheet, a calendar's day on its
     # page) is read against the paper; the rest against the stage
     group = lambda name: name.split("_")[0]  # noqa: E731
+    # the paper a letter is printed on is its group's last: the one laid on top (a label's sheet on its white rim)
     papers = {}
     for o in anim["objects"]:
         m = o.get("mat") or {}
         if m.get("type") == "paper" and isinstance(m.get("color"), str):
-            papers.setdefault(group(o["name"]), m["color"])
-    # lettering never shown on any frame (a template's own end card a film of its own beats never plays) is not read
-    tracks = anim.get("tracks") or {}
-    shown = lambda name: name not in tracks or any(max(abs(k[8]), abs(k[9]), abs(k[10])) > 1e-3 for k in tracks[name])  # noqa: E731
-    text, edges = {}, {}
-    for o in anim["objects"]:
+            papers[group(o["name"])] = m["color"]
+    # lettering the camera never sees (a template's own end card a film of its own beats never plays, its digits
+    # sunk under the floor with its page) is not read
+    from pacing import letters, seen  # noqa: E402  what says it is lettering (a print's ridges and a logo are not)
+    w, h = F["format"]["size"]
+    looked = seen(anim, [o["name"] for o in anim["objects"]], w / h)
+    shown = lambda name: name in looked  # noqa: E731
+    text, edges, beat_of = {}, {}, {}
+    for o in letters(anim):
         m = o.get("mat") or {}
-        # lettering: glyph outlines (curves) in a type material (confetti and a calendar's boxes share the material)
-        # (an outline behind a letter, "outline": true, is its edge, not lettering of its own: the face is read by it)
+        # (an edge behind a letter, "outline": true, is not lettering of its own: the face is read by it)
         if m.get("type") == "type" and not m.get("outline") and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve" and shown(o["name"]):
-            # a beat may say what its lettering stands on ("on": a carpet, a sign) and the dark edge round it ("edge")
-            back = m.get("on") or (papers.get(group(o["name"])) if contrast(m["color"], STAGE) < READ else None)
+            # a beat may say what its lettering stands on ("on": a carpet, a sign) and the edge round it ("edge");
+            # a letter printed on a paper of its group (the end card's labels) is read on that paper
+            back = m.get("on") or papers.get(group(o["name"]))
             key = (m["color"].upper(), (back or STAGE).upper())
             text.setdefault(key, []).append(o["name"])
+            if o["name"].startswith("beat"):
+                beat_of.setdefault(key, set()).add(group(o["name"]))
             if isinstance(m.get("edge"), str):
                 edges[key] = m["edge"].upper()
 
@@ -140,13 +146,34 @@ def film_colours(film):
             r["edge"], r["contrast"] = e, min(contrast(e, b), contrast(h, e))
         return r
     text_rows = sorted((row(h, b, n) for (h, b), n in text.items()), key=lambda r: r["contrast"])
-    # lettering on the stage beside the toy, in the toy's own colour (a gold line by a lemon): the two read as one
+    # lettering on the stage beside the toy, in the toy's own colour (a gold line by a lemon): the two read as one.
+    # An edged letter meets what is beside it with its edge, so the edge is what must stand apart
+    lab = lambda h: oklab(np.array([rgb(h)]))[0]  # noqa: E731
     main = [r for r in toy_rows if r["share"] >= 0.25]
     for r in text_rows:
         if r["on"] == STAGE.upper():
-            near = [m for m in main if float(np.linalg.norm(oklab(np.array([rgb(r["hex"])]))[0] - oklab(np.array([rgb(m["hex"])]))[0])) < TWIN]
+            meets = edges.get((r["hex"], r["on"])) or r["hex"]
+            near = [m for m in main if float(np.linalg.norm(lab(meets) - lab(m["hex"]))) < TWIN]
             if near:
                 r["twin"] = near[0]["hex"].upper()
+    # lettering in front of, or beside, what glows in its own beat in the same colour (cyan words by a cyan-lit
+    # print): the light that glows there (a lit or emissive part that is not lettering) is what it melts into
+    glows = {}
+    said = {o["name"] for o in letters(anim)}
+    for o in anim["objects"]:
+        m = o.get("mat") or {}
+        if o["name"] in said or m.get("outline") or not isinstance(m.get("color"), str) or not o["name"].startswith("beat") or not shown(o["name"]):
+            continue
+        if m.get("type") == "glow" or (m.get("type") == "type" and (m.get("emit") or 0) >= 0.8):
+            glows.setdefault(group(o["name"]), {}).setdefault(m["color"].upper(), 0)
+            glows[group(o["name"])][m["color"].upper()] += 1
+    for r in text_rows:
+        meets = edges.get((r["hex"], r["on"])) or r["hex"]
+        for b in sorted(beat_of.get((r["hex"], r["on"]), ())):
+            near = [h for h in glows.get(b, {}) if float(np.linalg.norm(lab(meets) - lab(h))) < TWIN]
+            if near:
+                r["glow"] = near[0]
+                break
     conf = [c for c in (F.get("pop") or {}).get("confetti", []) if isinstance(c, str)]
     conf_rows = [{"hex": c.upper(), "contrast": contrast(c, STAGE)} for c in conf]
     return {"stage": STAGE, "toy": toy_rows, "text": text_rows, "confetti": conf_rows}
@@ -244,6 +271,7 @@ def problems(fc):
     out = [("toy", r) for r in fc["toy"] if r["share"] >= 0.1 and r["contrast"] < MELT]
     out += [("text", r) for r in fc["text"] if r["contrast"] < READ]
     out += [("twin", r) for r in fc["text"] if r.get("twin")]
+    out += [("glow", r) for r in fc["text"] if r.get("glow")]
     out += [("confetti", r) for r in fc["confetti"] if r["contrast"] < MELT]
     return out
 

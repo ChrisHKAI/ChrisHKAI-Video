@@ -31,7 +31,7 @@ def font(size, lang="zh-Hans"):
     """a face that has Chinese: the one the lettering uses (engine/lib/fonts.py), else any the system keeps"""
     try:
         from fonts import face
-        path, index, _ = face("cjk", lang)
+        path, index, _ = face("page")
         return ImageFont.truetype(path, size, index=index)
     except (SystemExit, OSError, ImportError):
         pass

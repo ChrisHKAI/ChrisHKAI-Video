@@ -132,16 +132,16 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, kit, math, qu
       add({ name: "page", geo: { type: "roundBox", size: [CAL.w, CAL.h - CAL.band, CAL.d], radius: 0.003 }, mat: { type: "paper", color: "#F7F4EE" }, anim: true });
       add(box("band", [CAL.w + 0.001, CAL.band, CAL.d + 0.001], "#D93A2B", 0.06));
       [-1, 1].forEach((k) => add({ ...box(`ring${k}`, [0.012, 0.022, 0.012], "#C9CDD3"), geo: { type: "roundBox", size: [0.012, 0.022, 0.012], radius: 0.004 } }));
-      for (const n of MONTH.names) add({ name: `m_${n.name}`, geo: glyph.geo(n.key, M_EM, 0.002, 0.0003), mat: { type: "type", color: "#FFF6E8", emit: 0.25 }, anim: true, step: true });
-      for (const n of DAY.names) add({ name: `d_${n.name}`, geo: glyph.geo(n.key, D_EM, 0.004, 0.0005), mat: { type: "type", color: "#1B1C20", emit: 0 }, anim: true, step: true });
+      for (const n of MONTH.names) add({ name: `m_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, M_EM, 0.002, 0.0003), mat: { type: "type", color: "#FFF6E8", emit: 0.25 }, anim: true, step: true });
+      for (const n of DAY.names) add({ name: `d_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, D_EM, 0.004, 0.0005), mat: { type: "type", color: "#1B1C20", emit: 0 }, anim: true, step: true });
       for (let i = 0; i < FLIPS; i++) add({ name: `flip${i}`, geo: { type: "roundBox", size: [CAL.w - 0.002, CAL.h - CAL.band, 0.0008], radius: 0.001 }, mat: { type: "paper", color: "#F7F4EE" }, anim: true });
       if (STAMP.length) {
         add({ ...box("stamp", [SW + 0.03, 0.052, 0.006], "#D93A2B", 0.12), geo: { type: "roundBox", size: [SW + 0.03, 0.052, 0.006], radius: 0.006 } });
-        STAMP.forEach((c, i) => add({ name: `s${i}`, geo: glyph.geo(`heavy:${c}`, S_EM, 0.002, 0.0003), mat: { type: "type", color: "#FFF6E8", emit: 0.25 }, anim: true }));
+        STAMP.forEach((c, i) => add({ name: `s${i}`, letter: c, geo: glyph.geo(`heavy:${c}`, S_EM, 0.002, 0.0003), mat: { type: "type", color: "#FFF6E8", emit: 0.25 }, anim: true }));
       }
       if (NUM) {
-        for (const n of NUM.names) add({ name: `c_${n.name}`, geo: glyph.geo(n.key, C_EM, 0.01, 0.001), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
-        LABEL.forEach((c, i) => add({ name: `cl${i}`, geo: glyph.geo(`heavy:${c}`, L_EM, 0.005, 0.0005), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true }));
+        for (const n of NUM.names) add({ name: `c_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, C_EM, 0.01, 0.001), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
+        LABEL.forEach((c, i) => add({ name: `cl${i}`, letter: c, geo: glyph.geo(`heavy:${c}`, L_EM, 0.005, 0.0005), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true }));
       }
       for (let i = 0; i < CONF; i++) add({ name: `conf${i}`, geo: { type: "box", size: [0.008, 0.0008, 0.006] }, mat: { type: "flake" }, anim: true, colorAnim: true });
     },
@@ -196,7 +196,7 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, kit, math, qu
       add(LEAP[0] + 0.05, "whooshUp", { dur: 0.45 });
     },
     // what the viewer reads (engine/lib/pacing.py): the last day, the count and the stamp, from when the label comes in
-    reads: [{ text: [date(opts.to), C ? kit.formatCount(C.to, FMT) + (LABEL.length ? ` ${LABEL.join("")}` : "") : "", STAMP.join("")].filter(Boolean).join(" "), at: [LABEL_IN, len] }],
+    reads: [{ text: [date(opts.to), C ? kit.formatCount(C.to, FMT) + (LABEL.length ? ` ${LABEL.join("")}` : "") : "", STAMP.join("")].filter(Boolean).join(" "), at: [LABEL_IN, len], whole: LOCK }],
     music: { groove: "light", chords: ["Em", "C", "G", "D"], hits: [LOCK] },
     storyboard: {
       part: {

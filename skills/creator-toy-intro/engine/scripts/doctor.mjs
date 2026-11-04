@@ -63,24 +63,23 @@ const instDir = join(HOME, "instruments");
 const libs = existsSync(instDir) ? readdirSync(instDir).filter((d) => !d.startsWith(".") && d !== "index.json") : [];
 check("instruments", "real instruments (optional: the sounds strings and band)", true, libs.length ? `${libs.join(", ")} (${instDir})` : "not downloaded", libs.length ? "" : "node engine/scripts/instruments.mjs --list: what, how big, which licence");
 
-// the lettering faces, through the pipeline's own lookup (engine/lib/fonts.py)
+// the faces a film can choose from (each film chooses its own: engine/lib/fonts.py), through the pipeline's own
+// lookup: how many have both scripts' common characters, and one for the skill's own pages
 let fontsOk = false, fontsFound = "needs Python first", fontsNote = "";
 if (pyAny) {
   const r = sh(py ?? pyAny, ["-c", `import sys, json; sys.path.insert(0, ${JSON.stringify(join(SKILL, "engine/lib"))})
-from fonts import face
-out = {}
-for role in ("latin", "cjk", "heavy"):
-    for lang in ("zh-Hans", "zh-Hant"):
-        try: out[role + " " + lang] = face(role, lang)[2]
-        except SystemExit: out[role + " " + lang] = None
-print(json.dumps(out))`]);
-  const faces = r.status === 0 ? JSON.parse(r.stdout) : {};
-  const missing = Object.entries(faces).filter(([, v]) => !v).map(([k]) => k);
-  fontsOk = r.status === 0 && !missing.length;
-  fontsFound = r.status === 0 ? Object.entries(faces).map(([k, v]) => `${k}: ${v ?? "none"}`).join("; ") : /No module/.test(r.stderr) ? "needs the Python modules first" : r.stderr.trim().split("\n").pop();
-  if (fontsOk && !/Lantinghei/.test(faces["heavy zh-Hans"] ?? "")) fontsNote = "end-card labels fall back to Source Han Sans Heavy; on a Mac, Lantinghei SC Heavy (the isnail look) can be added in Font Book";
+from fonts import covering, face
+both = covering("的一是不了人我在有他这個們說時")
+fams = sorted({f[0] for f in both})
+try: page = face("page")[2]
+except SystemExit: page = None
+print(json.dumps({"faces": len(both), "families": fams, "page": page}))`]);
+  const got = r.status === 0 ? JSON.parse(r.stdout) : null;
+  fontsOk = !!got && got.faces > 0 && !!got.page;
+  fontsFound = got ? `${got.faces} faces with Chinese (simplified and traditional) in ${got.families.length} families${got.families.length ? `: ${got.families.slice(0, 6).join(", ")}${got.families.length > 6 ? ", …" : ""}` : ""}` : /No module/.test(r.stderr) ? "needs the Python modules first" : r.stderr.trim().split("\n").pop();
+  if (fontsOk) fontsNote = "each film chooses its own (run.mjs fonts, typesheet)";
 }
-check("fonts", "lettering faces", fontsOk, fontsFound, fontsNote);
+check("fonts", "faces to choose from", fontsOk, fontsFound, fontsNote);
 
 let free = null;
 try { const s = statfsSync(process.cwd()); free = (s.bavail * s.bsize) / 1e9; } catch { /* not on this system */ }

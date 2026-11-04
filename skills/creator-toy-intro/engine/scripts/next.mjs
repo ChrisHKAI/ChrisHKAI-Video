@@ -67,6 +67,12 @@ if (step === "research") {
   const playsAct3 = act3 && (!segs?.length || segs.some((s) => s.story === "act3" || (Array.isArray(s.story) && s.story[0] < act3[1] && s.story[1] > act3[0])));
   if (playsAct3 && !film.story?.wall) todo.push("act 3's wall: a recipe that cuts the second post's cover into pieces, and film.json story.wall with their roles (references/cover-wall.md)");
   if (!film.cta?.prop?.module && !film.cta?.prop?.kind) todo.push(`the end card's prop: ${film.cta?.prop?.idea ?? "their idea"} (references/props.md; or the ready-made "plinth")`);
+  // the faces are this film's own: chosen, with why, before the glyphs are cut (references/beats.md, "Choosing the faces")
+  if (!film.type?.heavy?.length || !String(film.type?.why ?? "").trim()) {
+    todo.push('the film\'s faces, and why: film.json "type" (references/beats.md, "Choosing the faces")');
+    cmds.push("FILM=<film> node <skill>/engine/run.mjs fonts");
+    cmds.push('FILM=<film> node <skill>/engine/run.mjs typesheet -- --faces "Family:Style,Family:Style"');
+  }
   cmds.push("FILM=<film> node <skill>/engine/run.mjs data check");
   // the film's own score, written once the cut is set, before the animatic (references/sound.md)
   const score = film.music?.score ?? "music/score.py";

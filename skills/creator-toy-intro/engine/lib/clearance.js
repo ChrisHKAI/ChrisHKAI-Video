@@ -102,8 +102,9 @@ export function sunkLetters(anim, { tol = 0.0015, every = 2 } = {}) {
     return w;
   };
   const floors = anim.objects.filter((o) => o.geo?.type === "plane" && /(^|_)floor$/.test(o.name));
-  const letters = anim.objects.filter((o) => o.geo?.type === "curve" && o.mat?.type === "type" && !o.mat.outline && o.geo.rings?.length)
-    .map((o) => ({ o, pts: o.geo.rings.flatMap((r) => r.filter((_, i) => i % 3 === 0)).map(([x, y]) => [x, y, 0]), bevel: o.geo.bevel ?? 0 }));
+  // a letter's edge (geo.grow) reaches below the letter by its grow
+  const letters = anim.objects.filter((o) => o.geo?.type === "curve" && o.geo.rings?.length && ((o.mat?.type === "type" && !o.mat.outline) || (o.mat?.outline && o.geo.grow)))
+    .map((o) => ({ o, pts: o.geo.rings.flatMap((r) => r.filter((_, i) => i % 3 === 0)).map(([x, y]) => [x, y, 0]), bevel: o.geo.grow ?? o.geo.bevel ?? 0 }));
   if (!floors.length || !letters.length) return [];
   const frames = [];
   for (let f = 0; f < anim.frames; f += every) frames.push(f);
@@ -270,13 +271,19 @@ function solid(o) {
     case "curve": {
       const rings = g.rings;
       const xs = rings.flat().map((q) => q[0]), ys = rings.flat().map((q) => q[1]);
-      const hz = g.depth / 2 + (g.bevel ?? 0.0005);
-      const radius = Math.hypot(Math.max(...xs.map(Math.abs)), Math.max(...ys.map(Math.abs)), hz);
+      // a letter's edge (grow) is the letter grown all round, a flat plate: inside within grow of its outline too
+      const grow = g.grow ?? 0, hz = g.depth / 2 + (grow ? 0 : g.bevel ?? 0.0005);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const radius = Math.hypot(Math.max(...xs.map(Math.abs)) + grow, Math.max(...ys.map(Math.abs)) + grow, hz);
       return {
         o, radius, depth: (p, s) => {
           const x = p[0] / s[0], y = p[1] / s[1];
-          if (!inRings(x, y, rings)) return -1;
-          return Math.min(edgeDistance(x, y, rings) * Math.min(Math.abs(s[0]), Math.abs(s[1])), hz * Math.abs(s[2]) - Math.abs(p[2]));
+          if (x < x0 - grow || x > x1 + grow || y < y0 - grow || y > y1 + grow) return -1;
+          const inside = inRings(x, y, rings);
+          if (!inside && !grow) return -1;
+          const e = edgeDistance(x, y, rings);
+          if (!inside && e >= grow) return -1;
+          return Math.min((inside ? e + grow : grow - e) * Math.min(Math.abs(s[0]), Math.abs(s[1])), hz * Math.abs(s[2]) - Math.abs(p[2]));
         },
       };
     }

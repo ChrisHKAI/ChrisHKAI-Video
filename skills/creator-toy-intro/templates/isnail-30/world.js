@@ -51,16 +51,16 @@ export function declare({ add, pack, objects }) {
     // the count as the platform writes it (6.5万, 7,253, 46K), its label after it
     for (const n of A.STAT_TEXT.names) {
       add(n.label
-        ? { name: n.name, geo: glyphGeo(n.key, n.em, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true }
-        : { name: n.name, geo: glyphGeo(n.key, n.em, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
+        ? { name: n.name, letter: n.key.split(":")[1], geo: glyphGeo(n.key, n.em, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true }
+        : { name: n.name, letter: n.key.split(":")[1], geo: glyphGeo(n.key, n.em, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
     }
   } else {
     for (let i = 0; i < A.STAT.slots.length; i++) for (let d = 0; d <= 9; d++) {
-      add({ name: `stat_${i}_${d}`, geo: glyphGeo(`latin:${d}`, SE.digit * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
+      add({ name: `stat_${i}_${d}`, letter: String(d), geo: glyphGeo(`latin:${d}`, SE.digit * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true, step: true });
     }
-    add({ name: "stat_wan", geo: glyphGeo(A.STAT_KEYS.unit, SE.wan * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true });
-    add({ name: "stat_yue", geo: glyphGeo(A.STAT_KEYS.label[0], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
-    add({ name: "stat_du", geo: glyphGeo(A.STAT_KEYS.label[1], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
+    add({ name: "stat_wan", letter: film.counter.unit, geo: glyphGeo(A.STAT_KEYS.unit, SE.wan * MM, 0.012, 0.0012), mat: { type: "type", color: "#F4F6F8", emit: 0.55 }, anim: true });
+    add({ name: "stat_yue", letter: A.STAT_KEYS.label[0].split(":")[1], geo: glyphGeo(A.STAT_KEYS.label[0], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
+    add({ name: "stat_du", letter: A.STAT_KEYS.label[1].split(":")[1], geo: glyphGeo(A.STAT_KEYS.label[1], SE.label * MM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true });
   }
   add({ name: "stat_bar", geo: { type: "roundBox", size: [A.STAT.width * MM, 0.005, 0.005], radius: 0.0022 }, mat: { type: "glow", color: T.ACCENT, strength: 3 }, anim: true, step: true });
 
@@ -72,7 +72,7 @@ export function declare({ add, pack, objects }) {
     const [paper, ink] = PAPER[L.paper];
     add({ name: `label${i}_rim`, geo: { type: "curve", rings: [L.rim], depth: 0.0018, bevel: 0.0003 }, mat: { type: "paper", color: "#F6F1E8" }, anim: true });
     add({ name: `label${i}_sheet`, geo: { type: "curve", rings: [L.sheet], depth: 0.0024, bevel: 0.0003 }, mat: { type: "paper", color: paper }, anim: true });
-    L.letters.forEach((g, j) => add({ name: `label${i}_l${j}`, geo: glyphGeo(g.key, L.em, 0.004, 0.0005), mat: { type: "type", color: ink, emit: ink === "#161514" ? 0 : 0.12 }, anim: true }));
+    L.letters.forEach((g, j) => add({ name: `label${i}_l${j}`, letter: g.key.split(":")[1], geo: glyphGeo(g.key, L.em, 0.004, 0.0005), mat: { type: "type", color: ink, emit: ink === "#161514" ? 0 : 0.12 }, anim: true }));
   });
   if (T.CROWN) add({ name: "crown", geo: { type: "curve", rings: [A.CROWN.map(([x, y]) => [+((x - 0.5) * A.CROWN_W).toFixed(6), +(y * A.CROWN_W).toFixed(6)])], depth: 0.012, bevel: 0.0018 }, mat: { type: "type", color: "#F2C14E", emit: 0.25 }, anim: true });
 
@@ -173,17 +173,19 @@ export function sample(ft, { put, putColor, regular, whole, scalars, hex }) {
 export function reads() {
   const r4 = (v) => +v.toFixed(4);
   const story = T.reads();
-  if (!T.SEG.on) return story.map((r) => ({ ...r, at: r.at.map(r4) }));
+  // "whole": when the line is all there (a count stopped), on the same clock as its "at"
+  const timed = (r, f) => ({ ...r, at: r.at.map((v) => r4(f(v))), ...(r.whole !== undefined ? { whole: r4(f(r.whole)) } : {}) });
+  if (!T.SEG.on) return story.map((r) => timed(r, (v) => v));
   const out = [];
   for (const r of story) {
     let best = null;
     for (const s of T.SEG.list.filter((x) => x.kind === "story")) {
       const a = Math.max(r.at[0], s.s0), b = Math.min(r.at[1], s.s1);
-      if (b - a > 1e-6 && (!best || b - a > best[1] - best[0])) best = [a - s.s0 + s.f0, b - s.s0 + s.f0];
+      if (b - a > 1e-6 && (!best || b - a > best[1] - best[0])) best = [a, b, s];
     }
-    if (best) out.push({ ...r, at: best.map(r4) });
+    if (best) { const s = best[2]; out.push({ ...timed(r, (v) => v - s.s0 + s.f0), at: [r4(best[0] - s.s0 + s.f0), r4(best[1] - s.s0 + s.f0)] }); }
   }
-  for (const B of BEATS) for (const r of B.b.reads ?? []) out.push({ ...r, at: r.at.map((g) => r4(B.f0 + g)) });
+  for (const B of BEATS) for (const r of B.b.reads ?? []) out.push(timed(r, (g) => B.f0 + g));
   return out.sort((a, b) => a.at[0] - b.at[0]);
 }
 

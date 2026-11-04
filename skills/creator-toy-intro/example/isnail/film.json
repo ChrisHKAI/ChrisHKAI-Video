@@ -12,6 +12,51 @@
       1080
     ]
   },
+  "type": {
+    "heavy": [
+      {
+        "family": "Lantinghei SC",
+        "style": "Heavy"
+      },
+      {
+        "family": "Source Han Sans CN",
+        "style": "Heavy"
+      },
+      {
+        "family": "Source Han Sans SC",
+        "style": "Heavy"
+      }
+    ],
+    "cjk": [
+      {
+        "family": "PingFang SC",
+        "style": "Semibold"
+      },
+      {
+        "family": "Source Han Sans CN",
+        "style": "Bold"
+      },
+      {
+        "family": "Source Han Sans SC",
+        "style": "Bold"
+      }
+    ],
+    "latin": [
+      {
+        "family": "Helvetica Neue",
+        "style": "Bold"
+      },
+      {
+        "family": "Arial",
+        "style": "Bold"
+      },
+      {
+        "family": "Liberation Sans",
+        "style": "Bold"
+      }
+    ],
+    "why": "isnail's own design: its covers set short simplified lines in a heavy black face on torn paper (only a few, simple characters, so the heavy face stays open); the counter in PingFang and Helvetica, as the platform's own numbers look"
+  },
   "output": "out/isnail-intro.mp4",
   "toy": "toy.json",
   "recipes": [

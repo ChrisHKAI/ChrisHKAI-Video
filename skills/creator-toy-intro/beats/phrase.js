@@ -1,5 +1,5 @@
 // A line said big: its letters rise out of the floor of the beat's own stage
-// one by one, in the end card's heavy face, the last one on a downbeat; the
+// one by one, in the film's own face, the last one on a downbeat; the
 // toy drops in beside the line, watches it rise, jumps for joy as it locks,
 // does its own move and leaps out of the frame at the end. For a point in the
 // user's own words, or a phrase lifted from a post (references/beats.md).
@@ -7,32 +7,29 @@
 // film.json, in story.segments:
 //   { "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人", "color": "#F2C14E" }
 // "text" is the line (the glyph step cuts its characters); "color" the
-// letters' (default the end card's gold, or cream when the toy is that gold
-// itself: kit.apart); "em" their size in metres (0.062); "early": true to start the
-// letters while the toy drops in (a long line on few bars). The letters are in
-// the creator's own face when the film names one (film.json type.display,
-// engine/lib/fonts.py), else the end card's heavy face.
+// letters' (choose it from the creator's colours against this beat's stage; without
+// one, gold, or cream when the toy is that gold itself: kit.apart); "edge" a colour
+// for an edge round them ("edgeWidth" in em, 0.05), "em" their size in metres
+// (0.062); "early": true to start the letters while the toy drops in (a long line on
+// few bars). The letters are in the creator's own face when the film names one
+// (film.json type.display), else the film's words' face (type.heavy); the line
+// faces the camera as it locks (kit.facing).
 export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signature, kit, math, quat }) {
   const { seg, backOut } = math;
-  const { trs, qId, qEuler } = quat;
+  const { trs, qEuler } = quat;
   const TEXT = [...String(opts.text ?? "")];
   if (!TEXT.length) throw new Error('beat "phrase" needs "text": the line to say');
   const EM = opts.em ?? 0.062;
   // never the toy's own colour: a gold line beside a lemon melts into it
   const COLOR = opts.color ?? kit.apart(["#F2C14E", "#F4F1EA", "#FF8A5C"]);
-  const blank = (c) => /\s/.test(c);
-  // the creator's own face where the film names one and it has the letter, else the heavy face
-  const key = (c) => (glyph.has(`display:${c}`) ? `display:${c}` : `heavy:${c}`);
-  const missing = TEXT.filter((c) => !blank(c) && !glyph.has(`heavy:${c}`) && !glyph.has(`display:${c}`));
+  const EDGE = opts.edge ?? false;
+  const missing = TEXT.filter((c) => !/\s/.test(c) && !glyph.has(`heavy:${c}`) && !glyph.has(`display:${c}`));
   if (missing.length) throw new Error(`beat "phrase": no lettering for ${missing.join("")} yet: run the glyph step (run.mjs glyphs)`);
 
-  // the line, centred on the stage; its glyphs' lowest point on the floor
-  // a little air between the letters, so heavy strokes never run into each other
-  const TRACK = /[\x00-\x7f]/.test(TEXT.join("")) ? 0.02 : 0.07;
-  const advs = TEXT.map((c) => (blank(c) ? 0.3 : glyph.adv(key(c)) + TRACK) * EM);
-  const W = advs.reduce((a, b) => a + b, 0);
-  const X = advs.map((_, i) => -W / 2 + advs.slice(0, i).reduce((a, b) => a + b, 0));
-  const BASE = 0.12 * EM;
+  // the line, centred on the stage, in the creator's own face where the film names one; its glyphs' lowest point
+  // on the floor (kit.line: the letters spaced as their script wants, so strokes never run into each other)
+  const LN = kit.line(glyph, TEXT.join(""), EM, { face: "display", edge: EDGE ? opts.edgeWidth ?? 0.05 : 0 });
+  const W = LN.W;
 
   // when (seconds into the beat): the toy lands at 0.55; the letters on 8ths
   // (16ths for Latin), the last on the first downbeat they reach; the leap at the end
@@ -47,11 +44,11 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
   const LEAP = [len - 0.5, len];
   if (LOCK > LEAP[0] - 0.8) throw new Error(`beat "phrase": ${TEXT.length} letters need "bars": ${Math.ceil((LOCK + 1.3) / bar)} or more`);
   const T0 = steps.map((_, i) => LOCK - span + steps.slice(0, i).reduce((a, b) => a + b, 0));
-  const letters = TEXT.map((c, i) => ({ c, i })).filter(({ c }) => !blank(c));
-  const letterAt = (i, g) => {
-    const u = seg(g, T0[i], T0[i] + RISE);
-    return trs(at(X[i], BASE - EM * 1.2 * (1 - backOut(u, 1.6)), 0), qId(), u > 0 ? 1 : kit.HIDDEN);
-  };
+  const letters = LN.items;
+  // the line turned to the camera as it locks (its tops never seen from above), each letter rising into it
+  let FACE = null;
+  const face = () => (FACE ??= kit.facing(camera(LOCK).pos, at(0, EM * 0.5, 0)));
+  const letterAt = (it, g) => quat.apply(trs(at(0, 0, 0), face(), 1), [it.x, LN.stand - EM * 1.2 * (1 - backOut(seg(g, T0[it.i], T0[it.i] + RISE), 1.6)), 0]);
 
   // the toy, beside the line's end, turned a little towards it
   const SPOT = at(W / 2 + 0.07, 0, 0.05);
@@ -83,12 +80,12 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
   return {
     declare(add) {
       add({ name: "floor", geo: { type: "plane", w: 6, h: 6 }, mat: { type: "stage" }, anim: true });
-      // a shallow, fine bevel: deep bevelled heavy strokes swell into lumps
-      for (const { c, i } of letters) add({ name: `l${i}`, geo: glyph.geo(key(c), EM, 0.009, 0.0006), mat: { type: "type", color: COLOR, emit: 0.3 }, anim: true });
+      // its depth by its size, a deeper side, no glow (kit.declareLine)
+      kit.declareLine(add, "l", LN, { color: COLOR, outline: EDGE });
     },
     sample(put, g) {
       put("floor", trs(at(0, 0, 0), qEuler(-Math.PI / 2, 0, 0)));
-      for (const { i } of letters) put(`l${i}`, letterAt(i, g));
+      kit.putLine(put, "l", LN, (it) => letterAt(it, g), face(), (it) => (g >= T0[it.i] ? 1 : 0), { outline: !!EDGE });
     },
     pose,
     camera,
@@ -105,8 +102,8 @@ export function makeBeat({ opts, len, bar, beat, at, fov, aspect, glyph, signatu
       add(LEAP[0], "boing", { long: true });
       add(LEAP[0] + 0.05, "whooshUp", { dur: 0.45 });
     },
-    // what the viewer reads (engine/lib/pacing.py checks it stays long enough): the line, from its first letter
-    reads: [{ text: TEXT.join(""), at: [T0[0], len] }],
+    // what the viewer reads (engine/lib/pacing.py checks it stays long enough): the line, once it is all there
+    reads: [{ text: TEXT.join(""), at: [LOCK, len] }],
     music: { groove: "light", chords: ["Em", "C", "G", "D"], hits: [LOCK] },
     storyboard: {
       part: {

@@ -33,9 +33,9 @@ Quiet unless something is missing.
      Mac, Windows or Linux. With none, the final render takes many hours
      (the quick draft stays quick). An NVIDIA, AMD or Intel card that shows
      ✗ usually needs a newer driver: say so, then check again.
-   - The end-card face falls back to Source Han Sans Heavy when Lantinghei
-     SC is not on the computer (on a Mac, Font Book can add it; Windows and
-     Linux do not have it).
+   - The faces line counts the faces with Chinese on this computer. Each film
+     chooses its own from them (step 4: `run.mjs fonts`, `typesheet`); with
+     none, step 0 adds the free Source Han Sans.
 7. Grok Build is optional, and doctor says whether this computer has it.
    - Installed: step 1's round asks whether to use it for this creator's X
      search (below).

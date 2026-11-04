@@ -170,10 +170,10 @@ for a page that is not a profile.
   event date; they are not substituted for current counts. For supplied
   screenshots, record when received/read and label them as supplied evidence.
 - Their type: the face their own covers, site or titles use (a serif, a brush,
-  a mono). Name it in film.json `type.display` (`[{ "family": "Songti SC",
-  "style": "Black" }]`, a face on this computer), or put the face file they
-  use in the film's `fonts/`: a beat's own line is set in it, not in the end
-  card's heavy face.
+  a mono, a rounded face). Note it: the film's faces are chosen from it
+  (beats.md, "Choosing the faces"), in film.json `type` (`display`: `[{
+  "family": "Songti SC", "style": "Black" }]`, a face on this computer), or
+  from the face file they use, put in the film's `fonts/`.
 - Their words, whole: whatever the page or the film quotes in 「」, keep the
   text it comes from, a post's full text in its `text`, anything else in
   `research/sources/`: an article, a README, a line from a video as a

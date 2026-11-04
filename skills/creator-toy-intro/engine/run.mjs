@@ -6,7 +6,10 @@
 //           check    before Blender, in plain words, what will break (render, estimate and animatic run it
 //                    first; the full render also wants the storyboard page clean and signed off; -- --force)
 //           recipes  the film's own recipe scripts (film.json "recipes": cover cuts, stickers, logo…)
-//           glyphs   3D lettering outlines → build/glyphs.json
+//           fonts    the faces here that have every character the film shows (each film chooses its own)
+//           typesheet  the film's lines in the faces it might choose, at phone size, read back
+//                    (-- --faces "PingFang TC:Semibold,Lantinghei TC:Heavy") → build/type-sheet.jpg
+//           glyphs   3D lettering outlines in the faces film.json "type" chose → build/glyphs.json
 //           hero     the toy's parts → build/hero.json (look-dev reads it)
 //           ui       the platform page as HTML → assets/ui.png …, build/timeline.json
 //           anim     every object at every half frame → build/anim.json
@@ -128,6 +131,8 @@ for (const [i, step] of steps.entries()) {
       for (const r of film.recipes ?? []) run(PY, [r.startsWith("@") ? fromSkill("engine/scripts", `${r.slice(1)}.py`) : join(FILM, "recipes", r.replace(/^(\.\/)?recipes\//, ""))]);
       break;
     case "glyphs": run(PY, [fromSkill("engine/scripts/glyphs.py"), ...more]); break;
+    case "fonts": run(PY, [fromSkill("engine/scripts/typesheet.py"), "--list", ...more]); break;
+    case "typesheet": run(PY, [fromSkill("engine/scripts/typesheet.py"), ...more]); break;
     case "hero": run("node", [fromSkill("engine/scripts/dump-hero.mjs")]); break;
     case "ui": run("node", [fromSkill("engine/scripts/build-ui.mjs"), ...more]); break;
     case "anim": {

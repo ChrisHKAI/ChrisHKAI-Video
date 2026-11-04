@@ -12,7 +12,7 @@ import { film, fromFilm, fromSkill, readFilmJSON } from "#engine/film.js";
 import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "#engine/math.js";
 import { trs, qId, qEuler, apply, mulT } from "#engine/quat.js";
 import { makeSegments } from "#engine/segments.js";
-import { line, declareLine, putLine } from "#engine/lettering.js";
+import { line, declareLine, putLine, facing, shade } from "#engine/lettering.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
@@ -107,7 +107,7 @@ const propGlyph = {
 };
 export const PROP = (await import(PROP_URL)).makeProp({
   film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON, glyph: propGlyph,
-  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine },
+  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine, facing, shade },
 });
 export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // camera keys: target = [UI x, UI y, height mm] or a tracker name; dist m,
@@ -120,14 +120,17 @@ export const SHAKES = S.shakes; // 2–3 frame shakes on hits: [t, strength]
 
 // ── What the viewer reads, and when (story time) ────────────────────────────
 // engine/lib/pacing.py checks each stays long enough to read (build/reads.json).
-// The covers' own words are pictures, seen rather than read: not listed
+// The covers' own words are pictures, seen rather than read: not listed. A line that lands a letter at a time
+// is read from its last letter; a count is read as it climbs, and is all there ("whole") once it stops
 export function reads() {
   const E = EV, END = STORY_DURATION;
+  const n = (s) => [...(s ?? "")].length;
+  const nameIn = Math.max(E.name + 0.05 * n(film.cta.name.text), film.cta.handle?.text ? E.name + 0.22 + 0.025 * n(film.cta.handle.text) : 0);
   return [
     { text: film.profile.name, at: [0, E.hops[0][0]] }, // the page, before he hops onto it
-    { text: `${film.counter.display ?? `${VIEWS_COUNT}${film.counter.unit}`} ${film.counter.label}`, at: [E.count[0], E.leap[0]] },
-    { text: SLOGAN, at: [E.letters, END] },
-    { text: `${film.cta.name.text} ${film.cta.handle?.text ?? ""}`.trim(), at: [E.name, END] },
+    { text: `${film.counter.display ?? `${VIEWS_COUNT}${film.counter.unit}`} ${film.counter.label}`, at: [E.count[0], E.leap[0]], whole: E.count[1] },
+    { text: SLOGAN, at: [E.letters + LETTER_STEP * Math.max(0, n(SLOGAN) - 1), END] },
+    { text: `${film.cta.name.text} ${film.cta.handle?.text ?? ""}`.trim(), at: [nameIn, END] },
   ];
 }
 

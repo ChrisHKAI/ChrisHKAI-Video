@@ -142,7 +142,10 @@ shows the film's own colours, each with its contrast on the dark stage:
 - the confetti's.
 
 Take the confetti (film.json `pop.confetti`) and a beat's lettering
-(`color`) from their accents; lettering wants 3:1 or more. A big part of the
+(`color`, and its edge) from their accents, chosen for that beat: lettering
+wants 3:1 or more, a colour apart from the toy beside it and from what glows
+in its beat (an edge in another colour sets it apart), and the page reads
+every preview frame with a line on it at phone size (beats.md, "Lettering"). A big part of the
 toy under 1.6:1 (dark hair, a black hoodie) melts into the stage. Light it
 with a rim, or lift the colour a little in toy.json; tell the user which.
 The page's "checked first" list shows the same.

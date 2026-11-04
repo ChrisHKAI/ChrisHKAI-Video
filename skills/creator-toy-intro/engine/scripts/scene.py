@@ -779,10 +779,65 @@ def islands(rings):
     return list(groups.values())
 
 
+def filled(bm, name, rings, g):
+    """The rings filled and extruded (as a curve, its holes cut) into the mesh being built."""
+    cu = ring_curve(name, rings, g)
+    tmp = bpy.data.objects.new(cu.name, cu)
+    bpy.context.scene.collection.objects.link(tmp)
+    me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bm.from_mesh(me)
+    bpy.data.objects.remove(tmp)
+    bpy.data.curves.remove(cu)
+    bpy.data.meshes.remove(me)
+
+
+def grown_plate(name, g):
+    """A letter's edge: the letter grown evenly by g["grow"] all round, round at its corners (the letter filled, a
+    slab along every edge of its outline, a round post at every corner), a flat plate g["depth"] thick. Where two
+    letters' plates meet they lie in one plane: one even band round the line, no seam and no dome."""
+    r, d = g["grow"], g["depth"]
+    bm = bmesh.new()
+    for k, rings in enumerate(islands(g["rings"])):
+        filled(bm, f"{name}.{k}", rings, {**g, "bevel": 0})
+    disc = [(math.cos(2 * math.pi * i / 12) * r, math.sin(2 * math.pi * i / 12) * r) for i in range(12)]
+
+    def prism(pts):
+        top = [bm.verts.new((x, y, d / 2)) for x, y in pts]
+        bot = [bm.verts.new((x, y, -d / 2)) for x, y in pts]
+        bm.faces.new(top)
+        bm.faces.new(bot[::-1])
+        for i in range(len(pts)):
+            j = (i + 1) % len(pts)
+            bm.faces.new((bot[i], bot[j], top[j], top[i]))
+    for ring in g["rings"]:
+        pts = []
+        for p in ring:  # a corner every third of the reach is enough: the posts overlap
+            if not pts or math.hypot(p[0] - pts[-1][0], p[1] - pts[-1][1]) > r * 0.35:
+                pts.append(p)
+        for i, (x1, y1) in enumerate(pts):
+            prism([(x1 + cx, y1 + cy) for cx, cy in disc])
+            x0, y0 = pts[i - 1]
+            L = math.hypot(x1 - x0, y1 - y0)
+            if L > 1e-9:
+                nx, ny = -(y1 - y0) / L * r, (x1 - x0) / L * r
+                prism([(x0 - nx, y0 - ny), (x1 - nx, y1 - ny), (x1 + nx, y1 + ny), (x0 + nx, y0 + ny)])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    data = bpy.data.meshes.new(name)
+    bm.to_mesh(data)
+    bm.free()
+    return data
+
+
 def curve_piece(o):
     """Lettering or a cover piece: its outline rings filled, extruded and bevelled. One island is a curve as
-    ever; several are each filled on their own and joined into one mesh."""
+    ever; several are each filled on their own and joined into one mesh. A letter's edge (geo.grow) is a flat
+    plate, the letter grown all round (grown_plate)."""
     g = o["geo"]
+    if g.get("grow"):
+        data = grown_plate(o["name"], g)
+        for mat in material(o["mat"]):
+            data.materials.append(mat)
+        return data
     parts = islands(g["rings"])
     side = (o.get("mat") or {}).get("side")  # its sides and bevel in a colour of their own (a glass face, a blue edge)
     if len(parts) <= 1 and not side:
@@ -790,14 +845,7 @@ def curve_piece(o):
     else:
         bm = bmesh.new()
         for k, rings in enumerate(parts):
-            cu = ring_curve(f"{o['name']}.{k}", rings, g)
-            tmp = bpy.data.objects.new(cu.name, cu)
-            bpy.context.scene.collection.objects.link(tmp)
-            me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
-            bm.from_mesh(me)
-            bpy.data.objects.remove(tmp)
-            bpy.data.curves.remove(cu)
-            bpy.data.meshes.remove(me)
+            filled(bm, f"{o['name']}.{k}", rings, g)
         data = bpy.data.meshes.new(o["name"])
         bm.to_mesh(data)
         bm.free()

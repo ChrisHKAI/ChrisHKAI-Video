@@ -45,10 +45,12 @@ puts the frames side by side for you.
    whatever the light: compare says so; frame it closer, or keep it.
    (compare prints every frame outside the references' range; the storyboard
    page's colour checks)
-5. **Lettering that reads.** The end card's heavy face on cream torn paper
-   and an accent label in red or the creator's own colour, at 3:1 or more.
-   Every line stays up long enough to read. (the page's reading-time and
-   colour checks)
+5. **Lettering that reads.** Faces chosen for this film (film.json `type`,
+   with why), never a default; colours and edges chosen against each beat's
+   own stage and what glows there, at 3:1 or more; every line facing the
+   camera while it is read, read back at phone size with the finish's bloom,
+   and up long enough to read. (the page's faces, reading, angle, reading-time
+   and colour checks)
 6. **Always something new.** Something new at least every two bars, and
    never the toy hopping alone. (the pace check)
 7. **Each part grows from the last.** The toy carries across: it leaps out

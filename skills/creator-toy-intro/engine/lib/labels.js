@@ -9,15 +9,19 @@ const HIDDEN = 1e-4;
 // paper colour and ink colour for each paper
 export const PAPER = { cream: ["#EFE6D4", "#161514"], red: ["#D8382D", "#FBF3E6"], blue: ["#2F5D9E", "#F3EEE4"] };
 
-// layout: text set in em (m) with glyph advances adv(key); centre c, tilt,
-// the time it lands and each letter's time letterAt(i)
-export function makeLabel({ id, text, em, paper, c, tilt, at, letterAt, adv, font = "heavy" }) {
-  const keys = [...text].map((ch) => `${font}:${ch}`);
-  const w = keys.reduce((sum, k) => sum + adv(k) * em, 0);
+// layout: text set in em (m) with glyph advances adv(key) and a little air between the letters (track, em: by
+// script, a CJK face's letters fill their whole em); centre c, tilt, the time it lands and each letter's time letterAt(i)
+export const TRACK = { cjk: 0.06, latin: 0.02 };
+export function makeLabel({ id, text, em, paper, c, tilt, at, letterAt, adv, font = "heavy", track }) {
+  const chars = [...text];
+  const keys = chars.map((ch) => `${font}:${ch}`);
+  const gap = (ch) => track ?? (ch.codePointAt(0) >= 0x2e80 ? TRACK.cjk : TRACK.latin);
+  const step = (i) => (adv(keys[i]) + (i < chars.length - 1 ? gap(chars[i]) : 0)) * em;
+  const w = keys.reduce((sum, _, i) => sum + step(i), 0);
   const padX = 0.2 * em, padY = 0.2 * em;
   const W = w + 2 * padX, H = 0.93 * em + 2 * padY;
   let x = -w / 2;
-  const letters = keys.map((k, i) => { const o = { key: k, x, y: -0.36 * em, at: letterAt(i) }; x += adv(k) * em; return o; });
+  const letters = keys.map((k, i) => { const o = { key: k, x, y: -0.36 * em, at: letterAt(i) }; x += step(i); return o; });
   return { id, text, em, paper, c, tilt, at, W, H, letters };
 }
 

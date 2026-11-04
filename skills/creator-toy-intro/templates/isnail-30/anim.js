@@ -651,7 +651,8 @@ const cta = (x, y, z) => [T.CTA[0] + x, T.CTA[1] + y, T.CTA[2] + z];
 // the floor where the snail has crawled, a letter per 8th note; 蜗牛King (with a
 // gold crown) and @isnail are slapped up in the empty space above at 28 s.
 // label: text, em (m), paper, centre (m from CTA), tilt, when it lands, letter times
-const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt) => makeLabel({ id, text, em, paper, c: [cx, cy, cz], tilt, at, letterAt, adv });
+// film.json type.track: em between the labels' letters, for the face the film chose (labels.js TRACK by script)
+const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt) => makeLabel({ id, text, em, paper, c: [cx, cy, cz], tilt, at, letterAt, adv, track: film.type?.track });
 export const SLOGAN_LETTER = (i) => E.letters + i * T.LETTER_STEP;
 // the slogan's labels run on from one another, a letter per 8th note; the name
 // and the handle are slapped up together at E.name

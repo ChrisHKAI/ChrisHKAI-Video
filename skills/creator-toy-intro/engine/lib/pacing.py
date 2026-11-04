@@ -98,6 +98,41 @@ def toy_on_screen(film, anim):
     return share, shown & (np.abs(x) < 1) & (np.abs(y) < 1), shown
 
 
+def seen(anim, names, aspect):
+    """Those of `names` that come into the camera's frame at their size on some sample: not shrunk away, not parked
+    under the floor or behind the camera (a template's digits that sink with its page). A part goes where its parent
+    takes it; without a camera, what is at its size is seen."""
+    tr, S = anim.get("tracks") or {}, anim["samples"]
+    objs = {o["name"]: o for o in anim["objects"]}
+    memo = {}
+
+    def world(n):  # (S, 10) as track(), its parents' transforms put on it (the root only turns the world z-up)
+        if n not in memo:
+            o = objs.get(n) or {}
+            own = track(anim, n) if n in tr else np.tile(np.array(o.get("tr") or [0, 0, 0, 0, 0, 0, 1, 1, 1, 1], float), (S, 1))
+            if o.get("parent") in objs:
+                P = world(o["parent"])
+                own = np.concatenate([P[:, :3] + rotate(P[:, 3:7], own[:, :3] * P[:, 7:10]), qmul(P[:, 3:7], own[:, 3:7]), own[:, 7:10] * P[:, 7:10]], axis=1)
+            memo[n] = own
+        return memo[n]
+
+    if "camera" not in tr:
+        return {n for n in names if (np.abs(world(n)[:, 7:10]).max(axis=1) > 1e-3).any()}
+    cam = track(anim, "camera")
+    fov = np.array(anim["scalars"].get("fov") or [35.0], dtype=float)
+    fov = np.interp(np.arange(len(cam)), np.linspace(0, len(cam) - 1, len(fov)), fov) if len(fov) > 1 else np.full(len(cam), fov[0])
+    half = np.tan(np.radians(fov) / 2)
+    out = set()
+    for n in names:
+        o = world(n)
+        v = rotate_inv(cam[:, 3:7], o[:, :3] - cam[:, :3])
+        depth = np.maximum(-v[:, 2], 1e-3)
+        x, y = v[:, 0] / depth / (half * aspect), v[:, 1] / depth / half
+        if ((np.abs(o[:, 7:10]).max(axis=1) > 1e-3) & (-v[:, 2] > 1e-3) & (np.abs(x) < 1.1) & (np.abs(y) < 1.1)).any():
+            out.add(n)
+    return out
+
+
 def stretches(mask, rate, at_least=LONG):
     """[(t0, t1)] where mask holds for at least `at_least` seconds."""
     out, i, n = [], 0, len(mask)
@@ -114,15 +149,24 @@ def stretches(mask, rate, at_least=LONG):
     return out
 
 
+def letters(anim, prefix=""):
+    """The objects that are lettering, under a prefix: those that say so ("letter": the character, lettering.js and
+    the beats), else (a beat of its own that does not) glyph curves in a type material that are not an edge."""
+    objs = [o for o in anim["objects"] if o["name"].startswith(prefix)]
+    said = [o for o in objs if o.get("letter")]
+    if said:
+        return said
+    return [o for o in objs if (o.get("geo") or {}).get("type") == "curve" and (o.get("mat") or {}).get("type") == "type" and not (o.get("mat") or {}).get("outline")]
+
+
 def lettering_shown(anim, segments):
     """Each beat's lettering as the viewer sees it: [(beat k, t0, t1, names)] where its letters are at their size
-    (glyph curves in a type material under the beat's prefix, not an outline), from anim.json in film time."""
+    (letters(): what says it is lettering, under the beat's prefix), from anim.json in film time."""
     rate = anim["fps"] * anim["sub"]
     beats = [s for s in segments or [] if s["kind"] == "beat"]
     out = []
     for k, seg in enumerate(beats):
-        names = [o["name"] for o in anim["objects"] if o["name"].startswith(f"beat{k}_") and (o.get("geo") or {}).get("type") == "curve"
-                 and (o.get("mat") or {}).get("type") == "type" and not (o.get("mat") or {}).get("outline") and o["name"] in anim["tracks"]]
+        names = [o["name"] for o in letters(anim, f"beat{k}_") if o["name"] in anim["tracks"]]
         if not names:
             continue
         size = np.max([np.min(np.abs(track(anim, n)[:, 7:10]), axis=1) for n in names], axis=0)
@@ -131,6 +175,49 @@ def lettering_shown(anim, segments):
         on[lo:hi] = size[lo:hi] > 0.5 * max(float(size[lo:hi].max(initial=0)), 1e-6)
         for a, z in stretches(on, rate, 0.5):
             out.append((k, a, z, names))
+    return out
+
+
+SLANT = 15  # degrees: a line read turned further than this from the camera shows the tops or sides of its letters
+
+
+def qmul(a, b):
+    """The quaternions a then b, row by row (S, 4: x, y, z, w)."""
+    ax, ay, az, aw = a.T
+    bx, by, bz, bw = b.T
+    return np.stack([aw * bx + ax * bw + ay * bz - az * by, aw * by - ax * bz + ay * bw + az * bx,
+                     aw * bz + ax * by - ay * bx + az * bw, aw * bw - ax * bx - ay * by - az * bz], axis=1)
+
+
+def rotate(q, v):
+    """v (S, 3) by the quaternions q (S, 4: x, y, z, w)."""
+    u, w = q[:, :3], q[:, 3:4]
+    t = 2 * np.cross(u, v)
+    return v + w * t + np.cross(u, t)
+
+
+def slanted(anim, segments):
+    """Where a beat's lettering stands turned from the camera while it is on: [{beat, at, deg, names}], the letters'
+    median angle between the way they face (+z) and the way to the camera, over a stretch of half a second or more."""
+    if "camera" not in anim["tracks"]:
+        return []
+    rate = anim["fps"] * anim["sub"]
+    cam = track(anim, "camera")
+    out = []
+    for k, a, z, names in lettering_shown(anim, segments):
+        lo, hi = int(a * rate), min(int(z * rate), len(cam))
+        if hi - lo < 2:
+            continue
+        degs = []
+        for n in names:
+            tr = track(anim, n)[lo:hi]
+            face = rotate(tr[:, 3:7], np.tile([0.0, 0.0, 1.0], (len(tr), 1)))
+            to = cam[lo:hi, :3] - tr[:, :3]
+            to /= np.maximum(np.linalg.norm(to, axis=1, keepdims=True), 1e-9)
+            degs.append(np.degrees(np.arccos(np.clip(np.sum(face * to, axis=1), -1, 1))))
+        deg = float(np.median(np.median(np.array(degs), axis=0)))
+        if deg > SLANT:
+            out.append({"beat": k, "at": [a, z], "deg": round(deg), "names": names[:3]})
     return out
 
 
@@ -203,4 +290,5 @@ def check(film):
         small = [(a, z, round(float(np.median(share[int(a * rate):int(z * rate)])), 3)) for a, z in stretches(on & (share < SMALL) & ~wide, rate)]
         off = stretches(shown & ~on, rate, 2 * LONG)
     return {"duration": dur, "bar": bar, "dead": dead, "alone": alone, "hook": hits[0] if hits else None,
-            "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "off": off}
+            "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "off": off,
+            "slant": slanted(anim, tl.get("SEGMENTS"))}

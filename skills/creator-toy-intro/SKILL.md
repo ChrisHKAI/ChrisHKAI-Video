@@ -120,8 +120,8 @@ the user knowingly keeps something, said in a line).
 | `references/` | how to run each step with the user: `onboarding.md` (steps 0 and 1), `research.md`, `story-directions.md` and `story-test.md` (step 2: sources, gap search, complete narrative options, early story review and purposeful actions), `toy.md` (step 3), `cover-wall.md`, `clearance.md`, `avatar.md`, `exits.md`, `props.md`, `beats.md`, `sound.md` (the film's own score) and `storyboard.md` (step 4), `review.md` (the independent review, steps 4 and 5), `quality.md` (the standard: the approved films' frames in `references/look/`, compare and the sample, steps 4 and 5), `render.md` (step 5) |
 | `beats/` | the skill's beats, to play between pieces of the story (`references/beats.md`): `catalog.json` (every animation, what it fits, a preview strip in `previews/`, its film.json entry: the story page's menu), `page-stand.js` (an opening: the page lies flat like a screen, stands up turning right or left, the toy puffs out of the picture), `count.js` (a number counts up as the platform writes it), `calendar.js` (a span of days as a flip calendar), `phrase.js` (a line of big type rises a letter at a time) |
 | `engine/run.mjs` | runs pipeline steps for one film workspace |
-| `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (lettering faces by name), `synth.py` (instruments and effects); `compose.py` (what the film's own score is written to, and a worked score); `pictures.js` (their pictures as cards, for the beats); `sketchkit.py` (the pieces of an idea's sketch on the story page: a card of their picture, the toy's disc, a caption, an arrow; `engine/scripts/sketch.py` lays many pictures out with them); `catalog.js` (the skill's animations and the opts each takes); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `look.py` (the light, shared by the film and the toy's look-dev); `device.py` (which GPU Cycles renders on: OptiX, CUDA, HIP, oneAPI or Metal, whichever the computer has; doctor reports it); `music.py` (their own song on the film's beat); `real.py` and `instruments.json` (the real instruments: lemo-opuscar's sampler, vendored in `engine/vendor/lemo/` under MIT, and the sample libraries it plays); `clearance.js` (where the toy goes into something solid, and its size at rest); `pacing.py`, `colors.py` and `ledger.py` (the page's checks: the pace and the toy's size on screen, the colours, the ledger of delivered films: the skill's own in `ledger-base.json`, this machine's in `~/.chrishkai-video/ledger.json`); `sdf.py` (the sculpt kit's signed distance fields) |
-| `engine/scripts/` | next (where a film stands), check (what will break, before Blender), clearance (where the toy goes through something, frame by frame, before Blender), doctor (step 0), new-film (step 1), materials (the story page), shot (a sharp screenshot of a public page), grok-search (X search, with Grok Build) and apply-research (step 2), instruments (the real instruments' samples), import-sculpt and toysheet (step 3: with the toy's colours on the stage), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace, palette, ledger, review and compare (step 4; `engine/lib/pacing.py`, `engine/lib/colors.py`), regions (a cover's blocks and lines of lettering, numbered), finish (holds the true peak under -1 dBTP), covers and qa (step 5), build-ui, export-anim, glyphs, avatar, sticker2d, shape, lookdev (and whether the toy is in one piece: `engine/lib/toyparts.py`), scene (Blender), safezone, sheet |
+| `engine/lib/` | shared modules: film workspace, the film's segments and beats' clocks (`segments.js`), the beats' kit (`beatkit.js`), toy rig, camera, sticker peel, counter, torn-paper labels, particles, easing, quaternions; `cutlib.py` (cover pieces), `fonts.py` (the faces on this computer, and the ones the film chose, by name), `reading.py` (a frame read as a viewer meets it: the finish's bloom, phone size, the computer's own text recognition), `synth.py` (instruments and effects); `compose.py` (what the film's own score is written to, and a worked score); `pictures.js` (their pictures as cards, for the beats); `sketchkit.py` (the pieces of an idea's sketch on the story page: a card of their picture, the toy's disc, a caption, an arrow; `engine/scripts/sketch.py` lays many pictures out with them); `catalog.js` (the skill's animations and the opts each takes); `platforms.json` (where films are published: covers, each app's controls, the safe box) read through `publish.py`; `tools.js` (where Blender, Python and Chrome are); `link.js` (reads a creator's link); `numbers.js` (reads 304万, 1.1萬, 46K); `toyblend.py` (the pet and sculpt kits' shapes and paint in Blender); `look.py` (the light, shared by the film and the toy's look-dev); `device.py` (which GPU Cycles renders on: OptiX, CUDA, HIP, oneAPI or Metal, whichever the computer has; doctor reports it); `music.py` (their own song on the film's beat); `real.py` and `instruments.json` (the real instruments: lemo-opuscar's sampler, vendored in `engine/vendor/lemo/` under MIT, and the sample libraries it plays); `clearance.js` (where the toy goes into something solid, and its size at rest); `pacing.py`, `colors.py` and `ledger.py` (the page's checks: the pace and the toy's size on screen, the colours, the ledger of delivered films: the skill's own in `ledger-base.json`, this machine's in `~/.chrishkai-video/ledger.json`); `sdf.py` (the sculpt kit's signed distance fields) |
+| `engine/scripts/` | next (where a film stands), check (what will break, before Blender), clearance (where the toy goes through something, frame by frame, before Blender), doctor (step 0), new-film (step 1), materials (the story page), shot (a sharp screenshot of a public page), grok-search (X search, with Grok Build) and apply-research (step 2), instruments (the real instruments' samples), import-sculpt and toysheet (step 3: with the toy's colours on the stage), storyboard (with storyboard-notes.js), animatic, diff-anim, studio and comments, pace, palette, ledger, review and compare (step 4; `engine/lib/pacing.py`, `engine/lib/colors.py`), regions (a cover's blocks and lines of lettering, numbered), finish (holds the true peak under -1 dBTP), covers and qa (step 5), build-ui, export-anim, typesheet (the faces to choose from: the film's lines in each, at phone size, read back), glyphs, avatar, sticker2d, shape, lookdev (and whether the toy is in one piece: `engine/lib/toyparts.py`), scene (Blender), safezone, sheet |
 | `templates/isnail-30/` | the story: `story.json` (its tuned beat times, wall width, lens, shakes), `storyboard.json` (its parts, preview moments, hits and sign-off points for the page), `props/` (built-in end-card props: `snail.js`, isnail's; `plinth.js`, a ready-made plinth or star in the creator's colours), `timeline.js` (events, places, camera keys, sound cues), `anim.js` (choreography), `world.js` (objects), `ui.js` (pages to screenshot), `score.py` (arrangement and mix); it reaches the engine as `#engine/<file>` (the skill's `package.json`), so a copy in a film works too |
 | `themes/<theme>/` | a platform's profile page: `layout.js` (sizes and anchors: the theme contract), `page.js` (the page as HTML from film.json); `x-desktop` (16:9), `x-mobile`, `douyin-mobile`, `xhs-mobile`, `channels-mobile`, `ig-mobile` (9:16); `_shared/icons.js` |
 
@@ -133,10 +133,10 @@ Node 22+, Python 3.9+
 with numpy, scipy, pillow, fonttools, contourpy and scikit-image (the sculpt
 kit), ffmpeg, and Chrome
 (headless); `engine/scripts/doctor.mjs` checks them all and installs what is
-missing (step 0). The end
-card's face is Lantinghei SC/TC Heavy, the counter's PingFang Semibold and
-Helvetica Neue Bold (macOS); without them `engine/lib/fonts.py` falls back to
-Source Han Sans, and Arial (Windows) or Liberation Sans (Linux). Never copy font files into the skill.
+missing (step 0). No face is the skill's own: each film chooses its faces
+from those on the computer (film.json `type`, with why; `references/beats.md`,
+"Choosing the faces"), and step 0 adds the free Source Han Sans when the
+computer has no face with Chinese. Never copy font files into the skill.
 
 ## A film workspace
 
@@ -196,7 +196,9 @@ and shakes only where they differ from the template's own `story.json`:
 template's whole; `segments`, pieces of the story and beats one after
 another: `references/beats.md`), `story.direction` (the chosen hook, connected facts and payoff; implement these
 in step 4), `source` (the creator's link, platform,
-handle), `toyFrom` (the pictures the user confirmed the toy is made from)
+handle), `toyFrom` (the pictures the user confirmed the toy is made from),
+`type` (the faces the film's lettering is cut in, and why: chosen for this
+film, never a default; `references/beats.md`, "Choosing the faces")
 and `step` (the step a film being made is at).
 
 `format.size` is `[1920, 1080]` for 16:9 or `[1080, 1920]` for 9:16, and the
@@ -229,6 +231,8 @@ way the app writes them (`5.5万`, `1,380`), and taken as the creator gives them
 ## Pipeline
 
 ```bash
+FILM=<film> node engine/run.mjs fonts     # the faces here with every character the film shows
+FILM=<film> node engine/run.mjs typesheet -- --faces "PingFang TC:Semibold,Songti TC:Bold"  # → film.json type
 FILM=<film> node engine/run.mjs data      # recipes glyphs hero ui anim sound
 FILM=<film> node engine/run.mjs lookdev   # the toy's turnaround → build/lookdev/
 FILM=<film> node engine/run.mjs render -- --samples 48 --scale 100 --resume   # the whole film: duration × fps from film.json
@@ -296,6 +300,14 @@ film and names the three biggest problems with their times
   and everything reads on the dark stage: lettering 3:1 or more, and no
   big part of the toy under 1.6:1 (a creator's dark hair melted into the
   dark stage until a rim light lifted it).
+- The lettering is chosen for this film, never a default: its faces (from the
+  creator's own covers, site and logo, the script, how dense its characters
+  are, how big they stand, the film's feel), its colours and edge against
+  each beat's own stage and what glows there. It reads at phone size: the
+  story page reads every preview frame with a line on it, with the finish's
+  bloom, through the computer's own text recognition, and a line it misreads
+  blocks the render (a heavy face on 懂 and 結, deep and seen from above, in
+  the colour of the print behind it, read 「再看𢤦彼此」).
 - Not the last film again: each film differs from every one delivered before in at least four of six
   (opening, structure, signature move, colours, sound, ending: `ledger`).
 - The light goes to the toy, not the world. The rim falls on the toy alone and

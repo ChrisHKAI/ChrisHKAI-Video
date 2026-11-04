@@ -1,9 +1,10 @@
 """Glyph outlines for the 3D lettering, flattened to polygons: the counter's
 digits, unit and label (act 2) and the call to action's torn-paper labels.
-Each role takes its face from engine/lib/fonts.py (isnail's type design, with
-free fallbacks) and its characters from film.json (the beats' words, and "glyphs":
-whatever a film's own template adds, by face). A character the face does
-not have stops the build here, before anything renders.
+Each role takes the face the film chose (film.json "type", engine/lib/fonts.py:
+no face is the skill's own) and its characters from film.json (the beats' words,
+and "glyphs": whatever a film's own template adds, by face). A film with no face
+chosen, or a character its face does not have, stops the build here, before
+anything renders.
 Rings are in em units (y up, baseline 0); Blender extrudes them as curves.
 
 usage: FILM=<film folder> python3 engine/scripts/glyphs.py   → build/glyphs.json
@@ -22,8 +23,16 @@ from fonts import face  # noqa: E402
 
 ROOT = FILM
 F = FILM_JSON
-lang = F.get("language", "zh-Hans")
-prefs = {role: [(p["family"], p["style"]) for p in v] for role, v in F.get("type", {}).items()}
+from fonts import chosen  # noqa: E402
+
+prefs = chosen(F.get("type"))
+if "heavy" not in prefs:
+    raise SystemExit('film.json "type": choose the film\'s faces first, and say why (run.mjs fonts lists the faces '
+                     'here that have every character it shows; run.mjs typesheet sets its lines in them at phone size '
+                     'and reads them back; references/beats.md, "Choosing the faces")')
+if not str((F.get("type") or {}).get("why", "")).strip():
+    raise SystemExit('film.json "type": say why these faces ("why": their covers use it, its strokes stay open at the '
+                     'size the lines stand, …): the story page shows it')
 cta = F["cta"]
 CHARS = {
     "latin": "0123456789",  # the counter's digits
@@ -70,7 +79,7 @@ for role, chars in F.get("glyphs", {}).items():
     CHARS[role] += chars
 FONTS = {}
 for role, chars in CHARS.items():
-    path, index, name = face(role, lang, prefs.get(role, ()), [str(FILM / "fonts")])
+    path, index, name = face(role, prefs.get(role, ()), [str(FILM / "fonts")], prefs)
     FONTS[role] = (path, index, chars)
     print(f"{role:6s} {name}  ({Path(path).name} #{index})")
 

@@ -80,8 +80,8 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, signature, ki
   return {
     declare(add) {
       add({ name: "floor", geo: { type: "plane", w: 6, h: 6 }, mat: { type: "stage" }, anim: true });
-      for (const n of NUM.names) add({ name: n.name, geo: glyph.geo(n.key, EM, 0.012, 0.0012), mat: { type: "type", color: opts.color ?? "#F4F6F8", emit: 0.55 }, anim: true, step: true });
-      LABEL.forEach((c, i) => { if (!/\s/.test(c)) add({ name: `label${i}`, geo: glyph.geo(`heavy:${c}`, LEM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true }); });
+      for (const n of NUM.names) add({ name: n.name, letter: n.key.split(":")[1], geo: glyph.geo(n.key, EM, 0.012, 0.0012), mat: { type: "type", color: opts.color ?? "#F4F6F8", emit: 0.55 }, anim: true, step: true });
+      LABEL.forEach((c, i) => { if (!/\s/.test(c)) add({ name: `label${i}`, letter: c, geo: glyph.geo(`heavy:${c}`, LEM, 0.006, 0.0006), mat: { type: "type", color: "#AEB4BA", emit: 0.35 }, anim: true }); });
       add({ name: "bar", geo: { type: "roundBox", size: [W, 0.005, 0.005], radius: 0.0022 }, mat: { type: "glow", color: accent, strength: 3 }, anim: true });
       for (let i = 0; i < CONF; i++) add({ name: `conf${i}`, geo: { type: "box", size: [0.008, 0.0008, 0.006] }, mat: { type: "flake" }, anim: true, colorAnim: true });
     },
@@ -118,8 +118,9 @@ export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, signature, ki
       add(LEAP[0], "boing", { long: true });
       add(LEAP[0] + 0.05, "whooshUp", { dur: 0.45 });
     },
-    // what the viewer reads (engine/lib/pacing.py): the number and its label, from when they rise
-    reads: [{ text: kit.formatCount(TO, FMT) + (LABEL.length ? ` ${LABEL.join("")}` : ""), at: [RISE[0], len] }],
+    // what the viewer reads (engine/lib/pacing.py): the number and its label, from when they rise; all there once
+    // the count stops
+    reads: [{ text: kit.formatCount(TO, FMT) + (LABEL.length ? ` ${LABEL.join("")}` : ""), at: [RISE[0], len], whole: LOCK }],
     music: { groove: "light", chords: ["G", "Em", "C", "D"], hits: [LOCK] },
     storyboard: {
       part: {
