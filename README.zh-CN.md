@@ -1,3 +1,5 @@
+> ⚠️ **Codex 支持仍属实验性，欢迎帮忙测试。Codex 生成影片的实际效果尚未测试。** 安装及离线检查通过，不代表已验证完整成片效果。欢迎大家实测完整流程，并[在 Issues 回报结果](https://github.com/ChrisHKAI/ChrisHKAI-Video/issues)：请附上模型／思考强度、系统／GPU、遇到的问题，以及愿意公开的预览或成片。
+
 <div align="center">
 
 # ChrisHKAI-Video
