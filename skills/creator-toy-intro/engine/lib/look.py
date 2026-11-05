@@ -17,6 +17,10 @@ default:
   hoodie, navy hair) and would melt into the dark; white lettering still reads
   on it. look.stage ("dark", "mid", "grey", or a colour "#RRGGBB": the toy's
   contrast colour) says which; the page keeps its own theme.
+- On a mid stage a dark toy still sits close to the stage's tone: a soft
+  pool of light behind it (the stage's hue, lighter) follows it round the
+  frame, on the sky and the floors only, so its silhouette reads
+  (look.halo: {color, size, floor}, or false; engine/scripts/scene.py).
 
 "light": "classic" (or --look classic) keeps the first films' light: Standard,
 a rim light on everything, one even sky (each script's own numbers).
@@ -46,6 +50,7 @@ class Look:
         self.softbox = float(L.get("softbox", 1.4))
         import colors
         self.stage_name, self.stage = colors.stage_for(film) if film else ("dark", colors.STAGES["dark"])
+        self.halo = None if self.classic or not film else colors.halo_for(film)
 
 
 def view(scene, look):

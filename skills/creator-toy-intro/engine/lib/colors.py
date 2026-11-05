@@ -238,6 +238,37 @@ def stage_of(hex_):
             "light": bool(lab[0] >= 0.85)}
 
 
+HALO_L = 0.73  # the halo behind a dark toy: the stage's own hue at this OKLab lightness (a black toy reads on it)
+
+
+def halo_of(sky):
+    """The colour of the pool of light behind the toy on a stage whose sky is `sky`: the same hue, much lighter."""
+    lab = oklab(np.array([rgb(sky)]))[0]
+    return hexof(from_oklab([[max(HALO_L, lab[0] + 0.15), lab[1], lab[2]]])[0])
+
+
+def halo_for(film):
+    """film.json look.halo as {color, size, floor}, or None. By default a film whose stage turned mid or grey for
+    its dark toy has one (a dark toy still sits close to a mid stage's tone); look.halo false turns it off, a
+    {color, size, floor} sets it; a delivered film keeps the look it was approved on."""
+    film = Path(film)
+    try:
+        F = json.loads((film / "film.json").read_text())
+    except Exception:
+        F = {}
+    h = (F.get("look") or {}).get("halo")
+    if h is False:
+        return None
+    name, stage = stage_for(film)
+    if stage.get("light"):
+        return None
+    if h is None:
+        if name not in ("mid", "grey") or F.get("step") == "done" or F.get("id") in delivered():
+            return None
+        h = {}
+    return {"color": h.get("color") or halo_of(stage["sky"]), "size": float(h.get("size", 1.8)), "floor": float(h.get("floor", 0.5))}
+
+
 def stage_for(film):
     """(name, palette) of the stage this film plays on: film.json look.stage when it says ("dark", "mid",
     "grey", or a colour "#RRGGBB": stage_of); else the dark stage, unless 15% or more of the toy melts into it

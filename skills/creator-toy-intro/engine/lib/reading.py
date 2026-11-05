@@ -7,7 +7,8 @@ check says it could not read and is skipped (it never blocks a film for want of 
 
   r = reader()                      # None, or what reads
   lines = read(r, [png, …])         # {png: [(text, confidence 0–1 or None), …]}
-  ok, got = match("再看懂彼此", lines[png])
+  base = baseline(r, ["再看懂彼此"], (font_path, index))   # {text: the reader's confidence on it flat and large}
+  ok, got = match("再看懂彼此", lines[png], base["再看懂彼此"])
 """
 import json
 import os
@@ -111,9 +112,24 @@ def norm(s):
     return "".join(c for c in s if unicodedata.category(c)[0] in "LN").upper().translate(CONFUSE)
 
 
-def match(expected, lines):
+def _mostly(t, want):
+    """Whether most of a recognised line's characters are the target's: a neighbour sharing an I or a 0 is not it."""
+    return sum(b.size for b in SequenceMatcher(None, t, want, autojunk=False).get_matching_blocks()) >= 0.6 * len(t)
+
+
+def confidence(expected, lines):
+    """The reader's lowest confidence on the recognised lines that are this line (None: no confidence, or not there)."""
+    want = norm(expected)
+    confs = [c for t, c in ((norm(t), c) for t, c in lines) if t and c is not None and _mostly(t, want)]
+    return min(confs) if confs else None
+
+
+def match(expected, lines, base=None):
     """(how it went, what it read): "ok", "shaky" (the words, but at low confidence), or "wrong", with the text it read
-    nearest the line. Lines on screen are read in any order and in pieces (a line split over two labels)."""
+    nearest the line. Lines on screen are read in any order and in pieces (a line split over two labels).
+    base: the reader's confidence on the same line drawn flat and large (baseline()). Vision's confidence says how
+    much a string looks like a sentence, not how clear it is: a line of Chinese with a Latin word in it gets 0.3
+    however large; so only a confidence under the line's own base counts as shaky."""
     want = norm(expected)
     if not want:
         return "ok", ""
@@ -126,5 +142,27 @@ def match(expected, lines):
     said = "".join(t for t, _ in near)
     if got < len(want):
         return "wrong", said
-    confs = [c for t, c in near if c is not None]
-    return ("shaky" if confs and min(confs) < SHAKY else "ok"), said
+    own = [(t, c) for t, c in near if _mostly(t, want)] or near
+    confs = [c for t, c in own if c is not None]
+    return ("shaky" if confs and min(confs) < min(SHAKY, base if base is not None else SHAKY) else "ok"), said
+
+
+def baseline(r, texts, face, em=120):
+    """Each line's confidence drawn flat, large, black on white in the film's face: {text: confidence or None}.
+    face: (path, index). What the reader gives a line it cannot miss is its ceiling for that line."""
+    if not r or not texts:
+        return {}
+    import tempfile
+    from PIL import ImageDraw, ImageFont
+    f = ImageFont.truetype(face[0], em, index=face[1])
+    tmp = Path(tempfile.mkdtemp())
+    paths = {}
+    for i, t in enumerate(texts):
+        w = round(f.getlength(t)) + em
+        img = Image.new("RGB", (w, round(em * 2)), "white")
+        ImageDraw.Draw(img).text((em // 2, em // 3), t, font=f, fill="black")
+        paths[t] = tmp / f"{i}.png"
+        img.save(paths[t])
+    got = read(r, list(paths.values()))
+    shutil.rmtree(tmp, ignore_errors=True)
+    return {t: confidence(t, got.get(str(p), [])) for t, p in paths.items()}

@@ -164,6 +164,7 @@ def value_node(nt, v=0.0):
 
 keyed = []  # (scalar name, node tree, Value node, fn)
 mats = {}
+HALO_FLOORS = []  # (kind, node tree, node): the floors the halo behind the toy lights up
 _edge = None
 
 
@@ -339,6 +340,7 @@ def material(spec):
         L.new(dark.outputs["BSDF"], mx.inputs[1])
         L.new(p.outputs["BSDF"], mx.inputs[2])
         L.new(mx.outputs["Shader"], out.inputs["Surface"])
+        HALO_FLOORS.append(("stage", nt, out))
     elif kind == "glow":
         e = nt.nodes.new("ShaderNodeEmission")
         e.inputs["Color"].default_value = rgba(spec["color"])
@@ -508,6 +510,7 @@ def material(spec):
         L.new(grad.outputs["Fac"], ramp.inputs["Fac"])
         L.new(ramp.outputs["Color"], e.inputs["Color"])
         L.new(e.outputs["Emission"], out.inputs["Surface"])
+        HALO_FLOORS.append(("floor", nt, e))
     elif kind == "blob":
         p = principled(nt, "#000000", 0.6, 0.0)
         tc = nt.nodes.new("ShaderNodeTexCoord")
@@ -1002,6 +1005,123 @@ curve(cb, "energy", 0, ff, np.asarray(SC["fx_energy"]))
 cols = np.asarray(SC["fx_color"])
 for i in range(3):
     curve(cb, "color", i, ff, cols[:, i])
+
+# ── the halo behind the toy: a dark toy on a mid stage (engine/lib/colors.py halo_for) ──
+# A soft round pool of light on whatever lies behind the toy as the camera sees it: the sky and the floors
+# brighten round the toy's place in the frame, as big as the toy is there, so its dark reads against a lighter
+# ground while the stage elsewhere, the lettering and the covers keep their own tones. It lights nothing (camera
+# rays only). film.json look.halo: { "color", "size": its radius in the toy's heights, "floor": how much of it the
+# floors take }, or false; --halo-color, --halo-size, --halo-floor try one on a few frames.
+HALO = dict(LOOK.halo or {})
+for key in ("color", "size", "floor"):
+    if f"--halo-{key}" in argv:
+        HALO[key] = arg(f"--halo-{key}", None)
+if HALO and not LOOK.stage.get("light"):
+    W_, H_ = FILM_JSON["format"]["size"]
+    ASPECT = W_ / H_
+    TOY_H = float(json.loads((ROOT / FILM_JSON.get("toy", "toy.json")).read_text()).get("height", 0.12))
+    hf = 1 + np.arange(DATA["frames"])
+
+    def at_frames(name):
+        k = np.asarray(DATA["tracks"][name], dtype=np.float64)
+        return np.stack([np.interp(hf, 1 + k[:, 0] / SUB, k[:, i]) for i in range(1, 11)], axis=1)
+
+    def qrot(q, v):  # q (n, 4) as x y z w
+        q = q / np.linalg.norm(q, axis=1, keepdims=True)
+        u, w = q[:, :3], q[:, 3:4]
+        v = np.broadcast_to(np.asarray(v, dtype=np.float64), u.shape)
+        t = 2 * np.cross(u, v)
+        return v + w * t + np.cross(u, t)
+
+    cam, hero = at_frames("camera"), at_frames("hero")
+    s = hero[:, 8]
+    rel = hero[:, :3] + qrot(hero[:, 3:7], [0, TOY_H / 2, 0]) * s[:, None] - cam[:, :3]
+    cx, cy, cz = (np.sum(rel * qrot(cam[:, 3:7], v), axis=1) for v in ([1, 0, 0], [0, 1, 0], [0, 0, -1]))
+    th = np.tan(np.radians(np.interp((hf - 1) * SUB, np.arange(len(SC["fov"])), np.asarray(SC["fov"]))) / 2)
+    cz1 = np.maximum(cz, 1e-4)
+    HX, HY = 0.5 + cx / (cz1 * th * ASPECT) / 2, 0.5 + cy / (cz1 * th) / 2
+    HR = np.clip(float(HALO.get("size", 1.8)) * TOY_H * s / (cz1 * th * 2), 0.1, 0.5)
+    HK = np.convolve(((s > 0.01) & (cz > 0)).astype(float), np.ones(5) / 5, mode="same")  # in and out over a few frames
+
+    def sock(sockets, ident):
+        return next(x for x in sockets if x.identifier == ident)
+
+    def halo_mask(nt):
+        """0 → 1 round the toy in the frame (keyed per frame)."""
+        N, Lk = nt.nodes, nt.links
+        vals = {}
+        for name, arr in (("halo_x", HX), ("halo_y", HY), ("halo_r", HR), ("halo_k", HK)):
+            v = N.new("ShaderNodeValue")
+            v.name = name
+            curve(channelbag(nt), f'nodes["{v.name}"].outputs[0].default_value', 0, hf, arr)
+            vals[name] = v.outputs[0]
+
+        def op(kind, a, b=0.0):
+            m = N.new("ShaderNodeMath")
+            m.operation = kind
+            for i, x in enumerate((a, b)):
+                if isinstance(x, (int, float)):
+                    m.inputs[i].default_value = x
+                else:
+                    Lk.new(x, m.inputs[i])
+            return m.outputs[0]
+
+        tc, sep = N.new("ShaderNodeTexCoord"), N.new("ShaderNodeSeparateXYZ")
+        Lk.new(tc.outputs["Window"], sep.inputs["Vector"])
+        dx = op("MULTIPLY", op("SUBTRACT", sep.outputs["X"], vals["halo_x"]), ASPECT)
+        dy = op("SUBTRACT", sep.outputs["Y"], vals["halo_y"])
+        d = op("SQRT", op("ADD", op("MULTIPLY", dx, dx), op("MULTIPLY", dy, dy)))
+        mr = N.new("ShaderNodeMapRange")
+        mr.interpolation_type = "SMOOTHERSTEP"
+        mr.clamp = True
+        Lk.new(d, mr.inputs["Value"])
+        Lk.new(vals["halo_r"], mr.inputs["From Max"])
+        mr.inputs["To Min"].default_value, mr.inputs["To Max"].default_value = 1.0, 0.0
+        return op("MULTIPLY", mr.outputs["Result"], vals["halo_k"])
+
+    def mix_in(nt, f, a, color):
+        """a colour socket (or a colour) mixed towards `color` by f."""
+        mx = nt.nodes.new("ShaderNodeMix")
+        mx.data_type = "RGBA"
+        nt.links.new(f, sock(mx.inputs, "Factor_Float"))
+        if isinstance(a, tuple):
+            sock(mx.inputs, "A_Color").default_value = a
+        else:
+            nt.links.new(a, sock(mx.inputs, "A_Color"))
+        sock(mx.inputs, "B_Color").default_value = rgba(color)
+        return sock(mx.outputs, "Result_Color")
+
+    import colors
+    HC = HALO.get("color") or colors.halo_of(LOOK.stage["sky"])
+    wnt = scene.world.node_tree
+    wmix = next(n for n in wnt.nodes if n.bl_idname == "ShaderNodeMixShader" and n.inputs[0].is_linked
+                and n.inputs[0].links[0].from_socket.name == "Is Camera Ray")
+    bg = wmix.inputs[2].links[0].from_node  # what the camera sees of the sky
+    wnt.links.new(mix_in(wnt, halo_mask(wnt), tuple(bg.inputs["Color"].default_value), HC), bg.inputs["Color"])
+    for kind, nt, node in HALO_FLOORS:
+        f = halo_mask(nt)
+        if kind == "floor":  # an emission floor: its colour mixed towards the halo's
+            src = node.inputs["Color"].links[0].from_socket
+            nt.links.new(mix_in(nt, f, src, HC), node.inputs["Color"])
+            continue
+        # the glass floor: the halo added as light only the camera sees, so it lights nothing
+        lp = nt.nodes.new("ShaderNodeLightPath")
+        k = nt.nodes.new("ShaderNodeMath")
+        k.operation = "MULTIPLY"
+        nt.links.new(f, k.inputs[0])
+        nt.links.new(lp.outputs["Is Camera Ray"], k.inputs[1])
+        k2 = nt.nodes.new("ShaderNodeMath")
+        k2.operation = "MULTIPLY"
+        nt.links.new(k.outputs[0], k2.inputs[0])
+        k2.inputs[1].default_value = float(HALO.get("floor", 0.5))
+        em = nt.nodes.new("ShaderNodeEmission")
+        em.inputs["Color"].default_value = rgba(HC)
+        nt.links.new(k2.outputs[0], em.inputs["Strength"])
+        add = nt.nodes.new("ShaderNodeAddShader")
+        nt.links.new(node.inputs["Surface"].links[0].from_socket, add.inputs[0])
+        nt.links.new(em.outputs["Emission"], add.inputs[1])
+        nt.links.new(add.outputs["Shader"], node.inputs["Surface"])
+    print(f"halo behind the toy: {HC}, {len(HALO_FLOORS)} floors", flush=True)
 
 # look-dev: --hide name_,cta_ leaves those objects out of the render (background plates)
 for prefix in arg("--hide", "").split(","):

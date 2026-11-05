@@ -88,6 +88,18 @@ step 3 shows the same stage, and the storyboard page says when it changed.
 If a colour still melts, the check prints the same hue made just light
 enough to read.
 
+On the mid stage a black toy still sits close to the stage's tone, and the
+rim does not fix it: black vinyl shows a light only as a thin reflection,
+so a stronger rim changes almost nothing. So a **halo** follows the toy
+round the frame: a soft pool of the stage's own hue, much lighter, on what
+lies behind the toy as the camera sees it (the sky and the floors). It
+lights nothing, so the toy, the lettering and the covers keep their own
+tones, and the stage elsewhere keeps its mood. A yellow rim or a stage in
+the creator's own colour was tried on a black toy and turned down by the
+user: they change the film; the halo only separates the toy. A film whose
+stage turned mid or grey for its toy has the halo by default; a delivered
+film keeps the look it was approved on.
+
 The **sky splits in two**. What reflects sees a bright softbox overhead, so
 vinyl keeps its highlights. What is lit sees a dim sky, so floors and walls
 stay dark: the end card's floor was a flat grey before.
@@ -103,6 +115,8 @@ film.json `"look"` changes the defaults:
 | `view` | `"Khronos PBR Neutral"` | the colour transform |
 | `light` | | `"classic"`: the first films' look (Standard, a rim on everything, one even sky) |
 | `stage` | by the toy | `"dark"`, `"mid"` (blue slate) or `"grey"`: the stage's tone, when the user wants another than the toy picks; or a colour `"#RRGGBB"`, the toy's contrast colour, when none of the three sets it off (a dark grey logo with blue in it melts into the dark and clashes with the slate). `run.mjs palette` draws four to choose from, each with the toy's colours on it: their own background when it is plain (offered first, when it sets the toy off), the hue opposite theirs light and deep, a deep of their own family; show the sheet to the user. A light colour (a white like the logo's own paper, `"#FFFFFF"`) is shown as itself: the camera sees it as that colour, the floor runs into it with no horizon and the toy's soft shadow on it, and the finish leaves out the bloom; its lettering takes the toy's dark |
+
+| `halo` | on a mid or grey stage | `{ "color": "#RRGGBB", "size": 1.8, "floor": 0.5 }`: the pool's colour (by default the stage's hue at OKLab lightness 0.73), its radius in the toy's heights, how much of it the floors take; `false` turns it off. Try one with `-- --halo-color … --halo-size … --halo-floor …`; side by side with none, the user picks |
 
 `-- --look classic` and `-- --rim 6` try a look on a few frames first
 (`--frames … --samples 24 --scale 50`). The toy's look-dev (step 3) shares

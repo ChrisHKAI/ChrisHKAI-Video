@@ -125,8 +125,9 @@ for label, face in found:
             img.save(p)
             cells.append({"face": label, "line": li, "text": text, "size": size, "img": img, "cover": cover, "path": str(p)})
 got = reading.read(r, [c["path"] for c in cells])
+base = {label: reading.baseline(r, LINES, face) for label, face in found}
 for c in cells:
-    c["read"], c["said"] = reading.match(c["text"], got.get(c["path"], [])) if r else ("unread", "")
+    c["read"], c["said"] = reading.match(c["text"], got.get(c["path"], []), base[c["face"]].get(c["text"])) if r else ("unread", "")
 
 # the sheet: a block a face, a row a line (big, small), shown twice the phone size so it can be looked at
 try:
