@@ -8,8 +8,8 @@ Their profile picture peels off the page and puffs into a toy of them; their bes
 
 <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films"><img alt="Watch the films" src="https://img.shields.io/badge/-%E2%96%B6%20Watch%20the%20films-D7263D?style=for-the-badge"></a> <a href="README.zh-CN.md"><img alt="简体中文" src="https://img.shields.io/badge/README-%E7%AE%80%E4%BD%93%E4%B8%AD%E6%96%87-555?style=for-the-badge"></a> <a href="#help-test-it"><img alt="Testers wanted" src="https://img.shields.io/badge/status-testers%20wanted-8A2BE2?style=for-the-badge"></a> <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ChrisHKAI/ChrisHKAI-Video?style=for-the-badge&color=F5B700&label=stars"></a> <a href="#licence"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-2EA44F?style=for-the-badge"></a>
 
-⚠️ **Built for Claude.** Testers ran it with Claude Opus 5.5 and Sonnet 5.5 at high effort; xhigh does better.<br>
-Other models and agents are untested, so use them with care.
+⚠️ **Originally built and film-tested with Claude.** Testers ran it with Claude Opus 5.5 and Sonnet 5.5 at high effort; xhigh does better.<br>
+[Codex setup is available](#codex-desktop-or-cli); full-film quality with Codex is not yet verified.
 
 🆕 **2026-10-29 · Your story first**: three testers' films taught us a lot. The film now starts from what the creator is known for, the toy keeps the body its picture has (a lemon gets no arms), you pick one of three openings, and a check says what will break before Blender starts. [See how ↓](#what-happens)<br>
 🧪 **2026-10-28 · Open for testing**: the first film for a real creator is done and approved. Now I'd like to see it run on your computer. [How to help ↓](#help-test-it)<br>
@@ -51,7 +51,53 @@ No video generation, no image generation, no stock footage. The profile picture,
 
 ## How to use
 
-Two ways in; the plugin is the easiest.
+Choose your agent: [Codex](#codex-desktop-or-cli) or [Claude Code](#option-1-install-the-skill-recommended). Both use the same skill and local Blender engine.
+
+### Codex (desktop or CLI)
+
+Clone this version of the repo and install the complete skill:
+
+```sh
+git clone --depth 1 https://github.com/ChrisHKAI/ChrisHKAI-Video.git
+cd ChrisHKAI-Video
+python3 scripts/install-codex.py
+```
+
+On macOS/Linux this links the skill into `~/.agents/skills/creator-toy-intro`;
+keep the checkout in place. On Windows it copies the skill (use `python`
+if that is your Python command). `--copy` also makes a standalone copy on
+macOS/Linux. The installer needs only Python 3.9+, does not replace an existing
+skill, and does not install Blender or other rendering dependencies. Preview
+the installation with `--dry-run`; choose another skills folder with
+`--skills-dir /path/to/.agents/skills`.
+
+Open Codex in a separate writable film folder, then say:
+
+```text
+$creator-toy-intro Make a self-intro film for https://x.com/yourhandle
+```
+
+For repo-local use, opening Codex in this checkout discovers the checked-in
+`.agents/skills/creator-toy-intro` link without a user-wide installation; use
+a sibling `my-films/` folder for films. Choose either discovery route to avoid
+two entries with the same name. If a downloaded ZIP did not preserve the
+repo-local symlink, run the installer. If the skill is not listed, restart
+Codex. The [Codex notes](skills/creator-toy-intro/references/codex.md) explain
+absolute paths, available tools, visual review and long-running renders.
+
+Use a local Codex session with shell execution, image viewing and browser or
+search access. All rendering requirements below still apply. Installation and
+offline smoke checks are separate from a complete Codex-directed film, which
+has not yet been verified.
+
+Update a linked installation with `git pull --ff-only` in this checkout. For a
+copied installation, move the installed `creator-toy-intro` folder to a backup
+outside the skills directory, update the checkout, then rerun the installer
+with `--copy`. To uninstall, remove only the installed link or copied skill
+folder; keep your film workspaces and shared rendering dependencies as desired.
+This setup follows [OpenAI's official skills documentation](https://developers.openai.com/codex/skills/).
+
+### Claude Code
 
 ### Option 1: install the skill (recommended)
 
@@ -94,7 +140,7 @@ Films go into `my-films/`, outside the repo.
 
 > 幫我整條自我介紹片，主角係我個公仔：https://x.com/yourhandle
 
-A link, a share message pasted from the app or a few screenshots all work. Not sure yet? Type `/chrishkai-video:creator-toy-intro` and nothing else; it asks for the link.
+A link, a share message pasted from the app or a few screenshots all work. Not sure yet? In Claude Code, type `/chrishkai-video:creator-toy-intro`; in Codex, type `$creator-toy-intro`. It asks for the link.
 
 It answers in your language and asks you one thing up front: 16:9 (the X desktop page, recommended) or 9:16 (the X phone page). The rest it works out from the profile.
 
