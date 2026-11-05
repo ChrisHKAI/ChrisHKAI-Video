@@ -1,3 +1,5 @@
+> ⚠️ **Experimental Codex support — testers wanted.** The visual quality and results of a complete Codex-generated film have not yet been tested. Please help test the full workflow and [report your results in Issues](https://github.com/ChrisHKAI/ChrisHKAI-Video/issues), including your model/effort, OS/GPU, any problems, and a preview or film if you are happy to share it.
+
 <div align="center">
 
 # ChrisHKAI-Video
