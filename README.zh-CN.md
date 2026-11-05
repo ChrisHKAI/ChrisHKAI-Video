@@ -8,8 +8,8 @@
 
 <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/releases/tag/films"><img alt="看成片" src="https://img.shields.io/badge/-%E2%96%B6%20%E7%9C%8B%E6%88%90%E7%89%87-D7263D?style=for-the-badge"></a> <a href="README.md"><img alt="English" src="https://img.shields.io/badge/README-English-555?style=for-the-badge"></a> <a href="#帮忙测试"><img alt="招募测试" src="https://img.shields.io/badge/%E7%8A%B6%E6%80%81-%E6%8B%9B%E5%8B%9F%E6%B5%8B%E8%AF%95-8A2BE2?style=for-the-badge"></a> <a href="https://github.com/ChrisHKAI/ChrisHKAI-Video/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/ChrisHKAI/ChrisHKAI-Video?style=for-the-badge&color=F5B700&label=stars"></a> <a href="#授权"><img alt="MIT" src="https://img.shields.io/badge/licence-MIT-2EA44F?style=for-the-badge"></a>
 
-⚠️ **为 Claude 而做。** 测试者用 Claude Opus 5.5 和 Sonnet 5.5（high 思考强度）都跑通了，xhigh 效果更好；<br>
-其他模型和 agent 还没测过，请谨慎使用。
+⚠️ **最初为 Claude 开发并完成成片测试。** 测试者用 Claude Opus 5.5 和 Sonnet 5.5（high 思考强度）都跑通了，xhigh 效果更好；<br>
+现已提供 [Codex 安装入口](#codex桌面版或-cli)，Codex 的完整成片效果尚未验证。
 
 🆕 **2026-10-29 · 先讲你的故事**：三位测试者的片教会了我们很多。现在片子从创作者最出名的事情出发；公仔照原图的身体来做（柠檬不会长手脚）；开场有三款可选；Blender 开工前先检查哪里会出错。[看看 ↓](#会发生什么)<br>
 🧪 **2026-10-28 · 开放测试**：第一条给真实创作者做的片已经完成、通过。现在想看看它在你的电脑上跑得怎样。[怎样帮忙 ↓](#帮忙测试)<br>
@@ -50,7 +50,33 @@
 
 ## 怎样用
 
-两种方法，装插件最简单。
+按你使用的 agent 选择：[Codex](#codex桌面版或-cli) 或 [Claude Code](#方法一安装-skill推荐)。两者共用同一份 Skill 和本地 Blender 引擎。
+
+### Codex（桌面版或 CLI）
+
+克隆包含这次修改的仓库版本，再安装完整 Skill：
+
+```sh
+git clone --depth 1 https://github.com/ChrisHKAI/ChrisHKAI-Video.git
+cd ChrisHKAI-Video
+python3 scripts/install-codex.py
+```
+
+macOS/Linux 默认将 Skill 链接到 `~/.agents/skills/creator-toy-intro`，因此请保留仓库文件夹。Windows 默认复制整个 Skill（如果 Python 命令是 `python`，请替换命令中的 `python3`）；macOS/Linux 也可以加 `--copy` 使用独立副本。安装器只需要 Python 3.9+，不会覆盖已有 Skill，也不会安装 Blender 等渲染依赖。加 `--dry-run` 可以先看安装计划；加 `--skills-dir /path/to/.agents/skills` 可以指定安装目录。
+
+在 Codex 中打开一个可写的影片文件夹，然后输入：
+
+```text
+$creator-toy-intro 帮我做一条自我介绍片：https://x.com/yourhandle
+```
+
+只在仓库内使用时，也可以直接用 Codex 打开这个仓库：随仓库提供的 `.agents/skills/creator-toy-intro` 链接会让它发现 Skill，无须用户级安装；影片放在仓库旁边的 `my-films/` 中。两种发现方式选一种，避免列表里出现同名的两项。如果下载的 ZIP 没有保留仓库内的软链接，请运行安装器。没有看到 Skill 时重启 Codex。[Codex 使用说明](skills/creator-toy-intro/references/codex.md) 包含路径、工具、图片检查和长时间渲染的处理方式。
+
+请使用支持命令执行、图片查看和浏览器或搜索工具的本地 Codex 会话，下文的渲染依赖要求仍然适用。安装和离线检查通过不代表完成了 Codex 全流程成片测试，成片效果还需要实际验证。
+
+链接安装的更新方式：在仓库中运行 `git pull --ff-only`。复制安装的更新方式：先将已安装的 `creator-toy-intro` 文件夹移到 skills 目录以外备份，更新仓库，再用 `--copy` 重新安装。卸载时只移除已安装的链接或 Skill 副本；影片工作区和共用渲染依赖可以保留。本安装方式依据 [OpenAI 官方 Skills 文档](https://developers.openai.com/codex/skills/)。
+
+### Claude Code
 
 ### 方法一：安装 Skill（推荐）
 
@@ -93,7 +119,7 @@ claude --plugin-dir ../ChrisHKAI-Video
 
 > Make a self-intro film for https://x.com/yourhandle
 
-链接、从 App 复制的分享文字、几张截图都可以。还没想好？只输入 `/chrishkai-video:creator-toy-intro`，它会问你要链接。
+链接、从 App 复制的分享文字、几张截图都可以。还没想好？Claude Code 输入 `/chrishkai-video:creator-toy-intro`，Codex 输入 `$creator-toy-intro`，它会问你要链接。
 
 它用你的语言回答，开头只问一件事：16:9（X 电脑版主页，推荐）还是 9:16（X 手机版主页）。其他都从主页自己判断。
 

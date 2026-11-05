@@ -1,0 +1,4 @@
+interface:
+  display_name: "Creator Toy Intro"
+  short_description: "Create a Blender intro film starring a creator as a 3D toy"
+  default_prompt: "Use $creator-toy-intro to make a self-introduction film for this creator: https://x.com/yourhandle"

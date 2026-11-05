@@ -1,10 +1,13 @@
 ---
 name: creator-toy-intro
 description: Make a self-introduction film for a creator on X (30 s by default, as long as what it says), starring the creator as a smooth 3D vinyl toy that pops out of their profile page, rendered in Blender Cycles. Use when someone asks for a self-intro or intro video, 自我介绍视频, 自我介紹短片, 个人介绍片 or a creator intro with a 3D toy.
-effort: xhigh
 ---
 
 # creator-toy-intro
+
+**Running in Codex:** first read [references/codex.md](references/codex.md)
+for skill paths, tools, previews and long-running commands. The film workflow
+below is shared with Claude Code; the engine does not require Claude.
 
 A self-introduction film for a creator, made from their own material: their
 profile page, the posts and numbers they are known for, their own words.

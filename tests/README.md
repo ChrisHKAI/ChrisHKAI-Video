@@ -1,5 +1,16 @@
 # Tests
 
+Codex installer (offline; temporary skills folders only, no rendering tools):
+
+```sh
+python3 tests/install-codex.test.py
+```
+
+Checks link and copy installation from another working directory, paths with
+spaces, complete engine/resource copies, repeat installation, preservation of
+existing skills and broken links, dry-run behavior, and repo-local discovery.
+These checks do not constitute a complete Codex-directed film test.
+
 The pipeline is checked against a reference film: a folder laid out like a
 film workspace (`build/`, `assets/`) whose outputs are known to be right.
 
