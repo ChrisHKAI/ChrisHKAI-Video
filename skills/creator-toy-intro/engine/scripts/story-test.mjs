@@ -1,6 +1,9 @@
 // Cheap text-only review before toy modelling. This writes a brief, not a score
 // or an automatic approval. The agent/reviewer supplies the qualitative answers.
 // usage: node engine/scripts/story-test.mjs <film> [--check]
+//        node engine/scripts/story-test.mjs <film> --resign "what changed and why the review still holds"
+// --resign: a change that leaves the review standing (a word in a why, a typo) signs the review again on the story
+// as it is now, and keeps the note with the old signature in the review's "resigned"; a new story wants a new review
 import { copyFileSync, existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { storyTestInput, storyTestSignature, storyTestIssues } from "../lib/story-test.js";
@@ -10,7 +13,18 @@ try {
   const facts = JSON.parse(readFileSync(join(dir, "research/facts.json"), "utf8"));
   const input = storyTestInput(facts);
   if (!input) { console.log("legacy point/proof selection: no direction story test required"); process.exit(0); }
-  if (process.argv.includes("--check")) {
+  if (process.argv.includes("--resign")) {
+    const note = process.argv[process.argv.indexOf("--resign") + 1];
+    if (!note || note.startsWith("--")) throw new Error('--resign "what changed and why the review still holds": say it, so the next reader knows');
+    const saved = join(dir, "research/story-test.json");
+    const report = JSON.parse(readFileSync(saved, "utf8"));
+    const signature = storyTestSignature(facts);
+    if (report.signature === signature) { console.log("story test: already signed on the story as it is"); process.exit(0); }
+    report.resigned = [...(report.resigned ?? []), { at: new Date().toISOString(), was: report.signature, note }];
+    report.signature = signature;
+    writeFileSync(saved, JSON.stringify(report, null, 2) + "\n");
+    console.log(`story test: signed again on the story as it is now ("${note}"); the old signature is kept under "resigned"`);
+  } else if (process.argv.includes("--check")) {
     let report = null;
     try { report = JSON.parse(readFileSync(join(dir, "research/story-test.json"), "utf8")); } catch { /* missing/invalid report is not approval */ }
     const issues = storyTestIssues(facts, report);

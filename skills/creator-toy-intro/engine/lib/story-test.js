@@ -37,7 +37,7 @@ export function storyTestIssues(facts, report) {
     if (!text(b.action?.does) || !text(b.action?.means)) issues.push(`story ${b.story} needs action.does and action.means (what the toy does and what the viewer learns)`);
   }
   if (!report) return [...issues, "no story test yet: run story-test.mjs, review the brief, and save research/story-test.json"];
-  if (report.signature !== storyTestSignature(facts)) issues.push("story test is stale: the story, action, source material or ending changed; review it again");
+  if (report.signature !== storyTestSignature(facts)) issues.push("story test is stale: the story, action, source material or ending changed; review it again (only a word changed and the review stands: story-test.mjs --resign \"what changed\")");
   if (report.verdict !== "ready") issues.push("story test is not ready: revise the story from the review before making the toy");
   for (const key of ["takeaway", "continuation", "specificity", "actionMeaning", "material", "heart"]) {
     if (!text(report[key])) issues.push(`story test needs a concrete ${key} answer`);

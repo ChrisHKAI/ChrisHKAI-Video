@@ -127,7 +127,7 @@ test("selected direction reaches film segments, ending and the preflight check",
   const checked = run(dir, "check.mjs");
   assert.equal(checked.status, 1);
   assert.match(checked.stdout, /posts\[0\].numbers.views has no source/);
-  assert.match(checked.stdout, /direction changed/);
+  assert.match(checked.stdout, /direction in film.json differs from research\/facts.json/);
 });
 
 test("existing point picks and legacy proof picks retain their behavior", (t) => {

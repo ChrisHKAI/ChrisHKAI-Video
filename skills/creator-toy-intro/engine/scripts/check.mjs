@@ -80,7 +80,13 @@ if (past("research")) {
     try {
       const { direction, warnings } = resolveDirection(facts);
       for (const w of warnings) say("warn", w, "references/story-directions.md");
-      if (JSON.stringify(film.story?.direction) !== JSON.stringify(direction)) say("bad", "the chosen story direction changed since it was applied", "run apply-research again, then rebuild the storyboard");
+      if (JSON.stringify(film.story?.direction) !== JSON.stringify(direction)) {
+        // which of its parts differ, so a change made on one side (a why reworded in film.json) is copied to the other
+        // rather than re-applied: apply-research rewrites story.segments, a film's hand-made ones too
+        const was = film.story?.direction ?? {}, now = direction ?? {};
+        const diff = [...new Set([...Object.keys(was), ...Object.keys(now)])].filter((k) => JSON.stringify(was[k]) !== JSON.stringify(now[k]));
+        say("bad", `the chosen story direction in film.json differs from research/facts.json's (${diff.join(", ") || "its order"})`, "make the same change on both sides (film.json story.direction and the direction in research/facts.json); apply-research again only for a new direction: it rewrites story.segments");
+      }
       // the story test is advice: worth a look, never a stop
       for (const issue of storyTestIssues(facts, json("research/story-test.json"))) say("warn", issue, "references/story-test.md");
     } catch (e) { say("bad", e.message, "references/story-directions.md"); }

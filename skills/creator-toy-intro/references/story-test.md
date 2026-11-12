@@ -98,7 +98,18 @@ facts. Preserve the user's explicit choices and explain any necessary change.
    stays. Old point/proof selections do not acquire a new schema.
 
 Changing the source packet, hook, action, story order or chosen ending invalidates
-the report. Re-review the changed story; JSON key ordering alone does not matter.
+the report. Re-review the changed story; JSON key ordering alone does not matter. A change
+that leaves the review standing (a word in a why, a typo, a sentence of the
+heart said better) needs no new review: `story-test.mjs <film> --resign "what
+changed and why the review stands"` signs it again on the story as it is and
+keeps the note with the old signature (`resigned`). A changed story, beat,
+source or ending is reviewed again.
+
+The chosen direction lives in two places, film.json `story.direction` and
+the direction in `research/facts.json`: `check` stops the render when they
+differ and names the parts. Make a change on both sides; run apply-research
+again only for a new direction, as it rewrites `story.segments` (a film's
+hand-made segments too).
 `next` explains the pending check, and preflight checks it again before rendering.
 
 ## Verify the meaning in actual frames
