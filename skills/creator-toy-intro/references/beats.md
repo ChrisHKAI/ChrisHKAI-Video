@@ -235,7 +235,14 @@ readable is built in:
   face and from what is behind the line.
 - Every letter says it is one (`letter`: the character): a beat that adds
   letters of its own (`glyph.geo`) says so too, or the checks take its print
-  or its logo for words, and its words for a print.
+  or its logo for words, and its words for a print. A prop shaped from a
+  curve in the type material (a sun, a logo) without `letter` is not
+  lettering: the sinking and reading checks pass it by.
+- A line that comes in letter by letter gives each letter 0.05 s at least
+  (10 letters: 0.45 s from the first to the last; 0.08 s reads easier). A
+  letter a frame is over before the eye starts on it: check stops the full
+  render on it (the end card's labels pop up together, `pop`, and are not
+  typing).
 - A number on screen is white with a dark edge, floating, with its label
   (the film's rule). So is any lettering on a light or busy ground, where a
   face alone reads at under 3:1. The edge's material says `"outline": true`,

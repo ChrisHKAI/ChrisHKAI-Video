@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, sunkLetters } from "../lib/clearance.js";
+import { clearance, describe, sunkLetters, fastReveal } from "../lib/clearance.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -184,6 +184,8 @@ if (past("toy") && toy && film.profile) {
     const { contacts, height } = clearance(motion, { file: (p) => fromFilm(p) });
     // letters standing on a floor by their baseline sink their lowest strokes into it
     for (const m of sunkLetters(motion)) say("warn", `lettering sinks: ${m.text}`, "stand it by its lowest point, not its baseline (kit.line: ln.stand; references/beats.md)");
+    // letters that come one by one, faster than they read as they come
+    for (const m of fastReveal(motion)) say(process.argv.includes("--render") ? "bad" : "warn", `"${m.text}" comes letter by letter in ${m.secs} s at ${m.at.toFixed(1)} s: its ${m.n} letters want ${m.need} s at least (0.05 s a letter)`, "slow the typing, or bring the line in whole (references/beats.md, Lettering)");
     const into = describe(contacts, height).filter((m) => m.kind === "into");
     for (const m of into) say(process.argv.includes("--render") ? "bad" : "warn", `the toy goes through something: ${m.text}`, "references/clearance.md says how to keep it clear");
     if (!into.length) say("ok", "the toy goes through nothing");

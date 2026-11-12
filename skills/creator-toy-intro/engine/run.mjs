@@ -76,8 +76,12 @@ const scene = () => {
   console.log("(the film's own engine/scene.py)");
   return fromFilm("engine/scene.py");
 };
-// long renders keep a Mac awake (caffeinate -i: while the command runs)
-const awake = (cmd, args) => (process.platform === "darwin" ? ["caffeinate", ["-i", cmd, ...args]] : [cmd, args]);
+// long renders keep a Mac awake while the command runs (caffeinate -i: idle sleep; -s: system sleep on power); neither
+// holds off a closed lid or Sleep from the menu, so the full render says so before it starts
+const awake = (cmd, args) => (process.platform === "darwin" ? ["caffeinate", ["-is", cmd, ...args]] : [cmd, args]);
+const SLEEP_NOTE = process.platform === "darwin"
+  ? "keep the lid open and the power in until it ends: a closed lid or Sleep stops the render (it picks up with --resume)"
+  : "set the computer not to sleep until it ends: sleep stops the render (it picks up with --resume)";
 const run = (cmd, args, env = {}) => {
   console.log(`\n▶ ${cmd} ${args.join(" ")}`);
   const r = spawnSync(cmd, args, { stdio: "inherit", cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill(), ...env }) });
@@ -171,6 +175,7 @@ for (const [i, step] of steps.entries()) {
     case "render": {
       // no --frames: the whole film, its frame count from film.json (duration × fps)
       const all = more.includes("--frames") ? [] : ["--frames", `1-${film.format.duration * film.format.fps}`];
+      console.log(`\n${SLEEP_NOTE}`);
       run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...all, ...more]));
       break;
     }

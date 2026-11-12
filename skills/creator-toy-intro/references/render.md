@@ -54,10 +54,14 @@ With no `--frames` it renders the whole film: its frame count is film.json's
 a film whose length follows its content needs no other change. `--frames`
 renders a part (`--frames 300-420`, `--frames 13,49,121`).
 
-Run it in the background. On a Mac it keeps the computer awake while it
-runs; on Windows or Linux, ask the user to set the computer not to sleep for
-those hours. It prints each frame with the time left, and `--resume` picks up from the frames already
-on disk if it stops. While it runs, look at a few finished frames now and
+Run it in the background. On a Mac it keeps the computer from idling to
+sleep while it runs, but a closed lid or Sleep from the menu still stops
+it: before it starts, tell the user to keep the lid open and the power in.
+On Windows or Linux, ask the user to set the computer not to sleep for
+those hours. It prints each frame with the time left (by the last frames'
+pace), says when a frame took far longer than the others (the computer
+slept on the way), and `--resume` picks up from the frames already on disk
+if it stops. While it runs, look at a few finished frames now and
 then (`build/render/`): stop early if something is wrong rather than an
 hour later. After a late change, render only the frames `diff-anim.py`
 lists (`references/storyboard.md`).

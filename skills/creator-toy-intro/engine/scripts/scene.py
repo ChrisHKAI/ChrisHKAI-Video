@@ -1150,12 +1150,20 @@ if spec:
     todo = [f for f in frames if not ("--resume" in argv and (OUT / f"{f:04d}.png").exists())]
     if len(todo) < len(frames):
         print(f"resuming: {len(frames) - len(todo)} frames already in {OUT.name}/", flush=True)
-    spent = 0.0
+    # the time left goes by the last frames' pace, so a stop (the computer slept: a closed lid or Sleep, which
+    # caffeinate does not hold off) neither counts in it nor passes unsaid
+    recent = []
     for n, f in enumerate(todo, 1):
         t0 = time.time()
         scene.frame_set(f)
         scene.render.filepath = str(OUT / f"{f:04d}.png")
         bpy.ops.render.render(write_still=True)
-        spent += time.time() - t0
-        left = spent / n * (len(todo) - n)
-        print(f"rendered frame {f} in {time.time() - t0:.1f}s ({n}/{len(todo)}, about {left / 60:.0f} min to go)", flush=True)
+        took = time.time() - t0
+        usual = sorted(recent)[len(recent) // 2] if len(recent) >= 3 else None
+        if usual and took > max(5 * usual, usual + 120):
+            print(f"frame {f} took {took / 60:.0f} min against about {usual:.0f}s a frame: the render stopped on the way "
+                  "(the computer slept?); keep the lid open and the power in", flush=True)
+        else:
+            recent = (recent + [took])[-8:]
+        left = sum(recent) / len(recent) * (len(todo) - n)
+        print(f"rendered frame {f} in {took:.1f}s ({n}/{len(todo)}, about {left / 60:.0f} min to go)", flush=True)

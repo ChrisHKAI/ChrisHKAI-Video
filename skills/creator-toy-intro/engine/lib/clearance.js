@@ -88,6 +88,50 @@ export function clearance(anim, { toy = "hero", tol = null, every = 1, file = (p
 // the contacts of one film, a moment each: "6.6–7.9 s: half the toy is inside piece2_grid, 38 mm deep".
 // kind "into" (a good share of the toy, or deep: the viewer sees it go through) or "touch" (a hand, a
 // heel or an ear a few mm in, which the eye forgives)
+// the objects that are lettering: each letter kit.line made says so ("letter"), and its edge is named after it
+// (name + "o" + i); a prop shaped from a curve in the type material (a sun, a logo) is not. Motion written before
+// letters said so: the type material's curves and the edges grown round them
+export function letterObjects(anim) {
+  const named = new Set(anim.objects.filter((o) => o.letter).map((o) => o.name));
+  if (!named.size) return anim.objects.filter((o) => (o.mat?.type === "type" && !o.mat.outline) || (o.mat?.outline && o.geo?.grow));
+  return anim.objects.filter((o) => named.has(o.name) || (o.mat?.outline && named.has(o.name.replace(/o(\d+)$/, "$1"))));
+}
+
+// a line whose letters come one by one faster than they can be read as they come: under `each` seconds a letter
+// from the first to the last (a beat's own typing, a frame a letter, is over before the eye starts on it). The end
+// card's labels say "pop": their letters pop up together as the paper lands, a flourish, not typing.
+// {name, text, n, secs, need}: the line's letters, how long they took to come, how long they should
+export function fastReveal(anim, { each = 0.05 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const sizeOf = (name, s) => Math.min(...(sampleAt(name, s) ?? unpack(objects.get(name).tr)).s.map(Math.abs));
+  const lines = new Map();
+  for (const o of anim.objects) if (o.letter && o.anim && !o.pop && !/^label\d+_l\d+$/.test(o.name)) {
+    const key = o.name.replace(/\d+$/, "");
+    if (!lines.has(key)) lines.set(key, []);
+    lines.get(key).push(o);
+  }
+  const out = [];
+  for (const [name, ls] of lines) {
+    if (ls.length < 3) continue;
+    const sizes = ls.map((o) => Array.from({ length: anim.frames }, (_, f) => sizeOf(o.name, f * SUB)));
+    const full = sizes.map((z) => Math.max(...z));
+    // each time the line comes: the first frame each letter is at half its size, after a frame it was not
+    for (let f = 1; f < anim.frames; f++) {
+      const first = sizes.findIndex((z, i) => z[f] >= full[i] / 2 && z[f - 1] < full[i] / 2);
+      if (first < 0 || sizes.some((z, i) => z[f - 1] >= full[i] / 2)) continue;
+      const came = sizes.map((z, i) => { for (let g = f; g < Math.min(anim.frames, f + anim.fps * 4); g++) if (z[g] >= full[i] / 2) return g; return null; });
+      if (came.some((g) => g == null)) continue;
+      const spread = (Math.max(...came) - Math.min(...came)) / anim.fps;
+      const order = ls.map((o, i) => [+o.name.match(/(\d+)$/)[1], o.letter, came[i]]).sort((a, b) => a[0] - b[0]);
+      const need = each * (ls.length - 1);
+      // all at once is a line that arrives whole, not typed
+      if (spread > 0 && spread < need) out.push({ name, text: order.map((x) => x[1]).join(""), n: ls.length, at: f / anim.fps, secs: +spread.toFixed(2), need: +need.toFixed(2) });
+    }
+  }
+  return out;
+}
+
 // lettering standing on a floor, sunk into it (a descender, a stroke under the baseline set on the floor): at rest
 // and at full size, its lowest point more than tol below the floor it stands over (kit.line's stand keeps it up)
 export function sunkLetters(anim, { tol = 0.0015, every = 2 } = {}) {
@@ -103,7 +147,7 @@ export function sunkLetters(anim, { tol = 0.0015, every = 2 } = {}) {
   };
   const floors = anim.objects.filter((o) => o.geo?.type === "plane" && /(^|_)floor$/.test(o.name));
   // a letter's edge (geo.grow) reaches below the letter by its grow
-  const letters = anim.objects.filter((o) => o.geo?.type === "curve" && o.geo.rings?.length && ((o.mat?.type === "type" && !o.mat.outline) || (o.mat?.outline && o.geo.grow)))
+  const letters = letterObjects(anim).filter((o) => o.geo?.type === "curve" && o.geo.rings?.length)
     .map((o) => ({ o, pts: o.geo.rings.flatMap((r) => r.filter((_, i) => i % 3 === 0)).map(([x, y]) => [x, y, 0]), bevel: o.geo.grow ?? o.geo.bevel ?? 0 }));
   if (!floors.length || !letters.length) return [];
   const frames = [];
