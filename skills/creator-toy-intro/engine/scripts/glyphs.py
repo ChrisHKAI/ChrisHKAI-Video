@@ -61,11 +61,13 @@ def words(v):
     return ""
 
 
+# what a segment says for people, never on screen: why it is there, its music
+UNSHOWN = {"beat", "why", "music"}
 BEATS = [s for s in F.get("story", {}).get("segments", []) if "beat" in s]
 CHARS["display"] = ""  # and in the creator's own face, for a beat that sets its line in it (fonts.py "display")
 for s in BEATS:
-    CHARS["heavy"] += words({k: v for k, v in s.items() if k != "beat"})
-    CHARS["display"] += words({k: v for k, v in s.items() if k != "beat"})
+    CHARS["heavy"] += words({k: v for k, v in s.items() if k not in UNSHOWN})
+    CHARS["display"] += words({k: v for k, v in s.items() if k not in UNSHOWN})
 if BEATS:
     CHARS["heavy"] += "0123456789,.+%月日"
 # what the end card's prop carves (film.json cta.prop.text: a plinth's line, a trophy's name)

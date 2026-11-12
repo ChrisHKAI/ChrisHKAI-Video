@@ -48,8 +48,10 @@ def words(v):
 
 
 cta = F.get("cta") or {}
+# what a segment says for people, never on screen: why it is there, its music
+UNSHOWN = {"beat", "why", "music"}
 BEATS = [s for s in (F.get("story") or {}).get("segments", []) if "beat" in s]
-CHARS = "".join(words({k: v for k, v in s.items() if k != "beat"}) for s in BEATS) + words([p.get("text", "") for p in cta.get("slogan", [])]) \
+CHARS = "".join(words({k: v for k, v in s.items() if k not in UNSHOWN}) for s in BEATS) + words([p.get("text", "") for p in cta.get("slogan", [])]) \
     + words((cta.get("name") or {}).get("text", "")) + words((cta.get("prop") or {}).get("text", ""))
 LINES = [t.strip() for t in arg("--text", "").split(",") if t.strip()] or \
     [s["text"] for s in BEATS if isinstance(s.get("text"), str)] + ["".join(p.get("text", "") for p in cta.get("slogan", []))]
