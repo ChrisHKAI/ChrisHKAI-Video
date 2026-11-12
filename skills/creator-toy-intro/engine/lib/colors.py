@@ -270,8 +270,8 @@ def halo_for(film):
 def stage_for(film):
     """(name, palette) of the stage this film plays on: film.json look.stage when it says ("dark", "mid",
     "grey", or a colour "#RRGGBB": stage_of); else the dark stage, unless 15% or more of the toy melts into it
-    and less melts into a mid one: the slate, or the grey when what melts is blue (a delivered film keeps the
-    dark one it was approved on)."""
+    and less melts into a mid one: the slate or the grey, whichever less of it melts into (the grey, on a tie, when
+    what melts is blue); a delivered film keeps the dark one it was approved on."""
     film = Path(film)
     try:
         F = json.loads((film / "film.json").read_text())
@@ -289,8 +289,12 @@ def stage_for(film):
             # the hue of what melts, by how much of the toy it covers: blue (OKLab b under 0) wants the grey
             rows = [r for r in toy_colours(film, STAGES["dark"]["sky"]) if r["contrast"] < MELT]
             b = sum(oklab(np.array([rgb(r["hex"])]))[0][2] * r["share"] for r in rows) / max(1e-9, sum(r["share"] for r in rows))
-            mid = "grey" if b < -0.015 else "mid"
-            if darkness(film, STAGES[mid]["sky"]) < dark:
+            # the one of the two where less of the toy melts (a navy shirt melts into the slate, its own hue);
+            # the hue of what melts settles a tie
+            first = "grey" if b < -0.015 else "mid"
+            melt = {m: darkness(film, STAGES[m]["sky"]) for m in ("mid", "grey")}
+            mid = min(("mid", "grey"), key=lambda m: (round(melt[m], 3), m != first))
+            if melt[mid] < dark:
                 name = mid
     return name, STAGES[name]
 
