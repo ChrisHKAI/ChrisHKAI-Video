@@ -109,18 +109,15 @@ def film_colours(film):
     anim = json.loads((film / "build/anim.json").read_text())
     STAGE = stage_for(film)[1]["sky"]
     toy_rows = toy_colours(film, STAGE)
-    # dark lettering printed on a paper of its own group (label0_l0 on label0_sheet, a calendar's day on its
-    # page) is read against the paper; the rest against the stage
     group = lambda name: name.split("_")[0]  # noqa: E731
-    # the paper a letter is printed on is its group's last: the one laid on top (a label's sheet on its white rim)
-    papers = {}
-    for o in anim["objects"]:
-        m = o.get("mat") or {}
-        if m.get("type") == "paper" and isinstance(m.get("color"), str):
-            papers[group(o["name"])] = m["color"]
+    # lettering printed on a paper (label0_l0 on label0_sheet, a calendar's day on its page, a line in a speech
+    # bubble) is read against that paper: the one whose face it lies over and nearest to while it is shown, of the
+    # papers laid on top (a label's sheet before its white rim); the rest against the stage
+    from pacing import letters, seen, on_paper  # noqa: E402  what says it is lettering (a print's ridges and a logo are not)
+    paper_of = {o["name"]: o for o in anim["objects"] if (o.get("mat") or {}).get("type") == "paper" and isinstance((o.get("mat") or {}).get("color"), str)}
+    lying = on_paper(anim, [o["name"] for o in letters(anim)], {n: o.get("geo") or {} for n, o in paper_of.items()})
     # lettering the camera never sees (a template's own end card a film of its own beats never plays, its digits
     # sunk under the floor with its page) is not read
-    from pacing import letters, seen  # noqa: E402  what says it is lettering (a print's ridges and a logo are not)
     w, h = F["format"]["size"]
     looked = seen(anim, [o["name"] for o in anim["objects"]], w / h)
     shown = lambda name: name in looked  # noqa: E731
@@ -131,7 +128,8 @@ def film_colours(film):
         if m.get("type") == "type" and not m.get("outline") and isinstance(m.get("color"), str) and (o.get("geo") or {}).get("type") == "curve" and shown(o["name"]):
             # a beat may say what its lettering stands on ("on": a carpet, a sign) and the edge round it ("edge");
             # a letter printed on a paper of its group (the end card's labels) is read on that paper
-            back = m.get("on") or papers.get(group(o["name"]))
+            under = lying.get(o["name"])
+            back = m.get("on") or (paper_of[under]["mat"]["color"] if under else None)
             key = (m["color"].upper(), (back or STAGE).upper())
             text.setdefault(key, []).append(o["name"])
             if o["name"].startswith("beat"):

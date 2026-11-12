@@ -98,15 +98,13 @@ def toy_on_screen(film, anim):
     return share, shown & (np.abs(x) < 1) & (np.abs(y) < 1), shown
 
 
-def seen(anim, names, aspect):
-    """Those of `names` that come into the camera's frame at their size on some sample: not shrunk away, not parked
-    under the floor or behind the camera (a template's digits that sink with its page). A part goes where its parent
-    takes it; without a camera, what is at its size is seen."""
+def worlds(anim):
+    """world(name): (S, 10) as track(), its parents' transforms put on it (the root only turns the world z-up)."""
     tr, S = anim.get("tracks") or {}, anim["samples"]
     objs = {o["name"]: o for o in anim["objects"]}
     memo = {}
 
-    def world(n):  # (S, 10) as track(), its parents' transforms put on it (the root only turns the world z-up)
+    def world(n):
         if n not in memo:
             o = objs.get(n) or {}
             own = track(anim, n) if n in tr else np.tile(np.array(o.get("tr") or [0, 0, 0, 0, 0, 0, 1, 1, 1, 1], float), (S, 1))
@@ -115,7 +113,65 @@ def seen(anim, names, aspect):
                 own = np.concatenate([P[:, :3] + rotate(P[:, 3:7], own[:, :3] * P[:, 7:10]), qmul(P[:, 3:7], own[:, 3:7]), own[:, 7:10] * P[:, 7:10]], axis=1)
             memo[n] = own
         return memo[n]
+    return world
 
+
+def _extent(geo):
+    """A paper's half size in its own axes (x, y, z) and its face's middle, or None for a shape not known here."""
+    t = geo.get("type")
+    if t in ("box", "roundBox"):
+        return np.array(geo["size"], float) / 2, np.zeros(3)
+    if t == "plane":
+        w, h = geo["w"], geo["h"]
+        return (np.array([w / 2, 1e-3, h / 2]) if geo.get("flat") else np.array([w / 2, h / 2, 1e-3])), np.zeros(3)
+    if t == "curve" and geo.get("rings"):
+        pts = np.array([q[:2] for r in geo["rings"] for q in r], float)
+        lo, hi = pts.min(axis=0), pts.max(axis=0)
+        d = float(geo.get("depth", 0.002))
+        return np.array([*(hi - lo) / 2, d / 2]), np.array([*(hi + lo) / 2, d / 2])
+    return None
+
+
+def on_paper(anim, names, papers, near=0.03):
+    """{letter: the paper it is printed on or stands against, or None (the stage behind it)}: of the papers shown with
+    it, the one whose face it lies over and nearest to, at the samples where the letter is at its size; a letter's
+    paper is the one it is on most of the time it is shown. papers: {name: geo}."""
+    world = worlds(anim)
+    ext = {n: e for n, g in papers.items() if (e := _extent(g)) is not None}
+    out = {}
+    for n in names:
+        L = world(n)
+        on = np.abs(L[:, 7:10]).max(axis=1) > 1e-3
+        if not on.any():
+            continue
+        best = np.full(len(L), np.inf)
+        pick = np.array([None] * len(L), dtype=object)
+        for p, (half, mid) in ext.items():
+            P = world(p)
+            sz = np.abs(P[:, 7:10])
+            shown = sz.max(axis=1) > 1e-3
+            loc = rotate_inv(P[:, 3:7], L[:, :3] - P[:, :3]) / np.maximum(sz, 1e-6) - mid
+            # over its face on its two wide axes (a little past the edge: a letter's origin is its baseline's end);
+            # its thin axis is how far off the face the letter is
+            thin = int(np.argmin(half))
+            wide = [i for i in range(3) if i != thin]
+            over = np.all(np.abs(loc[:, wide]) <= half[wide] * 1.08 + 0.004, axis=1)
+            off = np.abs(loc[:, thin]) * sz[:, thin] - half[thin] * sz[:, thin]
+            ok = on & shown & over & (off < near)
+            closer = ok & (off < best)
+            best[closer], pick[closer] = off[closer], p
+        got = [x for x in pick[on]]
+        top = max(set(got), key=got.count) if got else None
+        out[n] = top
+    return out
+
+
+def seen(anim, names, aspect):
+    """Those of `names` that come into the camera's frame at their size on some sample: not shrunk away, not parked
+    under the floor or behind the camera (a template's digits that sink with its page). A part goes where its parent
+    takes it; without a camera, what is at its size is seen."""
+    tr = anim.get("tracks") or {}
+    world = worlds(anim)
     if "camera" not in tr:
         return {n for n in names if (np.abs(world(n)[:, 7:10]).max(axis=1) > 1e-3).any()}
     cam = track(anim, "camera")
