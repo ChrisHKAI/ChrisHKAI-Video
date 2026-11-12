@@ -183,7 +183,9 @@ film's own copy), `theme`, `language`, `format` (fps, bpm,
 duration, size), `output`, `publish` (where the film goes: ids in
 `engine/lib/platforms.json`; default the stage theme's platform), `toy`, `recipes` (in order; `@avatar`,
 `@sticker2d` and `@shape` are engine tools), `branding` (the creator's own
-copies of platform marks, if any), `profile` (name, handle, bio, counts,
+copies of platform marks, if any: copied once from a creator's page, then
+`run.mjs ui` keeps them on this computer, `~/.chrishkai-video/branding/`, and
+fills them in for the next film), `profile` (name, handle, bio, counts,
 pictures), `avatarRing` (the ring round the profile picture:
 `references/avatar.md`), `posts` (the two posts the page shows: date, title,
 counts, cover; `kind` article, video or image; `pinned: false` when the first

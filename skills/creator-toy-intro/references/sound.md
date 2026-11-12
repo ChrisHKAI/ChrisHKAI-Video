@@ -64,6 +64,11 @@ Hold it to the bar the film is held to (SKILL.md, "The bar"):
 - **Under the effects.** The effects carry the action, the music the space
   around it. The engine ducks it under them; leave room in the mids where the
   effects sit.
+- **In the effects' key.** The pitched effects (engine/lib/synth.py) are in
+  G major: the clicks and taps run D E F♯ A B, the name's letters and the
+  crown G B D, the glint E and B, the dizzy spin A. A score in G major or
+  E minor sits with them; in another key, keep its notes clear of theirs
+  where the hits land, or give a film's own effects its key.
 
 You cannot hear it. Check what can be measured: `sound` prints each bar's
 level (no bar jumps out unless it is a hit), the mix against the effects

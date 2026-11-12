@@ -6,7 +6,7 @@
 import { film } from "#engine/film.js";
 import { trs, qEuler } from "#engine/quat.js";
 import { MASCOT_PARTS, toyGeo } from "#engine/toy.js";
-import { PAPER } from "#engine/labels.js";
+import { paperOf } from "#engine/labels.js";
 import { toyFrom } from "#engine/beatkit.js";
 import * as T from "./timeline.js";
 import * as A from "./anim.js";
@@ -69,7 +69,7 @@ export function declare({ add, pack, objects }) {
   T.PROP.declare(add); // the end card's prop (isnail's snail, or the film's own)
   // the sign-off: torn paper labels with raised letters, and the crown
   A.LABELS.forEach((L, i) => {
-    const [paper, ink] = PAPER[L.paper];
+    const [paper, ink] = paperOf(L.paper);
     add({ name: `label${i}_rim`, geo: { type: "curve", rings: [L.rim], depth: 0.0018, bevel: 0.0003 }, mat: { type: "paper", color: "#F6F1E8" }, anim: true });
     add({ name: `label${i}_sheet`, geo: { type: "curve", rings: [L.sheet], depth: 0.0024, bevel: 0.0003 }, mat: { type: "paper", color: paper }, anim: true });
     L.letters.forEach((g, j) => add({ name: `label${i}_l${j}`, letter: g.key.split(":")[1], pop: true, geo: glyphGeo(g.key, L.em, 0.004, 0.0005), mat: { type: "type", color: ink, emit: ink === "#161514" ? 0 : 0.12 }, anim: true }));

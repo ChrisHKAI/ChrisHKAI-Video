@@ -8,6 +8,21 @@ import { seg, smooth, lerp, easeOut, backOut } from "./math.js";
 const HIDDEN = 1e-4;
 // paper colour and ink colour for each paper
 export const PAPER = { cream: ["#EFE6D4", "#161514"], red: ["#D8382D", "#FBF3E6"], blue: ["#2F5D9E", "#F3EEE4"] };
+// a label's [paper, ink]: one of PAPER's names, or the creator's own colour "#RRGGBB", its ink the near-black or
+// the cream that stands further from it (by WCAG contrast)
+const lum = (hex) => {
+  const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+};
+const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+export function paperOf(paper) {
+  if (PAPER[paper]) return PAPER[paper];
+  if (/^#[0-9a-f]{6}$/i.test(paper ?? "")) {
+    const hex = paper.toUpperCase();
+    return [hex, ratio(hex, "#161514") >= ratio(hex, "#FBF3E6") ? "#161514" : "#FBF3E6"];
+  }
+  throw new Error(`a label's paper is ${JSON.stringify(paper)}: one of ${Object.keys(PAPER).join(", ")}, or a colour "#RRGGBB"`);
+}
 
 // layout: text set in em (m) with glyph advances adv(key) and a little air between the letters (track, em: by
 // script, a CJK face's letters fill their whole em); centre c, tilt, the time it lands and each letter's time letterAt(i)

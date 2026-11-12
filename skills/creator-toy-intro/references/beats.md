@@ -49,7 +49,7 @@ top of each file.
 | beat | for | entry |
 | --- | --- | --- |
 | `page-stand` | an opening: the page fills the frame like a screen, turns and parts into slabs, the toy puffs out of the picture on the 2.0 s downbeat (the other opening is the story's own `opening`: the page floats while the picture peels off like a sticker) | `{ "beat": "page-stand", "bars": 2, "turn": "right" }` |
-| `count` | a number: counts up in 3D as the platform writes it (`10,000`, `1.5万`, `380+`), a label of any length, locks on a downbeat | `{ "beat": "count", "bars": 3, "to": 10000, "label": "关注者" }` |
+| `count` | a number: counts up in 3D as the platform writes it (`10,000`, `1.5万`, `380+`), a label of any length, locks on a downbeat. `to` written as the platform writes it (`"31.9万"`) keeps its decimals, separator and unit; a bare number needs them said (`"to": 31.9, "unit": "万", "decimals": 1`), or its .9 is dropped | `{ "beat": "count", "bars": 3, "to": "31.9万", "label": "查看" }` |
 | `calendar` | a span of time, from the idea alone: a flip calendar runs from one day to another, a count beside it, a stamp on the lock. A count beside a date is a claim: `count.keys` are their own dated milestones, each read on its day (without them a paused frame may show a number they never had) | `{ "beat": "calendar", "bars": 4, "from": "2026-07-10", "to": "2026-10-24", "count": { "to": 10000, "label": "关注者", "keys": [["2026-09-11", 1000], ["2026-10-17", 8500]] }, "stamp": "万粉" }` |
 | `phrase` | the user's own words: a line rises a letter at a time, facing the camera as it locks | `{ "beat": "phrase", "bars": 3, "text": "马斯克得不到的男人", "color": "#F4F1EA", "edge": "#D8382D" }` |
 

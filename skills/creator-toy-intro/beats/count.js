@@ -7,16 +7,23 @@
 //
 // film.json, in story.segments:
 //   { "beat": "count", "bars": 3, "to": 10000, "label": "关注者" }
+//   { "beat": "count", "bars": 3, "to": "31.9万", "label": "查看" }   (written as the platform writes it: its
+//   decimals, separator and unit come from the writing, so 31.9万 keeps its .9)
 // "from" (0), "decimals" (0), "sep" (","), "unit" ("", e.g. "万", "+"),
 // "color" of the digits (glowing white on the dark stage), "em" their size (m).
 // It locks a bar before its end (the first downbeat after 2 s in a 2-bar beat).
 export function makeBeat({ opts, len, bar, at, fov, aspect, glyph, signature, kit, math, quat, accent, pop, mulberry32 }) {
   const { seg, smooth, backOut, lerp } = math;
   const { trs, qId, qEuler, mulT, apply } = quat;
-  if (typeof opts.to !== "number") throw new Error('beat "count" needs "to": the number it lands on');
+  // "31.9万", "10,000", "380+": the number, its decimals, its separator and its unit, as written
+  const written = typeof opts.to === "string" ? String(opts.to).trim().match(/^(\d{1,3}(?:([,，])\d{3})+|\d+)(?:\.(\d+))?\s*(\D*)$/) : null;
+  if (typeof opts.to === "string" && !written) throw new Error(`beat "count": "to" is "${opts.to}": a number, or one written as the platform writes it (31.9万, 10,000, 380+)`);
+  if (typeof opts.to !== "number" && !written) throw new Error('beat "count" needs "to": the number it lands on');
   if (len < 2 * bar - 1e-6) throw new Error('beat "count" needs "bars": 2 or more');
-  const FMT = { decimals: opts.decimals ?? 0, sep: opts.sep ?? ",", unit: opts.unit ?? "" };
-  const FROM = opts.from ?? 0, TO = opts.to;
+  const FMT = written
+    ? { decimals: opts.decimals ?? (written[3] ?? "").length, sep: opts.sep ?? written[2] ?? ",", unit: opts.unit ?? written[4] }
+    : { decimals: opts.decimals ?? 0, sep: opts.sep ?? ",", unit: opts.unit ?? "" };
+  const FROM = opts.from ?? 0, TO = written ? +`${written[1].replace(/[,，]/g, "")}${written[3] ? `.${written[3]}` : ""}` : opts.to;
   const EM = opts.em ?? 0.07, LEM = EM * 0.42;
   const NUM = kit.readout({ fmt: (v) => kit.formatCount(v, FMT), from: FROM, to: TO, em: EM, adv: glyph.adv });
   const LABEL = [...String(opts.label ?? "")];

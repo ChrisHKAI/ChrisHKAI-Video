@@ -153,7 +153,7 @@
     "zh-Hans": "任何一个数字：粉丝里程碑、star、播放、天数。数字在自己的舞台上跳升、锁定，公仔跳起庆祝",
     "en": "Any number: a follower milestone, stars, plays, days. It counts up on its own stage and locks; the toy jumps for joy"
    },
-   "needs": "the number and its label, written the platform's way (10,000 关注者, 1,500 star)",
+   "needs": "the number and its label, written the platform's way (10,000 关注者, 1,500 star); \"to\" as written (\"31.9万\") keeps its decimals and unit",
    "example": "kingao (Kin): 50 → 10,000 粉丝; cgnot996: 1,500 star",
    "film": {
     "beat": "count",

@@ -115,8 +115,9 @@ if (past("research")) {
 
 // the platform's own marks on the page (film.json branding): copied from the creator's own page, never shipped
 if (past("research") && (film.theme ?? "").startsWith("x-")) {
-  if (!film.branding?.logo) say("warn", "the page has no X mark (film.json branding.logo is empty)", "copy the mark's SVG path from the creator's X page (the logo in its corner) into branding.logo");
-  if (film.profile?.verified && !film.branding?.badge) say("warn", "the creator is verified but the page draws no badge (film.json branding.badge)", "copy the badge's SVG path from their X page into branding.badge");
+  // run.mjs ui fills them from this computer's copy of an earlier film's (~/.chrishkai-video/branding/x.json)
+  if (!film.branding?.logo) say("warn", "the page has no X mark (film.json branding.logo is empty)", "run.mjs ui takes this computer's copy from an earlier film; the first time, copy the mark's SVG path from the creator's X page (the logo in its corner) into branding.logo");
+  if (film.profile?.verified && !film.branding?.badge) say("warn", "the creator is verified but the page draws no badge (film.json branding.badge)", "run.mjs ui takes this computer's copy from an earlier film; the first time, copy the badge's SVG path from their X page into branding.badge");
 }
 
 // ── recipes ─────────────────────────────────────────────────────────────────

@@ -80,7 +80,10 @@ palette` draws colours set against theirs (their own background, the hue
 opposite theirs light and deep, a deep of their own family), each with the
 toy's colours on it. Show the user the sheet, three or four, as the stage's
 colour is chosen; the logo's own colour on what stands beside the toy melts
-into it.
+into it. So do the end card's torn-paper labels: `cta.slogan[k].paper`,
+`cta.name.paper` and `cta.handle.paper` take `"cream"`, `"red"`, `"blue"`
+or the creator's own colour `"#RRGGBB"` (its ink is the near-black or the
+cream that stands further from it).
 
 A segment where the work is the hero and the toy stands small on purpose (a
 wall of their pictures filling the frame) says so in film.json:
