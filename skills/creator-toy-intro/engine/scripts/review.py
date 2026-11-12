@@ -100,17 +100,24 @@ FILL = Fill(name=prof.get("name", ""), handle="@" + prof.get("handle", ""), slog
             proof1=F.get("posts", {}).get("pinned", {}).get("title", ""), proof2=F.get("posts", {}).get("retro", {}).get("title", ""))
 en = lambda d: (d.get("en", "") if isinstance(d, dict) else d or "").format_map(FILL)  # noqa: E731
 parts = []
+# the template's own parts, on the story's clock (a story segment plays a stretch of it: the end card, the number)
+TPARTS = json.loads((TEMPLATE / "storyboard.json").read_text())["parts"] if (TEMPLATE / "storyboard.json").exists() else []
+ST = TL.get("STORY") if isinstance(TL.get("STORY"), dict) else {}
+ev, SDUR = ST.get("EV") or TL.get("EV", {}), ST.get("DURATION", DUR)
+at = lambda v, end=DUR: v if isinstance(v, (int, float)) else (end if v == "end" else (ev[v][0] if isinstance(ev[v], list) else ev[v]))  # noqa: E731
 if TL.get("SEGMENTS"):
     for s in TL["SEGMENTS"]:
         if s["kind"] == "beat":
             sb = s.get("storyboard", {}).get("part", {})
-            parts.append(f"{s['f0']:.1f}–{s['f1']:.1f} s: beat \"{s['beat']}\": {en(sb.get('what', ''))}")
+            what = en(sb.get("what", "")) or s.get("why", "")
+            parts.append(f"{s['f0']:.1f}–{s['f1']:.1f} s: beat \"{Path(s['beat']).stem}\"" + (f": {what}" if what else ""))
         else:
-            parts.append(f"{s['f0']:.1f}–{s['f1']:.1f} s: the story, its {s['s0']:.1f}–{s['s1']:.1f} s")
-elif (TEMPLATE / "storyboard.json").exists():
-    ev = TL["EV"]
-    at = lambda v: v if isinstance(v, (int, float)) else (DUR if v == "end" else (ev[v][0] if isinstance(ev[v], list) else ev[v]))  # noqa: E731
-    for p in json.loads((TEMPLATE / "storyboard.json").read_text())["parts"]:
+            # the template's parts this stretch of the story plays, by name and what happens in them
+            inside = [p for p in TPARTS if at(p["from"], SDUR) < s["s1"] - 0.05 and at(p["to"], SDUR) > s["s0"] + 0.05]
+            said = "; ".join(f"{en(p['label'])}: {en(p['what'])}" for p in inside) or "the story"
+            parts.append(f"{s['f0']:.1f}–{s['f1']:.1f} s: {said}")
+else:
+    for p in TPARTS:
         parts.append(f"{at(p['from']):.1f}–{at(p['to']):.1f} s: {en(p['label'])}: {en(p['what'])}")
 
 P = pacing.check(FILM)
@@ -126,6 +133,13 @@ cues = ", ".join(f"{c['t']:.2f} {c['kind']}" for c in sorted(TL["cues"], key=lam
 rubric = (SKILL / "references/review.md").read_text().split("<!-- rubric -->")[1].split("<!-- /rubric -->")[0].strip()
 where = ", ".join(PLATFORMS[p]["name"] for p in platforms([])) or "X"
 
+# the stage it plays on (engine/lib/colors.py stage_for): dark, or lighter for a dark toy, or the film's own colour
+import colors  # noqa: E402
+_sn, _st = colors.stage_for(FILM)
+STAGE = {"dark": "a dark stage", "mid": "a mid slate stage", "grey": "a grey stage"}.get(_sn, f"a stage of {_st.get('sky', _sn)}")
+if colors.halo_for(FILM):
+    STAGE += " (a soft halo behind the toy)"
+
 direction = F.get("story", {}).get("direction")
 narrative = ("\n## Intended story (compare against the actual frames)\n\n```json\n"
              + json.dumps(direction, ensure_ascii=False, indent=2) + "\n```\n"
@@ -138,7 +152,7 @@ pictures it names, nothing else.
 
 The film introduces a creator, {prof.get('name', '')} (@{prof.get('handle', '')}), to their audience on {where}.
 Their profile picture becomes a 3D vinyl toy of them, which acts out their best
-posts and numbers on a dark stage, and ends on their name and a call to action.
+posts and numbers on {STAGE}, and ends on their name and a call to action.
 It is {DUR:g} s long, {W_}×{H_} ({'portrait' if H_ > W_ else 'landscape'}), {FPS} fps, {TL['BPM']} BPM (a bar is {TL['BAR']:g} s).
 The words on screen are in {F.get('language', 'zh-Hans')}.
 

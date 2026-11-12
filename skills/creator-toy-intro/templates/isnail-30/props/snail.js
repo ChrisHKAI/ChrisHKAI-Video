@@ -78,7 +78,7 @@ export function makeProp({ film, E, cta, path, readFilmJSON, lib }) {
 
   return {
     declare(add) {
-      add({ name: "logo", geo: { type: "curve", rings: LOGO.rings.map((r) => r.map(([x, y]) => [+(x * SHELL_H).toFixed(6), +(y * SHELL_H).toFixed(6)])), depth: SHELL_D, bevel: 0.0022 }, mat: { type: "type", color: film.cta.prop.logoColor, emit: 0.25 }, anim: true });
+      add({ name: "logo", geo: { type: "curve", rings: LOGO.rings.map((r) => r.map(([x, y]) => [+(x * SHELL_H).toFixed(6), +(y * SHELL_H).toFixed(6)])), depth: SHELL_D, bevel: 0.0022 }, mat: { type: "type", color: film.cta.prop?.logoColor ?? "#F3F1EC", emit: 0.25 }, anim: true });
       SNAIL_PARTS.forEach((p) => {
         const geo = p.shape === "roundBox" ? { type: "roundBox", size: p.size, radius: p.radius } : p.shape === "ellipsoid" ? { type: "ellipsoid", r: p.r } : { type: "arc", radius: p.radius, tube: p.tube, arc: p.arc };
         add({ name: `snail_${p.name}`, geo, mat: { type: "toy", key: { body: "snail", eye: "white", pupil: "black" }[p.mat] }, anim: true });

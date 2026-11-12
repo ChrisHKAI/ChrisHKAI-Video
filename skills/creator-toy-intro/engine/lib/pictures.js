@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fromFilm } from "./film.js";
 import { seg } from "./math.js";
-import { trs, qId, qMul, qAxis } from "./quat.js";
+import { trs, qId, qMul, qAxis, apply } from "./quat.js";
 
 // a picture's size in pixels, from its header (PNG or JPEG)
 export function imageSize(file) {
@@ -37,11 +37,20 @@ export function picture(file, w, { thickness = 0.002, movie, frames, start = 1 }
   const [W, H] = imageSize(file);
   const s = w / (W * 0.001); // built at a millimetre a pixel, then scaled to w
   return {
-    file, w, h: (w * H) / W,
+    file, w, h: (w * H) / W, t: thickness,
     geo: { type: "uiBox", rect: [-W / 2, -H / 2, W, H], uvRect: [0, 0, W, H], img: { image: file, w: W, h: H }, thickness: thickness / s },
     mat: movie ? { type: "ui", image: file, movie, frames, start } : { type: "ui", image: file },
     at: (p, q = qId(), k = 1) => trs(p, qMul(q, UPRIGHT), Math.max(1e-4, s * k)),
   };
+}
+
+// two cards back to back (a badge's front and back): [front's transform, back's], the back turned round. A card's
+// body runs its thickness behind its face, so two cards whose faces are nearer than both thicknesses lie inside
+// each other and both render black: each face stands its own thickness (and a hair) out from p, along q's +z
+export function backToBack(front, back, p, q = qId(), k = 1) {
+  const n = apply(trs([0, 0, 0], q, 1), [0, 0, 1]);
+  const out = (c, sign) => p.map((v, i) => v + sign * n[i] * (c.t + 0.0003) * k);
+  return [front.at(out(front, 1), q, k), back.at(out(back, -1), qMul(q, qAxis([0, 1, 0], Math.PI)), k)];
 }
 
 // where n cards go, in stage metres (x right, y up, z towards the camera): [{ p, q }], q their turn
