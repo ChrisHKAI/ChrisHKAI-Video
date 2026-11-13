@@ -65,7 +65,9 @@ puts the frames side by side for you.
    goes through nothing. (`clearance.mjs`: references/clearance.md)
 10. **The creator's own, and nobody else's.** Their posts, numbers and words
     are on screen in every part. The film differs from every earlier film in
-    four of six things. (the ledger; the story test)
+    four of six things, and is not one of them told again for another
+    creator. (the ledger; the story test and the review read the earlier
+    films in words)
 11. **Things move by their size.** A small thing (a chip, a badge, a
     digit, a spark) snaps into place: fast, in a beat or less, no drift.
     A big thing (a wall, a panel, the page) has weight: it winds up, travels

@@ -10,6 +10,8 @@ usage: FILM=<film> python3 engine/scripts/ledger.py                       compar
        FILM=<film> python3 engine/scripts/ledger.py --add [--set sound=bed]  keep it, once delivered (step 5);
                                                                           --set corrects what film.json does not say
        python3 engine/scripts/ledger.py --list                            every film kept
+       python3 engine/scripts/ledger.py --words [--but <id>]               the films before in words, as JSON (the story
+                                                                          test's packet reads it)
        python3 engine/scripts/ledger.py --refresh                         read this machine's films again from their
                                                                           folders (their stories, the colours on
                                                                           screen), keeping their dates
@@ -40,6 +42,12 @@ def told(entries, but=None):
     if bare:
         print(f"  kept with no words (before the ledger kept stories): {', '.join(bare)}; ledger -- --refresh reads them again where their folders are")
 
+
+if "--words" in argv:
+    but = argv[argv.index("--but") + 1] if "--but" in argv else None
+    print(json.dumps([{"name": e["name"], "date": e["date"], **({"example": True} if e.get("example") else {}), "words": ls}
+                      for e, ls in ledger.stories(but=but)], ensure_ascii=False, indent=1))
+    raise SystemExit
 
 if "--refresh" in argv:
     for e, how in ledger.refresh():

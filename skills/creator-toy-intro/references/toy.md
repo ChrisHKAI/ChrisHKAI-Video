@@ -92,7 +92,13 @@ an `eye.png` painted over the eye pieces if the eyes are painted. Name the
 bones `hips`, `spine`, `head`, `brow.R/L`, `upper_arm.R/L`, `forearm.R/L`,
 `hand.R/L`, `thigh.R/L`, `foot.R/L` and the rig contract follows by itself
 (`--map` for others). Materials become finishes: `skin`, `lens` and `pad` →
-glass, `eye`, `frame` and `teeth` → gloss, the rest vinyl.
+glass, `eye`, `frame` and `teeth` → gloss, the rest vinyl. A lens is
+clear: the eyes behind it are lit and seen from the front and the side, its
+face catches a glint (at most a third of the light, so side-on it does not
+turn into a mirror of the stage), and it casts no shadow on the eyes. The
+look-dev and the film render on the same light paths (`engine/lib/look.py`
+`paths`), so eyes seen in the look-dev are seen in the film
+(`tests/lens.test.py`).
 
 ```bash
 FILM=<film> python3 <skill>/engine/scripts/import-sculpt.py <sculpt folder> --manifest <name>.json

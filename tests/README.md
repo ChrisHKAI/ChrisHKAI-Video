@@ -11,6 +11,19 @@ spaces, complete engine/resource copies, repeat installation, preservation of
 existing skills and broken links, dry-run behavior, and repo-local discovery.
 These checks do not constitute a complete Codex-directed film test.
 
+The ledger of delivered films (offline; a temporary home, never
+`~/.chrishkai-video`):
+
+```sh
+python3 tests/ledger.test.py
+```
+
+Checks that what two films each made for themselves is not counted the same
+by its name, that near colours count as one and greys as none, that old
+entries' own names read as own, that every film kept says its story in words
+(and a film kept before words takes the skill's), and that the story test
+can read those words.
+
 The pipeline is checked against a reference film: a folder laid out like a
 film workspace (`build/`, `assets/`) whose outputs are known to be right.
 
@@ -93,4 +106,14 @@ lying on another part), in Blender on balls built for the purpose:
 
 ```bash
 python3 tests/toy-parts.test.py
+```
+
+Whether the eyes behind a toy's lenses are lit and seen
+(`engine/lib/toyblend.py`), in Blender, on the light paths the look-dev and
+the film share: an eye behind a sculpted lens and behind a part-built
+`glass` lens, from the front and from the side, against the same eye with no
+lens:
+
+```bash
+python3 tests/lens.test.py
 ```

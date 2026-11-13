@@ -74,8 +74,11 @@ def mine():
 
 def read():
     """The films delivered so far: the skill's own, then this machine's, which win on the same id."""
-    kept = mine()
+    kept, own = mine(), {e.get("id"): e for e in base()}
     ids = {e.get("id") for e in kept}
+    # a skill's own film this machine kept before the ledger kept words takes its words from the skill's copy
+    kept = [{**e, **{k: own[e.get("id")][k] for k in ("story", "seen") if k in own[e.get("id")] and not e.get(k)}}
+            if e.get("id") in own else e for e in kept]
     # the skill's own are marked: the user has not seen them, so a page names them as examples, not by creator
     return [{**e, "example": True} for e in base() if e.get("id") not in ids] + kept
 

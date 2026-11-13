@@ -314,7 +314,8 @@ film and names the three biggest problems with their times
   blocks the render (a heavy face on 懂 and 結, deep and seen from above, in
   the colour of the print behind it, read 「再看𢤦彼此」).
 - Not the last film again: each film differs from every one delivered before in at least four of six
-  (opening, structure, signature move, colours, sound, ending: `ledger`).
+  (opening, structure, signature move, colours, sound, ending: `ledger`), and its story is not one of
+  theirs told again: the ledger keeps each film in words, and the story test and the review read them.
 - The light goes to the toy, not the world. The rim falls on the toy alone and
   follows the camera; the stage stays dark (`references/render.md`, "The light").
 - A number rises from the spot on the page where it is shown.

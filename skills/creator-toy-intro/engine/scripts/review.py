@@ -145,6 +145,17 @@ narrative = ("\n## Intended story (compare against the actual frames)\n\n```json
              + json.dumps(direction, ensure_ascii=False, indent=2) + "\n```\n"
              if direction else "")
 
+# the films made before, in words (engine/lib/ledger.py): a reviewer cannot say "a repeat of another film" blind
+import ledger  # noqa: E402
+try:
+    _before = ledger.stories(but=F.get("id"))
+except (OSError, ValueError):
+    _before = None
+earlier = ("\n## The films made before (in words)\n\nIs this film one of them again, told the same way for a different creator? Compare what is\n"
+           "seen, not names; if it is, name the film and the piece in your three.\n\n"
+           + "\n\n".join(f"### {e['name']} ({e['date']})\n\n" + "\n".join(f"- {line}" for line in ls) for e, ls in _before) + "\n"
+           if _before else "\n## The films made before\n\n" + ("None kept in words yet." if _before is not None else "The ledger could not be read.") + "\n")
+
 brief = f"""# Review: {prof.get('name', F.get('id', 'the film'))}'s intro film
 
 You review a short film on your own, with fresh eyes. Read this file and the
@@ -164,7 +175,7 @@ The words on screen are in {F.get('language', 'zh-Hans')}.
 
 ## The film's parts
 
-""" + "\n".join(f"- {p}" for p in parts) + narrative + f"""
+""" + "\n".join(f"- {p}" for p in parts) + narrative + earlier + f"""
 
 ## The sound cues (time in s, then what)
 

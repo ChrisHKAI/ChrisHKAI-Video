@@ -166,10 +166,13 @@ the caption.
 
 Once the user takes the film, keep it in the ledger:
 `FILM=<film> node <skill>/engine/run.mjs ledger -- --add`. It records the
-film's opening, structure, signature move, colours, sound and ending. The
-next film is compared with them (references/storyboard.md). Where
-film.json does not say what the film did, set it: `-- --add --set
-sound=score`.
+film's opening, structure, signature move, colours, sound and ending, and
+the film in words: its story (story.direction's pitch, heart and image) and
+what its opening, beats and ending show. The next film is compared with
+them (references/storyboard.md), and its story test and review read the
+words. Where film.json does not say what the film did, set it: `-- --add
+--set sound=score`. Films kept before the ledger kept words are read again
+from their folders with `-- --refresh` (their dates stay).
 
 Then keep what this film taught for the next one, so it is never asked or
 learned twice:

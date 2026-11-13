@@ -168,13 +168,21 @@ ledger.json`), in six things:
 - the opening;
 - the structure (its pieces and beats in order);
 - the toy's signature move;
-- the colours;
+- the colours on screen (the lettering's, the papers' it is printed on and
+  the confetti's; two reds count as one red, whites, blacks and greys as
+  none);
 - the sound;
 - the ending.
 
 It should differ from each earlier film in at least four of the six. A
 film built from the template's defaults comes out as isnail again (it
-differs from isnail in one of the six). When it is too close, change what
+differs from isnail in one of the six). What two films each made for
+themselves (a beat of their own, an ending of their own, a score written
+for them) is neither the same nor different by its name: the ledger lists
+it as "each film's own" and prints every earlier film in words (its story,
+what its opening, beats and ending show). Read them: a different creator
+told the same way is the film again, whatever the names. The story test and
+the review get the same words and are asked the same question. When it is too close, change what
 suits the creator: a beat built from their material, their own colours,
 another sound, another prop, or the other side for an opening that stands the
 page up (the opening still has to hand over to the first point).
