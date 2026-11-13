@@ -87,13 +87,7 @@ else:
     scene.cycles.adaptive_threshold = 0.015
     scene.cycles.use_denoising = True
     scene.cycles.denoiser = "OPENIMAGEDENOISE"
-    scene.cycles.max_bounces = 5
-    scene.cycles.glossy_bounces = 2
-    scene.cycles.transmission_bounces = 2
-    scene.cycles.transparent_max_bounces = 8
-    scene.cycles.caustics_reflective = False
-    scene.cycles.caustics_refractive = False
-    scene.cycles.blur_glossy = 0.5
+    lighting.paths(scene)  # the bounces and caustics, the look-dev's too (engine/lib/look.py)
     # (keeping the scene between frames, use_persistent_data, was timed: 3.8 s a frame either way on an M3 Max)
 scene.render.resolution_x, scene.render.resolution_y = FILM_JSON["format"].get("size", [1920, 1080])  # 16:9 or 9:16
 scene.render.resolution_percentage = SCALE

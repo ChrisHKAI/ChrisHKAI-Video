@@ -339,19 +339,48 @@ def paint(nt, p, colors, base, layers):
     nt.links.new(col, p.inputs["Base Color"])
 
 
+def clear(nt, p, rough=0.03, ior=1.5, most=0.3):
+    """Principled node p as a clear lens over what is behind it: see-through, with a glossy face by Fresnel on its
+    outside, and no shadow of its own. Light goes straight through it, so the eyes behind are lit and seen from near
+    and from far. (A lens that refracts keeps the lights' own rays out once caustics are off, as the film renders:
+    behind a sculpted toy's lenses the eyes went dark in the film, while its look-dev showed them.)
+    It reflects `most` of what Fresnel says, like a coated lens, and nothing from its inside: seen from the side on
+    a dark stage, a lens that mirrors the stage is sunglasses again.
+    It is all on p's own inputs, so whatever links p to the output still works: a film's own copy of the scene too."""
+    p.inputs["Base Color"].default_value = (1, 1, 1, 1)
+    p.inputs["Metallic"].default_value = 1.0
+    p.inputs["Roughness"].default_value = rough
+    p.inputs["Coat Weight"].default_value = 0.0
+    p.inputs["Transmission Weight"].default_value = 0.0
+    fr = nt.nodes.new("ShaderNodeFresnel")
+    fr.inputs["IOR"].default_value = ior
+    lp = nt.nodes.new("ShaderNodeLightPath")
+    geo = nt.nodes.new("ShaderNodeNewGeometry")
+    # how much of the face shows: `most` of Fresnel to the eye; nothing to a shadow ray, nothing from inside the lens
+    hide = nt.nodes.new("ShaderNodeMath")
+    hide.operation = "MAXIMUM"
+    nt.links.new(lp.outputs["Is Shadow Ray"], hide.inputs[0])
+    nt.links.new(geo.outputs["Backfacing"], hide.inputs[1])
+    show = nt.nodes.new("ShaderNodeMath")  # most × (1 − hide)
+    show.operation = "MULTIPLY_ADD"
+    show.inputs[1].default_value = -most
+    show.inputs[2].default_value = most
+    nt.links.new(hide.outputs[0], show.inputs[0])
+    alpha = nt.nodes.new("ShaderNodeMath")
+    alpha.operation = "MULTIPLY"
+    nt.links.new(fr.outputs["Fac"], alpha.inputs[0])
+    nt.links.new(show.outputs[0], alpha.inputs[1])
+    nt.links.new(alpha.outputs[0], p.inputs["Alpha"])
+
+
 def vertex_paint(nt, p, finish="vinyl"):
     """A sculpted part's own colours and roughness, per vertex, in its finish:
-    vinyl, skin (light under the surface), gloss (eyes, frames), glass (lenses)."""
+    vinyl, skin (light under the surface), gloss (eyes, frames), glass (lenses: clear())."""
+    if finish == "glass":
+        return clear(nt, p)
     a = nt.nodes.new("ShaderNodeAttribute")
     a.attribute_name = "paint"
     nt.links.new(a.outputs["Color"], p.inputs["Base Color"])
-    if finish == "glass":
-        p.inputs["Base Color"].default_value = (1, 1, 1, 1)
-        nt.links.remove(p.inputs["Base Color"].links[0])
-        p.inputs["Transmission Weight"].default_value = 1.0
-        p.inputs["Roughness"].default_value = 0.0
-        p.inputs["IOR"].default_value = 1.04
-        return
     if finish == "gloss":
         p.inputs["Roughness"].default_value = 0.08
         p.inputs["Coat Weight"].default_value = 1.0

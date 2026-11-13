@@ -56,6 +56,7 @@ scene.render.engine = "CYCLES"
 device.use(bpy, scene)
 scene.cycles.samples = int(arg("--samples", 64))
 scene.cycles.use_denoising = True
+lighting.paths(scene)  # the film's bounces and caustics: what shows through a lens here shows in the film
 scene.render.resolution_x = 960
 scene.render.resolution_y = 540
 LOOK = lighting.Look(FILM_JSON, arg, FILM)

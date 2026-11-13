@@ -53,6 +53,20 @@ class Look:
         self.halo = None if self.classic or not film else colors.halo_for(film)
 
 
+def paths(scene):
+    """Cycles' light paths, the film's and the look-dev's alike. A material shows what its bounces let through, so the
+    toy the user signs off is rendered on the film's own: on Blender's defaults the look-dev showed the eyes behind
+    a lens that the film, with two transmission bounces and no caustics, rendered dark."""
+    c = scene.cycles
+    c.max_bounces = 5
+    c.glossy_bounces = 2
+    c.transmission_bounces = 2
+    c.transparent_max_bounces = 8
+    c.caustics_reflective = False
+    c.caustics_refractive = False
+    c.blur_glossy = 0.5
+
+
 def view(scene, look):
     try:
         scene.view_settings.view_transform = look.view
