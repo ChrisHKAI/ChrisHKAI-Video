@@ -145,13 +145,15 @@ def film_colours(film):
         return r
     text_rows = sorted((row(h, b, n) for (h, b), n in text.items()), key=lambda r: r["contrast"])
     # lettering on the stage beside the toy, in the toy's own colour (a gold line by a lemon): the two read as one.
-    # An edged letter meets what is beside it with its edge, so the edge is what must stand apart
+    # The face is what is read. An edge in another colour sets a face of the toy's colour apart from it; a face of
+    # another colour stands apart by itself, whatever its edge (yellow words with a black edge by a black toy)
     lab = lambda h: oklab(np.array([rgb(h)]))[0]  # noqa: E731
+    apart = lambda a, b: float(np.linalg.norm(lab(a) - lab(b))) >= TWIN  # noqa: E731
     main = [r for r in toy_rows if r["share"] >= 0.25]
     for r in text_rows:
         if r["on"] == STAGE.upper():
-            meets = edges.get((r["hex"], r["on"])) or r["hex"]
-            near = [m for m in main if float(np.linalg.norm(lab(meets) - lab(m["hex"]))) < TWIN]
+            edge = edges.get((r["hex"], r["on"]))
+            near = [m for m in main if not apart(r["hex"], m["hex"]) and not (edge and apart(edge, m["hex"]))]
             if near:
                 r["twin"] = near[0]["hex"].upper()
     # lettering in front of, or beside, what glows in its own beat in the same colour (cyan words by a cyan-lit
