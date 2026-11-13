@@ -21,7 +21,19 @@
    "#FFFFFF"
   ],
   "sound": "song",
-  "ending": "snail"
+  "ending": "snail",
+  "story": {
+   "pitch": "What his posts did, in their own numbers: the article 304万 read, then the nine months of 《自媒体很苦》 that came to 46K粉 and 变现7W"
+  },
+  "seen": {
+   "opening": "his X page floats as glass slabs; his picture peels off like a sticker and puffs into his mascot, which pushes its 3D glasses",
+   "beats": [
+    "he stomps the pinned post; its cover stands up as a wall, and 304万 阅读 lifts out of the post and counts up",
+    "the cover of 《自媒体很苦》 stands up as a wall; its boxes push out (9个月, 46K粉, 变现7W) and he climbs them, then becomes the drawing of himself on that cover"
+   ],
+   "ending": "his 公众号 mark grows a snail under it (the mark is its shell); he rides it while torn-paper labels slap down: 公众号变现 | 找蜗牛",
+   "sound": "a synthesized song"
+  }
  },
  {
   "id": "kingao",
@@ -30,8 +42,8 @@
   "opening": "page-stand",
   "structure": [
    "page-stand",
-   "ambassador",
-   "chat",
+   "own:ambassador",
+   "own:chat",
    "count",
    "endCard"
   ],
@@ -45,19 +57,33 @@
    "#FFFFFF"
   ],
   "sound": "song",
-  "ending": "Grok bot balls"
+  "ending": "own:grok-bots",
+  "story": {
+   "pitch": "A newcomer who thought of it first: an official SpaceXAI ambassador, the first to chat with Grok bot on 微信, 10,000 followers in one month and 18 days"
+  },
+  "seen": {
+   "opening": "his X page fills the frame flat like a screen, turns and parts into standing slabs; his cat's photo bulges and the calico puffs out of it",
+   "beats": [
+    "a gold medal drops round the cat's neck; labels slap up: SpaceXAI 官方认证大使, and the stamp 中国区",
+    "a phone with his real first chat with Grok bot on 微信; the bot hops out of the screen as a toy; his article rises and 155万 浏览 counts up",
+    "the cat hops up a rising bar chart while the days and the followers run to 10000 粉丝; a 破万! stamp and confetti"
+   ],
+   "ending": "three Grok bots (orange, black, purple) drop in round the cat; 想学 Grok bot | 找 Kin 进群; it beckons like a lucky cat",
+   "sound": "a synthesized song"
+  }
  },
  {
   "id": "cgnot996",
   "name": "铁柱AGI",
   "date": "2026-10-28",
-  "opening": "O",
+  "opening": "page-stand-left",
   "structure": [
-   "O",
-   "W",
-   "story 12.3–20.383",
-   "G",
-   "story 24.383–30"
+   "page-stand-left",
+   "calendar",
+   "act3",
+   "own:ambassador",
+   "phrase",
+   "endCard"
   ],
   "signature": "glasses",
   "colours": [
@@ -69,6 +95,20 @@
    "#FFFFFF"
   ],
   "sound": "bed",
-  "ending": "Grok Bot 白波波"
+  "ending": "own:grok-bot",
+  "story": {
+   "pitch": "From a wild fan to the official one: 10,000 followers by 10月24日, his Grok App at 1,500 stars, and 野生大使 turned 官方认证"
+  },
+  "seen": {
+   "opening": "his X page fills the frame flat like a screen, turns and parts into standing slabs; his picture bulges and he puffs out of it",
+   "beats": [
+    "a desk calendar flips from 7月10日 to 10月24日 while the count climbs to 10,000; a red 万粉 stamp slams on",
+    "the cover of his Grok App post stands up as a wall; he points at 380, which turns into gold digits counting to 1,500 stars",
+    "野生大使 on his head; the invitation flies in as an envelope, a red 官方认证 seal slaps on and 野生 bursts off",
+    "马斯克得不到的男人 rises a letter at a time; he kicks the red 不 out"
+   ],
+   "ending": "he lands on a white Grok Bot ball and rolls it; the lines slap down and he points at you",
+   "sound": "the effects over a quiet layer of long chords"
+  }
  }
 ]
