@@ -100,7 +100,7 @@ st.sprite(toy(film, "startle"), -1.2, 0.4, y=0.33)    # the toy on it
 st.screen(mark("!", 110), *st.at((-1.2, 1.45, 0.4)))  # over its head: at() says where a point of the world lands
 st.screen(paper("铁柱AGI", 64), 300, 160, rot=-3, shadow=110)   # a label on the frame (frame pixels, 1600 × 900)
 (film / "research/frames").mkdir(exist_ok=True)
-st.render().save(film / "research/frames/a-4.jpg", quality=92)
+st.save(film / "research/frames/a-4.jpg")       # STAGEKIT_SILENT=1: its wordless twin in silent/
 ```
 
 `toy(film, pose)` takes a pose as `run.mjs poses` rendered it (`"startle"`,
@@ -147,8 +147,27 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
   say "landing". The blind reading says which were not.
 - **With its words blurred off, it still says its part.** `story-test.mjs`
   makes that picture of every frame (`research/frames/silent/`): look at
-  them yourself first. A frame that is a blank board and a small figure
-  once its words are gone is told by its caption, and is drawn again.
+  them yourself first. Run the frames' script once more with
+  `STAGEKIT_SILENT=1` (frames saved with `st.save(path)`): the kit blurs
+  every word it lettered wherever it stands, on a block's top, white on a
+  light bar, where text recognition reads nothing and a reader still does.
+  A frame that is a blank board and a small figure once its words are gone
+  is told by its caption, and is drawn again.
+- **What is remembered is a move that is the meaning.** Two retold films,
+  read blind: what each reader kept was the one frame where the toy's act
+  says it with no word (three blocks falling as "the sky fell", a kick that
+  knocks the 不 off his own line). The person the story turns on, met only
+  as a heart on an avatar, was read as a fan; a joke that is a word blurred
+  off was a blank square kicked. Who the story turns on is drawn as a person
+  in their place, and the act is chosen so the picture carries it.
+- **The background does not tell the ending.** Their page in the first frame
+  shows them before the story: a bio that already says "official ambassador"
+  was read first and gave the turn away.
+- **A feeling reads one way.** Confetti beside a startled, clenched face is
+  good news or bad; the pose and the mark say the same thing.
+- **What comes back was met before.** A companion first seen in frame 1 and
+  gone in frame 4 is nobody; two numbers of the same kind on one frame (1,500
+  star, 380+ star) fight, and the reader keeps neither.
 - **Few words, and theirs.** Every word on screen is listed in the frame's
   `words`. Their own lettering on their own covers is scenery; a caption
   that explains the picture is the picture failing.

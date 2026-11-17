@@ -11,7 +11,7 @@ and changed, before anything is built.
     st.sprite(toy(film, "startle"), -1.2, 0.4, y=0.3)                               # the toy, in a pose, on it
     st.screen(mark("!", 110), *st.at((-1.2, 1.5, 0.4)))                             # what it feels, over its head
     st.screen(paper("铁柱AGI", 64), 300, 160, rot=-3, shadow=110)                    # a label on the frame
-    st.render().save(film / "research/frames/A-4.jpg", quality=92)
+    st.save(film / "research/frames/A-4.jpg")
 
 The world is in toy heights (a toy is 1 tall): x to the right, y up, z away from the camera. `cam` is where the
 camera stands, `pitch` how far it looks down (degrees), `fov` its angle. Things are drawn far to near. A frame
@@ -26,13 +26,19 @@ has the film's shape: Stage() is 1600 × 900, a 9:16 film's is Stage(w=900, h=16
 - text, paper (a torn label), board (a sign, a bubble; marks={"不": "#D8382D"} paints one character), stamp,
   arrow_sign, mark ("!", "?", "…", "sweat", "heart": the toy's face does not move, so what it feels is drawn).
 
+Run the frames' script a second time with STAGEKIT_SILENT=1: every word this kit lettered is blurred where it
+stands (on a block's top, at a slant, on a sign) and Stage.save writes research/frames/silent/A-4.drawn.jpg, the
+picture the reading without words starts from. Lettering drawn outside the kit is found by text recognition only.
+
 The toy's poses are rendered once from the film's own toy (`run.mjs poses`, seconds each: engine/lib/poses.json
 names them, film.json "poses" adds a film's own); before the toy is built, toy() gives its picture's disc.
 """
 import json
 import math
+import os
 import random
 import sys
+import unicodedata
 from functools import lru_cache
 from pathlib import Path
 
@@ -48,6 +54,36 @@ _FALLBACK = {  # a heavy face with Chinese, then a plain one, wherever this comp
     "plain": [("/System/Library/Fonts/Hiragino Sans GB.ttc", 0), ("C:/Windows/Fonts/msyh.ttc", 0), ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 0)],
 }
 FACES = {}  # a film's own: FACES["words"] = (path, index), from film.json "type" (faces(film) sets them)
+# STAGEKIT_SILENT=1: the same frames with every word this kit letters blurred past reading, where it stands, at its
+# slant, in its colour (a label stays a label, a sign a sign), and Stage.save puts them in silent/. Marks (！ ？) stay.
+SILENT = os.environ.get("STAGEKIT_SILENT") == "1"
+
+
+def _wordy(s):
+    return any(unicodedata.category(ch)[0] in "LN" for ch in s)
+
+
+def hush(im, size):
+    """Lettering (a picture of it) blurred past reading, the same size: a soft smudge of its own ink where it stood,
+    fading at its edges (blurred in its ink's colour, never towards the black of the empty around it)."""
+    r = max(3.0, 0.3 * size)
+    pad = int(2 * r)
+    a = np.asarray(im.convert("RGBA"), dtype=np.float32) / 255.0
+    big = np.zeros((a.shape[0] + 2 * pad, a.shape[1] + 2 * pad, 4), np.float32)
+    big[pad:-pad, pad:-pad] = a
+    big[..., :3] *= big[..., 3:4]  # premultiplied: the empty around the strokes adds no colour
+
+    def blur(ch):
+        return np.asarray(Image.fromarray((ch * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(r)), np.float32) / 255.0
+    out = np.stack([blur(big[..., k]) for k in range(4)], -1)[pad:-pad, pad:-pad]
+    al = out[..., 3:4]
+    rgb = np.where(al > 1e-3, out[..., :3] / np.maximum(al, 1e-3), 0)
+    h, w = al.shape[:2]
+    edge = max(2, int(0.6 * r))  # fade to nothing at the picture's own edges: a patch, never a box
+    fy = np.clip(np.minimum(np.arange(h), h - 1 - np.arange(h)) / edge, 0, 1)[:, None]
+    fx = np.clip(np.minimum(np.arange(w), w - 1 - np.arange(w)) / edge, 0, 1)[None, :]
+    al = np.clip(al[..., 0] * 1.5, 0, 1) * fy * fx
+    return Image.fromarray((np.dstack([np.clip(rgb, 0, 1), al]) * 255).astype(np.uint8))
 
 
 def faces(film):
@@ -116,7 +152,8 @@ def text(s, size, fill="#111111", face="bold", stroke=0, stroke_fill="#ffffff", 
         else:
             d.text((x, y), ln, font=f, fill=rgb(fill), stroke_width=stroke, stroke_fill=rgb(stroke_fill))
     box = im.getbbox()
-    return im.crop(box) if box else im
+    im = im.crop(box) if box else im
+    return hush(im, size) if SILENT and _wordy(s) else im
 
 
 def paper(s, size, paper_="#F3EAD7", ink="#141414", face="bold", pad=0.32, seed=1, tear=0.07):
@@ -160,6 +197,8 @@ def board(s, size, fill="#FFFFFF", ink="#141414", face="bold", pad=0.3, radius=0
                 d.text((x, 4 + i * lh), ch, font=f, fill=rgb(marks.get(ch, ink)))
                 x += f.getlength(ch)
         t = full.crop(full.getbbox())
+        if SILENT and _wordy(s):
+            t = hush(t, size)
     px, py = int(size * pad * 1.2), int(size * pad)
     w, h = t.width + 2 * px, t.height + 2 * py
     im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -408,6 +447,16 @@ class Stage:
         self.overlays.append(draw)
 
     # ── the frame ──
+    def save(self, path, quality=92):
+        """The frame → path; with STAGEKIT_SILENT=1, its wordless twin → path's folder/silent/<name>.drawn.jpg, which
+        engine/scripts/silent.py starts from (it then blurs what the kit did not letter: their covers, screenshots)."""
+        path = Path(path)
+        if SILENT:
+            path = path.parent / "silent" / (path.stem + ".drawn.jpg")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.render().convert("RGB").save(path, quality=quality)
+        return path
+
     def render(self):
         w, h = self.w, self.h
         # the horizon: where the floor meets the wall

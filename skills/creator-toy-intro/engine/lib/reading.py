@@ -133,6 +133,32 @@ def boxes(r, paths):
     return out
 
 
+def boxes_closer(r, path, n=3, zoom=2, over=0.06):
+    """boxes() of one picture, and of its n × n tiles at zoom times the size, overlapping by `over`: the small
+    lettering a viewer reads off a still (a slide's lines, a post's text, a corner's date) that a reading of the
+    whole picture passes over. [(text, confidence or None, box as shares of the picture)]."""
+    import tempfile
+    path = str(path)
+    found = list(boxes(r, [path]).get(path, []))
+    with Image.open(path) as im:
+        im = im.convert("RGB")
+    W, H = im.size
+    with tempfile.TemporaryDirectory(prefix="closer-") as tmp:
+        tiles = {}
+        for i in range(n):
+            for j in range(n):
+                x0, y0 = max(0.0, i / n - over), max(0.0, j / n - over)
+                x1, y1 = min(1.0, (i + 1) / n + over), min(1.0, (j + 1) / n + over)
+                t = im.crop((round(x0 * W), round(y0 * H), round(x1 * W), round(y1 * H)))
+                q = str(Path(tmp) / f"{i}-{j}.png")
+                t.resize((t.width * zoom, t.height * zoom), Image.LANCZOS).save(q)
+                tiles[q] = (x0, y0, x1 - x0, y1 - y0)
+        for q, rows in boxes(r, list(tiles)).items():
+            ox, oy, sx, sy = tiles[q]
+            found += [(t, c, (ox + b[0] * sx, oy + b[1] * sy, ox + b[2] * sx, oy + b[3] * sy)) for t, c, b in rows]
+    return found
+
+
 def _sure(row, W, H):
     """Is tesseract's word lettering a viewer would read: sure of itself, big enough, more than a stray stroke?"""
     text, conf, (x0, y0, x1, y1) = row

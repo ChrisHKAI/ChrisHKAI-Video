@@ -27,6 +27,11 @@ except ImportError:
 sys.path.insert(0, str(SKILL / "engine/lib"))
 import stagekit as K  # noqa: E402
 
+def st_at(x, y, z):
+    """Where a point lands on the frame of the wordless test's stage."""
+    return K.Stage(cam=(0, 1.1, -5.0), pitch=5).at((x, y, z))
+
+
 BOOK = json.loads((SKILL / "engine/lib/poses.json").read_text())
 
 
@@ -196,6 +201,46 @@ class Silent(unittest.TestCase):
         self.assertEqual(left, [], "and nothing of it can be read after")
         with Image.open(dst) as im:
             self.assertEqual(im.size, (1600, 900))
+
+    def test_a_frame_drawn_again_without_its_words_hides_them_where_text_recognition_cannot_see(self):
+        # a retold film read without its words: "Claude" lying on a block's top and "Flow" white on a light
+        # bar were passed over by text recognition and read by the reader. The kit letters them, so it can hide them.
+        tmp = tempfile.TemporaryDirectory(prefix="silent-")
+        self.addCleanup(tmp.cleanup)
+        self.addCleanup(setattr, K, "SILENT", K.SILENT)
+
+        def frame(path):
+            st = K.Stage(cam=(0, 1.1, -5.0), pitch=5)
+            bar = Image.new("RGBA", (900, 220), (110, 150, 235, 255))
+            w = K.text("Flow", 200, "#FFFFFF")
+            bar.alpha_composite(w, ((900 - w.width) // 2, (220 - w.height) // 2))
+            st.card(bar, 0.9, 0.7, 1.5, height=0.6)
+            st.box(-1.3, 0, 0.3, 1.6, 0.5, 0.9, "#F2C04A", tex={"top": K.board("Claude", 90, fill="#2B5BD7", ink="#FFFFFF")})
+            st.screen(K.mark("!", 110), 260, 200)
+            return st.save(path)
+
+        src = Path(tmp.name) / "a-1.jpg"
+        K.SILENT = False
+        self.assertEqual(frame(src), src)
+        K.SILENT = True
+        twin = frame(src)
+        self.assertEqual(twin, src.parent / "silent/a-1.drawn.jpg")
+        self.assertEqual(self.silent.twin(src), twin, "silent.py starts from it")
+        with Image.open(src) as a, Image.open(twin) as b:
+            a, b = a.convert("L"), b.convert("L")
+            mark = (200, 130, 320, 270)
+            self.assertLess(max(abs(x - y) for x, y in zip(a.crop(mark).getdata(), b.crop(mark).getdata())), 12, "the ！ stays")
+            # the white strokes of "Flow" on its bar: there before, a soft patch after
+            bx, by = (round(v) for v in st_at(0.9, 0.7 + 0.3, 1.5))
+            near = (bx - 120, by - 40, bx + 120, by + 40)
+            self.assertGreater(a.crop(near).getextrema()[1] - a.crop(near).getextrema()[0], 90)
+            self.assertLess(b.crop(near).getextrema()[1] - b.crop(near).getextrema()[0], a.crop(near).getextrema()[1] - a.crop(near).getextrema()[0] - 40)
+        r = self.reading.reader()
+        if r:
+            words = lambda path: [t for t, _, _ in self.reading.boxes_closer(r, path) if self.reading.wordy(t)]  # noqa: E731
+            took, left = self.silent.silence(r, src, Path(tmp.name) / "silent/a-1.jpg")
+            self.assertEqual(left, [], "nothing can be read after")
+            self.assertFalse(any("Flow" in t or "Claude" in t for t in words(Path(tmp.name) / "silent/a-1.jpg")))
 
 
 class Page(unittest.TestCase):
