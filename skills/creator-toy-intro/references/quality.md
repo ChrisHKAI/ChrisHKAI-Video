@@ -12,6 +12,29 @@ Two tools hold each film to it:
 - `run.mjs sample` renders the riskiest stretch at the final quality before
   the hours of the whole.
 
+## What the best of them does in its telling
+
+The rules below were measured from three films. Of all the films made since,
+the user keeps one as the best by a clear margin (蜗牛King's),
+and not for its story's depth: its story is two posts and their numbers. It:
+- says one thing: both posts prove the one line its end card says
+  (公众号变现 找蜗牛);
+- plays inside his own covers: they stand up and become the stage, and the
+  toy walks into them, climbs them. Take every word off and it is still a film;
+- turns four things into other things, each with a meaning: his picture into
+  the toy, a cover into a stage, the toy into the drawing of himself on that
+  cover, his 公众号 mark into a snail's shell;
+- shows his name in the first five seconds, and ends on a thing that is his
+  name and his trade at once.
+
+The films that fell short did the opposite, with every check passed: a fact
+a device, each on its own empty floor; the meaning in captions (by the pace
+check's own reading times, 25 to 34 s of reading in films of 28 to 34 s); a
+toy that only cheered; the frame half empty (measured roughly as the share of
+a frame with nothing in it: 37% through the middle of 蜗牛's film, 51–62% in
+the others). `references/story-directions.md` is how a story is written so
+that it does not come out that way; this page holds the film to the result.
+
 ## What the approved films do
 
 Each rule says how it is checked. Where only the eye can check it, compare

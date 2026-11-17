@@ -160,6 +160,17 @@ label or the prop. Fix each one before the page goes to the user
 (`references/clearance.md`); the eye forgives a hand a few mm in, never the
 body.
 
+The story's frames are the brief (`references/frames.md`). Build the image
+to remember first (the frame marked `key`), render its preview, and hold it
+beside its frame before anything else is built: as full, the toy as big,
+their material as large. A film may frame things better than its paper did;
+it may not shrink them. A held beat before the turn (the music stops, the
+toy waits) is the story breathing: the pace check lists it as quiet, and it
+stays when the story put it there; say so in a line on the page.
+
+Before the user sees the page, the blind viewing: `run.mjs review` writes
+`build/review-blind.md` first (`references/review.md`).
+
 Not the last film again: `FILM=<film> node <skill>/engine/run.mjs ledger`
 compares this film with every film delivered before: the skill's own
 (isnail, Kin, 铁柱: `engine/lib/ledger-base.json`, so even a first film on a

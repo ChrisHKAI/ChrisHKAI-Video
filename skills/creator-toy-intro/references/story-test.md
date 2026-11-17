@@ -36,6 +36,36 @@ Show the actual work when the point is what the creator makes; show an accuratel
 labelled number when the point is a documented result. A visual metaphor must
 not imply an unsupported event, endorsement, skill, income or causal claim.
 
+## Read it blind first
+
+A film is watched by people who were told nothing. The agent that wrote the
+story cannot say whether its frames plant the line: it already knows the
+line. So when the chosen direction has frames, `story-test.mjs` first writes
+`research/story-blind.md`: the frames in order, what moves in each, the
+words on screen, and six questions (who is this, in a sentence to a friend;
+what would you come to them for; the one frame you remember; where you
+smiled or felt something; where you were lost; what is left with the words
+taken off). It holds nothing of the line, the pitch or the person.
+
+Give it to a reader who has not seen the story: a fresh subagent told to
+read that file and the pictures it names and nothing else, or a person. Save
+the answer as `research/story-blind.json` (`retell`, `offer`, `remember`,
+`felt`, `lost`, `wordless`) and run `story-test.mjs` again: the brief then
+sets what the reader said beside the line the story means to plant
+(`retold`). Where no such reader can be had, say so (`"blind": "not read: no
+reader"`); never answer for them. The frames are cheap to change: when the
+reader says something else, change the frames or the line, and read again
+(two rounds at most).
+
+A story told as a scene is asked three more things in the review below:
+- **retold**: is the reader's sentence the same person and the same reason
+  to come as the line? If not, what did the frames plant instead?
+- **scene**: what the toy wants, what is in the way, how it turns, and the
+  frame that shows each. A film with nothing in the way is good news read out.
+- **shown**: with every word removed, what is left? Each frame whose meaning
+  lives only in its words, and how its picture could carry it; and whether
+  more than one number counts up.
+
 ## Review the selected story cheaply
 
 1. Run `node <skill>/engine/scripts/story-test.mjs <film>`. It writes

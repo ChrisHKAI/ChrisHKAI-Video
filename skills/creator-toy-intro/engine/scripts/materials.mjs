@@ -77,6 +77,12 @@ const sceneWords = {
   "zh-Hans": { retold: "看完的人会怎么跟朋友说", frames: "纸上分镜", framesNote: "每一格都是片子里会出现的一个画面：用他自己的素材和公仔的姿势拼的，不是成片", parts: { intro: "亮相", wants: "他想要", stuck: "卡住", turn: "翻过来", after: "之后", ending: "结尾" }, key: "最想让人记住的画面", words: "屏幕上的字", intro: "头五秒", introWords: "他自己的话", does: "只有他会做的动作", carries: "随身带着", with: "搭档", scene: "这场戏", where: "在哪里演", wants: "他想要", stuck: "卡在哪", turn: "怎么翻过来", tone: "片子的脾气", noRetold: "还没写看完的人会怎么说（一句「就是那个……的人」）", noScene: "还没写成一场戏：现在是几件事各讲一遍", noFrames: "还没有分镜：故事还只在字里" },
   en: { retold: "What a viewer tells a friend", frames: "The storyboard on paper", framesNote: "Each frame is a picture the film will show, composed from their own material and the toy's poses; it is not the film", parts: { intro: "Entrance", wants: "What they want", stuck: "Stuck", turn: "The turn", after: "After", ending: "Ending" }, key: "The image to remember", words: "Words on screen", intro: "The first five seconds", introWords: "Their own words", does: "What only they would do", carries: "Carries", with: "With", scene: "The scene", where: "Where it plays", wants: "What they want", stuck: "What is in the way", turn: "How it turns", tone: "How it feels", noRetold: "No line a viewer would retell yet", noScene: "Not a scene yet: as it stands it tells its points one after another", noFrames: "No frames yet: the story is still only words" },
 }[lang];
+// who they are on the page (facts "character": references/research.md), above the directions
+const charWords = {
+  "zh-Hant": { title: "呢個人", words: "佢自己嘅說話", called: "人哋點叫佢", view: "佢成日講嘅睇法", carries: "隨身嘅嘢", with: "拍檔", world: "佢嘅世界", tone: "點樣講嘢", note: "頭五秒同舞台都由呢度嚟：唔啱就話我知" },
+  "zh-Hans": { title: "这个人", words: "他自己的话", called: "别人怎么叫他", view: "他常说的看法", carries: "随身的东西", with: "搭档", world: "他的世界", tone: "怎么说话", note: "头五秒和舞台都从这里来：不对就告诉我" },
+  en: { title: "Who they are on the page", words: "Their own words", called: "What others call them", view: "Their view", carries: "Carries", with: "With", world: "Their world", tone: "How they write", note: "The first five seconds and the stage come from this: say if it is not them" },
+}[lang];
 const theirScript = film.language && film.language !== lang;
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // a picture: a file, or a folder of their work (research.md writes "assets/work/"), shown by its first picture
@@ -257,6 +263,18 @@ const sceneBlock = (d) => {
 };
 // a direction written before the scene (no retold, no scene, no frames) keeps its card as it was
 const told = (d) => !!(d.retold || d.scene || d.intro || (d.frames ?? []).length);
+const characterSection = () => {
+  const c = facts.character;
+  if (!c) return "";
+  const list = (v) => (Array.isArray(v) ? v.map((x) => (typeof x === "string" ? x : x?.text)).filter(Boolean).map((x) => `「${x}」`).join("、") : typeof v === "string" ? v : v?.text ? `「${v.text}」` : "");
+  const plain = (v) => (Array.isArray(v) ? v.filter(Boolean).join("、") : v ?? "");
+  const w = c.world ?? {};
+  const sw = (w.colours ?? []).filter((x) => /^#[0-9a-f]{6}$/i.test(x)).map((x) => `<span class="sw" style="background:${x}" title="${x}"></span>`).join("");
+  const world = [w.where, plain(w.things)].filter(Boolean).join(" · ");
+  const rows = [[charWords.words, esc(list(c.words))], [charWords.called, esc(plain(c.called))], [charWords.view, esc(list(c.view))], [charWords.carries, esc(plain(c.carries))], [charWords.with, esc(plain(c.with))],
+    [charWords.world, `${esc(world)}${sw ? ` <span class="sws">${sw}</span>` : ""}`], [charWords.tone, esc(c.tone ?? "")]].filter(([, v]) => v.trim());
+  return rows.length ? `<div class="scene who" id="who"><span class="hl">${charWords.title}</span>${rows.map(([k, v]) => `<div class="row"><span class="lb">${k}</span><span class="val">${v}</span></div>`).join("")}<div class="note">${charWords.note}</div></div>` : "";
+};
 const directionCard = (d, i) => {
   const key = dirKey(i);
   const evidence = (d.beats ?? []).flatMap((b) => {
@@ -290,6 +308,7 @@ const whoShown = directions.length > 1 || !!directions[0]?.viewer;
 const directionSection = directions.length ? `<section id="compare"><h2>${D.title}</h2><div class="note">${directions.length > 1 ? D.note : D.one}</div>
   ${compareTable()}
   ${(narrative.audience && !whoShown) || narrative.goal ? `<div class="brief">${narrative.audience && !whoShown ? `<div class="row"><span class="lb">${D.audience}</span><span class="val">${esc(narrative.audience)}</span></div>` : ""}${narrative.goal ? `<div class="row"><span class="lb">${D.goal}</span><span class="val">${esc(narrative.goal)}</span></div>` : ""}${narrative.inferred ? `<span class="tag">${D.assumed}</span>` : ""}</div>` : ""}
+  ${characterSection()}
   ${directions.map(directionCard).join("")}${momentSection()}${facts.selectionNotes?.length ? `<p><b>${editorialWords.tradeoffs}</b></p><ul>${facts.selectionNotes.slice(0, 3).map((n) => `<li>${esc(n)}</li>`).join("")}</ul>` : ""}</section>` : "";
 const openings = CAT.filter((a) => a.group === "opening");
 const opening = (a, k) => `<div class="op"><div class="ok">${k + 1}</div><div><b>${esc(openingLabel(a.id))}</b><div class="why">${esc(word(a.fits))}</div>${strip(a.id) ? `<div class="pv" style="background-image:url('${strip(a.id)}')"></div>` : ""}</div></div>`;
@@ -333,6 +352,7 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .scene { background: #F3F6FB; border: 1px solid #D9E2F0; border-radius: 12px; padding: 12px 18px; margin: 10px 0; display: grid; gap: 6px; }
 .scene .hl { color: #2B4C8C; font-size: 14px; font-weight: 700; } .scene .row { display: grid; grid-template-columns: 9em 1fr; gap: 14px; align-items: baseline; }
 .scene .lb { color: #8A8780; font-size: 14px; font-weight: 600; } .scene .val { font-size: 16px; line-height: 1.55; }
+.scene.who { background: #F6F3EC; border-color: #E3DDCE; } .scene.who .hl { color: #5E5440; } .sws { display: inline-flex; gap: 4px; vertical-align: middle; margin-left: 6px; } .sw { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,.15); display: inline-block; }
 @media (max-width: 640px) { .frame figcaption, .scene .row { grid-template-columns: 1fr; gap: 2px; } }
 .why { color: #666; font-size: 14px; margin-top: 4px; line-height: 1.5; }
 .ops { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; } .op { display: flex; gap: 10px; } .op b { font-size: 16px; } .op .pv { height: 62px; background-size: 100% auto; }
@@ -638,6 +658,7 @@ writeFileSync(join(dir, "research/materials.html"), page(navOf(false) + decide +
 }
 for (const [i, d] of directions.entries()) if (d.opening?.id === "own" && (!d.opening.pitch || !img(d.opening.sketch))) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": its own opening needs a pitch and a sketch on the page ("opening": { "id": "own", "beat", "pitch", "sketch", "why" })`);
 for (const [i, d] of directions.entries()) if (!d.image) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": no image people remember yet ("image": references/story-directions.md)`);
+if (directions.length && !facts.character) console.log(`! no "character" yet: their own words, what they carry, their world and how they write (references/research.md): the first five seconds and the stage are made of it`);
 // a direction told as a scene, with its frames (references/story-directions.md, "A scene, not a list"; frames.md)
 const NUMBER_IDEAS = new Set(["count", "calendar", "act2"]);
 for (const [i, d] of directions.entries()) {

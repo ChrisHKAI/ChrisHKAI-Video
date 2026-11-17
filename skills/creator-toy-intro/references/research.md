@@ -237,6 +237,36 @@ as evidence of how far it went. Look in:
   and still be the heart of the film. Write each one found in `moments`;
 - Grok's milestones and ideas, and the user's own words.
 
+And who they are on the page, which the film's first five seconds and its
+stage are made of (`character`, each part with where it was read; a part the
+sources do not show is left out):
+- **their own words**: what they call themselves, a line they keep saying
+  (the bio, the banner, a pinned post: 「马斯克得不到的男人」, 「养成系小白」),
+  word for word;
+- **what others call them**, and how replies talk to them;
+- **their view**: the one thing they keep telling people (「真正难的是把模型
+  放进客户现有的工作里」): what they are followed for;
+- **what they carry, who is with them**: a thing or a companion that keeps
+  coming back in their own pictures (a microphone in every photo of a talk,
+  a black ball on every cover, a cat);
+- **their world**: where their pictures happen, its colours (hex, sampled
+  from the banner and covers) and the things in it (stepping stones, a
+  whiteboard and its blocks, torn paper);
+- **how they write**: joking, plain, quiet, loud, with the line that shows it.
+
+```json
+"character": {
+  "words": [{ "text": "马斯克得不到的男人", "source": "https://x.com/<handle>", "read": "2026-10-26" }],
+  "called": ["铁柱哥"],
+  "view": { "text": "…", "source": "https://x.com/<handle>/status/…" },
+  "carries": ["…"], "with": ["the black ball of every cover"],
+  "world": { "where": "the stepping stones of his guide's cover", "colours": ["#F3EADB", "#F0842C", "#17181B"], "things": ["orange stepping stones", "small cubes in the air"], "from": ["assets/p-guide.jpg"] },
+  "tone": "jokes about himself; exclamation marks"
+}
+```
+The story page shows it above the directions, so the user can say "that is
+not how he talks" before a story is built on it.
+
 Each story point (an illustrator's, to show the thinking: every creator's
 material asks for its own idea, never this one):
 
@@ -286,12 +316,15 @@ Design them before opening the catalog:
    of the material it uses.
 2. Each idea of the film's own gets a `sketch`: a picture made from the
    creator's own material, so it stands on the story page as something seen,
-   beside the preview strips of the skill's animations. Most ideas need one
-   composed for them (a fold climbing to the moon, a staircase, a turning
-   boat), and that is the usual case: `engine/lib/sketchkit.py` gives the
-   pieces (their picture as a card, the toy's disc, a caption, a label, an
-   arrow or an arc). For many pictures at once, `engine/scripts/sketch.py`
-   lays them out in a grid, a wall, a fan, a stack or a row.
+   beside the preview strips of the skill's animations. Compose it as the
+   frame the film will show, with the toy in its pose and their material as
+   the set (`engine/lib/stagekit.py`, `references/frames.md`): the chosen
+   direction's frames are these same pictures in order. A label with an
+   arrow to the creator's picture (`engine/lib/sketchkit.py`) explains an
+   idea without showing it, and a film built from an explanation comes out as
+   labels on an empty floor; keep it for what is truly a diagram. For many
+   pictures at once, `engine/scripts/sketch.py` lays them out in a grid, a
+   wall, a fan, a stack or a row.
 3. Only then the skill's animations (`beats/catalog.json`, with `opts` as its
    `takes` says, below): one is an idea when it is the best way to show
    this point, or a part the film's own animation starts from. Hold each to
@@ -334,7 +367,10 @@ and its line alone), and one with no handle shows the name alone, never twice.
 
 ## Choose a complete direction
 
-Read `references/story-directions.md` before matching facts to animations.
+Read `references/story-directions.md` before matching facts to animations: a
+direction is one scene that plants one line (`retold`), opens on who this is
+(`intro`), has something in the way (`scene`), and is drawn as frames before
+it is chosen (`frames`, `references/frames.md`).
 Compare candidates for audience relevance, specificity, evidence, visual clarity
 and complementary contribution; record selection reasons and important exclusions.
 Synthesize the evidence, search important gaps once, then propose up to three

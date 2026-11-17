@@ -4,12 +4,14 @@
 - [Material selection](#material-selection)
 - [Opening variants](#opening-variants)
 - [Targeted gap search](#2-search-the-important-gaps-once)
-- [Complete directions](#3-propose-distinct-complete-directions)
+- [Told as a scene](#3-tell-it-as-a-scene): the line a viewer retells, the first five seconds, a scene not a list, their world, how it feels
 - [Start from the person](#start-from-the-person)
+- [The ending](#the-ending), and [seen before it is built](#see-it-before-it-is-built) (the frames: references/frames.md)
 - [Selection and handoff](#4-one-choice-then-the-existing-film-pipeline)
 
 Read after collecting the first round of sources, before building the story
-page. Make the creator memorable through one supported idea. Keep the existing
+page. Make the creator memorable through one supported idea, told as one small
+scene and seen on paper before anything is built. Keep the existing
 toy-picture question and one story-selection round; do not add a questionnaire.
 
 ## 1. Make an evidence map
@@ -107,21 +109,120 @@ Stop after one targeted round. If the central link is still unsupported, narrow
 the claim or choose a work/method/positioning story. Do not require a growth or
 adversity story when the sources support a clear portfolio introduction.
 
-## 3. Propose distinct complete directions
+## 3. Tell it as a scene
 
-Aim for three directions, not three rewrites of one opener. Use fewer when the
-sources only support fewer; say why. Each starts from its person (below).
-Examples of lenses, not mandatory templates:
+A direction is not a list of points. A film that shows one fact after
+another, each with its own device on its own empty stage (a count, a
+calendar, a card held up to read), is a report card: every fact is true and
+nobody remembers the person. Eight films taught this. The one the user keeps
+as the best (蜗牛King's) says one thing, plays inside the creator's own covers,
+and turns four things into other things; the ones that fell short told their
+points in order, in words, with a toy that only cheered.
 
-- **Person:** a moment that is theirs (a question someone asked them, why they
-  started, something made for one person) → what they made of it → what it
-  says about them, and what the viewer gets from it.
-- **Method:** an audience problem → a representative work showing the approach
-  → what the viewer can learn.
-- **Journey:** a dated starting point → a documented choice or changed approach
-  → an outcome. Use causal language only when the source supports it.
-- **Positioning:** a specific audience need → evidence of relevant work → the
-  creator's useful promise.
+Aim for three directions, not three rewrites of one opener; use fewer when
+the sources only support fewer, and say why. Each is told as below.
+
+### The line a viewer retells
+
+Write first, before any beat: the sentence a viewer would say to a friend
+afterwards, 「就是那个……的人」 (`retold`, in the film's language). The whole
+film exists to plant this one sentence.
+- It names them and one thing. A contrast inside it is what makes it stay:
+  「就是那个自称『马斯克得不到的男人』、最后被官方认证的铁柱」, 「就是那个给几百人
+  讲 AI 落地、回到家却被一页 PPT 难住的讲师」. A list does not stay:
+  「一万粉、1,500 star、官方大使」 is three facts and no person.
+- It is theirs alone: say it of another creator and it is false.
+- What does not serve it is left out, however big its number.
+
+Write ten of them first, fast, and different in kind (what they call
+themselves, what they keep doing, what went wrong once, what people come to
+them for, what only they would say), from the sources. Strike the ones
+another creator could wear. Develop three. Ten lines cost a minute; three
+directions built on the first line that came are three versions of one idea.
+The lenses that help find them, never as templates: a moment that is theirs,
+a method shown on one piece of work, a dated start and what it became, a
+need they answer.
+
+### The first five seconds
+
+Who this is, before what they did (`intro`). A film that opens on an
+anecdote before the viewer knows whose it is has nobody to care about.
+- **The name**, readable. The page shows it; an opening that turns the page
+  away before it can be read says it again, as the toy arrives.
+- **Their own words** (`intro.words`): one line of theirs that says who they
+  are, quoted. The bio usually holds it (「马斯克得不到的男人」, 「养成系小白」).
+  The toy can carry it, plant it, wear it.
+- **What only they would do** (`intro.does`): the first thing the toy does.
+  Not a wave: every toy waves. Tapping a microphone before a hall, holding
+  up its own boast, pushing its 3D glasses.
+- **What it carries, who comes with it** (`intro.carries`, `intro.with`):
+  a thing or a companion from their own pictures (the black ball that is in
+  every one of 铁柱's covers, a saxophone on a banner, a work badge). It
+  comes back at the end.
+
+### A scene, not a list
+
+`scene: { where, wants, stuck, turn }`, in the user's language:
+- **where**: one place, and it is theirs ("Their world" below). The film
+  stays in it; things in it become other things.
+- **wants**: what the toy is trying to do in this film. Something seen (lay
+  a road, hold a hall, answer a question), not "succeed".
+- **stuck**: what is in the way. A film where nothing is in the way is good
+  news read out: a win, a count, confetti, and again. It need not be
+  dramatic: a gap, a wait, a request, a thing too heavy. It must be true:
+  never invent a struggle. Their own words usually hold it (「自媒体很苦」,
+  「天塌了啊！！！」, 「野生」), and what cannot be sourced is left out.
+- **turn**: how it flips. This is the image people remember (`image`): the
+  biggest, fullest picture in the film, with a held beat before it (the
+  music stops, the toy waits), and the first thing built in step 4.
+
+The points (`facts.story`) are what the scene is made of, not its outline:
+one or two stretches of it (`beats`), each a part of the same scene. A point
+that needs a stage of its own and a device of its own is a second film.
+
+Numbers are evidence and scale. One counts up at most, the one the story
+turns on; the others stand as they are written, on the thing they belong to
+(a cover, a stamp beside the name). `materials.mjs` says when a direction has
+two counts.
+
+Things become other things, and each change means something: the picture
+becomes the toy, a cover becomes the stage, a photo becomes the hall it was
+taken in, the screen shrinks to a laptop, a logo becomes a snail's shell. A
+film has two or three of these; they are what only this kind of film can do.
+
+A toy that only cheers has no story. Its face does not move, so its body
+says it: startled, ducking, slumped, leaning into a weight, kicking a thing
+away, looking up (`engine/lib/poses.json`: the same poses on the frames and,
+as moves, in the film), with a mark over its head where that helps (！ ？ …,
+a drop of sweat). Give it someone to play against where the material has
+one: a companion, a thing that answers back, whoever asked the question
+(present without a face when they are private: a letter, a bubble, a small
+pair of shoes).
+
+### Their world
+
+Where the film plays is theirs (`scene.where`): the colours, the things and
+the place come from their banner, covers, site and photos, written down in
+the research (`facts.character.world`). 铁柱's covers hold a whole world
+(cream, orange stepping stones, a black ball) his first film hardly used;
+a banner in yellow and black with a saxophone is a stage waiting.
+The skill's dark stage is for material that carries its own colour (covers
+that fill the frame). On plain material (posts, screenshots, photos) the
+same dark floor with white boxes on it is where films come out alike.
+
+Material becomes places, things and characters, not cards to read: a photo
+grows into its hall, a chat's bot hops out of the screen, a post's three
+tool names fall as three blocks. A card held still to be read is the
+exception, for when the exact words are the proof and nothing else can be.
+Strip every word from the film in your head: what is left to see is the
+story it tells.
+
+### How it feels
+
+`tone`: how the film feels, from how they write, with the line that shows
+it. Someone who jokes about themselves gets a film that is funny; someone
+quiet gets one that slows down. Every film on the same celebrating beat is
+one film. The score, the pace and the toy's moves follow it.
 
 ### Start from the person
 
@@ -136,7 +237,17 @@ Record it as `heart: { who, why, forWhom, moment, story }`, in the user's
 language; `story` is the point that holds the moment, so the film shows it.
 Every part comes from the sources, like any fact: a part they do not show is
 left out, never guessed, and a motive the creator never stated is a gap, not a
-heart. When the research found no personal moment (`moments: []`), the heart
+heart.
+
+What moves people is someone who cares about something and what it cost
+them: that is not a synonym for family. Three films in a row put a family
+member's sentence in a speech bubble at the centre; that is a formula as much
+as a count is. And the moment has to show what a viewer comes to them for:
+the father who answers his child's question step by step is the man whose
+tutorials go step by step. A moving moment that sits apart from what they
+offer makes a film in two halves, an anecdote and then a résumé on a card.
+
+When the research found no personal moment (`moments: []`), the heart
 is the creator and what they keep doing, said plainly (`who`, `why`), and the
 page says none was found; never invent one. A heart need not be family: the
 readers they answer every night, the tool they built because they needed it.
@@ -164,9 +275,11 @@ than keep three that can't. `materials.mjs` names every direction without
 
 Each direction must say what the viewer should remember, the question or promise
 that holds attention, how each fact advances it, and how the ending pays it off.
-Use two or three factual beats for a typical 30-second film (one to four allowed).
-Use `connection` to explain contrast, cause when evidenced, demonstration or
-progression. Reorderable achievements with no relationship need a clearer lens.
+Use one or two factual beats for a typical 30-second film: stretches of the one
+scene (the engine allows up to four; a third and a fourth are usually a list
+starting). Use `connection` to explain contrast, cause when evidenced,
+demonstration or progression. Achievements that could be shown in any order
+are not a scene yet: find what the toy wants and what is in its way.
 
 Hold each direction to the swap test as a story: who it is about, why they did
 it, for whom. Give it to another creator and it should break. A fact alone (a
@@ -233,6 +346,15 @@ shape references facts already present in `story`; replace all sample content:
     "when": "When a parent can no longer read their phone",
     "next": "Her account's pinned post, which lists the tools"
   },
+  "retold": "就是那个为了爸爸看得见，把手机按钮一个个做大的人",
+  "intro": { "words": "「字太小，就做大」(her bio)", "does": "Taps a button on the page, and it grows under her finger", "carries": "her father's old phone" },
+  "scene": {
+    "where": "Inside her father's phone: its home screen as a room, the buttons its furniture",
+    "wants": "To make every button big enough for him to read",
+    "stuck": "The buttons are too many and too small; each one she pushes grows, and three more shrink",
+    "turn": "She stops pushing buttons and pushes the wall: the whole screen grows at once, and the toy can stand on the letters"
+  },
+  "tone": "warm and plain: she writes in short sentences, never an exclamation mark",
   "pitch": "Every button she made bigger was made bigger for him first",
   "image": "Her father's phone screen growing, button by button, until the toy can stand on the letters",
   "opening": { "id": "page-stand", "why": "the page lies flat, then stands up; the toy comes out in front of it, ready to show his phone" },
@@ -248,9 +370,43 @@ shape references facts already present in `story`; replace all sample content:
   "payoff": "The viewer knows whom she builds for, and that they can use it too.",
   "why": "Her own post tells the evening with her father; the app's page shows the same big buttons.",
   "gaps": [],
-  "cta": { "slogan": ["Bigger letters", "for everyone"], "prop": "her father's old phone, its buttons grown big", "sketch": "research/sketches/ending.jpg" }
+  "cta": { "slogan": ["Bigger letters", "for everyone"], "prop": "her father's old phone, its buttons grown big", "sketch": "research/sketches/ending.jpg" },
+  "frames": [
+    { "picture": "research/frames/a-1.jpg", "part": "intro", "at": [0, 5], "seen": "Her page stands up; the toy steps out holding the old phone and taps a button, which grows", "words": ["<her name>", "字太小，就做大"] },
+    { "picture": "research/frames/a-2.jpg", "part": "wants", "at": [5, 12], "seen": "Inside the phone: she pushes button after button bigger", "words": [] },
+    { "picture": "research/frames/a-3.jpg", "part": "stuck", "at": [12, 15], "seen": "Three shrink for every one she grows; she stops, arms hanging", "words": [] },
+    { "picture": "research/frames/a-4.jpg", "part": "turn", "at": [15, 21], "seen": "She pushes the wall instead: the whole screen grows, and she stands on a letter", "words": [], "key": true },
+    { "picture": "research/frames/a-5.jpg", "part": "ending", "at": [21, 26], "seen": "The phone, its buttons grown big, is what she stands on", "words": ["Bigger letters", "for everyone"] }
+  ]
 }
 ```
+
+`frames` is the storyboard on paper ("See it before it is built", below):
+`part` is `intro`, `wants`, `stuck`, `turn`, `after` or `ending`; `at` its
+seconds; `seen` what moves in it (the user's language); `words` every word on
+screen in it (the film's language); `key` the image to remember.
+
+### The ending
+
+The last picture puts the name and what to come for into one thing (`cta`):
+蜗牛King's 公众号 mark is the shell of a snail. To find it, write down what
+the name pictures (铁柱: an iron post; a name that means miles: a runway) and what the
+offer pictures (a guide: a signpost; 落地: a landing), and look for the
+thing that is both: 铁柱 is the iron post that carries the signpost;
+「AI 落地 找他」 lands a paper plane. A prop that belongs to neither
+(a ball, a star, a stack of cubes) is a pedestal. What the toy carried in
+its first five seconds comes back here.
+
+### See it before it is built
+
+A direction's image has to be seen as a picture before the user chooses and
+before production starts: `frames`, five to seven of them, each composed as
+the film will frame it, with the film's own toy in the pose it takes and
+their own material as the set (`references/frames.md`). A label with an
+arrow to the creator's picture explains an idea; it does not show the frame,
+and what was never composed as a frame comes out of production as three
+labels on an empty floor. The story page shows the line and the frames
+first; the blind reading (`references/story-test.md`) is taken from them.
 
 An opening of the film's own (`"opening": { "id": "own", ... }`) has no preview
 strip of the skill's: its `"sketch"` is made from their material, like a point's
@@ -293,6 +449,9 @@ At step 4 implement the selected hook only; alternatives are not extra scenes.
 ## 4. One choice, then the existing film pipeline
 
 `materials.mjs` shows the direction cards as the story choice, lettered A/B/C.
+A card opens on the line a viewer retells and its frames, big, each with the
+part it plays, what is seen and the words on screen; then the first five
+seconds and the scene in rows.
 Above them a table sets the directions side by side, one row each for the
 pitch, the heart, who it is for, their need, what they find, when they come
 back, where to look next, the order of the beats, the image, the length and
