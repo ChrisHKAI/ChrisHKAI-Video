@@ -280,8 +280,8 @@ if (FILM / "build/anim.json").exists():
     if not rows:
         checks.append((True, W["c_ledger_none"]))
     elif not alike:
-        e, sm, _ = rows[0]
-        checks.append((True, W["c_ledger_ok"].format(n=len(rows), x=name(e), what=said(sm)) if sm else W["c_ledger_ok0"].format(n=len(rows))))
+        nearest, sm, _ = rows[0]  # not `e`: that is the page's html.escape, and the page is written after this
+        checks.append((True, W["c_ledger_ok"].format(n=len(rows), x=name(nearest), what=said(sm)) if sm else W["c_ledger_ok0"].format(n=len(rows))))
     theirs = [d for d in ledger.DIMS if any(d in own for _, _, own in rows)]
     if theirs:
         checks.append((True, W["c_ledger_own"].format(own=said(theirs))))
@@ -357,6 +357,29 @@ def jpeg(path, width):
     return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
+# the story on paper, above the previews (references/frames.md): the line the film means to plant and the frames
+# the chosen story was seen as, so each preview is held beside the frame it was built from. A film may frame
+# things better than its paper did; it may not shrink them
+PAPER_W = {
+    "zh-Hant": {"title": "紙上分鏡", "note": "揀故事嗰陣睇過嘅畫面。下面每格預覽都應該同佢一樣滿、公仔一樣大：可以拍得更好，唔可以縮水", "retold": "睇完嘅人會點同朋友講", "key": "最想令人記住"},
+    "zh-Hans": {"title": "纸上分镜", "note": "选故事时看过的画面。下面每一帧预览都应该和它一样满、公仔一样大：可以拍得更好，不可以缩水", "retold": "看完的人会怎么跟朋友说", "key": "最想让人记住"},
+    "en": {"title": "The story on paper", "note": "The frames the story was chosen from. Each preview below should be as full, the toy as big: a film may frame things better than its paper did, never smaller", "retold": "What a viewer tells a friend", "key": "the image to remember"},
+}[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
+
+
+def paper_section():
+    d = FILM_JSON.get("story", {}).get("direction") or {}
+    shown = [f for f in d.get("frames") or [] if isinstance(f, dict) and f.get("picture") and (FILM / f["picture"]).is_file()]
+    if not shown and not d.get("retold"):
+        return ""
+    line = f'<p class="retold"><small>{PAPER_W["retold"]}</small>{e(d["retold"])}</p>' if d.get("retold") else ""
+    figs = "".join(
+        f'<figure class="{"key" if f.get("key") else ""}"><img src="{jpeg(FILM / f["picture"], 560)}" alt=""><figcaption><p>{n + 1}'
+        + (f' · <b>{PAPER_W["key"]}</b>' if f.get("key") else "") + f' · {e(str(f.get("seen") or ""))}</p></figcaption></figure>'
+        for n, f in enumerate(shown))
+    return f'<section><h2>{PAPER_W["title"]}<small>{PAPER_W["note"]}</small></h2>{line}' + (f'<div class="paper">{figs}</div>' if figs else "") + "</section>"
+
+
 # big enough for one frame a row (the preview's own size, at most 1280 px); the
 # platforms' controls are the agent's check (safezone), not drawn over the frames
 TW = 1280
@@ -424,6 +447,9 @@ td:first-child {{ white-space:nowrap; }} code {{ font:12px ui-monospace,Menlo,mo
 .frames {{ display:grid; grid-template-columns:repeat(var(--cols,{COLS}),minmax(0,1fr)); gap:18px; }}
 @media (max-width:640px) {{ .frames {{ grid-template-columns:1fr; }} }}
 {".frames[data-cols='1'] figure { width:100%; max-width:480px; margin:0 auto; }" if orient == "portrait" else ""}
+.paper {{ display:grid; grid-template-columns:repeat(auto-fill,minmax({260 if orient == "landscape" else 150}px,1fr)); gap:12px; }} .paper img {{ width:100%; display:block; }}
+.paper figure.key {{ outline:2px solid var(--red); }} .paper figcaption {{ padding:8px 10px 10px; }} .paper figcaption p {{ font-size:13px; }} .paper b {{ color:var(--red); }}
+.retold {{ background:var(--panel); border-left:3px solid var(--red); border-radius:6px; padding:10px 14px; margin:0 0 12px; font-size:18px; font-weight:700; }} .retold small {{ display:block; color:var(--muted); font-size:12px; font-weight:400; }}
 .cols {{ display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); margin:0 0 12px; }}
 .cols button {{ background:var(--panel); color:var(--ink); border:1px solid var(--rule); border-radius:6px; min-width:34px; padding:3px 10px; font:inherit; cursor:pointer; }}
 .cols button.on {{ background:#3d7bff; border-color:#3d7bff; }}
@@ -439,6 +465,7 @@ ol.ask li {{ margin:6px 0; font-size:16px; }} .note {{ color:var(--muted); font-
 </style></head>
 <body><div class="wrap">
 <header>{hero}<div><h1>{e(title)}</h1><div class="specs">{"".join(f"<span>{e(s)}</span>" for s in specs)}</div></div></header>
+{paper_section()}
 <section><h2>{W["parts"]}</h2><table><tr><td><b>{W["time"]}</b></td><td><b>{W["what"]}</b></td><td><b>{W["why"]}</b></td><td><b>{W["uses"]}</b></td></tr>{rows}</table></section>
 <section><h2>{W["grid"]}<small>{W["gridnote"]}</small></h2><div class="gridbox"><div class="grid">{g}</div></div></section>
 <section><h2>{W["frames"]}<small>{W["framesnote"]}</small></h2><p class="cols">{W["cols"]}{"".join(f'<button data-c="{c}">{c}</button>' for c in range(1, 5))}</p><div class="frames">{"".join(cards)}</div></section>

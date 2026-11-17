@@ -804,3 +804,44 @@ test("a story with frames is read blind first: the blind page holds nothing of t
   // a story written before the scene is complete on its six
   assert.deepEqual(storyTestIssues(facts(), readyReport(facts())), []);
 });
+
+test("a 9:16 film's frames stand three to a row, and the page is measured once its pictures are in", (t) => {
+  const dir = workspace(t, asScene());
+  withFramePictures(dir);
+  const wide = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "en"]);
+  assert.equal(wide.status, 0, wide.stderr);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /<div class="frames" id=/);
+  const film = JSON.parse(readFileSync(join(dir, "film.json"), "utf8"));
+  film.format.size = [1080, 1920];
+  writeFileSync(join(dir, "film.json"), JSON.stringify(film));
+  const tall = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "en"]);
+  assert.equal(tall.status, 0, tall.stderr);
+  assert.match(readFileSync(join(dir, "research/materials.html"), "utf8"), /<div class="frames tall" id=/);
+  // a card's frames are most of its height: a page measured before they load is cut off below the first of them
+  assert.match(readFileSync(script("materials.mjs"), "utf8"), /addEventListener\("load", \(\) => \{ document\.title = "material-height:"/);
+});
+
+test("what a frame shows can be played: each move for when things go wrong reaches the joints of its pose", () => {
+  const dir = join(root, "skills/creator-toy-intro/example/isnail"); // the moves want a film with a toy: the skill's worked one
+  const code = `
+    const kit = await import(${JSON.stringify(join(root, "skills/creator-toy-intro/engine/lib/beatkit.js"))});
+    const out = {};
+    for (const name of ["startle", "duck", "slump", "shrug", "lookUp", "push", "kick", "holdUp"]) {
+      const o = kit.stand([0, 0, 0]), rest = JSON.parse(JSON.stringify(o));
+      kit[name](o, 1, 0, 2); // the middle of a two-second hold
+      out[name] = { armR: o.armR, armL: o.armL, legR: o.legR, legL: o.legL, head: o.head.map((x, i) => x - rest.head[i]), lean: o.pitch - rest.pitch, rest: { armR: rest.armR, armL: rest.armL } };
+    }
+    console.log(JSON.stringify(out));`;
+  const r = spawnSync(process.execPath, ["--input-type=module", "-e", code], { encoding: "utf8", env: { ...process.env, FILM: dir }, cwd: root });
+  assert.equal(r.status, 0, r.stderr);
+  const played = JSON.parse(r.stdout), book = JSON.parse(readFileSync(join(root, "skills/creator-toy-intro/engine/lib/poses.json"), "utf8")).poses;
+  const near = (a, b, by) => a.every((x, i) => Math.abs(x - b[i]) <= by);
+  for (const [name, m] of Object.entries(played)) {
+    const j = book[name].joints;
+    for (const arm of ["armR", "armL"]) assert.ok(near(m[arm], j[arm] ?? m.rest[arm], 0.11), `${name} ${arm}: the film ${JSON.stringify(m[arm])}, the frames ${JSON.stringify(j[arm])}`);
+    assert.ok(near(m.head, j.head ?? [0, 0, 0], 0.06), `${name} head: the film ${JSON.stringify(m.head)}, the frames ${JSON.stringify(j.head)}`);
+    assert.ok(Math.abs(m.lean - (j.body ?? [0, 0, 0])[0]) <= 0.03, `${name} leans ${m.lean} in the film, ${(j.body ?? [0])[0]} on the frames`);
+    // push walks on the spot in the film (its legs swing through the frames' stride); the others stand as drawn
+    if (name !== "push") for (const leg of ["legR", "legL"]) assert.ok(near(m[leg], j[leg] ?? [0, 0, 0], 0.11), `${name} ${leg}: the film ${JSON.stringify(m[leg])}, the frames ${JSON.stringify(j[leg])}`);
+  }
+});

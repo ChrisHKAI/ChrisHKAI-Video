@@ -35,8 +35,13 @@ Checks that the stage draws a frame with what is put on it (a standing
 picture, a block, the toy's cut-out, lettering, a mark), that the creator's
 picture stands in before the toy is built, that a rendered pose is taken with
 its scale, that every pose has its joints, a view and what it says, and that
-the poses for when things go wrong are moves in the film too. The poses
-themselves are rendered in Blender from a film's own toy, in seconds:
+the poses for when things go wrong are moves in the film too, that a pose
+not rendered yet is said (with the command that renders it) while the
+creator's picture stands in, that a 9:16 film's frame is 9:16, and that the
+storyboard page keeps its own helpers to the end (a name reused by one of
+its checks once took the page down for every film unlike the ones before)
+and shows the story's paper frames above the previews. The poses themselves
+are rendered in Blender from a film's own toy, in seconds:
 `FILM=<film> node skills/creator-toy-intro/engine/run.mjs poses`.
 
 The pipeline is checked against a reference film: a folder laid out like a
@@ -89,8 +94,10 @@ node --test tests/story-directions.test.mjs
 
 Also covers a story told as a scene: the line a viewer retells, the first five
 seconds, the scene and its frames on the story page (and what the page says
-when a direction lacks them), one count at most, and the blind reading (the
-blind page holds nothing of the line; the review asks three more answers).
+when a direction lacks them), one count at most, the blind reading (the
+blind page holds nothing of the line; the review asks three more answers),
+a 9:16 film's frames three to a row, and each move for when things go wrong
+against the joints of the pose its frame shows.
 
 Covers direction selection through film.json, the existing point/proof formats,
 nested number provenance, material pages in three languages, resume guidance,

@@ -14,7 +14,8 @@ and changed, before anything is built.
     st.render().save(film / "research/frames/A-4.jpg", quality=92)
 
 The world is in toy heights (a toy is 1 tall): x to the right, y up, z away from the camera. `cam` is where the
-camera stands, `pitch` how far it looks down (degrees), `fov` its angle. Things are drawn far to near.
+camera stands, `pitch` how far it looks down (degrees), `fov` its angle. Things are drawn far to near. A frame
+has the film's shape: Stage() is 1600 × 900, a 9:16 film's is Stage(w=900, h=1600).
 - Stage.card(picture, x, y, z, height=|width=, yaw, tilt, glow, dim, blur): a picture standing (a cover, a
   screen, a page); Stage.lying(picture, x, z, width): lying on the floor; Stage.quad: any four corners.
 - Stage.box(x, y, z, w, h, d, colour, yaw, tex={"front": picture}): a block, its faces lit, a picture on a face.
@@ -347,7 +348,8 @@ class Stage:
         self.quad(img, [P(-width / 2, d / 2), P(width / 2, d / 2), P(width / 2, -d / 2), P(-width / 2, -d / 2)], depth=depth if depth is not None else 1e6 - 1, dim=dim)
 
     def screen(self, img, x, y, anchor="mm", rot=0, alpha=255, shadow=0):
-        """A picture straight on the frame (a caption-free mark, an emote), in frame pixels (0–1600, 0–900)."""
+        """A picture straight on the frame (a label, a mark over the toy's head), in the frame's own pixels
+        (0–1600 across and 0–900 down, as the Stage was made)."""
         def draw(canvas):
             im = img.resize((img.width * S, img.height * S), Image.LANCZOS) if S != 1 else img
             if rot:
@@ -535,15 +537,23 @@ def mark(kind, size=120):
     return emote(kind, size)
 
 
+_UNPOSED = set()
+
+
 def toy(film, pose="stand"):
-    """The film's toy in a pose, cut out, ready for Stage.sprite(**toy(...)) … or simply Stage.sprite(*): returns
-    a Cut (a picture that knows its scale). Before `run.mjs poses` has run, the toy's picture as a disc."""
+    """The film's toy in a pose, as a cut-out for Stage.sprite: `toy(film, "startle")`, `toy(film, "kick:right")`,
+    `toy(film, "stand:back:close")` (pose, pose:view, pose:view:close, as `run.mjs poses` renders them). Before
+    the toy is built its picture stands in, as a disc on a small body; when the toy is there and this pose is not
+    rendered yet, the picture stands in too, and the command that renders it is said once."""
     film = Path(film)
     folder = film / "build/poses"
     meta = json.loads((folder / "poses.json").read_text()) if (folder / "poses.json").exists() else {}
     if pose in meta and (folder / meta[pose]["file"]).exists():
         m = meta[pose]
         return Cut(load(folder / m["file"]), m["per_unit"], m["feet"], m["centre"])
+    if meta and pose not in _UNPOSED:
+        _UNPOSED.add(pose)
+        print(f'stagekit: the toy is not rendered as "{pose}" yet, so its picture stands in: FILM={film} node <skill>/engine/run.mjs poses -- {pose}', file=sys.stderr)
     return stand_in(film)
 
 

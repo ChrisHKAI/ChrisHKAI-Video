@@ -112,7 +112,9 @@ Score each from 1 (fails) to 5 (nothing to fix):
     would do? Cover the words: what is left of the story? Where does a viewer
     smile or feel something (a time), or nowhere? How much of the frame is
     theirs (their pictures, their colours, their things), and how much is
-    empty stage?
+    empty stage? Where the brief lists the story's paper frames, hold the
+    film beside them: is its image to remember as full as on paper, the toy
+    as big, or did production shrink it?
 
 Answer in this form, in English:
 

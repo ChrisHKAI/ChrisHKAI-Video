@@ -184,6 +184,14 @@ if retold or blind_said:
         + (f"It means a viewer to say: {retold}\n\n" if retold else "It names no line a viewer would retell (story.direction.retold).\n\n") \
         + (f"A viewer told nothing, who saw only the sheets, answered:\n\n```\n{blind_said}\n```\n" if blind_said
            else "No blind viewing yet: give build/review-blind.md to a viewer who is told nothing (before this brief), and save the answer as build/review-blind.txt.\n")
+# the story as it was seen on paper before anything was built (references/frames.md): the reviewer holds the film
+# beside it. A film may frame things better than its paper did; it may not shrink them
+_paper = [f for f in (direction or {}).get("frames") or [] if isinstance(f, dict) and f.get("picture") and (B.parent / f["picture"]).is_file()]
+if _paper:
+    planted += "\n## The story on paper\n\nThe story was chosen from these frames, drawn before anything was built. Open each and hold the film's sheets\n" \
+        "beside it: is the film as full, the toy as big, their material as large? Name each one the film shrank.\n\n" \
+        + "\n".join(f"- `{(B.parent / f['picture']).resolve()}`" + (f" ({f['at'][0]:g}–{f['at'][1]:g} s)" if isinstance(f.get("at"), list) and len(f["at"]) == 2 else "")
+                     + (" · the image to remember" if f.get("key") else "") + (f": {f['seen']}" if f.get("seen") else "") for f in _paper) + "\n"
 
 brief = f"""# Review: {prof.get('name', F.get('id', 'the film'))}'s intro film
 

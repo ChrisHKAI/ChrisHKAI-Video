@@ -73,6 +73,31 @@ class Frames(unittest.TestCase):
         cut = K.toy(self.film, "kick:right")
         self.assertEqual((cut.per_unit, cut.feet, cut.centre, cut.image.size), (794.1, 994.7, 450.0, (900, 1100)))
 
+    def test_a_pose_not_rendered_yet_is_said_and_the_picture_stands_in(self):
+        import contextlib
+        import io
+        folder = self.film / "build/poses"
+        folder.mkdir(parents=True)
+        Image.new("RGBA", (900, 1100), (0, 0, 0, 0)).save(folder / "stand.png")
+        (folder / "poses.json").write_text(json.dumps({"stand": {"file": "stand.png", "per_unit": 794.1, "feet": 994.7, "centre": 450.0}}))
+        said = io.StringIO()
+        with contextlib.redirect_stderr(said):
+            cut = K.toy(self.film, "duck:left")
+            K.toy(self.film, "duck:left")
+        self.assertEqual(cut.image.size, (600, 600), "the creator's picture stands in")
+        self.assertEqual(said.getvalue().count("run.mjs poses -- duck:left"), 1, "said once, with the command that renders it")
+        # before the toy is built at all there is nothing to render yet, and nothing is said
+        (folder / "poses.json").unlink()
+        quiet = io.StringIO()
+        with contextlib.redirect_stderr(quiet):
+            K.toy(self.film, "duck:left")
+        self.assertEqual(quiet.getvalue(), "")
+
+    def test_a_vertical_films_frame_is_vertical(self):
+        st = K.Stage(w=900, h=1600, cam=(0, 1.1, -6.0), pitch=5)
+        st.sprite(K.toy(self.film, "stand"), 0, 0)
+        self.assertEqual(st.render().size, (900, 1600))
+
     def test_a_point_further_away_is_drawn_smaller_and_higher(self):
         st = K.Stage(cam=(0, 1.1, -5.0), pitch=5)
         self.assertGreater(st.px((0, 0, 0)), st.px((0, 0, 4)))
@@ -105,6 +130,45 @@ class Poses(unittest.TestCase):
         for view in BOOK["views"]:
             self.assertIn(f"`{view}`", doc, view)
         self.assertTrue(all(re.search(rf"\b{f}\b", doc) for f in BOOK["frames"]))
+
+
+class Page(unittest.TestCase):
+    def test_the_storyboard_page_keeps_its_helpers_to_the_end(self):
+        """storyboard.py is one long script: a name its checks reuse at the top level (`e, sm, _ = rows[0]`) takes
+        away the page's own helper, and the page then fails where it is written."""
+        import ast
+        tree = ast.parse((SKILL / "engine/scripts/storyboard.py").read_text())
+        bound = {}
+
+        def targets(node):
+            if isinstance(node, ast.Name):
+                yield node.id
+            elif isinstance(node, (ast.Tuple, ast.List)):
+                for x in node.elts:
+                    yield from targets(x)
+            elif isinstance(node, ast.Starred):
+                yield from targets(node.value)
+
+        def walk(body):
+            for node in body:
+                if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                    continue  # their names are their own
+                for t in (node.targets if isinstance(node, ast.Assign) else [node.target] if isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.For)) else []):
+                    for name in targets(t):
+                        bound[name] = bound.get(name, 0) + 1
+                for field in ("body", "orelse", "finalbody"):
+                    walk(getattr(node, field, []) or [])
+                for h in getattr(node, "handlers", []) or []:
+                    walk(h.body)
+        walk(tree.body)
+        for helper in ("e", "t", "jpeg", "W", "FILL"):
+            self.assertLessEqual(bound.get(helper, 0), 1, f"storyboard.py binds `{helper}` {bound.get(helper)} times at its top level")
+
+    def test_the_storyboard_page_and_the_review_show_the_storys_paper_frames(self):
+        page = (SKILL / "engine/scripts/storyboard.py").read_text()
+        self.assertIn("{paper_section()}", page)
+        self.assertLess(page.index("{paper_section()}"), page.index('<section><h2>{W["frames"]}'), "the paper frames stand above the previews")
+        self.assertIn("## The story on paper", (SKILL / "engine/scripts/review.py").read_text())
 
 
 if __name__ == "__main__":

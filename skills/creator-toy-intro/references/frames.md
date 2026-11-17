@@ -51,8 +51,8 @@ place, and the frames are drawn again when the toy arrives.
 | `slump` | head hanging: at a loss, let down |
 | `shrug` | arms out, head to one side: well, then |
 | `lookUp` | head back, looking up at something big |
-| `push` | leaning into a weight with both arms |
-| `kick` | one leg out: kicking a thing away |
+| `push` | leaning into a weight with both arms (seen from its side: the weight stands before it) |
+| `kick` | one leg out: kicking a thing away (seen from its side) |
 | `point`, `pointLeft` | an arm out at something |
 | `present` | an arm raised to what stands behind it |
 | `speak` | a hand before its mouth: a microphone, a word to the viewer |
@@ -60,7 +60,12 @@ place, and the frames are drawn again when the toy arrives.
 
 Views: `front`, `q-left` / `q-right` (a quarter turn), `h-left` / `h-right`
 (half), `left` / `right` (its side), `back`, `back-left`, `back-right`;
-`close` frames its head and shoulders. A pose of the film's own goes in
+`close` frames its head and shoulders. A view is named for the side of the
+frame the toy faces: `push:right` leans into a weight on its right,
+`kick:left` sends a thing off to the left, `point` (from `h-left`) points to
+the left and `pointLeft` to the right. Each pose has the view it reads best
+from; ask for another when the frame wants the toy facing the thing it acts
+on. A pose of the film's own goes in
 film.json, in the same shape: `"poses": { "bow-low": { "joints": { "body":
 [0.5, 0, 0], "head": [0.3, 0, 0] }, "view": "q-left" } }` (joint turns in
 radians, the joints toy.json names). The same poses are moves in the film
@@ -76,6 +81,8 @@ not enough, in a mark over its head: `mark("!")`, `"?"`, `"…"`, `"sweat"`,
 `engine/lib/stagekit.py` is a small stage: boxes, standing pictures, the toy's
 cut-outs and lettering in one perspective, drawn with Pillow. The world is in
 toy heights (a toy is 1 tall): x to the right, y up, z away from the camera.
+A frame has the film's shape: `Stage()` is 1600 × 900; a 9:16 film's is
+`Stage(w=900, h=1600)`, and the story page stands those three to a row.
 
 ```python
 import sys; sys.path.insert(0, "<skill>/engine/lib")
@@ -94,6 +101,11 @@ st.screen(paper("铁柱AGI", 64), 300, 160, rot=-3, shadow=110)   # a label on t
 (film / "research/frames").mkdir(exist_ok=True)
 st.render().save(film / "research/frames/a-4.jpg", quality=92)
 ```
+
+`toy(film, pose)` takes a pose as `run.mjs poses` rendered it (`"startle"`,
+`"kick:right"`, `"stand:back:close"`). One not rendered yet is drawn as the
+creator's picture on a small body, and the kit says the command that renders
+it: a frame with a disc where the toy should be is not finished.
 
 The pieces (each is in the module's own notes):
 - `Stage.card` a picture standing (a cover, a screen, a page; `tilt` leans

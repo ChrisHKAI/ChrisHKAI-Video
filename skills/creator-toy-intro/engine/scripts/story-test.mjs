@@ -51,7 +51,6 @@ try {
       : `\n## The films made before\n\n${films ? "None kept in words yet" : "The ledger could not be read"}: answer step 5's \"a repeat of another film\" from what you know.\n`;
     // the frames, to a reader who is told nothing else: what does the film plant? (research/story-blind.md)
     const frames = (input.direction.frames ?? []).filter((f) => f && (f.picture || f.seen));
-    const lang = facts.language ?? "the creator's language";
     if (frames.length) {
       writeFileSync(join(dir, "research/story-blind.md"), `# A first look, blind
 

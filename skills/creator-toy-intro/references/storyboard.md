@@ -164,7 +164,9 @@ The story's frames are the brief (`references/frames.md`). Build the image
 to remember first (the frame marked `key`), render its preview, and hold it
 beside its frame before anything else is built: as full, the toy as big,
 their material as large. A film may frame things better than its paper did;
-it may not shrink them. A held beat before the turn (the music stops, the
+it may not shrink them. The page shows the frames above the previews, with
+the line the film means to plant, so the user holds them side by side too;
+the review's brief lists them for the reviewer. A held beat before the turn (the music stops, the
 toy waits) is the story breathing: the pace check lists it as quiet, and it
 stays when the story put it there; say so in a line on the page.
 

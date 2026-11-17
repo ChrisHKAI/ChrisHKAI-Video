@@ -243,11 +243,13 @@ const compareTable = () => {
 // what a viewer would tell a friend, first on the card: the whole film exists to plant this one sentence
 const retoldBlock = (d) => (d.retold ? `<div class="retold"><small>${sceneWords.retold}</small>${esc(d.retold)}</div>` : `<p class="gap">${sceneWords.noRetold}</p>`);
 // the storyboard on paper: each frame big, with the part it plays, what is seen and the words on screen
+// (a 9:16 film's frames three to a row: full width, each would be taller than a screen)
+const TALL = (film.format?.size?.[1] ?? 0) > (film.format?.size?.[0] ?? 1);
 const frameTime = (f) => (Array.isArray(f.at) ? `${f.at[0]}–${f.at[1]} ${viewWords.s}` : f.at ? `${f.at}` : "");
 const framesBlock = (d, key) => {
   const fs = (d.frames ?? []).filter((f) => f && (f.picture || f.seen));
   if (!fs.length) return `<p class="gap">${sceneWords.noFrames}</p>`;
-  return `<div class="frames" id="${key}-frames"><div class="note"><b>${sceneWords.frames}</b> · ${sceneWords.framesNote}</div>${fs.map((f, n) => {
+  return `<div class="frames${TALL ? " tall" : ""}" id="${key}-frames"><div class="note"><b>${sceneWords.frames}</b> · ${sceneWords.framesNote}</div>${fs.map((f, n) => {
     const pic = img(f.picture);
     return `<figure class="frame${f.key ? " key" : ""}">${pic ? `<img src="${pic}" alt="">` : `<div class="nopic">${esc(f.picture ?? "")}</div>`}<figcaption><div class="fh"><span class="fn">${n + 1}</span><b>${esc(sceneWords.parts[f.part] ?? f.part ?? "")}</b>${frameTime(f) ? `<small>${esc(frameTime(f))}</small>` : ""}${f.key ? `<span class="fk">${sceneWords.key}</span>` : ""}</div><div class="fs">${esc(f.seen ?? "")}${(f.words ?? []).length ? `<div class="fw">${sceneWords.words}：${f.words.map(esc).join("、")}</div>` : ""}</div></figcaption></figure>`;
   }).join("")}</div>`;
@@ -345,6 +347,7 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .frame { margin: 0; } .frame img { width: 100%; display: block; border-radius: 10px; border: 1px solid #E3E1DC; }
 .frame.key img { border: 3px solid #D8382D; } .frame .nopic { background: #F2EFE8; color: #8A8780; border-radius: 10px; padding: 28px 16px; font-size: 13px; }
 .frame figcaption { display: grid; grid-template-columns: 11em 1fr; gap: 12px; margin-top: 6px; align-items: start; }
+.frames.tall { grid-template-columns: repeat(3, 1fr); align-items: start; } .frames.tall .note { grid-column: 1 / -1; } .frames.tall figcaption { grid-template-columns: 1fr; gap: 2px; }
 .frame .fh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 15px; } .frame .fh small { color: #8A8780; }
 .frame .fn { background: #1C1B19; color: #fff; border-radius: 50%; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 13px; font-weight: 700; }
 .frame .fk { background: #D8382D; color: #fff; border-radius: 6px; padding: 0 6px; font-size: 12px; font-weight: 700; }
@@ -720,8 +723,10 @@ if (!chrome) { console.log("no headless Chrome: open research/materials.html ins
 const shot = (body, h, png) => {
   const tmp = join(dir, `research/.${png}.html`);
   // Direction cards contain prose of variable length. Measure the laid-out
-  // page instead of cropping a long language variant or adding blank screens.
-  writeFileSync(tmp, page(body + '<script>document.title = "material-height:" + Math.ceil(document.documentElement.scrollHeight);</script>'));
+  // page instead of cropping a long language variant or adding blank screens:
+  // once its pictures are in (a card's frames are most of its height, and a
+  // page measured before they load is cut off below the first of them).
+  writeFileSync(tmp, page(body + '<script>addEventListener("load", () => { document.title = "material-height:" + Math.ceil(document.documentElement.scrollHeight); });</script>'));
   // sharp on a phone or a retina screen: the page drawn at twice its pixels
   const flags = ["--headless", "--hide-scrollbars", "--disable-gpu", "--allow-file-access-from-files", `--force-device-scale-factor=${SCALE}`];
   let height = h;

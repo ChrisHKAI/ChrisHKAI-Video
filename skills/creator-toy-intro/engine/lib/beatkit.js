@@ -133,6 +133,7 @@ export function duck(o, g, g0, g1) {
   o.armR = [-0.9 * k, 0, lerp(o.armR[2], -2.0, k)]; o.armL = [-0.9 * k, 0, lerp(o.armL[2], 2.0, k)];
   o.head = [o.head[0] + 0.42 * k, o.head[1], o.head[2]];
   o.pitch += 0.26 * k;
+  o.legR = [o.legR[0], 0, -0.15 * k]; o.legL = [o.legL[0], 0, 0.15 * k];
   squash(o, 0.1 * k);
   return o;
 }
