@@ -114,6 +114,79 @@ export function sit(o, g, g0, g1) {
   return o;
 }
 
+// ── when things do not go its way: a toy that only cheers has no story (references/story-directions.md, "A scene,
+// not a list"). The same poses a story's frames use (engine/lib/poses.json), eased in and out over g0–g1 like the
+// moves above, on a pose from stand(); a toy with no arms or legs plays them with its body and head.
+// thrown back, arms flung up, a small start off the floor: a surprise, good or bad
+export function startle(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.09);
+  o.armR = [0.2 * k, 0, lerp(o.armR[2], -1.9, k)]; o.armL = [0.2 * k, 0, lerp(o.armL[2], 1.9, k)];
+  o.head = [o.head[0] - 0.28 * k, o.head[1], o.head[2]];
+  o.pitch -= 0.16 * k;
+  o.legR = [o.legR[0], 0, -0.18 * k]; o.legL = [o.legL[0], 0, 0.18 * k];
+  o.pos[1] += 0.03 * Math.sin(Math.PI * seg(g, g0, g0 + 0.24));
+  return o;
+}
+// head down, arms over it, low: something is coming down
+export function duck(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.12);
+  o.armR = [-0.9 * k, 0, lerp(o.armR[2], -2.0, k)]; o.armL = [-0.9 * k, 0, lerp(o.armL[2], 2.0, k)];
+  o.head = [o.head[0] + 0.42 * k, o.head[1], o.head[2]];
+  o.pitch += 0.26 * k;
+  squash(o, 0.1 * k);
+  return o;
+}
+// head hanging, arms loose: at a loss, tired, let down
+export function slump(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.3);
+  o.armR = [0, 0, lerp(o.armR[2], -0.05, k)]; o.armL = [0, 0, lerp(o.armL[2], 0.05, k)];
+  o.head = [o.head[0] + 0.38 * k, o.head[1], o.head[2]];
+  o.pitch += 0.1 * k;
+  squash(o, 0.04 * k);
+  return o;
+}
+// arms out, head to one side: well, then
+export function shrug(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.16);
+  o.armR = [0, 0, lerp(o.armR[2], -0.95, k)]; o.armL = [0, 0, lerp(o.armL[2], 0.95, k)];
+  o.head = [o.head[0] + 0.12 * k, o.head[1], o.head[2] + 0.14 * k];
+  o.pos[1] += 0.012 * Math.sin(Math.PI * seg(g, g0, g0 + 0.3));
+  return o;
+}
+// head back, arms a little out: looking up at something big
+export function lookUp(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.25);
+  o.armR = [0, 0, lerp(o.armR[2], -0.7, k)]; o.armL = [0, 0, lerp(o.armL[2], 0.7, k)];
+  o.head = [o.head[0] - 0.5 * k, o.head[1], o.head[2]];
+  o.pitch -= 0.08 * k;
+  return o;
+}
+// leaning into a weight with both arms, its legs working: a thing that will not move by itself
+export function push(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.2), step = Math.sin((g - g0) * TAU * 1.6);
+  o.armR = [-1.45 * k, 0, lerp(o.armR[2], -0.12, k)]; o.armL = [-1.45 * k, 0, lerp(o.armL[2], 0.12, k)];
+  o.pitch += 0.3 * k;
+  o.legR = [0.55 * step * k, 0, 0]; o.legL = [-0.55 * step * k, 0, 0];
+  return o;
+}
+// one leg out and back ("R" its right, "L" its left), the arms the other way: kicking a thing away. The foot is
+// furthest at the middle of g0–g1: that is when what it kicks leaves
+export function kick(o, g, g0, g1, side = "R") {
+  const s = seg(g, g0, g1), k = Math.sin(Math.PI * s) ** 0.7, wind = -0.35 * Math.sin(Math.PI * Math.min(1, s * 3)) * (s < 1 / 3 ? 1 : 0);
+  const leg = [-1.35 * k - wind, 0, 0], other = [0.15 * k, 0, 0];
+  if (side === "R") { o.legR = leg; o.legL = other; } else { o.legL = leg; o.legR = other; }
+  o.armR = [0.9 * k * (side === "R" ? 1 : -1), 0, lerp(o.armR[2], -0.5, k)]; o.armL = [-0.7 * k * (side === "R" ? 1 : -1), 0, lerp(o.armL[2], 0.7, k)];
+  o.pitch -= 0.14 * k;
+  return o;
+}
+// both arms up beside its head: holding a sign, a prize, a thing over it
+export function holdUp(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.2);
+  o.armR = [0, 0, lerp(o.armR[2], -2.05, k)]; o.armL = [0, 0, lerp(o.armL[2], 2.05, k)];
+  o.head = [o.head[0] - 0.08 * k, o.head[1], o.head[2]];
+  return o;
+}
+
 // the toy for a pose: its transform, its parts and its contact shadow on the
 // floor under it (null: the toy is not in this beat)
 export function toyFrom(o, park) {

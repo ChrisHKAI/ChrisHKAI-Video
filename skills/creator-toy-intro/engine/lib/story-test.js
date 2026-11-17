@@ -39,9 +39,14 @@ export function storyTestIssues(facts, report) {
   if (!report) return [...issues, "no story test yet: run story-test.mjs, review the brief, and save research/story-test.json"];
   if (report.signature !== storyTestSignature(facts)) issues.push("story test is stale: the story, action, source material or ending changed; review it again (only a word changed and the review stands: story-test.mjs --resign \"what changed\")");
   if (report.verdict !== "ready") issues.push("story test is not ready: revise the story from the review before making the toy");
-  for (const key of ["takeaway", "continuation", "specificity", "actionMeaning", "material", "heart"]) {
+  // a story told as a scene (retold, scene, frames: references/story-directions.md) is asked three more things;
+  // one written before stays complete on the six it was asked
+  const d = input.direction, asScene = !!(d.retold || d.scene || (d.frames ?? []).length);
+  for (const key of ["takeaway", "continuation", "specificity", "actionMeaning", "material", "heart", ...(asScene ? ["retold", "scene", "shown"] : [])]) {
     if (!text(report[key])) issues.push(`story test needs a concrete ${key} answer`);
   }
+  // its frames were shown to a reader who was told nothing: what they said this film is about
+  if ((d.frames ?? []).length && !text(report.blind)) issues.push("story test has no blind reading: give research/story-blind.md to a reader who has not seen the story, and put their sentence in \"blind\"");
   if (!Array.isArray(report.issues) || report.issues.length) issues.push("story test has unresolved issues (use an empty list only after resolving them)");
   return issues;
 }

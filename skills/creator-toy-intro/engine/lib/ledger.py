@@ -187,6 +187,7 @@ def describe(film):
         "sound": sound,
         "ending": ending,
         "story": {k: v for k, v in {
+            "retold": _words(direction.get("retold")),
             "pitch": _words(direction.get("pitch")) or _words(direction.get("premise")),
             "who": _words(heart.get("who")), "why": _words(heart.get("why")), "moment": _words(heart.get("moment")),
             "image": _words(direction.get("image")),
@@ -291,7 +292,7 @@ def lines(e):
     """One film as a reader meets it: its story, then what its parts show. [] for a film kept with no words."""
     st, seen = e.get("story") or {}, e.get("seen") or {}
     out = []
-    for label, v in (("the story", st.get("pitch")), ("at its heart", " · ".join(x for x in (st.get("who"), st.get("why")) if x)),
+    for label, v in (("what a viewer retells", st.get("retold")), ("the story", st.get("pitch")), ("at its heart", " · ".join(x for x in (st.get("who"), st.get("why")) if x)),
                      ("the moment", st.get("moment")), ("the image it leaves", st.get("image")), ("its opening", seen.get("opening")),
                      ("its beats", "; ".join(seen.get("beats") or [])), ("its ending", seen.get("ending")), ("its score", seen.get("sound"))):
         if v:

@@ -156,6 +156,35 @@ earlier = ("\n## The films made before (in words)\n\nIs this film one of them ag
            + "\n\n".join(f"### {e['name']} ({e['date']})\n\n" + "\n".join(f"- {line}" for line in ls) for e, ls in _before) + "\n"
            if _before else "\n## The films made before\n\n" + ("None kept in words yet." if _before is not None else "The ledger could not be read.") + "\n")
 
+# a first viewing, blind (references/review.md): the sheets and six questions, nothing of what the film means
+# to say. What that viewer answers (build/review-blind.txt) comes back into the review, beside the line it meant
+(B / "review-blind.md").write_text(f"""# A first viewing, blind
+
+You have not been told what this film is meant to say: that is the point. It is a short film that introduces
+someone. Look at these sheets in order ({source}, a frame every {EVERY:g} s, each labelled with its time), and at
+nothing else:
+
+""" + "\n".join(f"- `{p_}` ({a:.1f}–{z:.1f} s)" for p_, a, z in made) + f"""
+
+Then answer, in {F.get('language', 'zh-Hans')}:
+1. In one sentence, as you would tell a friend: who is this? (「就是那个……的人」)
+2. What would you come to them for?
+3. Which one picture do you remember? Give its time.
+4. Where did you smile, or feel something? Give the time; "nowhere" is an answer.
+5. Where did your attention drift? Give the time.
+6. Cover every word on screen: which stretches still say something, and which say nothing?
+
+Save the answers as build/review-blind.txt, six lines.
+""")
+blind_said = (B / "review-blind.txt").read_text().strip() if (B / "review-blind.txt").exists() else None
+retold = (direction or {}).get("retold")
+planted = ""
+if retold or blind_said:
+    planted = "\n## The line it means to plant, and what a blind viewer said\n\n" \
+        + (f"It means a viewer to say: {retold}\n\n" if retold else "It names no line a viewer would retell (story.direction.retold).\n\n") \
+        + (f"A viewer told nothing, who saw only the sheets, answered:\n\n```\n{blind_said}\n```\n" if blind_said
+           else "No blind viewing yet: give build/review-blind.md to a viewer who is told nothing (before this brief), and save the answer as build/review-blind.txt.\n")
+
 brief = f"""# Review: {prof.get('name', F.get('id', 'the film'))}'s intro film
 
 You review a short film on your own, with fresh eyes. Read this file and the
@@ -175,7 +204,7 @@ The words on screen are in {F.get('language', 'zh-Hans')}.
 
 ## The film's parts
 
-""" + "\n".join(f"- {p}" for p in parts) + narrative + earlier + f"""
+""" + "\n".join(f"- {p}" for p in parts) + narrative + planted + earlier + f"""
 
 ## The sound cues (time in s, then what)
 
@@ -193,4 +222,5 @@ The words on screen are in {F.get('language', 'zh-Hans')}.
 """
 (B / "review.md").write_text(brief)
 print(f"review → build/review.md, {len(made)} sheet(s) in build/review/ from {source.split(' (')[0]}")
+print("first give build/review-blind.md to a viewer who is told nothing, and save the answer as build/review-blind.txt" if not blind_said else "the blind viewing's answer is in the brief")
 print("give build/review.md to a fresh reviewer (references/review.md); fix its three, render what they touch")

@@ -22,6 +22,10 @@ export function resolveDirection(facts) {
   // an ending the user picked from another direction: its payoff was written for its own
   const picked = picks.cta?.slogan, own = direction.cta?.slogan;
   if (picked && own && JSON.stringify(picked) !== JSON.stringify(own)) warnings.push(`the ending picked ("${picked.join(" ")}") is not direction "${direction.id}"'s own ("${own.join(" ")}"): check its payoff still answers the hook, rewrite it if not, and write the picked ending into the direction's cta`);
+  // told as a scene, seen before it is built (references/story-directions.md, frames.md): advice, never a stop
+  if (!direction.retold?.trim()) warnings.push(`direction "${direction.id}" has no line a viewer would retell ("retold": 「就是那个……的人」): the film has nothing to plant`);
+  if (!direction.scene?.wants?.trim() || !direction.scene?.stuck?.trim() || !direction.scene?.turn?.trim()) warnings.push(`direction "${direction.id}" is not a scene yet ("scene": where, wants, stuck, turn): as it stands it tells its points one after another`);
+  if (!(direction.frames ?? []).length) warnings.push(`direction "${direction.id}" has no frames ("frames": the storyboard on paper, references/frames.md): its image has not been seen yet`);
   if (!direction.heart?.who?.trim()) warnings.push(`direction "${direction.id}" has no person at its heart (heart: who, why, for whom, the moment): as it stands it is numbers and devices (references/story-directions.md)`);
   if (!Array.isArray(direction.beats) || direction.beats.length < 1 || direction.beats.length > 4) throw new Error(`direction "${direction.id}" needs 1–4 story beats`);
   const ids = direction.beats.map((b, i) => {

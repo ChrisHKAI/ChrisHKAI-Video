@@ -20,6 +20,15 @@ FILM=<film> node <skill>/engine/run.mjs review              # → build/review.m
 FILM=<film> node <skill>/engine/run.mjs review -- --final   # step 5: the finished film instead of the animatic
 ```
 
+First a blind viewing: `build/review-blind.md` gives a viewer the sheets and
+six questions, and nothing of what the film means to say (who is this, what
+would you come to them for, the one picture you remember, where you smiled,
+where you drifted, what is left with the words covered). Give it to a fresh
+viewer before anything else, save the answer as `build/review-blind.txt` and
+run `review` again: the answer goes into the brief, beside the line the film
+means to plant. A film is understood by people who were told nothing; the
+reviewer who reads the intended story first can no longer say whether it is.
+
 `build/review.md` is the reviewer's whole brief:
 - the creator and the platform;
 - the film's parts;
@@ -94,10 +103,21 @@ Score each from 1 (fails) to 5 (nothing to fix):
    it on screen, and is it the one they remember? Name any part they would call a template or a repeat of another film,
    and what the material could have become instead.
 
+10. **The telling.** The film means to plant one line a viewer would retell
+    (`story.direction.retold`, in the brief). Is that what a stranger would
+    say, and is it what the blind viewer said? Is it one scene (the toy
+    wants something, something is in the way, it turns), or facts shown one
+    after another, each with its own device on its own empty stage? Who is
+    this by the fifth second: the name, their own words, something only they
+    would do? Cover the words: what is left of the story? Where does a viewer
+    smile or feel something (a time), or nowhere? How much of the frame is
+    theirs (their pictures, their colours, their things), and how much is
+    empty stage?
+
 Answer in this form, in English:
 
 ```
-scores: creator 4, idea 3, pacing 2, motion 4, lettering 3, look 4, sound 4, finish 5, jury 2
+scores: creator 4, idea 3, pacing 2, motion 4, lettering 3, look 4, sound 4, finish 5, jury 2, telling 2
 drifts: 14.5 s, the wall holds and nothing new happens
 fix (the biggest effect on a viewer first, three at most):
 1. 13.0–18.4 s · pacing · the toy climbs three boxes the same way · climb two, a bar shorter
