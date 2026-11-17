@@ -41,42 +41,75 @@ not imply an unsupported event, endorsement, skill, income or causal claim.
 A film is watched by people who were told nothing. The agent that wrote the
 story cannot say whether its frames plant the line: it already knows the
 line. So when the chosen direction has frames, `story-test.mjs` first writes
-`research/story-blind.md`: the frames in order, what moves in each, the
-words on screen, and six questions (who is this, in a sentence to a friend;
-what would you come to them for; the one frame you remember; where you
-smiled or felt something; where you were lost; what is left with the words
-taken off). It holds nothing of the line, the pitch or the person.
+two pages for a reader, to be read in this order:
 
-Give it to a reader who has not seen the story: a new subagent, started with
-no history and told to read that file and the pictures it names and nothing
-else, or a person. A fork of this conversation has read the story and is not
-blind. Where the reader can open the film's other files, hand it a copy of
-the page and its pictures in a folder that holds nothing else. Save
-the answer as `research/story-blind.json` (`retell`, `offer`, `remember`,
-`felt`, `lost`, `wordless`) and run `story-test.mjs` again: the brief then
-sets what the reader said beside the line the story means to plant
-(`retold`). Where no such reader can be had, say so (`"blind": "not read: no
-reader"`); never answer for them. The frames are cheap to change: when the
-reader says something else, change the frames or the line, and read again
-(two rounds at most).
+1. **Without a word** (`research/story-silent.md`). The frames with their
+   lettering taken off, and nothing under them. A film is understood by its
+   pictures first: a frame whose meaning lives in a caption says nothing to
+   someone scrolling past, and a reader who has the words reads the story
+   from the words (the first blind reading matched its line and never
+   noticed the pictures had not told it). `engine/scripts/silent.py` makes
+   the pictures: the computer's text recognition finds every line of
+   lettering on a frame (labels, signs, a post's text, the creator's own
+   covers) and blurs it past reading, so what it stood on stays and what it
+   said is gone; marks that are not words (！ ？ …) stay. They are in
+   `research/frames/silent/`: look at them before the reading. Vision on a
+   Mac takes all of it; tesseract misses some, and the page tells the reader
+   to look past what is left and to write it down. With no text recognition
+   the page gives the frames as they are, without their lines, and says so.
+   Five questions: what happens in each frame; what the story is and who
+   this is; where something changes; which frames told nothing; any word
+   that could still be read.
+2. **Blind** (`research/story-blind.md`). The frames as they are, what moves
+   in each, the words on screen, and six questions (who is this, in a
+   sentence to a friend; what would you come to them for; the one frame you
+   remember; where you smiled or felt something; where you were lost; what
+   the words added that the pictures had not told).
+
+Neither page holds anything of the line, the pitch or the person.
+
+Give both to one reader who has not seen the story: a new subagent, started
+with no history, or a person. A fork of this conversation has read the story
+and is not blind. The reader does the first page, saves its answer, and only
+then opens the second: once the words are seen, nobody can say what the
+pictures told alone. Where the reader can open the film's other files, hand
+it a copy of the two pages and their pictures in a folder that holds nothing
+else. Save the answers as `research/story-silent.json` (`frames`, `story`,
+`turn`, `nothing`, `read`) and `research/story-blind.json` (`retell`,
+`offer`, `remember`, `felt`, `lost`, `wordless`), and run `story-test.mjs`
+again: the brief then sets the story the pictures told beside the story the
+film means, and what the reader said beside the line it means to plant
+(`retold`). Where no such reader can be had, say so (`"silent": "not read:
+no reader"`, `"blind": "not read: no reader"`); never answer for them. The
+frames are cheap to change: when the reader says something else, change the
+frames or the line, and read again (two rounds at most).
+
+What the silent reading is for: the story the reader tells from the pictures
+alone should be the film's story with its names missing (someone at home on
+a big stage is floored by a small task at a desk, and turns it round), not a
+list of things seen (a figure, a screen, some blocks). Each frame that told
+nothing is drawn again so that its picture does the work: the thing acted
+on is in the toy's hands, the change is seen happening, the size says what
+matters. What the words then add in the second reading should be names,
+numbers and the exact line, never the plot.
 
 A sentence that matches the line is the least of what the reading gives. The
 first one done this way matched its line, and still said that four of seven
 frames told nothing without their words, that a drawn microphone was a grey
 disc, that the toy pointed away from the screen it was showing and stood
 far from the block it was meant to push, and that the joke and the point
-both lived in a post's text. Read `lost` and `wordless` as the list of
-frames to draw again, and `felt` as where the film is alive: frames nobody
-felt anything at are asked what they are for.
+both lived in a post's text. Read `nothing`, `lost` and `wordless` as the
+list of frames to draw again, and `felt` as where the film is alive: frames
+nobody felt anything at are asked what they are for.
 
 A story told as a scene is asked three more things in the review below:
 - **retold**: is the reader's sentence the same person and the same reason
   to come as the line? If not, what did the frames plant instead?
 - **scene**: what the toy wants, what is in the way, how it turns, and the
   frame that shows each. A film with nothing in the way is good news read out.
-- **shown**: with every word removed, what is left? Each frame whose meaning
-  lives only in its words, and how its picture could carry it; and whether
-  more than one number counts up.
+- **shown**: is the story the silent reader told the one the film means?
+  Each frame whose meaning lives only in its words, and how its picture
+  could carry it; and whether more than one number counts up.
 
 ## Review the selected story cheaply
 

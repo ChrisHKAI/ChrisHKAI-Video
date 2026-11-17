@@ -40,7 +40,11 @@ not rendered yet is said (with the command that renders it) while the
 creator's picture stands in, that a 9:16 film's frame is 9:16, and that the
 storyboard page keeps its own helpers to the end (a name reused by one of
 its checks once took the page down for every film unlike the ones before)
-and shows the story's paper frames above the previews. The poses themselves
+and shows the story's paper frames above the previews; that a box of
+lettering is blurred past its strokes and the rest of the picture left, that
+a mark alone (！ ？) is not lettering, how tesseract's table is read and what
+of it is trusted, and, where this computer has text recognition, that a
+frame read again after its words are taken off has none left. The poses themselves
 are rendered in Blender from a film's own toy, in seconds:
 `FILM=<film> node skills/creator-toy-intro/engine/run.mjs poses`.
 
@@ -94,8 +98,10 @@ node --test tests/story-directions.test.mjs
 
 Also covers a story told as a scene: the line a viewer retells, the first five
 seconds, the scene and its frames on the story page (and what the page says
-when a direction lacks them), one count at most, the blind reading (the
-blind page holds nothing of the line; the review asks three more answers),
+when a direction lacks them), one count at most, the two readings by someone
+told nothing (the page without words gives the pictures and nothing under
+them, neither page holds the line, what the reader said of the pictures
+alone is the review's ninth question; the review asks three more answers),
 a 9:16 film's frames three to a row, and each move for when things go wrong
 against the joints of the pose its frame shows.
 

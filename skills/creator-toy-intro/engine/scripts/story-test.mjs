@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { storyTestInput, storyTestSignature, storyTestIssues } from "../lib/story-test.js";
+import { findPython, toolEnv } from "../lib/tools.js";
 
 const dir = resolve(process.argv.slice(2).find((x) => !x.startsWith("--")) ?? process.env.FILM ?? ".");
 
@@ -49,19 +50,53 @@ try {
     const earlier = films?.length
       ? `\n## The films made before (in words)\n\nStep 5 asks whether this film repeats one of these. Compare stories, openings, beats and\nendings, not names: a different creator told the same way is a repeat. Name the film it repeats and the piece.\n\n${films.map((f) => `### ${f.name} (${f.date})\n\n${f.words.map((w) => `- ${w}`).join("\n")}`).join("\n\n")}\n`
       : `\n## The films made before\n\n${films ? "None kept in words yet" : "The ledger could not be read"}: answer step 5's \"a repeat of another film\" from what you know.\n`;
-    // the frames, to a reader who is told nothing else: what does the film plant? (research/story-blind.md)
+    // the frames, to a reader who is told nothing else: first with every word taken off (what do the pictures say
+    // alone? research/story-silent.md), then as they are (what does the film plant? research/story-blind.md)
     const frames = (input.direction.frames ?? []).filter((f) => f && (f.picture || f.seen));
+    const drawn = frames.filter((f) => f.picture && existsSync(join(dir, f.picture)));
+    let silent = { reader: null, made: {}, took: {}, left: {} };
+    if (drawn.length) {
+      // engine/scripts/silent.py: the computer's text recognition finds the lettering on each frame and blurs it
+      try {
+        const py = findPython();
+        if (py) silent = JSON.parse(execFileSync(py, [fileURLToPath(new URL("./silent.py", import.meta.url)), dir, ...drawn.map((f) => f.picture)], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], env: toolEnv() }).trim().split("\n").pop());
+      } catch { /* no text recognition here, or no Python of the skill's: the pictures are read as they are */ }
+    }
+    const wordless = drawn.length > 0 && drawn.every((f) => silent.made?.[f.picture]);
     if (frames.length) {
+      const honest = `Answer as the viewer you are, from what you saw: what you understood, not what you guess was meant. "Nothing" and
+"I could not tell" are answers, and "I was lost at frame 5" is worth more than praise. Answer in the creator's
+language.`;
+      writeFileSync(join(dir, "research/story-silent.md"), `# A first look, without a word
+
+You have not been told what this film is meant to say, and here you are not shown its words either: that is the
+point. These are sketches of a short film that introduces someone${wordless ? ", with the words blurred off them (labels, signs,\nscreens, captions; where one was missed, look past it and write it under question 5)" : ". Their lettering could not be taken off on this computer: look past it, and judge\nwhat the pictures do, not what the lettering says"}. A film is understood by its pictures first. Open each picture in order
+and look at it: what is in it, how big, what the small figure is doing.
+
+Open only this file and the pictures it names, and no other file until you have given your answers to this one:
+the next page shows the words, and once you have seen them you can no longer say what the pictures told you alone.
+${honest}
+
+${frames.map((f, n) => `${n + 1}. \`${f.picture ? resolve(dir, wordless ? silent.made[f.picture] : f.picture) : "(no picture yet)"}\``).join("\n")}
+
+1. Frame by frame: what happens in each? One line a frame; "I could not tell" where you could not.
+2. Put together: what is this film's story? Who is this, and what do they do?
+3. Is there a moment where something changes? Which frame, and what changes?
+4. Which frames told you nothing on their own?
+5. Could you still read any word? Write each one you could.
+
+Return JSON for research/story-silent.json: { "frames": ["…", …], "story", "turn", "nothing", "read" }. Save it, or
+give it in full, before you open the next page (research/story-blind.md).
+`);
       writeFileSync(join(dir, "research/story-blind.md"), `# A first look, blind
 
 You have not been told what this film is meant to say: that is the point. These are sketches of a short film that
 introduces someone. Look at the frames in order: open each picture and look at it (what is in it, how big, what the
 figure is doing, the words you can read). Under each is what moves in it and the words on screen.
 
-Open only this file and the pictures it names: anything else you read about the film spoils the reading. Answer as
-the viewer you are, from what you saw: what you understood, not what you guess was meant. "Nowhere", "nothing" and
-"I could not tell" are answers, and "I was lost at frame 5" is worth more than praise. Answer in the creator's
-language.
+If you were given the page without words (story-silent.md), answer that one first, and do not change it after this.
+Open only this file and the pictures it names: anything else you read about the film spoils the reading.
+${honest}
 
 ${frames.map((f, n) => `${n + 1}. \`${f.picture ? resolve(dir, f.picture) : "(no picture yet)"}\`\n   moves: ${f.seen ?? ""}\n   words on screen: ${(f.words ?? []).join(" | ") || "(none)"}`).join("\n")}
 
@@ -71,27 +106,34 @@ ${frames.map((f, n) => `${n + 1}. \`${f.picture ? resolve(dir, f.picture) : "(no
 4. Where did you smile, or feel something? Give the frame's number; "nowhere" is an answer.
 5. Where were you lost, or bored? Name what you could not make out: a thing you did not recognise, a word you did
    not know, a figure not doing what the line under it says.
-6. Take every word off the screen, and set aside the "moves" lines above: from the pictures alone, which frames
-   still say something, and which say nothing?
+6. What did the words add that the pictures had not already told you? (You saw the frames without their words
+   first. If you did not: set aside every word and the "moves" lines above, and say which frames still say
+   something from the picture alone, and which say nothing.)
 
 Return JSON for research/story-blind.json: { "retell", "offer", "remember", "felt", "lost", "wordless" }.
 `);
     }
-    let read = null;
+    let read = null, seen = null;
     try { read = JSON.parse(readFileSync(join(dir, "research/story-blind.json"), "utf8")); } catch { /* not read blind yet */ }
+    try { seen = JSON.parse(readFileSync(join(dir, "research/story-silent.json"), "utf8")); } catch { /* not read without its words yet */ }
     const asScene = !!(input.direction.retold || input.direction.scene || frames.length);
     const sceneAsks = asScene ? `
 7. The line: the story means to plant "${input.direction.retold ?? "(no retold yet)"}". ${read ? `A reader who saw only
    the frames said: "${read.retell ?? ""}" (comes for: "${read.offer ?? ""}"; remembers: "${read.remember ?? ""}";
    felt: "${read.felt ?? ""}"; lost: "${read.lost ?? ""}"). Is it the same person and the same reason to come? If not,
    say what the frames planted instead, and which frame misled. A sentence that matches is the least of it: each
-   thing the reader was lost at is a frame to draw again, and a frame they felt nothing at is one to ask about.` : frames.length ? `Give research/story-blind.md to a
-   reader who has not seen this story (a fresh agent, a person), save their answer as research/story-blind.json and
-   make this brief again. With no such reader, say so in "blind": do not answer for them.` : "It has no frames yet: nothing can be read blind."}
+   thing the reader was lost at is a frame to draw again, and a frame they felt nothing at is one to ask about.` : frames.length ? `Give research/story-silent.md, then
+   research/story-blind.md, to a reader who has not seen this story (a new agent with no history, a person), save
+   their answers as research/story-silent.json and research/story-blind.json and make this brief again. With no
+   such reader, say so in "silent" and "blind": do not answer for them.` : "It has no frames yet: nothing can be read blind."}
 8. The scene: what does the toy want, what is in the way, how does it turn? Name the frame that shows each. A
    film where nothing is in the way is a report of good news: every beat a win, a count, confetti.
-9. Shown, not written: with every word removed, what of the story is left? ${read?.wordless ? `The blind reader, of the
-   pictures alone: "${read.wordless}". ` : ""}Name each frame whose meaning lives
+9. Shown, not written: ${seen ? `a reader who saw the frames with every word taken off said the story was:
+   "${seen.story ?? ""}" (frame by frame: ${(Array.isArray(seen.frames) ? seen.frames : []).map((x, i) => `${i + 1} "${x}"`).join("; ")}; what changes: "${seen.turn ?? ""}";
+   told nothing: "${seen.nothing ?? ""}"${seen.read ? `; could still read: "${seen.read}"` : ""}).${read?.wordless ? ` With the words back, they added:
+   "${read.wordless}".` : ""} Is the story the pictures told the one the film means? What the words had to add is what
+   the pictures still owe. ` : `with every word removed, what of the story is left? ${read?.wordless ? `The blind reader, of the
+   pictures alone: "${read.wordless}". ` : ""}`}Name each frame whose meaning lives
    only in its words, and how its picture could carry it. Count the numbers that count up: more than one?
 ` : "";
     const brief = `# Story test before production
@@ -136,7 +178,7 @@ Return JSON for research/story-test.json, using this signature exactly:
 ${signature}
 
 Fields: signature, verdict (ready or revise), takeaway, continuation, specificity,
-actionMeaning, material, heart${asScene ? ", retold, scene, shown" : ""}${frames.length ? ', blind (the blind reader\'s sentence, word for word; "not read: no reader" when nobody could)' : ""}, issues (up to three specific problems, each naming its
+actionMeaning, material, heart${asScene ? ", retold, scene, shown" : ""}${frames.length ? ', silent (what the reader said the story was from the pictures without their words, word for word), blind (the blind reader\'s sentence, word for word; each "not read: no reader" when nobody could)' : ""}, issues (up to three specific problems, each naming its
 beat and the smallest useful fix). Every answer must contain reasoning, not pass/yes.
 Use verdict=ready with issues=[] only when the actual material supports it.
 This brief generator never approves a story. At most two review rounds: if still
@@ -160,7 +202,8 @@ ${earlier}`;
         copyFileSync(saved, join(dir, kept));
       }
     }
-    if (frames.length && !read) console.log("wrote research/story-blind.md: first give it to a reader who has not seen the story, save research/story-blind.json, and run this again");
+    if (frames.length && !(seen && read)) console.log(`wrote research/story-silent.md (${wordless ? `the frames with their words taken off by ${silent.reader}: look at them in ${drawn[0].picture.replace(/[^/]+$/, "")}silent/` : "no text recognition here: the frames as they are, without their lines"}) and research/story-blind.md: give them in that order to one reader who has not seen the story (a new subagent with no history, or a person), save research/story-silent.json, then research/story-blind.json, and run this again`);
+    for (const f of drawn) if ((silent.left?.[f.picture] ?? []).length) console.log(`! ${f.picture} can still be read with its words taken off (${silent.left[f.picture].join(" / ")}): that frame's silent reading is not silent`);
     console.log(`wrote research/story-test.md; review it and save research/story-test.json, then run --check${kept ? ` (the last review, of the story before this one, is kept as ${kept})` : ""}`);
   }
 } catch (e) { console.error(e.message); process.exit(1); }

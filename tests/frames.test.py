@@ -132,6 +132,72 @@ class Poses(unittest.TestCase):
         self.assertTrue(all(re.search(rf"\b{f}\b", doc) for f in BOOK["frames"]))
 
 
+class Silent(unittest.TestCase):
+    """A frame with every word taken off (engine/scripts/silent.py, engine/lib/reading.py): what the first, wordless
+    reading of a story is given."""
+
+    def setUp(self):
+        sys.path.insert(0, str(SKILL / "engine/scripts"))
+        import reading
+        import silent
+        self.reading, self.silent = reading, silent
+
+    def test_a_mark_alone_is_not_lettering(self):
+        for t in ("近 500 人", "Codex", "3", "天塌了啊！！！"):
+            self.assertTrue(self.reading.wordy(t), t)
+        for t in ("！", "？！", "…", "- —", ""):
+            self.assertFalse(self.reading.wordy(t), t)
+
+    def test_a_box_of_lettering_is_blurred_past_its_strokes_and_the_rest_is_left(self):
+        page = Image.new("RGB", (1600, 900), (250, 250, 250))
+        word = K.text("故事 STORY 500", 130, "#101010")
+        page.paste(word, (200, 300), word)
+        box = (200 / 1600, 300 / 900, (200 + word.width) / 1600, (300 + word.height) / 900)
+        out = self.reading.without_words(page, [box])
+        inside = lambda im: im.crop((200, 300, 200 + word.width, 300 + word.height)).convert("L")  # noqa: E731
+        self.assertLess(inside(page).getextrema()[0], 40, "the strokes are there before")
+        self.assertGreater(inside(out).getextrema()[0], 110, "and no stroke is left after: the ink is a soft patch")
+        self.assertLess(inside(out).getextrema()[1], 250, "what it stood on keeps a trace of it: something was written here")
+        far = (0, 0, 1600, 150)
+        self.assertEqual(page.crop(far).tobytes(), out.crop(far).tobytes(), "the rest of the picture is as it was")
+
+    def test_tesseracts_table_gives_its_words_with_their_boxes(self):
+        tsv = "level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n" \
+              "1\t1\t0\t0\t0\t0\t0\t0\t1600\t900\t-1\t\n" \
+              "5\t1\t1\t1\t1\t1\t160\t90\t320\t45\t96.5\tCodex\n" \
+              "5\t1\t1\t1\t1\t2\t500\t90\t40\t45\t91\t \n" \
+              "5\t1\t1\t1\t2\t1\t800\t450\t160\t90\t88\t落地\n"
+        rows = self.reading.tsv_boxes(tsv, 1600, 900)
+        self.assertEqual([(t, round(c, 3)) for t, c, _ in rows], [("Codex", 0.965), ("落地", 0.88)])
+        self.assertEqual(tuple(round(v, 3) for v in rows[0][2]), (0.1, 0.1, 0.3, 0.15))
+        # only what it is sure of, at a size a viewer reads, more than a stray stroke
+        sure = lambda t, c, h: self.reading._sure((t, c, (0.1, 0.1, 0.3, 0.1 + h / 900)), 1600, 900)  # noqa: E731
+        self.assertTrue(sure("Codex", 0.96, 60))
+        self.assertTrue(sure("找", 0.96, 70))
+        self.assertFalse(sure("Rig", 0.42, 100), "not sure of it")
+        self.assertFalse(sure("一", 0.97, 60), "a dash read as a character")
+        self.assertFalse(sure("a", 0.75, 70), "one stray letter")
+        self.assertFalse(sure("Codex", 0.96, 6), "too small for anyone to read")
+
+    def test_a_frame_read_again_has_no_word_left(self):
+        r = self.reading.reader()
+        if not r:
+            self.skipTest("no text recognition on this computer (Vision on a Mac, tesseract with its Chinese data elsewhere)")
+        tmp = tempfile.TemporaryDirectory(prefix="silent-")
+        self.addCleanup(tmp.cleanup)
+        st = K.Stage()
+        st.box(-1.5, 0, 1.0, 1.4, 0.5, 1.0, "#2B5BD7")
+        st.screen(K.paper("STORY 500", 110), 800, 260, shadow=110)
+        st.screen(K.text("就是这个故事", 100, "#101010"), 800, 520)
+        src, dst = Path(tmp.name) / "a-1.jpg", Path(tmp.name) / "silent/a-1.jpg"
+        st.render().save(src, quality=92)
+        took, left = self.silent.silence(r, src, dst)
+        self.assertTrue(took, "its lettering was found")
+        self.assertEqual(left, [], "and nothing of it can be read after")
+        with Image.open(dst) as im:
+            self.assertEqual(im.size, (1600, 900))
+
+
 class Page(unittest.TestCase):
     def test_the_storyboard_page_keeps_its_helpers_to_the_end(self):
         """storyboard.py is one long script: a name its checks reuse at the top level (`e, sm, _ = rows[0]`) takes

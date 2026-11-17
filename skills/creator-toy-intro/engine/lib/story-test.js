@@ -45,7 +45,8 @@ export function storyTestIssues(facts, report) {
   for (const key of ["takeaway", "continuation", "specificity", "actionMeaning", "material", "heart", ...(asScene ? ["retold", "scene", "shown"] : [])]) {
     if (!text(report[key])) issues.push(`story test needs a concrete ${key} answer`);
   }
-  // its frames were shown to a reader who was told nothing: what they said this film is about
+  // its frames were shown to a reader who was told nothing, first with every word taken off, then as they are
+  if ((d.frames ?? []).length && !text(report.silent)) issues.push("story test has no silent reading: give research/story-silent.md (the frames without their words) to a reader who has not seen the story, before the blind page, and put what they said the story was in \"silent\"");
   if ((d.frames ?? []).length && !text(report.blind)) issues.push("story test has no blind reading: give research/story-blind.md to a reader who has not seen the story, and put their sentence in \"blind\"");
   if (!Array.isArray(report.issues) || report.issues.length) issues.push("story test has unresolved issues (use an empty list only after resolving them)");
   return issues;

@@ -23,8 +23,9 @@ the film will frame it: the film's own toy in the pose it takes, their own
 material standing as the set, the words that are on screen and no others.
 A frame takes a second to draw. A story is changed on paper, where a change
 costs nothing; the user chooses between stories they can see; and a reader
-who is told nothing can say what the frames plant
-(`references/story-test.md`, the blind reading).
+who is told nothing can say what the pictures tell without their words,
+and then what the frames plant (`references/story-test.md`: the silent
+reading, then the blind one).
 
 ## The toy's poses
 
@@ -144,6 +145,10 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
 - **What is drawn is recognised without its label.** A microphone that reads
   as a grey disc is a grey disc; a plane that could be taking off does not
   say "landing". The blind reading says which were not.
+- **With its words blurred off, it still says its part.** `story-test.mjs`
+  makes that picture of every frame (`research/frames/silent/`): look at
+  them yourself first. A frame that is a blank board and a small figure
+  once its words are gone is told by its caption, and is drawn again.
 - **Few words, and theirs.** Every word on screen is listed in the frame's
   `words`. Their own lettering on their own covers is scenery; a caption
   that explains the picture is the picture failing.

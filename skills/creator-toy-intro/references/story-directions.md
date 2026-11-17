@@ -406,7 +406,8 @@ their own material as the set (`references/frames.md`). A label with an
 arrow to the creator's picture explains an idea; it does not show the frame,
 and what was never composed as a frame comes out of production as three
 labels on an empty floor. The story page shows the line and the frames
-first; the blind reading (`references/story-test.md`) is taken from them.
+first; the readings by someone told nothing (`references/story-test.md`:
+without a word, then blind) are taken from them.
 
 An opening of the film's own (`"opening": { "id": "own", ... }`) has no preview
 strip of the skill's: its `"sketch"` is made from their material, like a point's

@@ -1,6 +1,8 @@
 // The text in each picture, as the Mac's own text recognition (Vision) reads it: one JSON line per picture,
-// {"path", "lines": [{"text", "conf"}]}, traditional and simplified Chinese and English, no language correction
-// (a misread character stays misread). engine/lib/reading.py builds it once into the skill's home and runs it.
+// {"path", "lines": [{"text", "conf", "box"}]}, traditional and simplified Chinese and English, no language correction
+// (a misread character stays misread). "box" is where the line stands: [x, y, width, height] as shares of the
+// picture, from its lower left corner (Vision's own). engine/lib/reading.py builds it once into the skill's home
+// and runs it.
 import AppKit
 import Foundation
 import Vision
@@ -14,7 +16,10 @@ for path in CommandLine.arguments.dropFirst() {
     req.usesLanguageCorrection = false
     try? VNImageRequestHandler(cgImage: cg).perform([req])
     for o in req.results ?? [] {
-      if let c = o.topCandidates(1).first { lines.append(["text": c.string, "conf": Double(c.confidence)]) }
+      if let c = o.topCandidates(1).first {
+        let b = o.boundingBox
+        lines.append(["text": c.string, "conf": Double(c.confidence), "box": [Double(b.origin.x), Double(b.origin.y), Double(b.size.width), Double(b.size.height)]])
+      }
     }
   }
   let data = try! JSONSerialization.data(withJSONObject: ["path": path, "lines": lines])

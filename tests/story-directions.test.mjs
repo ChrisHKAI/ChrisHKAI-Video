@@ -776,36 +776,50 @@ test("two points that are both numbers counting up are said: one count at most",
   assert.match(r.stdout, /2 of its points are numbers counting up/);
 });
 
-test("a story with frames is read blind first: the blind page holds nothing of the line, and the review asks three more things", (t) => {
+test("a story with frames is read without its words, then blind: neither page holds the line, and the review asks three more things", (t) => {
   const f = asScene();
   const dir = workspace(t, f);
   withFramePictures(dir);
   let r = run(dir, "story-test.mjs", [dir]);
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.stdout, /story-blind\.md: first give it to a reader who has not seen the story/);
+  assert.match(r.stdout, /wrote research\/story-silent\.md \(.*\) and research\/story-blind\.md: give them in that order to one reader who has not seen the story/);
+  // first the pictures alone: no line of what moves, no word on screen, nothing of the story
+  const silent = readFileSync(join(dir, "research/story-silent.md"), "utf8");
+  assert.equal((silent.match(/frames\/(silent\/)?a-[123]\.(png|jpg)/g) ?? []).length, 3, "the three frames, with their words taken off where this computer can");
+  assert.ok(!/moves:|words on screen/.test(silent), "the silent page gives the pictures and nothing under them");
+  for (const hidden of ["就是那个把自己的导出检查做成工具的剪辑师", "A red mark lands on every export", "Test creator", f.directions[0].premise, f.directions[0].scene.wants]) assert.ok(!silent.includes(hidden), `the silent page must not hold "${hidden}"`);
+  assert.match(silent, /no other file until you have given your answers to this one/);
   const blind = readFileSync(join(dir, "research/story-blind.md"), "utf8");
   assert.match(blind, /A red mark lands on every export/);
   assert.match(blind, /frames\/a-3\.png/);
   for (const hidden of ["就是那个把自己的导出检查做成工具的剪辑师", f.directions[0].premise, f.directions[0].scene.wants, f.directions[0].payoff]) assert.ok(!blind.includes(hidden), `the blind page must not hold "${hidden}"`);
   let brief = readFileSync(join(dir, "research/story-test.md"), "utf8");
   assert.match(brief, /7\. The line[\s\S]*8\. The scene[\s\S]*9\. Shown, not written/);
-  assert.match(brief, /retold, scene, shown, blind/);
+  assert.match(brief, /retold, scene, shown, silent \(.*\), blind/);
   // what the blind reader said comes back into the brief, beside the line
   writeFileSync(join(dir, "research/story-blind.json"), JSON.stringify({ retell: "someone who checks exports", offer: "the tool", remember: "3", felt: "3", lost: "nowhere", wordless: "all three" }));
   r = run(dir, "story-test.mjs", [dir]);
   brief = readFileSync(join(dir, "research/story-test.md"), "utf8");
   assert.match(brief, /A reader who saw only\s+the frames said: "someone who checks exports"/);
-  assert.match(brief, /9\. Shown, not written[\s\S]*The blind reader, of the\s+pictures alone: "all three"/, "what the reader said of the pictures without their words is in the brief too");
+  assert.match(brief, /9\. Shown, not written[\s\S]*The blind reader, of the\s+pictures alone: "all three"/, "with no silent reading yet, what the blind reader said of the pictures is in the brief");
   // the page is the reader's whole brief: what to open, and that an honest "lost" is wanted
   assert.match(blind, /Open only this file and the pictures it names/);
   assert.match(blind, /"I was lost at frame 5" is worth more than praise/);
-  assert.match(blind, /set aside the "moves" lines above/);
+  assert.match(blind, /What did the words add that the pictures had not already told you\?/);
+  // what the reader said of the pictures alone is the brief's ninth question
+  writeFileSync(join(dir, "research/story-silent.json"), JSON.stringify({ frames: ["a figure ticks a box", "red marks", "green marks"], story: "someone fixes red marks", turn: "3: red goes green", nothing: "1", read: "" }));
+  r = run(dir, "story-test.mjs", [dir]);
+  brief = readFileSync(join(dir, "research/story-test.md"), "utf8");
+  assert.match(brief, /9\. Shown, not written: a reader who saw the frames with every word taken off said the story was:\s+"someone fixes red marks" \(frame by frame: 1 "a figure ticks a box"; 2 "red marks"; 3 "green marks"; what changes: "3: red goes green";\s+told nothing: "1"\)/);
+  assert.match(brief, /With the words back, they added:\s+"all three"/);
+  assert.ok(!/story-silent\.md/.test(r.stdout), "both readings are in: nothing more to hand over");
   // the six answers alone are no longer a complete review of a scene; with the three and the blind sentence, they are
   const six = readyReport(f);
   const issues = storyTestIssues(f, six);
   for (const key of ["retold", "scene", "shown"]) assert.ok(issues.some((i) => i.includes(`concrete ${key} answer`)), issues.join("\n"));
   assert.ok(issues.some((i) => /no blind reading/.test(i)));
-  assert.deepEqual(storyTestIssues(f, { ...six, retold: "The reader said the same person", scene: "Wants a clean export (1), red marks (2), the check (3)", shown: "All three frames read without words", blind: "someone who checks exports" }), []);
+  assert.ok(issues.some((i) => /no silent reading/.test(i)));
+  assert.deepEqual(storyTestIssues(f, { ...six, retold: "The reader said the same person", scene: "Wants a clean export (1), red marks (2), the check (3)", shown: "All three frames read without words", silent: "someone fixes red marks", blind: "someone who checks exports" }), []);
   // a story written before the scene is complete on its six
   assert.deepEqual(storyTestIssues(facts(), readyReport(facts())), []);
 });

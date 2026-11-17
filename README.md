@@ -182,7 +182,9 @@ says who this is in the first five seconds, and has something in the toy's
 way before it turns. You see it before you choose: five to seven frames
 drawn with the film's own toy in its poses and the creator's own pictures as
 the set. The same frames go to a reader who was told nothing about the
-story, and what they say comes back before anything is built; the storyboard
+story, first with every word blurred off them (do the pictures tell it
+alone?), then as they are, and what they say comes back before anything is
+built; the storyboard
 page later shows the frames above the real previews, so nothing shrinks on
 the way.
 
