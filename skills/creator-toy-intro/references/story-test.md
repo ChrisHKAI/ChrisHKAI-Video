@@ -47,8 +47,11 @@ what would you come to them for; the one frame you remember; where you
 smiled or felt something; where you were lost; what is left with the words
 taken off). It holds nothing of the line, the pitch or the person.
 
-Give it to a reader who has not seen the story: a fresh subagent told to
-read that file and the pictures it names and nothing else, or a person. Save
+Give it to a reader who has not seen the story: a new subagent, started with
+no history and told to read that file and the pictures it names and nothing
+else, or a person. A fork of this conversation has read the story and is not
+blind. Where the reader can open the film's other files, hand it a copy of
+the page and its pictures in a folder that holds nothing else. Save
 the answer as `research/story-blind.json` (`retell`, `offer`, `remember`,
 `felt`, `lost`, `wordless`) and run `story-test.mjs` again: the brief then
 sets what the reader said beside the line the story means to plant
@@ -56,6 +59,15 @@ sets what the reader said beside the line the story means to plant
 reader"`); never answer for them. The frames are cheap to change: when the
 reader says something else, change the frames or the line, and read again
 (two rounds at most).
+
+A sentence that matches the line is the least of what the reading gives. The
+first one done this way matched its line, and still said that four of seven
+frames told nothing without their words, that a drawn microphone was a grey
+disc, that the toy pointed away from the screen it was showing and stood
+far from the block it was meant to push, and that the joke and the point
+both lived in a post's text. Read `lost` and `wordless` as the list of
+frames to draw again, and `felt` as where the film is alive: frames nobody
+felt anything at are asked what they are for.
 
 A story told as a scene is asked three more things in the review below:
 - **retold**: is the reader's sentence the same person and the same reason

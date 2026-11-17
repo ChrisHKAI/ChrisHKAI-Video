@@ -55,8 +55,13 @@ try {
       writeFileSync(join(dir, "research/story-blind.md"), `# A first look, blind
 
 You have not been told what this film is meant to say: that is the point. These are sketches of a short film that
-introduces someone. Look at the frames in order (open each picture); under each is what moves in it and the words
-on screen. Read nothing else about the film first. Then answer in the creator's language.
+introduces someone. Look at the frames in order: open each picture and look at it (what is in it, how big, what the
+figure is doing, the words you can read). Under each is what moves in it and the words on screen.
+
+Open only this file and the pictures it names: anything else you read about the film spoils the reading. Answer as
+the viewer you are, from what you saw: what you understood, not what you guess was meant. "Nowhere", "nothing" and
+"I could not tell" are answers, and "I was lost at frame 5" is worth more than praise. Answer in the creator's
+language.
 
 ${frames.map((f, n) => `${n + 1}. \`${f.picture ? resolve(dir, f.picture) : "(no picture yet)"}\`\n   moves: ${f.seen ?? ""}\n   words on screen: ${(f.words ?? []).join(" | ") || "(none)"}`).join("\n")}
 
@@ -64,8 +69,10 @@ ${frames.map((f, n) => `${n + 1}. \`${f.picture ? resolve(dir, f.picture) : "(no
 2. What would you come to them for?
 3. Which one frame do you remember, and why that one?
 4. Where did you smile, or feel something? Give the frame's number; "nowhere" is an answer.
-5. Where were you lost, or bored?
-6. Take every word off the screen: which frames still say something, and which say nothing?
+5. Where were you lost, or bored? Name what you could not make out: a thing you did not recognise, a word you did
+   not know, a figure not doing what the line under it says.
+6. Take every word off the screen, and set aside the "moves" lines above: from the pictures alone, which frames
+   still say something, and which say nothing?
 
 Return JSON for research/story-blind.json: { "retell", "offer", "remember", "felt", "lost", "wordless" }.
 `);
@@ -77,12 +84,14 @@ Return JSON for research/story-blind.json: { "retell", "offer", "remember", "fel
 7. The line: the story means to plant "${input.direction.retold ?? "(no retold yet)"}". ${read ? `A reader who saw only
    the frames said: "${read.retell ?? ""}" (comes for: "${read.offer ?? ""}"; remembers: "${read.remember ?? ""}";
    felt: "${read.felt ?? ""}"; lost: "${read.lost ?? ""}"). Is it the same person and the same reason to come? If not,
-   say what the frames planted instead, and which frame misled.` : frames.length ? `Give research/story-blind.md to a
+   say what the frames planted instead, and which frame misled. A sentence that matches is the least of it: each
+   thing the reader was lost at is a frame to draw again, and a frame they felt nothing at is one to ask about.` : frames.length ? `Give research/story-blind.md to a
    reader who has not seen this story (a fresh agent, a person), save their answer as research/story-blind.json and
    make this brief again. With no such reader, say so in "blind": do not answer for them.` : "It has no frames yet: nothing can be read blind."}
 8. The scene: what does the toy want, what is in the way, how does it turn? Name the frame that shows each. A
    film where nothing is in the way is a report of good news: every beat a win, a count, confetti.
-9. Shown, not written: with every word removed, what of the story is left? Name each frame whose meaning lives
+9. Shown, not written: with every word removed, what of the story is left? ${read?.wordless ? `The blind reader, of the
+   pictures alone: "${read.wordless}". ` : ""}Name each frame whose meaning lives
    only in its words, and how its picture could carry it. Count the numbers that count up: more than one?
 ` : "";
     const brief = `# Story test before production

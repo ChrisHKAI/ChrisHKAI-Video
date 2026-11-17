@@ -24,7 +24,9 @@ First a blind viewing: `build/review-blind.md` gives a viewer the sheets and
 six questions, and nothing of what the film means to say (who is this, what
 would you come to them for, the one picture you remember, where you smiled,
 where you drifted, what is left with the words covered). Give it to a fresh
-viewer before anything else, save the answer as `build/review-blind.txt` and
+viewer before anything else (a new subagent started with no history, or a
+person: a fork of this conversation has read the story), save the answer as
+`build/review-blind.txt` and
 run `review` again: the answer goes into the brief, beside the line the film
 means to plant. A film is understood by people who were told nothing; the
 reviewer who reads the intended story first can no longer say whether it is.

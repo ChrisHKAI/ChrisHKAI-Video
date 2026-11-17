@@ -162,7 +162,9 @@ earlier = ("\n## The films made before (in words)\n\nIs this film one of them ag
 
 You have not been told what this film is meant to say: that is the point. It is a short film that introduces
 someone. Look at these sheets in order ({source}, a frame every {EVERY:g} s, each labelled with its time), and at
-nothing else:
+nothing else: anything more you read about the film spoils the viewing. Answer as the viewer you are, from what
+you saw: what you understood, not what you guess was meant. "Nowhere", "nothing" and "I could not tell" are
+answers, and "I was lost at 14 s" is worth more than praise.
 
 """ + "\n".join(f"- `{p_}` ({a:.1f}–{z:.1f} s)" for p_, a, z in made) + f"""
 

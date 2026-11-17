@@ -795,6 +795,11 @@ test("a story with frames is read blind first: the blind page holds nothing of t
   r = run(dir, "story-test.mjs", [dir]);
   brief = readFileSync(join(dir, "research/story-test.md"), "utf8");
   assert.match(brief, /A reader who saw only\s+the frames said: "someone who checks exports"/);
+  assert.match(brief, /9\. Shown, not written[\s\S]*The blind reader, of the\s+pictures alone: "all three"/, "what the reader said of the pictures without their words is in the brief too");
+  // the page is the reader's whole brief: what to open, and that an honest "lost" is wanted
+  assert.match(blind, /Open only this file and the pictures it names/);
+  assert.match(blind, /"I was lost at frame 5" is worth more than praise/);
+  assert.match(blind, /set aside the "moves" lines above/);
   // the six answers alone are no longer a complete review of a scene; with the three and the blind sentence, they are
   const six = readyReport(f);
   const issues = storyTestIssues(f, six);

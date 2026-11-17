@@ -135,8 +135,15 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
 - **The toy is in it, doing something.** Big enough to read its pose (a
   third of the frame's height or more in its own shots; small on purpose
   only where the scale is the point, a person under a huge screen).
+- **The toy is turned to what it acts on.** It pushes the block it touches,
+  points at the screen it shows, looks at the thing that fell. A toy facing
+  the camera beside the thing is posing for a photo: ask for the view that
+  turns it (`push:right`, `present:h-left`).
 - **One thing happens.** If a frame needs three captions to be understood,
   it is three frames or it is not a picture yet.
+- **What is drawn is recognised without its label.** A microphone that reads
+  as a grey disc is a grey disc; a plane that could be taking off does not
+  say "landing". The blind reading says which were not.
 - **Few words, and theirs.** Every word on screen is listed in the frame's
   `words`. Their own lettering on their own covers is scenery; a caption
   that explains the picture is the picture failing.
