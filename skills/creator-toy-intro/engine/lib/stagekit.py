@@ -422,7 +422,7 @@ class Stage:
             else:
                 t = ((yy - hz) / max(1, h - hz)) ** 0.7
                 grad[yy, :] = far + (near - far) * t
-        canvas = Image.fromarray(grad, "RGBA")
+        canvas = Image.fromarray(grad)
         d = ImageDraw.Draw(canvas)
         for pts, fill, blur in self.floors:
             if blur:
@@ -456,7 +456,7 @@ class Stage:
             r = np.hypot((xx - w / 2) / (w / 2), (yy - h / 2) / (h / 2))
             v = np.clip(1 - self.vignette * np.clip(r - 0.55, 0, None) ** 2 * 2.2, 0, 1)
             arr = np.asarray(canvas.convert("RGB"), float) * v[..., None]
-            canvas = Image.fromarray(arr.astype(np.uint8), "RGB")
+            canvas = Image.fromarray(arr.astype(np.uint8))
         return canvas.convert("RGB").resize((w // S, h // S), Image.LANCZOS)
 
 

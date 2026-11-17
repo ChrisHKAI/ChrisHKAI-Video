@@ -83,6 +83,10 @@ class Words(unittest.TestCase):
         self.assertTrue(got["isnail"]["story"]["pitch"])
         self.assertEqual(got["isnail"]["opening"], "page-stand")  # its own record wins on what it says
 
+    def test_the_line_a_viewer_retells_is_kept_and_comes_first(self):
+        e = film(id="told", story={"retold": "就是那个自称马斯克得不到、最后被官方认证的铁柱", "pitch": "From a wild fan to the official one"})
+        self.assertEqual(ledger.lines(e)[0], "what a viewer retells: 就是那个自称马斯克得不到、最后被官方认证的铁柱")
+
     def test_stories_leave_out_this_film_and_films_with_no_words(self):
         ledger.path().write_text(json.dumps([film(id="bare")]))
         ids = [e["id"] for e, _ in ledger.stories(but="kingao")]

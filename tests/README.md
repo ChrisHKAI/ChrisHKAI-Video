@@ -24,6 +24,21 @@ entries' own names read as own, that every film kept says its story in words
 (and a film kept before words takes the skill's), and that the story test
 can read those words.
 
+A story's frames (offline; needs Pillow and numpy, and finds the skill's own
+Python when this one has none):
+
+```sh
+python3 tests/frames.test.py
+```
+
+Checks that the stage draws a frame with what is put on it (a standing
+picture, a block, the toy's cut-out, lettering, a mark), that the creator's
+picture stands in before the toy is built, that a rendered pose is taken with
+its scale, that every pose has its joints, a view and what it says, and that
+the poses for when things go wrong are moves in the film too. The poses
+themselves are rendered in Blender from a film's own toy, in seconds:
+`FILM=<film> node skills/creator-toy-intro/engine/run.mjs poses`.
+
 The pipeline is checked against a reference film: a folder laid out like a
 film workspace (`build/`, `assets/`) whose outputs are known to be right.
 
@@ -71,6 +86,11 @@ Story direction and evidence checks (offline, no Blender or paid search):
 ```bash
 node --test tests/story-directions.test.mjs
 ```
+
+Also covers a story told as a scene: the line a viewer retells, the first five
+seconds, the scene and its frames on the story page (and what the page says
+when a direction lacks them), one count at most, and the blind reading (the
+blind page holds nothing of the line; the review asks three more answers).
 
 Covers direction selection through film.json, the existing point/proof formats,
 nested number provenance, material pages in three languages, resume guidance,

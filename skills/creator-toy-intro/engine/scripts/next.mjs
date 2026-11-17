@@ -31,7 +31,15 @@ if (step === "research") {
     const bare = (facts.story ?? []).filter((s) => !(s.becomes ?? []).some((b) => b.anim === "own"));
     if (facts.story?.length && bare.length && !(facts.picks?.direction || facts.picks?.story || facts.picks?.proof1)) todo.push(`an idea of the film's own, designed from its material, with its sketch, for ${bare.map((s) => s.id).join(", ")} (references/research.md, "The story first")`);
     const chosen = facts.picks?.direction || facts.picks?.story || facts.picks?.proof1;
-    if (!facts.directions?.length && !chosen) todo.push("evidence map, one targeted gap search if needed, then up to three complete directions and a recommendation → facts.json directions (references/story-directions.md)");
+    if (!facts.character && !chosen) todo.push("who they are on the page: their own words, what they carry or who is with them, their world (where, colours, things), how they write → facts.json character (references/research.md)");
+    if (!facts.directions?.length && !chosen) todo.push("evidence map, one targeted gap search if needed, then ten lines a viewer might retell (「就是那个……的人」), three developed into complete directions, each one scene (its first five seconds, what the toy wants, what is in the way, the turn), and a recommendation → facts.json directions (references/story-directions.md)");
+    // each direction is seen on paper before it is chosen: its frames, with the film's own toy in its poses
+    const unseen = (facts.directions ?? []).filter((d) => !(d.frames ?? []).length);
+    if (facts.directions?.length && unseen.length && !chosen) {
+      todo.push(`frames for ${unseen.map((d) => d.id).join(", ")}: five to seven each, composed as the film will frame it (engine/lib/stagekit.py, references/frames.md) → directions[].frames`);
+      if (has("build/hero.json") || has("toy.json")) { if (!has("build/poses/poses.json")) cmds.push("FILM=<film> node <skill>/engine/run.mjs poses   (the toy in the poses the frames need, seconds each)"); }
+      else todo.push("the frames want the toy: build it as soon as its picture is agreed (step 3 runs beside this one); until then its picture stands in");
+    }
     if (!facts.slots?.cta?.length && !facts.directions?.some((d) => d.cta?.slogan?.length)) todo.push("two or three endings: the closing line and the prop → facts.json slots.cta");
     if (facts.story?.length && !has("research/materials.png")) cmds.push("node <skill>/engine/scripts/materials.mjs <film> --lang " + (film.language ?? "zh-Hans"));
     if (has("research/materials.png") && !chosen) show = "the story page (run.mjs studio → /story/; research/materials.png for a chat): ask for the story direction (another idea for a point, if they prefer one) and the ending, one round; the story chooses the opening; notes on its cards: run.mjs comments";

@@ -695,3 +695,112 @@ test("the story page: directions side by side, what a viewer comes for, links to
   assert.match(single, /class="glance"><h3>This story at a glance/);
   assert.equal(single.match(/Video editors/g).length, 1); // at a glance, not again on the card or in the brief
 });
+
+// ── a story told as a scene: the line a viewer retells, the first five seconds, the scene, its frames ──
+// a 1 × 1 PNG, for a frame's picture
+const PIXEL = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+function asScene(f = facts()) {
+  Object.assign(f.directions[0], {
+    retold: "就是那个把自己的导出检查做成工具的剪辑师",
+    intro: { words: "「导出前先查一遍」", does: "Ticks a box on its own page, and the page answers", carries: "a clipboard" },
+    scene: { where: "Inside the export window of their own demo", wants: "To get one clean export out", stuck: "Every export comes back with a red mark", turn: "They stop exporting and build the check: the marks line up and go green" },
+    tone: "dry: they write in lists",
+    frames: [
+      { picture: "research/frames/a-1.png", part: "intro", at: [0, 5], seen: "The toy steps out with a clipboard and ticks a box", words: ["Test creator"] },
+      { picture: "research/frames/a-2.png", part: "stuck", at: [5, 12], seen: "A red mark lands on every export", words: [] },
+      { picture: "research/frames/a-3.png", part: "turn", at: [12, 20], seen: "The marks line up and go green", words: [], key: true },
+    ],
+  });
+  return f;
+}
+function withFramePictures(dir) {
+  mkdirSync(join(dir, "research/frames"), { recursive: true });
+  for (const n of [1, 2, 3]) writeFileSync(join(dir, `research/frames/a-${n}.png`), PIXEL);
+}
+
+test("a direction is asked for the line a viewer retells, a scene and frames: said when missing, never a stop", () => {
+  const plain = resolveDirection(facts());
+  assert.ok(plain.warnings.some((w) => /no line a viewer would retell/.test(w)), plain.warnings.join("\n"));
+  assert.ok(plain.warnings.some((w) => /not a scene yet/.test(w)));
+  assert.ok(plain.warnings.some((w) => /no frames/.test(w)));
+  const told = resolveDirection(asScene());
+  assert.ok(!told.warnings.some((w) => /retell|not a scene|no frames/.test(w)), told.warnings.join("\n"));
+  // a scene with nothing in the way is said
+  const f = asScene();
+  delete f.directions[0].scene.stuck;
+  assert.ok(resolveDirection(f).warnings.some((w) => /not a scene yet/.test(w)));
+});
+
+test("a card opens on the line and its frames, then the first five seconds and the scene; the page says what a direction lacks", (t) => {
+  const f = asScene();
+  f.character = { words: [{ text: "导出前先查一遍", source: "https://example.org/bio" }], carries: ["a clipboard"], world: { where: "their demo's export window", colours: ["#112233", "#F0842C"], things: ["red marks"] }, tone: "dry" };
+  const dir = workspace(t, f);
+  withFramePictures(dir);
+  for (const lang of ["zh-Hans", "zh-Hant", "en"]) {
+    const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", lang]);
+    assert.equal(r.status, 0, r.stderr);
+    const html = readFileSync(join(dir, "research/materials.html"), "utf8");
+    const card = html.slice(html.indexOf('<article class="direction"'));
+    assert.match(card, /class="retold"[\s\S]*就是那个把自己的导出检查做成工具的剪辑师/);
+    assert.equal((card.match(/<figure class="frame/g) ?? []).length, 3, "three frames, each a picture of its own");
+    assert.match(card, /class="frame key"/, "the image to remember is marked");
+    assert.match(card, /Every export comes back with a red mark/);
+    assert.ok(card.indexOf('class="retold"') < card.indexOf('class="frames"') && card.indexOf('class="frames"') < card.indexOf('class="heart"'), "the line, then the frames, before the rest");
+    assert.ok(!/class="strip"/.test(card), "the frames stand in for the small strip");
+    assert.match(html, /id="who"[\s\S]*导出前先查一遍[\s\S]*class="sw"/, "who they are on the page, with their colours");
+    assert.ok(!/no line a viewer|not a scene yet|no frames yet|no "character"/.test(r.stdout), r.stdout);
+  }
+  // a direction written before all this keeps its card, and the page says what it lacks
+  const old = workspace(t);
+  const r = run(old, "materials.mjs", [old, "--html-only", "--lang", "en"]);
+  assert.equal(r.status, 0, r.stderr);
+  for (const said of [/no line a viewer would retell yet/, /not a scene yet/, /first five seconds/, /no frames yet/, /no "character" yet/]) assert.match(r.stdout, said);
+  assert.match(readFileSync(join(old, "research/materials.html"), "utf8"), /class="strip"/);
+  // a frame whose picture is missing, a frame that tells the story in words, no image to remember
+  const g = asScene();
+  g.directions[0].frames[1].words = ["one", "two", "three", "four", "five"];
+  delete g.directions[0].frames[2].key;
+  const lacking = workspace(t, g);
+  const r2 = run(lacking, "materials.mjs", [lacking, "--html-only", "--lang", "en"]);
+  assert.match(r2.stdout, /frame 1 has no picture on the page yet/);
+  assert.match(r2.stdout, /frame 2 puts 5 lines of words on screen/);
+  assert.match(r2.stdout, /no frame is the image to remember/);
+});
+
+test("two points that are both numbers counting up are said: one count at most", (t) => {
+  const f = asScene();
+  f.story[1].numbers = [metric("500")];
+  f.story[1].becomes = [{ anim: "count", opts: { to: 500, label: "views" } }];
+  const dir = workspace(t, f);
+  const r = run(dir, "materials.mjs", [dir, "--html-only", "--lang", "en"]);
+  assert.match(r.stdout, /2 of its points are numbers counting up/);
+});
+
+test("a story with frames is read blind first: the blind page holds nothing of the line, and the review asks three more things", (t) => {
+  const f = asScene();
+  const dir = workspace(t, f);
+  withFramePictures(dir);
+  let r = run(dir, "story-test.mjs", [dir]);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /story-blind\.md: first give it to a reader who has not seen the story/);
+  const blind = readFileSync(join(dir, "research/story-blind.md"), "utf8");
+  assert.match(blind, /A red mark lands on every export/);
+  assert.match(blind, /frames\/a-3\.png/);
+  for (const hidden of ["就是那个把自己的导出检查做成工具的剪辑师", f.directions[0].premise, f.directions[0].scene.wants, f.directions[0].payoff]) assert.ok(!blind.includes(hidden), `the blind page must not hold "${hidden}"`);
+  let brief = readFileSync(join(dir, "research/story-test.md"), "utf8");
+  assert.match(brief, /7\. The line[\s\S]*8\. The scene[\s\S]*9\. Shown, not written/);
+  assert.match(brief, /retold, scene, shown, blind/);
+  // what the blind reader said comes back into the brief, beside the line
+  writeFileSync(join(dir, "research/story-blind.json"), JSON.stringify({ retell: "someone who checks exports", offer: "the tool", remember: "3", felt: "3", lost: "nowhere", wordless: "all three" }));
+  r = run(dir, "story-test.mjs", [dir]);
+  brief = readFileSync(join(dir, "research/story-test.md"), "utf8");
+  assert.match(brief, /A reader who saw only\s+the frames said: "someone who checks exports"/);
+  // the six answers alone are no longer a complete review of a scene; with the three and the blind sentence, they are
+  const six = readyReport(f);
+  const issues = storyTestIssues(f, six);
+  for (const key of ["retold", "scene", "shown"]) assert.ok(issues.some((i) => i.includes(`concrete ${key} answer`)), issues.join("\n"));
+  assert.ok(issues.some((i) => /no blind reading/.test(i)));
+  assert.deepEqual(storyTestIssues(f, { ...six, retold: "The reader said the same person", scene: "Wants a clean export (1), red marks (2), the check (3)", shown: "All three frames read without words", blind: "someone who checks exports" }), []);
+  // a story written before the scene is complete on its six
+  assert.deepEqual(storyTestIssues(facts(), readyReport(facts())), []);
+});
