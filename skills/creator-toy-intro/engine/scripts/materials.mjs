@@ -70,6 +70,13 @@ const viewWords = {
   "zh-Hans": { who: "给谁看", need: "他们需要什么", finds: "在他这里找到什么", when: "什么时候会再找他", next: "下一步去哪里看", none: "还没说观众来找他做什么", glance: "一眼看懂这条主线", compare: "三条主线并排比较", compare2: "两条主线并排比较", item: "比较项目", pitch: "一句话", heart: "片子的中心", order: "故事次序", image: "记住的画面", length: "片长", ending: "收尾", look: "看详细 ↓", strip: "从开场到收尾，点小图跳到那一段", openPiece: "开场", endPiece: "收尾", s: "秒", navNeed: "观众需要", navCompare: "主线比较", navOne: "主线", navEnd: "收尾", navPoints: "素材", navOpen: "开场", navPosts: "帖子（原始素材）", navParts: "动画零件", navNotes: "意见", progress: "制作进度", pStory: "故事", pToy: "公仔", pBoard: "分镜动画", pFilm: "正式影片", ok: "已确认", pick: "等你选", preview: "有预览，等你确认", todo: "还没做", ready: "等出片", done: "已完成", openBoard: "看分镜和动画预览" },
   en: { who: "Who it is for", need: "What they need", finds: "What they find here", when: "When they come back", next: "Where to look next", none: "doesn't say yet what a viewer comes to them for", glance: "This story at a glance", compare: "The three stories side by side", compare2: "The two stories side by side", item: "", pitch: "In a sentence", heart: "At its heart", order: "In order", image: "The image people remember", length: "Length", ending: "Ending", look: "Details ↓", strip: "Opening to ending: click a picture to go to that part", openPiece: "Opening", endPiece: "Ending", s: "s", navNeed: "Viewers' need", navCompare: "Compare", navOne: "The story", navEnd: "Ending", navPoints: "Material", navOpen: "Opening", navPosts: "Posts (the sources)", navParts: "Animation parts", navNotes: "Notes", progress: "Progress", pStory: "Story", pToy: "Toy", pBoard: "Storyboard", pFilm: "The film", ok: "approved", pick: "waiting for your pick", preview: "preview ready, waiting for you", todo: "not made yet", ready: "ready to render", done: "done", openBoard: "Open the storyboard and previews" },
 }[lang];
+// a direction told as a scene (references/story-directions.md): the line a viewer would retell, the first five
+// seconds, the scene (where, what they want, what is in the way, the turn), and its frames: the storyboard on paper
+const sceneWords = {
+  "zh-Hant": { retold: "睇完嘅人會點同朋友講", frames: "紙上分鏡", framesNote: "每一格都係片入面會出現嘅一個畫面：用佢自己嘅素材同公仔嘅姿勢砌出嚟，唔係成片", parts: { intro: "亮相", wants: "佢想要", stuck: "卡住", turn: "翻轉", after: "之後", ending: "收尾" }, key: "最想令人記住嘅畫面", words: "畫面上嘅字", intro: "頭五秒", introWords: "佢自己嘅說話", does: "得佢先會做嘅動作", carries: "隨身帶住", with: "拍檔", scene: "呢場戲", where: "喺邊度演", wants: "佢想要", stuck: "卡喺邊", turn: "點樣翻轉", tone: "條片嘅脾氣", noRetold: "未寫睇完嘅人會點講（一句「就係嗰個……嘅人」）", noScene: "未寫成一場戲：而家係幾件事各講一次", noFrames: "未有分鏡：個故事仲淨係喺字入面" },
+  "zh-Hans": { retold: "看完的人会怎么跟朋友说", frames: "纸上分镜", framesNote: "每一格都是片子里会出现的一个画面：用他自己的素材和公仔的姿势拼的，不是成片", parts: { intro: "亮相", wants: "他想要", stuck: "卡住", turn: "翻过来", after: "之后", ending: "结尾" }, key: "最想让人记住的画面", words: "屏幕上的字", intro: "头五秒", introWords: "他自己的话", does: "只有他会做的动作", carries: "随身带着", with: "搭档", scene: "这场戏", where: "在哪里演", wants: "他想要", stuck: "卡在哪", turn: "怎么翻过来", tone: "片子的脾气", noRetold: "还没写看完的人会怎么说（一句「就是那个……的人」）", noScene: "还没写成一场戏：现在是几件事各讲一遍", noFrames: "还没有分镜：故事还只在字里" },
+  en: { retold: "What a viewer tells a friend", frames: "The storyboard on paper", framesNote: "Each frame is a picture the film will show, composed from their own material and the toy's poses; it is not the film", parts: { intro: "Entrance", wants: "What they want", stuck: "Stuck", turn: "The turn", after: "After", ending: "Ending" }, key: "The image to remember", words: "Words on screen", intro: "The first five seconds", introWords: "Their own words", does: "What only they would do", carries: "Carries", with: "With", scene: "The scene", where: "Where it plays", wants: "What they want", stuck: "What is in the way", turn: "How it turns", tone: "How it feels", noRetold: "No line a viewer would retell yet", noScene: "Not a scene yet: as it stands it tells its points one after another", noFrames: "No frames yet: the story is still only words" },
+}[lang];
 const theirScript = film.language && film.language !== lang;
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 // a picture: a file, or a folder of their work (research.md writes "assets/work/"), shown by its first picture
@@ -218,7 +225,7 @@ const compareTable = () => {
   }
   const order = (d) => (d.beats ?? []).map((b) => b.role ?? story.find((s) => s.id === b.story)?.line).filter(Boolean).join(" → ");
   const rows = [
-    [ideaWords.pitch, (d) => d.pitch], [viewWords.heart, (d) => d.heart?.who],
+    [sceneWords.retold, (d) => d.retold], [ideaWords.pitch, (d) => d.pitch], [viewWords.heart, (d) => d.heart?.who],
     ...VIEWER.map((k) => [viewWords[k], (d) => viewerOf(d)[k]]),
     [viewWords.order, order], [viewWords.image, (d) => d.image],
     ...(TPL ? [[viewWords.length, (d) => ideaWords.length.replace("{n}", seconds(d))]] : []),
@@ -227,6 +234,29 @@ const compareTable = () => {
   const th = directions.map((d, i) => `<th scope="col"><a href="#${dirKey(i)}"><span class="k">${LETTER[i] ?? i + 1}</span>${esc(d.title)}</a>${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}</th>`).join("");
   return `<h3 class="ctitle">${directions.length === 2 ? viewWords.compare2 : viewWords.compare}</h3><div class="tscroll"><table class="compare"><thead><tr><th>${viewWords.item}</th>${th}</tr></thead><tbody>${rows.map(([label, f]) => `<tr><th scope="row">${label}</th>${directions.map((d) => `<td>${esc(f(d) ?? "")}</td>`).join("")}</tr>`).join("")}<tr><th></th>${directions.map((d, i) => `<td><a href="#${dirKey(i)}">${viewWords.look}</a></td>`).join("")}</tr></tbody></table></div>`;
 };
+// what a viewer would tell a friend, first on the card: the whole film exists to plant this one sentence
+const retoldBlock = (d) => (d.retold ? `<div class="retold"><small>${sceneWords.retold}</small>${esc(d.retold)}</div>` : `<p class="gap">${sceneWords.noRetold}</p>`);
+// the storyboard on paper: each frame big, with the part it plays, what is seen and the words on screen
+const frameTime = (f) => (Array.isArray(f.at) ? `${f.at[0]}–${f.at[1]} ${viewWords.s}` : f.at ? `${f.at}` : "");
+const framesBlock = (d, key) => {
+  const fs = (d.frames ?? []).filter((f) => f && (f.picture || f.seen));
+  if (!fs.length) return `<p class="gap">${sceneWords.noFrames}</p>`;
+  return `<div class="frames" id="${key}-frames"><div class="note"><b>${sceneWords.frames}</b> · ${sceneWords.framesNote}</div>${fs.map((f, n) => {
+    const pic = img(f.picture);
+    return `<figure class="frame${f.key ? " key" : ""}">${pic ? `<img src="${pic}" alt="">` : `<div class="nopic">${esc(f.picture ?? "")}</div>`}<figcaption><div class="fh"><span class="fn">${n + 1}</span><b>${esc(sceneWords.parts[f.part] ?? f.part ?? "")}</b>${frameTime(f) ? `<small>${esc(frameTime(f))}</small>` : ""}${f.key ? `<span class="fk">${sceneWords.key}</span>` : ""}</div><div class="fs">${esc(f.seen ?? "")}${(f.words ?? []).length ? `<div class="fw">${sceneWords.words}：${f.words.map(esc).join("、")}</div>` : ""}</div></figcaption></figure>`;
+  }).join("")}</div>`;
+};
+// the first five seconds and the scene, in rows
+const sceneBlock = (d) => {
+  const it = d.intro ?? {}, sc = d.scene ?? {};
+  const rows = (pairs) => pairs.filter(([, v]) => v).map(([k, v]) => `<div class="row"><span class="lb">${k}</span><span class="val">${esc(v)}</span></div>`).join("");
+  const a = rows([[sceneWords.introWords, it.words], [sceneWords.does, it.does], [sceneWords.carries, it.carries], [sceneWords.with, it.with]]);
+  const b = rows([[sceneWords.where, sc.where], [sceneWords.wants, sc.wants], [sceneWords.stuck, sc.stuck], [sceneWords.turn, sc.turn], [sceneWords.tone, d.tone]]);
+  if (!sc.wants && !sc.turn) return `${a ? `<div class="scene"><span class="hl">${sceneWords.intro}</span>${a}</div>` : ""}<p class="gap">${sceneWords.noScene}</p>`;
+  return `${a ? `<div class="scene"><span class="hl">${sceneWords.intro}</span>${a}</div>` : ""}<div class="scene"><span class="hl">${sceneWords.scene}</span>${b}</div>`;
+};
+// a direction written before the scene (no retold, no scene, no frames) keeps its card as it was
+const told = (d) => !!(d.retold || d.scene || d.intro || (d.frames ?? []).length);
 const directionCard = (d, i) => {
   const key = dirKey(i);
   const evidence = (d.beats ?? []).flatMap((b) => {
@@ -237,9 +267,10 @@ const directionCard = (d, i) => {
   const link = (e) => /^https?:\/\//i.test(e.url) ? `<a href="${esc(e.url)}">${esc(e.label || e.url)}</a>` : esc(e.label || e.url);
   return `<article class="direction" id="${key}"><h3><span class="k">${LETTER[i] ?? i + 1}</span> ${esc(d.title)}${d.id === facts.recommendedDirection ? ` <span class="badge">${D.recommended}</span>` : ""}${TPL ? ` <span class="len">${esc(ideaWords.length.replace("{n}", seconds(d)))}</span>` : ""}</h3>
   <p>${esc(d.premise)}</p>
+  ${told(d) ? `${retoldBlock(d)}${framesBlock(d, key)}${sceneBlock(d)}` : ""}
   ${heartBlock(d.heart)}
   ${directions.length > 1 ? viewerBlock(d) : ""}
-  ${stripOf(d, i)}
+  ${(d.frames ?? []).length ? "" : stripOf(d, i)}
   ${d.pitch ? `<p class="pitch"><b>${ideaWords.pitch}:</b> ${esc(d.pitch)}</p>` : ""}
   ${d.image ? `<p class="pitch"><b>${ideaWords.image}:</b> ${esc(d.image)}</p>` : ""}
   <div id="${key}-open">${openingLine(d.opening)}
@@ -288,6 +319,21 @@ section { background: #fff; border-radius: 14px; padding: 20px 22px; margin-top:
 .pv { height: 52px; margin-top: 6px; border-radius: 6px; background: #111 left center/auto 100% no-repeat; } .pv.sm { height: 44px; }
 .pv.sk { height: 120px; background: #EDEAE4 center/cover no-repeat; } .bpv.sk { height: 146px; background-size: contain; } .skn { color: #999; font-size: 12px; margin-top: 3px; }
 .pitch { font-size: 15px; font-weight: 600; color: #1C1B19; margin-top: 4px; line-height: 1.45; }
+/* a direction told as a scene: the line a viewer would retell, the frames big, the scene in rows */
+.retold { background: #1C1B19; color: #fff; border-radius: 12px; padding: 14px 18px; margin: 10px 0; font-size: 19px; font-weight: 700; line-height: 1.45; }
+.retold small { display: block; font-size: 13px; font-weight: 400; color: #B9B5AC; margin-bottom: 4px; }
+.frames { margin: 12px 0; display: grid; gap: 14px; } .frames .note { margin: 0; }
+.frame { margin: 0; } .frame img { width: 100%; display: block; border-radius: 10px; border: 1px solid #E3E1DC; }
+.frame.key img { border: 3px solid #D8382D; } .frame .nopic { background: #F2EFE8; color: #8A8780; border-radius: 10px; padding: 28px 16px; font-size: 13px; }
+.frame figcaption { display: grid; grid-template-columns: 11em 1fr; gap: 12px; margin-top: 6px; align-items: start; }
+.frame .fh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 15px; } .frame .fh small { color: #8A8780; }
+.frame .fn { background: #1C1B19; color: #fff; border-radius: 50%; width: 22px; height: 22px; line-height: 22px; text-align: center; font-size: 13px; font-weight: 700; }
+.frame .fk { background: #D8382D; color: #fff; border-radius: 6px; padding: 0 6px; font-size: 12px; font-weight: 700; }
+.frame .fs { font-size: 15px; line-height: 1.55; } .frame .fw { color: #8A8780; font-size: 13px; margin-top: 2px; }
+.scene { background: #F3F6FB; border: 1px solid #D9E2F0; border-radius: 12px; padding: 12px 18px; margin: 10px 0; display: grid; gap: 6px; }
+.scene .hl { color: #2B4C8C; font-size: 14px; font-weight: 700; } .scene .row { display: grid; grid-template-columns: 9em 1fr; gap: 14px; align-items: baseline; }
+.scene .lb { color: #8A8780; font-size: 14px; font-weight: 600; } .scene .val { font-size: 16px; line-height: 1.55; }
+@media (max-width: 640px) { .frame figcaption, .scene .row { grid-template-columns: 1fr; gap: 2px; } }
 .why { color: #666; font-size: 14px; margin-top: 4px; line-height: 1.5; }
 .ops { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; } .op { display: flex; gap: 10px; } .op b { font-size: 16px; } .op .pv { height: 62px; background-size: 100% auto; }
 .ok, .k { flex: none; width: 32px; height: 32px; border-radius: 50%; background: #1C1B19; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 16px; }
@@ -592,6 +638,27 @@ writeFileSync(join(dir, "research/materials.html"), page(navOf(false) + decide +
 }
 for (const [i, d] of directions.entries()) if (d.opening?.id === "own" && (!d.opening.pitch || !img(d.opening.sketch))) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": its own opening needs a pitch and a sketch on the page ("opening": { "id": "own", "beat", "pitch", "sketch", "why" })`);
 for (const [i, d] of directions.entries()) if (!d.image) console.log(`! direction ${LETTER[i] ?? i + 1} "${d.title}": no image people remember yet ("image": references/story-directions.md)`);
+// a direction told as a scene, with its frames (references/story-directions.md, "A scene, not a list"; frames.md)
+const NUMBER_IDEAS = new Set(["count", "calendar", "act2"]);
+for (const [i, d] of directions.entries()) {
+  const tag = `direction ${LETTER[i] ?? i + 1} "${d.title}"`;
+  if (!d.retold) console.log(`! ${tag}: no line a viewer would retell yet ("retold": 「就是那个……的人」, in the film's language: references/story-directions.md)`);
+  if (!d.scene?.wants || !d.scene?.stuck || !d.scene?.turn) console.log(`! ${tag}: not a scene yet ("scene": where, wants, stuck, turn): as it stands it tells its points one after another`);
+  if (!d.intro?.words && !d.intro?.does) console.log(`! ${tag}: its first five seconds do not say who this is yet ("intro": their own words, what only they would do, what they carry)`);
+  const fs = d.frames ?? [];
+  if (!fs.length) console.log(`! ${tag}: no frames yet ("frames": the storyboard on paper, each composed as the film will frame it: references/frames.md)`);
+  else {
+    for (const [n, f] of fs.entries()) {
+      if (!img(f.picture)) console.log(`! ${tag}: frame ${n + 1} has no picture on the page yet (${f.picture ?? "no picture"})`);
+      if (f.part !== "ending" && (f.words ?? []).length > 4) console.log(`! ${tag}: frame ${n + 1} puts ${f.words.length} lines of words on screen: the story is being told in words; show it, and keep the words to what is theirs`);
+    }
+    if (!fs.some((f) => f.key)) console.log(`! ${tag}: no frame is the image to remember ("key": true on the frame that is)`);
+    if (fs.length > 8) console.log(`! ${tag}: ${fs.length} frames: a film this long says one thing; keep the frames to its turns`);
+  }
+  // numbers support the story: one counts up at most, the others stand as written
+  const counted = (d.beats ?? []).map((b) => story.find((x) => x.id === b.story)?.becomes?.[b.idea ?? 0]?.anim).filter((a) => NUMBER_IDEAS.has(a));
+  if (counted.length > 1) console.log(`! ${tag}: ${counted.length} of its points are numbers counting up (${counted.join(", ")}): one at most; a film of counts is a report card`);
+}
 // a person at each direction's heart, and the moment it shows (references/story-directions.md, "Start from the person")
 const lookedNone = Array.isArray(facts.moments) && !facts.moments.length;
 for (const [i, d] of directions.entries()) {

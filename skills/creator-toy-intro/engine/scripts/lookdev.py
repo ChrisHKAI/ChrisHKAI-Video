@@ -299,6 +299,49 @@ if "armR" not in J and "armL" not in J and "body" in J:
     # a toy with no arms (a fruit, a logo, a ball) points and cheers with its whole body
     POINT["body"] = (0.18, 0, -0.22)
     CHEER["body"] = (-0.14, 0, 0)
+if "--poses" in argv:
+    # the toy alone in the poses a story's frames need, on a clear background (references/frames.md): the pose's
+    # joints from engine/lib/poses.json (and film.json "poses"), each as `pose`, `pose:view` or `pose:view:close`
+    # → build/poses/<pose>[.<view>[.close]].png and poses.json (each cut-out's scale: pixels a toy height, its feet)
+    book = json.loads((Path(__file__).resolve().parents[1] / "lib/poses.json").read_text())
+    poses = {**book["poses"], **(FILM_JSON.get("poses") or {})}
+    i = argv.index("--poses")
+    asked = argv[i + 1].split(",") if i + 1 < len(argv) and not argv[i + 1].startswith("--") else list(poses)
+    out = ROOT / arg("--out", "build/poses")
+    out.mkdir(parents=True, exist_ok=True)
+    scene.render.film_transparent = True
+    scene.render.image_settings.color_mode = "RGBA"
+    floor.hide_render = True
+    for ob in scene.objects:
+        if ob.name.startswith("blob"):
+            ob.hide_render = True
+    cam_data.dof.use_dof = False
+    W, H = 900, 1100
+    scene.render.resolution_x, scene.render.resolution_y = W, H
+    scene.cycles.samples = int(arg("--samples", 40))
+    meta_path = out / "poses.json"
+    meta = json.loads(meta_path.read_text()) if meta_path.exists() else {}
+    for spec in asked:
+        name, view, frame = (spec.split(":") + [None, None])[:3]
+        if name not in poses:
+            raise SystemExit(f"no pose \"{name}\": engine/lib/poses.json has {', '.join(book['poses'])}; film.json \"poses\" adds a film's own")
+        p = poses[name]
+        view = view or p.get("view", "q-left")
+        if view not in book["views"] or (frame or "full") not in book["frames"]:
+            raise SystemExit(f"{spec}: a view is one of {', '.join(book['views'])}; then full or close")
+        az, el = book["views"][view]
+        dist, aim = book["frames"][frame or "full"]
+        pose({k: (tuple(v) if isinstance(v, list) else v) for k, v in p["joints"].items()})
+        look((0, aim * HT, 0), az, el, dist * HT)
+        key = name if (spec == name) else spec
+        file = out / (key.replace(":", ".") + ".png")
+        scene.render.filepath = str(file)
+        bpy.ops.render.render(write_still=True)
+        per = H / (2 * dist * math.tan(math.radians(13)))  # the camera's 26° of height holds 2·dist·tan 13° toy heights
+        meta[key] = {"file": file.name, "per_unit": round(per, 1), "feet": round(H / 2 + aim * per, 1), "centre": W / 2, "view": view, "frame": frame or "full"}
+        meta_path.write_text(json.dumps(meta, indent=1) + "\n")
+        print("posed", key, flush=True)
+    raise SystemExit
 if "--avatar" not in argv:
     # is it in one piece, at rest and in the poses below? (engine/lib/toyparts.py → build/toy-parts.json)
     results = []

@@ -1,0 +1,26 @@
+{
+ "_about": "The poses a toy takes on a story's frames (references/frames.md): each a set of joint turns (radians, XYZ; the joints toy.json names: body, head, armR, armL, legR, legL) and the view it is usually seen from. `run.mjs poses` renders them from the film's own toy on a clear background (build/poses/); film.json \"poses\" adds a film's own in the same shape. A toy with no arms or legs plays them with its body and head. The same joints move the toy in the film (engine/lib/beatkit.js: startle, duck, slump, push, kick, lookUp, shrug, holdUp).",
+ "views": {
+  "front": [0, 6], "q-left": [20, 6], "q-right": [-20, 6], "left": [70, 5], "right": [-70, 5],
+  "h-left": [40, 6], "h-right": [-40, 6], "back": [165, 12], "back-left": [150, 12], "back-right": [-150, 12]
+ },
+ "frames": { "full": [3.0, 0.56], "close": [1.75, 0.74] },
+ "poses": {
+  "stand": { "joints": { "armR": [0, 0, -0.12], "armL": [0, 0, 0.12] }, "view": "q-left", "says": "at rest" },
+  "holdUp": { "joints": { "armR": [0, 0, -2.05], "armL": [0, 0, 2.05], "head": [-0.08, 0, 0] }, "view": "front", "says": "both arms up: holding a sign, a prize, a thing over its head" },
+  "hop": { "joints": { "armR": [0.5, 0, -1.1], "armL": [-0.5, 0, 1.1], "legR": [-0.6, 0, 0], "legL": [0.7, 0, 0], "body": [0.12, 0, 0] }, "view": "h-right", "says": "mid-stride, in the air" },
+  "startle": { "joints": { "armR": [0.2, 0, -1.9], "armL": [0.2, 0, 1.9], "head": [-0.28, 0, 0], "body": [-0.16, 0, 0], "legR": [0, 0, -0.18], "legL": [0, 0, 0.18] }, "view": "q-left", "says": "thrown back, arms flung up: a surprise, good or bad" },
+  "duck": { "joints": { "armR": [-0.9, 0, -2.0], "armL": [-0.9, 0, 2.0], "head": [0.42, 0, 0], "body": [0.26, 0, 0], "legR": [0, 0, -0.15], "legL": [0, 0, 0.15] }, "view": "front", "says": "head down, arms over it: something is coming down" },
+  "slump": { "joints": { "armR": [0, 0, -0.05], "armL": [0, 0, 0.05], "head": [0.38, 0, 0], "body": [0.1, 0, 0] }, "view": "q-left", "says": "head hanging: at a loss, tired, let down" },
+  "shrug": { "joints": { "armR": [0, 0, -0.95], "armL": [0, 0, 0.95], "head": [0.12, 0, 0.14] }, "view": "back-left", "says": "arms out, head to one side: well, then" },
+  "lookUp": { "joints": { "armR": [0, 0, -0.7], "armL": [0, 0, 0.7], "head": [-0.5, 0, 0], "body": [-0.08, 0, 0] }, "view": "q-left", "says": "head back, looking up at something big" },
+  "push": { "joints": { "armR": [-1.45, 0, -0.12], "armL": [-1.45, 0, 0.12], "body": [0.3, 0, 0], "legR": [0.55, 0, 0], "legL": [-0.45, 0, 0] }, "view": "h-right", "says": "leaning into a weight with both arms" },
+  "kick": { "joints": { "legR": [-1.35, 0, 0], "legL": [0.15, 0, 0], "armR": [0.9, 0, -0.5], "armL": [-0.7, 0, 0.7], "body": [-0.14, 0, 0] }, "view": "h-right", "says": "one leg out: kicking something away" },
+  "point": { "joints": { "point": true, "armR": [-1.25, 0, -0.75], "armL": [0.1, 0, 0.35], "head": [0.06, -0.12, 0.05], "legR": [0.25, 0, 0], "legL": [-0.2, 0, 0] }, "view": "h-left", "says": "its right arm out at something (seen from its left, it points to the left of the frame)" },
+  "pointLeft": { "joints": { "armL": [-1.25, 0, 0.75], "armR": [0.1, 0, -0.35], "head": [0.06, 0.12, -0.05], "legR": [-0.2, 0, 0], "legL": [0.25, 0, 0] }, "view": "h-right", "says": "its left arm out (seen from its right, it points to the right of the frame)" },
+  "present": { "joints": { "armR": [0, 0, -1.95], "armL": [0, 0, 0.2], "head": [-0.12, 0.25, 0] }, "view": "q-left", "says": "one arm raised to what stands behind it: here it is" },
+  "speak": { "joints": { "armL": [-1.5, 0, 0.5], "armR": [0, 0, -0.5], "head": [-0.05, 0, 0] }, "view": "q-left", "says": "one hand up before its mouth: a microphone, a word to the viewer" },
+  "balance": { "joints": { "armR": [0, 0, -1.4], "armL": [0, 0, 1.4], "legR": [0, 0, -0.3], "legL": [0, 0, 0.3], "head": [-0.06, 0, 0] }, "view": "q-right", "says": "arms out, feet apart: riding something" },
+  "cheer": { "joints": { "armR": [0, 0, -2.4], "armL": [0, 0, 2.4], "head": [-0.08, 0, 0] }, "view": "q-left", "says": "arms straight up (behind a big head they hardly show: holdUp reads better from the front)" }
+ }
+}

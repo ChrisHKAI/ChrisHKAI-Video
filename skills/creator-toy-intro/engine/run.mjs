@@ -18,6 +18,8 @@
 //                    older film's ("song", "band", "bed", "strings")
 //           listen   (older films) other sounds under the animatic → build/storyboard/sound-<sound>.mp4
 //           lookdev  Blender turnaround of the toy → build/lookdev/, beside its picture: compare.jpg
+//           poses    the toy alone in the poses a story's frames need, on a clear background → build/poses/
+//                    (-- startle,kick:right,stand:back:close; none: every pose of engine/lib/poses.json; references/frames.md)
 //           estimate three frames at the final settings → how long the full render takes
 //           sample   a stretch at the final quality with its sound, to watch before the hours of the whole
 //                    (-- --from 6 --to 14, seconds; else the film's own beat, else 6–14 s) → out/<film>-sample.mp4
@@ -171,6 +173,11 @@ for (const [i, step] of steps.entries()) {
       if (!steps.slice(0, i).includes("hero")) run("node", [fromSkill("engine/scripts/dump-hero.mjs")]);
       run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
       if (!more.includes("--avatar") && !more.includes("--parts")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);
+      break;
+    case "poses":
+      // the toy alone in the poses a story's frames need, on a clear background (references/frames.md): seconds each
+      if (!steps.slice(0, i).includes("hero")) run("node", [fromSkill("engine/scripts/dump-hero.mjs")]);
+      run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", "--poses", ...more]);
       break;
     case "render": {
       // no --frames: the whole film, its frame count from film.json (duration × fps)
