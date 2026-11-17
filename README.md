@@ -176,6 +176,16 @@ each has an opening hook, connected facts, a payoff and any evidence gaps. One
 targeted follow-up can fill important gaps (with Grok, one more search). Thin evidence leads to a narrower story, never an invented turning point.
 Existing projects can still select individual material points as before.
 
+Since 0.8.0 each direction is one small scene, not a list of points: it
+starts from the sentence a viewer would tell a friend afterwards (「就是那个……的人」),
+says who this is in the first five seconds, and has something in the toy's
+way before it turns. You see it before you choose: five to seven frames
+drawn with the film's own toy in its poses and the creator's own pictures as
+the set. The same frames go to a reader who was told nothing about the
+story, and what they say comes back before anything is built; the storyboard
+page later shows the frames above the real previews, so nothing shrinks on
+the way.
+
 The chosen direction then gets a quick text-only story test: what viewers
 remember, why they keep watching, what makes this creator distinctive, and what
 each major toy action communicates. It is advice, never a gate: it adds no
