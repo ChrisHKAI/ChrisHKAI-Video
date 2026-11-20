@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, sunkLetters, fastReveal } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, sunkLetters, fastReveal } from "../lib/clearance.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -196,6 +196,9 @@ if (past("toy") && toy && film.profile) {
     const into = describe(contacts, height).filter((m) => m.kind === "into");
     for (const m of into) say(process.argv.includes("--render") ? "bad" : "warn", `the toy goes through something: ${m.text}`, "references/clearance.md says how to keep it clear");
     if (!into.length) say("ok", "the toy goes through nothing");
+    const clashes = describeClashes(solidClashes(motion));
+    for (const m of clashes) say(process.argv.includes("--render") ? "bad" : "warn", `objects go through each other: ${m.text}`, "references/clearance.md says how to keep props and cards clear");
+    if (!clashes.length) say("ok", "no props or cards go through each other");
   } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
 }
 

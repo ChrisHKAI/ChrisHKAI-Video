@@ -150,3 +150,14 @@ lens:
 ```bash
 python3 tests/lens.test.py
 ```
+
+Prop-vs-prop and prop-vs-picture-card 3D clearance (`engine/lib/clearance.js`
+and `engine/scripts/clearance.mjs`, offline; no Blender):
+
+```bash
+node --test tests/clearance.test.mjs
+```
+
+Checks hinged/moving door-through-card piercing, intersecting angled picture
+cards, deep prop-into-prop embedding, zero-false-positive guards for compound
+parts, and the `clearance.mjs` CLI exit codes / `build/clearance.json` output.

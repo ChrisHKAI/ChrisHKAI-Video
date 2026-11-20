@@ -383,6 +383,215 @@ function segDist(p, a, b) {
   return [Math.hypot(...a.map((v, i) => p[i] - (v + u * ab[i]))), u];
 }
 
+// ── prop-vs-prop & prop-vs-card 3D clearance (OBB SAT) ──
+const BOX_GEOS = new Set(["box", "roundBox", "uiBox", "wallSlab"]);
+const SKIP_PROP_MATS = new Set(["flake", "glow", "paper"]);
+
+function boxSpec(o) {
+  const g = o.geo;
+  if (!g || !BOX_GEOS.has(g.type)) return null;
+  if (g.type === "box" || g.type === "roundBox") return { c: [0, 0, 0], h: g.size.map((v) => v / 2), card: false };
+  if (g.type === "uiBox") {
+    const [x0, y0, w, h] = g.rect;
+    return { c: [(x0 + w / 2) * MM, -g.thickness / 2, (y0 + h / 2) * MM], h: [(w * MM) / 2, g.thickness / 2, (h * MM) / 2], card: true };
+  }
+  return { c: [0, g.h / 2, -g.d / 2], h: [g.w / 2, g.h / 2, g.d / 2], card: false };
+}
+
+function groupOf(name) {
+  const beat = name.match(/^(beat\d+_)/)?.[1] ?? "";
+  const rest = name.slice(beat.length);
+  const i = rest.indexOf("_");
+  return beat + (i >= 0 ? rest.slice(0, i) : rest);
+}
+
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+const cross3 = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const qconj = (q) => [-q[0], -q[1], -q[2], q[3]];
+
+function worldOBB(spec, w) {
+  const c = apply(w, spec.c);
+  const h = spec.h.map((v, i) => Math.abs(v * w.s[i]));
+  const axes = [rot(w.q, [1, 0, 0]), rot(w.q, [0, 1, 0]), rot(w.q, [0, 0, 1])];
+  return { c, h, axes, r: Math.hypot(...h), card: spec.card };
+}
+
+function pierceDepth(X, Y, faceTol) {
+  const rel = [Y.c[0] - X.c[0], Y.c[1] - X.c[1], Y.c[2] - X.c[2]];
+  const ov = [0, 0, 0], out = [0, 0, 0];
+  for (let i = 0; i < 3; i++) {
+    const ax = X.axes[i];
+    const center = dot3(rel, ax);
+    const ext = Y.h[0] * Math.abs(dot3(Y.axes[0], ax)) + Y.h[1] * Math.abs(dot3(Y.axes[1], ax)) + Y.h[2] * Math.abs(dot3(Y.axes[2], ax));
+    const lo = center - ext, hi = center + ext;
+    ov[i] = Math.min(X.h[i], hi) - Math.max(-X.h[i], lo);
+    out[i] = Math.min(Math.max(0, -X.h[i] - lo), Math.max(0, hi - X.h[i]));
+  }
+  let best = 0;
+  for (let i = 0; i < 3; i++) {
+    if (Math.min(ov[(i + 1) % 3], ov[(i + 2) % 3]) >= faceTol && out[i] > best) best = out[i];
+  }
+  return best;
+}
+
+function satOverlap(A, B, faceTol) {
+  const d = [B.c[0] - A.c[0], B.c[1] - A.c[1], B.c[2] - A.c[2]];
+  if (dot3(d, d) >= (A.r + B.r) ** 2) return null;
+  let minPen = Infinity;
+  const test = (ax) => {
+    const len = Math.hypot(...ax);
+    if (len < 1e-6) return true;
+    const u = ax.map((v) => v / len);
+    const ra = A.h[0] * Math.abs(dot3(A.axes[0], u)) + A.h[1] * Math.abs(dot3(A.axes[1], u)) + A.h[2] * Math.abs(dot3(A.axes[2], u));
+    const rb = B.h[0] * Math.abs(dot3(B.axes[0], u)) + B.h[1] * Math.abs(dot3(B.axes[1], u)) + B.h[2] * Math.abs(dot3(B.axes[2], u));
+    const ov = ra + rb - Math.abs(dot3(d, u));
+    if (ov <= 0) return false;
+    if (ov < minPen) minPen = ov;
+    return true;
+  };
+  for (let i = 0; i < 3; i++) if (!test(A.axes[i]) || !test(B.axes[i])) return null;
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (!test(cross3(A.axes[i], B.axes[j]))) return null;
+  return { pen: minPen, through: Math.max(pierceDepth(A, B, faceTol), pierceDepth(B, A, faceTol)) };
+}
+
+/**
+ * Detect 3D intersections between non-toy box props and picture cards across `anim.json`.
+ * Catches hinged/moving doors, panels, props, or cards piercing or embedding into each other.
+ */
+export function solidClashes(anim, { toy = "hero", pierceTol = 0.008, embedTol = 0.012, faceTol = 0.006, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const items = anim.objects
+    .filter((o) => o.geo && !under(o, toy) && !o.letter && !o.mat?.outline && !SKIP_NAME.test(o.name) && !SKIP_PROP_MATS.has(o.mat?.type))
+    .map((o) => ({ o, spec: boxSpec(o), group: groupOf(o.name), card: o.geo.type === "uiBox" }))
+    .filter((x) => x.spec);
+  if (items.length < 2) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const skipPair = (a, b) =>
+    a.group === b.group ||
+    (a.o.parent && a.o.parent !== "root" && a.o.parent === b.o.parent) ||
+    (a.o.geo.type === "wallSlab" && b.o.name.startsWith("panel_")) ||
+    (b.o.geo.type === "wallSlab" && a.o.name.startsWith("panel_"));
+
+  const relState = new Map();
+  const open = new Map();
+  const raw = [];
+  const stepDt = every / anim.fps;
+
+  const relPos = (a, b) => toLocal(a, b.p).map((v, k) => v / Math.max(1e-3, Math.abs(a.s[k])));
+
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const active = [];
+    for (const it of items) {
+      const w = worldOf(it.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      active.push({ it, w, obb: worldOBB(it.spec, w) });
+    }
+    const seenNow = new Set();
+    for (let i = 0; i < active.length; i++) {
+      const A = active[i];
+      for (let j = i + 1; j < active.length; j++) {
+        const B = active[j];
+        if (skipPair(A.it, B.it)) continue;
+        const pk = `${A.it.o.name}|${B.it.o.name}`;
+        let rs = relState.get(pk);
+        if (!rs) {
+          rs = {
+            firstFrame: f,
+            moved: false,
+            p0: relPos(A.w, B.w),
+            q0: qmul(qconj(A.w.q), B.w.q),
+          };
+          relState.set(pk, rs);
+        } else if (!A.it.card && !B.it.card && !rs.moved) {
+          const dp = relPos(A.w, B.w);
+          const dq = qmul(qconj(A.w.q), B.w.q);
+          const dist = Math.hypot(dp[0] - rs.p0[0], dp[1] - rs.p0[1], dp[2] - rs.p0[2]);
+          const qdot = Math.abs(dq[0] * rs.q0[0] + dq[1] * rs.q0[1] + dq[2] * rs.q0[2] + dq[3] * rs.q0[3]);
+          if (dist > 0.0015 || 1 - qdot > 1e-4) rs.moved = true;
+        }
+
+        const r = satOverlap(A.obb, B.obb, faceTol);
+        if (!r || (r.through < pierceTol && r.pen < embedTol)) continue;
+        seenNow.add(pk);
+        const mode = r.through >= pierceTol ? "through" : "embed";
+        const depth = Math.max(r.pen, r.through);
+        const cur = open.get(pk);
+        if (!cur) {
+          open.set(pk, {
+            pk, a: A.it.o.name, b: B.it.o.name, groupA: A.it.group, groupB: B.it.group,
+            mode, from: t, to: t, peak: t, depth, pen: r.pen, through: r.through,
+            card: A.it.card || B.it.card, startedOnFirst: f === rs.firstFrame,
+          });
+        } else {
+          cur.to = t;
+          if (mode === "through") cur.mode = "through";
+          cur.pen = Math.max(cur.pen, r.pen);
+          cur.through = Math.max(cur.through, r.through);
+          if (depth > cur.depth) Object.assign(cur, { depth, peak: t });
+        }
+      }
+    }
+    for (const [pk, c] of open) {
+      if (!seenNow.has(pk)) { raw.push(c); open.delete(pk); }
+    }
+  }
+  raw.push(...open.values());
+
+  return raw
+    .filter((c) => {
+      const rs = relState.get(c.pk);
+      if (!c.card && c.startedOnFirst && rs && !rs.moved) return false;
+      if (c.to - c.from < stepDt - 1e-6 && c.depth < 0.025) return false;
+      return true;
+    })
+    .map(({ pk, startedOnFirst, ...rest }) => rest)
+    .sort((a, b) => a.from - b.from || b.depth - a.depth);
+}
+
+/** Group raw prop/card clashes by unordered object groups within 0.2 s windows. */
+export function describeClashes(clashes) {
+  const merged = [];
+  for (const c of clashes) {
+    const pair = [c.groupA, c.groupB].sort();
+    const m = merged.find((x) => x.groups[0] === pair[0] && x.groups[1] === pair[1] && c.from <= x.to + 0.2 && c.to >= x.from - 0.2);
+    if (m) { m.from = Math.min(m.from, c.from); m.to = Math.max(m.to, c.to); m.list.push(c); }
+    else merged.push({ groups: pair, from: c.from, to: c.to, list: [c] });
+  }
+  return merged
+    .map((m) => {
+      const worst = m.list.toSorted((a, b) => b.depth - a.depth)[0];
+      const mode = m.list.some((x) => x.mode === "through") ? "through" : "embed";
+      const verb = mode === "through" ? "passes through" : "intersects";
+      return {
+        kind: "into",
+        mode,
+        from: m.from,
+        to: m.to,
+        peak: worst.peak,
+        depth: worst.depth,
+        pen: Math.max(...m.list.map((x) => x.pen)),
+        through: Math.max(...m.list.map((x) => x.through)),
+        groups: m.groups,
+        parts: [worst.a, worst.b],
+        count: m.list.length,
+        text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: ${m.groups[0]} ${verb} ${m.groups[1]} (${(worst.depth / MM).toFixed(0)} mm deep, worst at ${worst.peak.toFixed(2)} s)`,
+      };
+    })
+    .sort((a, b) => a.from - b.from || b.depth - a.depth);
+}
+
 // ── transforms ──
 function trackReader(anim) {
   const T = anim.tracks ?? {};

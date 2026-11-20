@@ -64,3 +64,21 @@ The line names the moment, the solid (`piece_title`, `piece2_grid`,
 Then `run.mjs anim` and the check again. A ✗ the user has seen and wants
 kept (a toy that dives into a picture on purpose) stays. Say so on the page,
 and start the render with `-- --force`.
+
+## Props and picture cards (`solidClashes`)
+
+`clearance.mjs`, `check.mjs`, and `storyboard` also test all box props
+(`box`, `roundBox`, `wallSlab`) and picture cards (`uiBox`) against every other
+group across `build/anim.json` using oriented bounding-box SAT overlap
+(`solidClashes` / `describeClashes`). Same-group parts (such as the four rails
+and stiles of one gate door, or a mounted phone screen on its phone body) and
+static rigid prop assemblies are skipped; any moving door, prop, or picture card
+that pierces (`>= 8 mm`) or embeds (`>= 12 mm`) into another group is flagged as
+a clash and blocks `--render`.
+
+When fixing a prop or card clash:
+- **Swinging doors or hinged panels**: widen the outer hinges or swing doors
+  past 90° (e.g. `104°`), keep background cards parked behind the full swing
+  arc, and delay card forward motion until the doors clear the corridor.
+- **Layered picture cards**: stagger `z` depth or widen `x`/`yaw` spacing so
+  adjacent cards stay clear of one another (`>= 10 mm`).
