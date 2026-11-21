@@ -592,6 +592,243 @@ export function describeClashes(clashes) {
     .sort((a, b) => a.from - b.from || b.depth - a.depth);
 }
 
+/**
+ * Detect overlapping end-card torn-paper labels (e.g. two slogan strips touching or overlapping in XY).
+ * Uses each label's outer rim (falling back to sheet) curve footprint in world space.
+ */
+export function labelOverlaps(anim, { tol = 0.008, zTol = 0.06, minSecs = 0.25, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const byIdx = new Map();
+  for (const o of anim.objects) {
+    const m = o.name.match(/^label(\d+)_(rim|sheet)$/);
+    if (!m || o.geo?.type !== "curve" || !o.geo.rings?.length) continue;
+    const idx = +m[1], kind = m[2];
+    if (!byIdx.has(idx) || kind === "rim") byIdx.set(idx, o);
+  }
+  const labels = [...byIdx.entries()].sort((a, b) => a[0] - b[0]).map(([idx, o]) => {
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    return {
+      idx,
+      name: `label${idx}`,
+      o,
+      corners: [
+        [Math.min(...xs), Math.min(...ys), 0],
+        [Math.max(...xs), Math.min(...ys), 0],
+        [Math.min(...xs), Math.max(...ys), 0],
+        [Math.max(...xs), Math.max(...ys), 0],
+      ],
+    };
+  });
+  if (labels.length < 2) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const active = [];
+    for (const lb of labels) {
+      const w = worldOf(lb.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      const wp = lb.corners.map((c) => apply(w, c));
+      const xs = wp.map((p) => p[0]), ys = wp.map((p) => p[1]), zs = wp.map((p) => p[2]);
+      active.push({
+        lb,
+        x0: Math.min(...xs), x1: Math.max(...xs),
+        y0: Math.min(...ys), y1: Math.max(...ys),
+        z: zs.reduce((a, b) => a + b, 0) / zs.length,
+      });
+    }
+    const seenNow = new Set();
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        const A = active[i], B = active[j];
+        if (Math.abs(A.z - B.z) > zTol) continue;
+        const ovX = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0);
+        const ovY = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
+        if (ovX <= tol || ovY <= tol) continue;
+        const depth = Math.min(ovX, ovY);
+        const pk = `${A.lb.name}|${B.lb.name}`;
+        seenNow.add(pk);
+        const cur = open.get(pk);
+        if (!cur) open.set(pk, { a: A.lb.name, b: B.lb.name, from: t, to: t, peak: t, ovX, ovY, depth });
+        else {
+          cur.to = t;
+          if (depth > cur.depth) Object.assign(cur, { depth, ovX, ovY, peak: t });
+        }
+      }
+    }
+    for (const [pk, c] of open) if (!seenNow.has(pk)) { out.push(c); open.delete(pk); }
+  }
+  out.push(...open.values());
+  // Ignore transient 1–2 frame slap-in / backOut scale-pop fly-bys; flag settled overlaps that persist on screen.
+  return out.filter((o) => o.to - o.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.depth - a.depth);
+}
+
+export function describeLabelOverlaps(overlaps) {
+  return overlaps.map((o) => ({
+    kind: "into",
+    ...o,
+    text: `${o.from.toFixed(1)}–${o.to.toFixed(1)} s: ${o.a} overlaps ${o.b} (${(o.depth / MM).toFixed(0)} mm overlap at ${o.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect when the toy or end-card prop is partially cropped by a camera frame edge during settled motion
+ * (ignoring fast vertical jump entries/exits and completely off-screen frames).
+ */
+export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025, minSecs = 0.25, every = 2, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const camObj = objects.get("camera");
+  const fovs = anim.scalars?.fov;
+  if (!camObj || !fovs?.length) return [];
+
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const toyProbes = anim.objects
+    .filter((o) => o.geo && o.name !== toy && under(o, toy))
+    .map((o) => ({ o, pts: probesOf(o.geo, file) }))
+    .filter((p) => p.pts.length);
+
+  const ctaFloor = objects.get("cta_floor");
+  const ctaCenter = ctaFloor ? unpack(ctaFloor.tr).p : null;
+  const propSpecs = ctaCenter
+    ? anim.objects
+        .filter((o) => o.geo && !under(o, toy) && !o.letter && !o.mat?.outline && !SKIP_NAME.test(o.name)
+          && !/^label\d+_/.test(o.name) && o.name !== "crown" && boxSpec(o))
+        .map((o) => ({ o, spec: boxSpec(o) }))
+    : [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    let w = { p: [0, 0, 0], q: [0, 0, 0, 1], s: [1, 1, 1] };
+    if (o) {
+      const local = sampleAt(name, s) ?? unpack(o.tr);
+      w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    }
+    memo.set(name, w);
+    return w;
+  };
+
+  const dt = every / anim.fps;
+  const prevCenter = new Map();
+  const open = new Map();
+  const out = [];
+
+  const checkTarget = (name, pts, f, t, camW, tanX, tanY) => {
+    if (!pts.length) {
+      if (open.has(name)) { out.push(open.get(name)); open.delete(name); }
+      prevCenter.delete(name);
+      return;
+    }
+    const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length;
+    const cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    const cz = pts.reduce((a, p) => a + p[2], 0) / pts.length;
+    const prev = prevCenter.get(name);
+    prevCenter.set(name, [cx, cy, cz, f]);
+    const fastMove = prev && f - prev[3] === every && (Math.abs(cy - prev[1]) / dt > 0.35 || Math.hypot(cx - prev[0], cz - prev[2]) / dt > 1.5);
+    if (fastMove) {
+      if (open.has(name)) { out.push(open.get(name)); open.delete(name); }
+      return;
+    }
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of pts) {
+      const lp = toLocal(camW, p);
+      if (lp[2] >= -0.05) {
+        if (open.has(name)) { out.push(open.get(name)); open.delete(name); }
+        return;
+      }
+      const nx = lp[0] / (-lp[2] * tanX);
+      const ny = lp[1] / (-lp[2] * tanY);
+      if (nx < minX) minX = nx; if (nx > maxX) maxX = nx;
+      if (ny < minY) minY = ny; if (ny > maxY) maxY = ny;
+    }
+    // Completely off-screen: not a partial edge crop
+    if (maxX < -1 || minX > 1 || maxY < -1 || minY > 1) {
+      if (open.has(name)) { out.push(open.get(name)); open.delete(name); }
+      return;
+    }
+    const edges = [];
+    let past = 0;
+    for (const [edge, v] of [["left", -minX - 1], ["right", maxX - 1], ["bottom", -minY - 1], ["top", maxY - 1]]) {
+      if (v > margin) { edges.push(edge); if (v > past) past = v; }
+    }
+    if (!edges.length) {
+      if (open.has(name)) { out.push(open.get(name)); open.delete(name); }
+      return;
+    }
+    const cur = open.get(name);
+    if (!cur) open.set(name, { target: name, edges: new Set(edges), from: t, to: t, peak: t, past });
+    else {
+      cur.to = t;
+      for (const e of edges) cur.edges.add(e);
+      if (past > cur.past) Object.assign(cur, { past, peak: t });
+    }
+  };
+
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360);
+    const tanX = tanY * aspect;
+
+    // 1) hero points
+    const heroPts = [];
+    for (const { o, pts: local } of toyProbes) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      for (const [lp] of local) heroPts.push(apply(w, lp));
+    }
+    checkTarget("hero", heroPts, f, t, camW, tanX, tanY);
+
+    // 2) end-card prop corners (only when camera is on the CTA stage, within 5 m of cta_floor)
+    if (ctaCenter && Math.hypot(camW.p[0] - ctaCenter[0], camW.p[2] - ctaCenter[2]) < 5) {
+      const propPts = [];
+      for (const { o, spec } of propSpecs) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+        if (Math.hypot(w.p[0] - ctaCenter[0], w.p[2] - ctaCenter[2]) > 2.5) continue;
+        const obb = worldOBB(spec, w);
+        for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+          propPts.push([
+            obb.c[0] + sx * obb.h[0] * obb.axes[0][0] + sy * obb.h[1] * obb.axes[1][0] + sz * obb.h[2] * obb.axes[2][0],
+            obb.c[1] + sx * obb.h[0] * obb.axes[0][1] + sy * obb.h[1] * obb.axes[1][1] + sz * obb.h[2] * obb.axes[2][1],
+            obb.c[2] + sx * obb.h[0] * obb.axes[0][2] + sy * obb.h[1] * obb.axes[1][2] + sz * obb.h[2] * obb.axes[2][2],
+          ]);
+        }
+      }
+      checkTarget("cta_prop", propPts, f, t, camW, tanX, tanY);
+    } else if (open.has("cta_prop")) {
+      out.push(open.get("cta_prop")); open.delete("cta_prop");
+      prevCenter.delete("cta_prop");
+    }
+  }
+  out.push(...open.values());
+  return out
+    .filter((c) => c.to - c.from >= minSecs - 1e-6)
+    .map((c) => ({ ...c, edges: [...c.edges] }))
+    .sort((a, b) => a.from - b.from);
+}
+
+export function describeEdgeCrops(crops) {
+  return crops.map((c) => ({
+    kind: "warn",
+    ...c,
+    text: `${c.from.toFixed(1)}–${c.to.toFixed(1)} s: ${c.target} is cropped at the ${c.edges.join("/")} frame edge (${Math.round(c.past * 50)}% past edge at ${c.peak.toFixed(2)} s)`,
+  }));
+}
+
 // ── transforms ──
 function trackReader(anim) {
   const T = anim.tracks ?? {};

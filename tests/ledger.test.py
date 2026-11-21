@@ -111,5 +111,34 @@ class Words(unittest.TestCase):
         self.assertTrue(how["kingao"][0]["story"]["pitch"])
 
 
+class ReadingAndLook(unittest.TestCase):
+    def test_reading_match_prefers_clean_full_line_over_noisy_background_line(self):
+        import reading  # noqa: E402
+        # Tiny background header sharing "9,515" at 0.30 must not drag down a crisp 0.99 foreground counter
+        how, _ = reading.match("9,515 关注者", [("500 -> 9,515 / 10K", 0.30), ("9,515 关注者", 0.99)], base=0.95)
+        self.assertEqual(how, "ok")
+        # Genuine low confidence with no clean full match still reports shaky
+        how2, _ = reading.match("9,515 关注者", [("9,515 关注者", 0.25)], base=0.95)
+        self.assertEqual(how2, "shaky")
+
+    def test_pin_look_persists_non_dark_stage_and_halo_for_delivered_film(self):
+        import colors  # noqa: E402
+        with tempfile.TemporaryDirectory(prefix="pin-look-") as tmp:
+            fdir = Path(tmp)
+            # Dark navy toy (>=15% dark) auto-selects mid/grey stage + halo
+            (fdir / "toy.json").write_text(json.dumps({
+                "colors": {"coat": "#101420"},
+                "parts": [{"name": "body", "shape": "ellipsoid", "r": [0.03, 0.05, 0.03], "mat": "coat"}],
+            }))
+            (fdir / "film.json").write_text(json.dumps({"id": "dark-toy-test", "toy": "toy.json", "step": "done"}))
+            pinned = colors.pin_look(fdir)
+            self.assertIsNotNone(pinned)
+            self.assertIn(pinned["stage"], ("mid", "grey"))
+            self.assertIn("halo", pinned)
+            # Re-reading after step=done now keeps the pinned stage instead of reverting to dark
+            stage_name, _ = colors.stage_for(fdir)
+            self.assertEqual(stage_name, pinned["stage"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

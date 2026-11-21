@@ -77,6 +77,10 @@ for kv in [argv[i + 1] for i, a in enumerate(argv) if a == "--set"]:
         raise SystemExit(f"--set takes one of {', '.join(ledger.DIMS)}")
     desc[k] = json.loads(v) if v.startswith("[") else v
 if "--add" in argv:
+    import colors  # noqa: E402
+    pinned = colors.pin_look(FILM)
+    if pinned:
+        print(f"pinned approved look into film.json: stage={pinned['stage']}")
     n = ledger.add(desc)
     said = len(ledger.lines(desc))
     print(f"ledger: {desc['name']} kept ({n} films), {len(desc['colours'])} colours on screen, {said} lines of its story and parts in words → {ledger.path()}")

@@ -30,7 +30,8 @@ const SAFE = JSON.parse(readFileSync(fromSkill("engine/lib/platforms.json"), "ut
 // the cover walls once they stand up (m): their width is the story's, their height the cover's
 const coverAspect = (f, w, h) => { const c = readFilmJSON(f, null); return c ? c.h / c.w : h / w; };
 const WALL_W_M = S.coverMM / 1000;
-const D = places(L, { portrait: PORTRAIT, aspect: ASPECT, safe: SAFE }, { w: WALL_W_M, h2: WALL_W_M * coverAspect("build/cover2.json", 1983, 793), h3: WALL_W_M * coverAspect("build/cover.json", 1028, 411) });
+const CTA_MODE = film.cta?.layout ?? "sweep";
+const D = places(L, { portrait: PORTRAIT, aspect: ASPECT, safe: SAFE, ctaLayout: CTA_MODE }, { w: WALL_W_M, h2: WALL_W_M * coverAspect("build/cover2.json", 1983, 793), h3: WALL_W_M * coverAspect("build/cover.json", 1028, 411) });
 // the end card's layout: film.json "cta" pins positions, else the defaults for the orientation
 export const CTA_LAYOUT = D.cta;
 
@@ -73,7 +74,18 @@ const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < S.events.cut 
 // and the prop arrives on that cut as it does on the story's own, so the stage is never empty before it; from the
 // toy's landing on (ride) everything keeps its downbeat
 const early = (v) => (Array.isArray(v) ? v.map(early) : +(v - (S.events.cut - END_FROM)).toFixed(4));
-export const EV = END_FROM !== undefined ? { ...S.events, cut: END_FROM, ...Object.fromEntries(["logo", "snail", "eyes"].filter((k) => k in S.events).map((k) => [k, early(S.events[k])])) } : S.events;
+const EV0 = END_FROM !== undefined ? { ...S.events, cut: END_FROM, ...Object.fromEntries(["logo", "snail", "eyes"].filter((k) => k in S.events).map((k) => [k, early(S.events[k])])) } : S.events;
+// Steady "two-column" / "still" end cards have no sweeping pan to wait for: bring slogan, name and handle in soon
+// after landing so every line gets 4+ seconds of unobstructed reading time (unless film.json pins its own events).
+const userEv = film.story?.events ?? {};
+const twoColEv = (CTA_MODE === "two-column" || CTA_MODE === "still") ? {
+  ...(!("glide" in userEv) ? { glide: [+(EV0.ride + 0.25).toFixed(4), +(EV0.ride + 0.26).toFixed(4)] } : {}),
+  ...(!("letters" in userEv) ? { letters: +(EV0.ride + 0.35).toFixed(4) } : {}),
+  ...(!("name" in userEv) ? { name: +(EV0.ride + 1.05).toFixed(4) } : {}),
+  ...(!("final" in userEv) ? { final: +(EV0.ride + 1.45).toFixed(4) } : {}),
+  ...(!("crown" in userEv) ? { crown: [+(EV0.ride + 1.55).toFixed(4), +(EV0.ride + 1.8).toFixed(4)] } : {}),
+} : {};
+export const EV = { ...EV0, ...twoColEv };
 export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
 // the slogan's letters land a half beat apart; a long one closes up (16th notes, say) so its last letter is
 // down before the final lock, and the line holds to the end

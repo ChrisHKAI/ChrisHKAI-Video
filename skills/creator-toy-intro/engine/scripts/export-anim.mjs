@@ -47,7 +47,8 @@ const scalars = W.scalars();
 
 const TIMES = [];
 for (let s = 0; s < SAMPLES; s++) TIMES.push([s, s]);
-for (const cut of W.cuts) TIMES.push([cut * T.FPS * SUB - 0.02, null]); // no frame's shutter spans a cut
+// -0.1 sub-samples = -0.05 Blender frames: keeps the cut sharp while staying well above Blender's 0.01-frame float32 key-merge threshold
+for (const cut of W.cuts) TIMES.push([cut * T.FPS * SUB - 0.1, null]); // no frame's shutter spans a cut
 TIMES.sort((a, b) => a[0] - b[0]);
 for (const [idx, s] of TIMES) {
   const t = idx / (T.FPS * SUB);

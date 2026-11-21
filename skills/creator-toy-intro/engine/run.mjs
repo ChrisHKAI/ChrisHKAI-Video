@@ -60,8 +60,11 @@ import { HOME, findBlender, findPython, toolEnv } from "./lib/tools.js";
 
 const argv = process.argv.slice(2);
 const dash = argv.indexOf("--");
-const names = dash < 0 ? argv : argv.slice(0, dash);
-const extra = dash < 0 ? [] : argv.slice(dash + 1);
+// Also allow trailing flags without `--` (e.g. `run.mjs check --render`) once at least one step name has appeared.
+const firstFlag = dash < 0 ? argv.findIndex((a, i) => i > 0 && a.startsWith("--")) : -1;
+const splitAt = dash >= 0 ? dash : firstFlag;
+const names = splitAt < 0 ? argv : argv.slice(0, splitAt);
+const extra = dash >= 0 ? argv.slice(dash + 1) : firstFlag >= 0 ? argv.slice(firstFlag) : [];
 const GROUPS = { data: ["recipes", "glyphs", "hero", "ui", "anim", "sound"] };
 const steps = names.flatMap((n) => GROUPS[n] ?? [n]);
 if (!steps.length) {
@@ -78,6 +81,39 @@ const scene = () => {
   console.log("(the film's own engine/scene.py)");
   return fromFilm("engine/scene.py");
 };
+// Transient GPU recovery (e.g. macOS Metal kIOGPUCommandBufferCallbackErrorInnocentVictim) can interrupt a long
+// multi-hour Cycles render midway. Auto-resume up to 4 times ONLY when progress was made or a transient GPU error
+// occurred, streaming output live so real failures on frame 1 still fail fast.
+const GPU_TRANSIENT = /kIOGPUCommandBufferCallbackErrorInnocentVictim|MTLCommandBufferErrorDomain|Command buffer not completed|GPU error\/recovery/i;
+const pngCount = (dir) => { try { return readdirSync(dir).filter((f) => f.endsWith(".png")).length; } catch { return 0; } };
+const runRender = (cmd, args, outDir, maxRetries = 4) => new Promise((done) => {
+  const attempt = (n, curArgs) => {
+    const before = pngCount(outDir);
+    console.log(`\n▶ ${cmd} ${curArgs.join(" ")}`);
+    const c = spawn(cmd, curArgs, { stdio: ["inherit", "pipe", "pipe"], cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
+    let tail = "";
+    const tap = (stream) => (chunk) => {
+      stream.write(chunk);
+      tail = (tail + chunk.toString("utf8")).slice(-8000);
+    };
+    c.stdout.on("data", tap(process.stdout));
+    c.stderr.on("data", tap(process.stderr));
+    c.on("exit", (code) => {
+      if (code === 0) return done();
+      const after = pngCount(outDir);
+      const progressed = after > before;
+      const transient = GPU_TRANSIENT.test(tail);
+      if (n < maxRetries && (progressed || transient)) {
+        const nextArgs = curArgs.includes("--resume") ? curArgs : [...curArgs, "--resume"];
+        console.error(`\n! render interrupted (${transient ? "transient GPU recovery" : `${after - before} new frame(s) written`}); auto-resuming pass ${n + 2}/${maxRetries + 1}...`);
+        setTimeout(() => attempt(n + 1, nextArgs), 3000);
+        return;
+      }
+      process.exit(code ?? 1);
+    });
+  };
+  attempt(0, args);
+});
 // long renders keep a Mac awake while the command runs (caffeinate -i: idle sleep; -s: system sleep on power); neither
 // holds off a closed lid or Sleep from the menu, so the full render says so before it starts
 const awake = (cmd, args) => (process.platform === "darwin" ? ["caffeinate", ["-is", cmd, ...args]] : [cmd, args]);
@@ -182,8 +218,11 @@ for (const [i, step] of steps.entries()) {
     case "render": {
       // no --frames: the whole film, its frame count from film.json (duration × fps)
       const all = more.includes("--frames") ? [] : ["--frames", `1-${film.format.duration * film.format.fps}`];
+      const outIdx = more.indexOf("--out");
+      const outDir = fromFilm(outIdx >= 0 && more[outIdx + 1] ? more[outIdx + 1] : "build/render");
       console.log(`\n${SLEEP_NOTE}`);
-      run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...all, ...more]));
+      const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...all, ...more]);
+      await runRender(cmd, args, outDir);
       break;
     }
     case "estimate": {

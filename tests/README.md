@@ -159,5 +159,8 @@ node --test tests/clearance.test.mjs
 ```
 
 Checks hinged/moving door-through-card piercing, intersecting angled picture
-cards, deep prop-into-prop embedding, zero-false-positive guards for compound
-parts, and the `clearance.mjs` CLI exit codes / `build/clearance.json` output.
+cards, deep prop-into-prop embedding, settled end-card torn-paper label
+overlaps, camera-frustum edge-crop warnings, zero-false-positive guards for
+compound parts, the `clearance.mjs` CLI exit codes / `build/clearance.json`
+output, `ui.js` `pageless()` opt-in/auto-detection, `places.js` `two-column`
+steady end-card layout, and `tim-line/figure.js` `roundBox` mm→m conversion.

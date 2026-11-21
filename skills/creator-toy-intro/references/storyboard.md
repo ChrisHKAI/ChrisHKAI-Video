@@ -16,6 +16,16 @@ Check that the ending delivers the hook's promise. Preserve supported facts;
 when the user changes the arc, update facts.json and apply it again before
 rebuilding previews. Older films without a direction use their selected points.
 
+**Hold every preview beside its paper frame (`research/frames/`).** Before
+running the animatic or full render, visually compare each beat's preview
+against the paper frame it came from: confirm the toy has not shrunk relative
+to the frame and that every promised visual element (such as a profile banner,
+origin card, or unresolved hook slot) actually stays inside the frame instead
+of scrolling off an edge. If a custom opening beat uses the creator's rendered
+profile page (`assets/ui.png`), either reference `assets/ui.png` in the beat
+or set `film.story.profilePage: true` so `run.mjs ui` keeps the real page
+instead of writing a blank slab.
+
 ## Verify the animation treatment
 
 A step-2 story proposal approves the narrative only. Turn each agreed beat into

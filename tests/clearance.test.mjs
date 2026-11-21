@@ -5,7 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
+import { places } from "../skills/creator-toy-intro/templates/isnail-30/places.js";
+import { buildFigure } from "../skills/creator-toy-intro/characters/tim-line/figure.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const clearanceCli = join(root, "skills/creator-toy-intro/engine/scripts/clearance.mjs");
@@ -164,4 +167,115 @@ test("clearance.mjs CLI exits 1 on prop-card clash and 0 when clear, writing cla
   assert.match(good.stdout, /go through nothing/);
   const cleanReport = JSON.parse(readFileSync(join(dir, "build/clearance.json"), "utf8"));
   assert.deepEqual(cleanReport.clashes, []);
+});
+
+test("detects settled overlapping end-card torn-paper labels while ignoring separated labels and 1-frame pop-in", () => {
+  const rectRing = (w, h) => [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]];
+  const overlapping = makeAnim(
+    [
+      { name: "label0_rim", geo: { type: "curve", rings: [rectRing(0.50, 0.12)], depth: 0.002 }, mat: { type: "paper" }, tr: pack([-0.20, 0.07, -0.06]) },
+      { name: "label1_rim", geo: { type: "curve", rings: [rectRing(0.36, 0.12)], depth: 0.002 }, mat: { type: "paper" }, tr: pack([0.16, 0.07, -0.058]) },
+    ],
+    {},
+    { frames: 30 },
+  );
+  const found = describeLabelOverlaps(labelOverlaps(overlapping, { every: 1 }));
+  assert.equal(found.length, 1);
+  assert.equal(found[0].a, "label0");
+  assert.equal(found[0].b, "label1");
+  assert.ok(found[0].depth >= 0.06);
+
+  const separated = makeAnim(
+    [
+      { name: "label0_rim", geo: { type: "curve", rings: [rectRing(0.46, 0.11)], depth: 0.002 }, mat: { type: "paper" }, tr: pack([-0.295, 0.07, -0.06]) },
+      { name: "label1_rim", geo: { type: "curve", rings: [rectRing(0.32, 0.11)], depth: 0.002 }, mat: { type: "paper" }, tr: pack([0.208, 0.07, -0.058]) },
+    ],
+    {},
+    { frames: 30 },
+  );
+  assert.deepEqual(labelOverlaps(separated, { every: 1 }), []);
+
+  // Transient 1-frame fly-by (0.03 s < 0.25 s) must not trigger
+  const transient = makeAnim(
+    [
+      { name: "label0_rim", geo: { type: "curve", rings: [rectRing(0.46, 0.11)], depth: 0.002 }, anim: true, tr: pack([-0.295, 0.07, -0.06]) },
+      { name: "label1_rim", geo: { type: "curve", rings: [rectRing(0.32, 0.11)], depth: 0.002 }, anim: true, tr: pack([0.208, 0.07, -0.058]) },
+    ],
+    {
+      label1_rim: Array.from({ length: 30 }, (_, f) => [f, ...pack([f === 5 ? 0.05 : 0.208, 0.07, -0.058])]),
+    },
+    { frames: 30 },
+  );
+  assert.deepEqual(labelOverlaps(transient, { every: 1 }), []);
+});
+
+test("detects settled hero/prop edge crop and stays silent when cleanly framed or jumping fast", () => {
+  const mkScene = (propPos, propYVel = 0) => ({
+    fps: 30,
+    frames: 30,
+    sub: 1,
+    scalars: { fov: Array(30).fill(30) },
+    objects: [
+      { name: "camera", geo: null, camera: true, tr: pack([0, 0.2, 1.5]) },
+      { name: "cta_floor", geo: { type: "plane", w: 10, h: 10 }, tr: pack([0, 0, 0]) },
+      { name: "cta_prop", geo: { type: "roundBox", size: [0.24, 0.12, 0.20], radius: 0.01 }, anim: true, tr: pack(propPos) },
+    ],
+    tracks: propYVel
+      ? { cta_prop: Array.from({ length: 30 }, (_, f) => [f, ...pack([propPos[0], propPos[1] + (f / 30) * propYVel, propPos[2]])]) }
+      : {},
+  });
+
+  // Settled at x = 0.72 -> right edge past frustum (~0.715 at z=0, dist=1.5, fov=30, 16:9)
+  const cropped = describeEdgeCrops(edgeCrops(mkScene([0.70, 0.06, 0]), { every: 1 }));
+  assert.equal(cropped.length, 1);
+  assert.equal(cropped[0].target, "cta_prop");
+  assert.ok(cropped[0].edges.includes("right"));
+
+  // Cleanly inside two-column left position
+  assert.deepEqual(edgeCrops(mkScene([-0.34, 0.06, 0]), { every: 1 }), []);
+
+  // Fast vertical jump out of frame (vy = 1.2 m/s) is intentionally ignored
+  assert.deepEqual(edgeCrops(mkScene([0.70, 0.06, 0], 1.2), { every: 1 }), []);
+});
+
+test("pageless respects story.profilePage and custom beats referencing assets/ui.png", (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "ui-pageless-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  mkdirSync(join(dir, "beats"), { recursive: true });
+  writeFileSync(join(dir, "beats/custom-open.js"), 'const img = "assets/ui.png";\n');
+  writeFileSync(join(dir, "beats/blank-open.js"), 'const img = "assets/other.png";\n');
+
+  const base = { format: { bpm: 120 }, story: { segments: [{ beat: "beats/blank-open.js", bars: 2 }, { story: [24, "end"] }] } };
+  assert.equal(pageless(base, dir), true);
+  assert.equal(pageless({ ...base, story: { ...base.story, profilePage: true } }, dir), false);
+  assert.equal(pageless({ format: { bpm: 120 }, story: { segments: [{ beat: "beats/custom-open.js", bars: 2 }, { story: [24, "end"] }] } }, dir), false);
+});
+
+test("places supports two-column steady end-card layout without changing default sweep", () => {
+  const L = {
+    UI_W: 1280, UI_H: 720,
+    AVATAR: { c: [200, 200], d: 120 },
+    PANELS: { pinned: [100, 300, 600, 200] },
+    ANCHORS: { pinnedCover: [120, 340, 560, 140], count: [500, 480], second: [100, 520, 600, 180], secondCover: [120, 540, 560, 120] },
+  };
+  const sweep = places(L, { portrait: false, aspect: 16 / 9, safe: [0.05, 0.05, 0.95, 0.9] }, { w: 0.4, h2: 0.16, h3: 0.16 });
+  assert.deepEqual(sweep.cta.path, [-0.4, 0.47]);
+
+  const twoCol = places(L, { portrait: false, aspect: 16 / 9, safe: [0.05, 0.05, 0.95, 0.9], ctaLayout: "two-column" }, { w: 0.4, h2: 0.16, h3: 0.16 });
+  assert.deepEqual(twoCol.cta.path, [-0.34, -0.34]);
+  assert.equal(twoCol.cta.sloganWidth, 0.62);
+  assert.ok(twoCol.camera2.every((k) => k.az === 0 && k.target[0] === 0.02));
+});
+
+test("tim-line finish() converts roundBox size and radius from mm to metres", () => {
+  const { parts } = buildFigure({
+    sleeves: "long",
+    hair: [],
+    glasses: [],
+    extra: [{ name: "pocket", group: "chest", shape: "roundBox", pos: [10, 50, 15], size: [12, 14, 4], radius: 2, mat: "shirt" }],
+  });
+  const pocket = parts.find((p) => p.name === "pocket");
+  assert.ok(pocket);
+  assert.deepEqual(pocket.size.map((v) => +v.toFixed(6)), [0.012, 0.014, 0.004]);
+  assert.equal(+pocket.radius.toFixed(6), 0.002);
 });

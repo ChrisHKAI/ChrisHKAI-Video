@@ -276,9 +276,16 @@ def match(expected, lines, base=None):
     said = "".join(t for t, _ in near)
     if got < len(want):
         return "wrong", said
+    threshold = min(SHAKY, base if base is not None else SHAKY)
+    # If one recognised line already contains the entire target cleanly (e.g. foreground "9,515 关注者" at 0.99),
+    # do not let a tiny background UI line sharing digits ("500 -> 9,515 / 10K" at 0.30) drag confidence down.
+    full = [c for t, c in texts if c is not None and _mostly(t, want)
+            and sum(b.size for b in SequenceMatcher(None, want, t, autojunk=False).get_matching_blocks()) >= len(want)]
+    if full:
+        return ("shaky" if max(full) < threshold else "ok"), said
     own = [(t, c) for t, c in near if _mostly(t, want)] or near
     confs = [c for t, c in own if c is not None]
-    return ("shaky" if confs and min(confs) < min(SHAKY, base if base is not None else SHAKY) else "ok"), said
+    return ("shaky" if confs and min(confs) < threshold else "ok"), said
 
 
 def baseline(r, texts, face, em=120):

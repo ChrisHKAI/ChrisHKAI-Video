@@ -247,7 +247,7 @@ def halo_of(sky):
     return hexof(from_oklab([[max(HALO_L, lab[0] + 0.15), lab[1], lab[2]]])[0])
 
 
-def halo_for(film):
+def halo_for(film, ignore_delivered=False):
     """film.json look.halo as {color, size, floor}, or None. By default a film whose stage turned mid or grey for
     its dark toy has one (a dark toy still sits close to a mid stage's tone); look.halo false turns it off, a
     {color, size, floor} sets it; a delivered film keeps the look it was approved on."""
@@ -259,17 +259,17 @@ def halo_for(film):
     h = (F.get("look") or {}).get("halo")
     if h is False:
         return None
-    name, stage = stage_for(film)
+    name, stage = stage_for(film, ignore_delivered=ignore_delivered)
     if stage.get("light"):
         return None
     if h is None:
-        if name not in ("mid", "grey") or F.get("step") == "done" or F.get("id") in delivered():
+        if name not in ("mid", "grey") or (not ignore_delivered and (F.get("step") == "done" or F.get("id") in delivered())):
             return None
         h = {}
     return {"color": h.get("color") or halo_of(stage["sky"]), "size": float(h.get("size", 1.8)), "floor": float(h.get("floor", 0.5))}
 
 
-def stage_for(film):
+def stage_for(film, ignore_delivered=False):
     """(name, palette) of the stage this film plays on: film.json look.stage when it says ("dark", "mid",
     "grey", or a colour "#RRGGBB": stage_of); else the dark stage, unless 15% or more of the toy melts into it
     and less melts into a mid one: the slate or the grey, whichever less of it melts into (the grey, on a tie, when
@@ -282,7 +282,7 @@ def stage_for(film):
     name = (F.get("look") or {}).get("stage")
     if isinstance(name, str) and name.startswith("#") and len(name) == 7:
         return name.upper(), stage_of(name)
-    if name not in STAGES and (F.get("step") == "done" or F.get("id") in delivered()):
+    if name not in STAGES and not ignore_delivered and (F.get("step") == "done" or F.get("id") in delivered()):
         name = "dark"  # a delivered film keeps the stage it was approved on
     if name not in STAGES:
         dark = darkness(film, STAGES["dark"]["sky"])
@@ -299,6 +299,33 @@ def stage_for(film):
             if melt[mid] < dark:
                 name = mid
     return name, STAGES[name]
+
+
+def pin_look(film):
+    """Persist an auto-selected non-dark stage and halo into film.json before delivery/ledger so reopening the film
+    later never reverts its approved mid/grey stage back to dark."""
+    film = Path(film)
+    p = film / "film.json"
+    if not p.exists():
+        return None
+    try:
+        F = json.loads(p.read_text())
+    except Exception:
+        return None
+    look = dict(F.get("look") or {})
+    if look.get("stage"):
+        return None
+    name, _ = stage_for(film, ignore_delivered=True)
+    if name == "dark":
+        return None
+    look["stage"] = name
+    if "halo" not in look:
+        h = halo_for(film, ignore_delivered=True)
+        if h is not None:
+            look["halo"] = h
+    F["look"] = look
+    p.write_text(json.dumps(F, ensure_ascii=False, indent=2) + "\n")
+    return look
 
 
 def problems(fc):

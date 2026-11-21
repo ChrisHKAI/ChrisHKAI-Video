@@ -48,6 +48,11 @@ brief alone, as if you had never seen the film.
 Then:
 - **Fix only the three problems the reviewer ranks first**, and render again
   only what they touch (`diff-anim`, storyboard.md).
+- **Re-check motion in EEVEE after any timing or rhythm change.** Whenever
+  round-1 fixes change segment lengths, holds, or beat choreography, re-run
+  `run.mjs animatic` and `run.mjs review` (a minute in EEVEE) before starting
+  a multi-hour Cycles render—still preview frames hide 2–3 s static holds that
+  the half-second animatic contact sheets expose immediately.
 - **Run the review again**, once at most.
 - **The user's word wins, and they hear the other side.** When the reviewer
   argues with something the user decided ("no snail", the slogan, how a

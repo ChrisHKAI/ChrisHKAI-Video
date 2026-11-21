@@ -276,7 +276,7 @@ function finish(parts, joints) {
   for (const p of parts) {
     if (p.pts) Object.assign(p, { pts: p.pts.map(M), radii: M(p.radii) });
     if (p.r) p.r = M(p.r);
-    for (const k of ["w", "d", "t", "corner", "bevel"]) if (p[k] !== undefined) p[k] = Array.isArray(p[k]) ? M(p[k]) : p[k] * mm;
+    for (const k of ["w", "d", "t", "corner", "bevel", "size", "radius"]) if (p[k] !== undefined) p[k] = Array.isArray(p[k]) ? M(p[k]) : p[k] * mm;
     if (p.outline) p.outline = p.outline.map(M);
     p.pos = p.pos ? M(p.pos) : [0, 0, 0];
     for (const l of p.paint ?? []) {

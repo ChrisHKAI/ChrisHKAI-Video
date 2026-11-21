@@ -82,3 +82,17 @@ When fixing a prop or card clash:
   arc, and delay card forward motion until the doors clear the corridor.
 - **Layered picture cards**: stagger `z` depth or widen `x`/`yaw` spacing so
   adjacent cards stay clear of one another (`>= 10 mm`).
+
+## End-card label overlaps and frame-edge crops
+
+- **Label overlaps (`labelOverlaps`)**: `clearance.mjs`, `check.mjs`, and
+  `storyboard` also check all end-card torn-paper labels (`label<i>_rim` /
+  `label<i>_sheet`) against each other once settled (`>= 0.25 s`). Two slogan
+  strips touching or overlapping by `>= 8 mm` block `--render`; widen their
+  horizontal gap, reduce `em`, or use `cta.layout: "two-column"`.
+- **Edge crops (`edgeCrops`)**: `clearance.mjs` and `check.mjs` project the
+  settled toy (`hero`) and end-card prop (`cta_prop`) through the active
+  camera frustum and warn (`!`) whenever either is partially cut off by a
+  frame edge for `>= 0.25 s` (fast vertical jump entries/exits are ignored).
+  Pull the camera back or switch the end card to `cta.layout: "two-column"`
+  so nothing clips an edge mid-pan.

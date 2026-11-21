@@ -26,10 +26,10 @@ export function places(L, frame, walls) {
   };
   const K = (t, target, dist, elev, az, fstop) => ({ t, target, dist, elev, az, fstop });
   const cx = C[0] + C[2] / 2, cb = C[1] + C[3];
-  return frame.portrait ? portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) : landscape({ spots, K, A, P, R, cx, cb });
+  return frame.portrait ? portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) : landscape(frame, { spots, K, A, P, R, cx, cb });
 }
 
-function landscape({ spots, K, A, P, R, cx, cb }) {
+function landscape(frame, { spots, K, A, P, R, cx, cb }) {
   const camera = [
     K(0.0, [P[0] + 280, P[1] - 80, 0], 1.55, 44, -24, 8), // the whole page
     K(1.0, [A.c[0] + 10, A.c[1] + 20, 20], 0.75, 28, -10, 5), // in on the picture
@@ -61,7 +61,17 @@ function landscape({ spots, K, A, P, R, cx, cb }) {
     K(24.4, "wallFront", 0.86, 4, 0, 11),
   ];
   // after the cut: the CTA stage (targets in metres from the stage)
-  const camera2 = [
+  // Default "sweep" glides left-to-right across the slogan; "two-column" holds steady framing with the toy + prop
+  // full and uncropped on the left and stacked name / handle / slogan on the right (no mid-pan edge cropping).
+  const twoCol = frame.ctaLayout === "two-column" || frame.ctaLayout === "still";
+  const camera2 = twoCol ? [
+    K(24.3833, [0.02, 0.17, 0.02], 1.38, 8, 0, 10),
+    K(25.2, [0.02, 0.17, 0.02], 1.34, 8, 0, 10),
+    K(26.8, [0.02, 0.17, 0.02], 1.32, 8, 0, 10),
+    K(28.0, [0.02, 0.17, 0.02], 1.30, 8, 0, 10),
+    K(29.0, [0.02, 0.17, 0.02], 1.30, 8, 0, 10),
+    K(30.0, [0.02, 0.17, 0.02], 1.30, 8, 0, 10),
+  ] : [
     K(24.3833, [-0.4, 0.16, 0], 1.05, 9, 8, 9),
     K(25.2, [-0.4, 0.21, 0], 0.78, 8, 12, 7),
     K(25.8, [-0.36, 0.21, 0], 0.72, 8, 10, 7),
@@ -72,7 +82,15 @@ function landscape({ spots, K, A, P, R, cx, cb }) {
   ];
   // the end card: the slogan stands on the floor where the snail crawls, the
   // name and handle above; the toy points at the camera's last place
-  const cta = {
+  const cta = twoCol ? {
+    path: [-0.34, -0.34],
+    pointAt: [0.02, 0.17 + 1.30 * Math.sin(0.14), 1.30 * Math.cos(0.14)],
+    slogan: [{ em: 0.072, at: [0.22, 0.142, -0.055], tilt: -0.012 }, { em: 0.072, at: [0.22, 0.048, -0.055], tilt: 0.015 }],
+    sloganStep: [0, -0.094, 0],
+    sloganWidth: 0.62,
+    name: { em: 0.092, at: [0.22, 0.345, -0.08], tilt: -0.022 },
+    handle: { em: 0.056, at: [0.22, 0.245, -0.075], tilt: 0.016 },
+  } : {
     path: [-0.4, 0.47],
     pointAt: [0.03, 0.15 + 1.5 * Math.sin(0.157), 1.5 * Math.cos(0.157)],
     slogan: [{ em: 0.1, at: [-0.36, 0.064, -0.06], tilt: -0.012 }, { em: 0.1, at: [0.1, 0.07, -0.058], tilt: 0.02 }],
@@ -135,8 +153,16 @@ function portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) {
   // the end card stacks: name, handle, the slogan's lines, then the snail and
   // the toy along the floor; the text stays clear of the platform's top bar
   // and bottom captions
+  const twoCol = frame.ctaLayout === "two-column" || frame.ctaLayout === "still";
   const last = K(28.0, [0, 0.455, 0.02], 2.4, 6, 0, 10);
-  const camera2 = [
+  const camera2 = twoCol ? [
+    { ...last, t: 24.3833, dist: 2.46 },
+    { ...last, t: 25.4, dist: 2.42 },
+    { ...last, t: 26.8, dist: 2.4 },
+    last,
+    { ...last, t: 29.0 },
+    { ...last, t: 30.0 },
+  ] : [
     K(24.3833, [-0.2, 0.2, 0], 1.15, 9, 8, 9),
     K(25.2, [-0.2, 0.25, 0], 0.9, 8, 12, 7),
     K(25.8, [-0.17, 0.26, 0], 0.85, 8, 10, 7),
@@ -152,7 +178,7 @@ function portrait(L, frame, walls, { spots, K, A, P, R, cx, cb }) {
     last.target[2] + last.dist * Math.cos(rad(last.az)) * Math.cos(rad(last.elev)),
   ];
   const cta = {
-    path: [-0.2, 0.06],
+    path: twoCol ? [0, 0] : [-0.2, 0.06],
     pointAt,
     slogan: [{ em: 0.065, at: [0, 0.555, -0.06], tilt: -0.012 }, { em: 0.065, at: [0, 0.455, -0.058], tilt: 0.02 }],
     sloganStep: [0, -0.1, 0],

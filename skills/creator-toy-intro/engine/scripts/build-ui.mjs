@@ -43,7 +43,7 @@ if (platform) {
 
 for (const d of ["ui", "assets", "build"]) mkdirSync(fromFilm(d), { recursive: true });
 const asset = (f) => `'file://${encodeURI(fromFilm(f))}'`; // for url(...) inside double-quoted attributes
-const list = pages({ theme, film, L, asset });
+const list = pages({ theme, film, L, asset, filmDir: FILM });
 for (const p of list) writeFileSync(fromFilm(p.html), p.page);
 
 function chrome() {

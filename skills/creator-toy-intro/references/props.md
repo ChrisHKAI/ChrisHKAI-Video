@@ -76,6 +76,19 @@ the toy's feet stand, `topAt`) is about 0.08 m above the stage. A prop much
 taller than that is cut by the frame: keep its top near 0.08 m, or move the
 end card's camera (film.json `story.camera2`).
 
+## End-card layout (`cta.layout`)
+
+By default (`"sweep"`), the prop glides left-to-right across the floor while
+the slogan slaps down behind it. To avoid repeating the sweeping end card—or
+when a wide/tall prop would clip the bottom or right edge mid-pan—set
+`"layout": "two-column"` (or `"still"`) in `film.json` `"cta"`:
+- **Landscape (16:9)**: steady, gently settling camera with the toy and full
+  uncropped prop on the left (`x = -0.34`), and the name, handle, and
+  two-line slogan stacked unobstructed on the right (`x = 0.22`) starting
+  shortly after landing (4+ s reading time).
+- **Portrait (9:16)**: steady centered camera with stacked text above and
+  uncropped toy + prop below.
+
 ## Check
 
 Previews at 24.5, 24.9, 25.3, 26.5 and 29 s: the prop reads as what it

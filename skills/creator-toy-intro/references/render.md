@@ -61,7 +61,9 @@ On Windows or Linux, ask the user to set the computer not to sleep for
 those hours. It prints each frame with the time left (by the last frames'
 pace), says when a frame took far longer than the others (the computer
 slept on the way), and `--resume` picks up from the frames already on disk
-if it stops. While it runs, look at a few finished frames now and
+if it stops (`run.mjs render` also auto-resumes up to 4 times on transient
+GPU recovery errors such as macOS Metal command-buffer resets, once frames
+are writing). While it runs, look at a few finished frames now and
 then (`build/render/`): stop early if something is wrong rather than an
 hour later. After a late change, render only the frames `diff-anim.py`
 lists (`references/storyboard.md`).
