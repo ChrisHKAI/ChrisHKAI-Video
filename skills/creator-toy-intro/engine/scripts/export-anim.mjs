@@ -11,6 +11,7 @@
 //
 // usage: FILM=<film folder> node engine/scripts/export-anim.mjs
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { film, FILM, fromFilm, importTemplate } from "../lib/film.js";
 import { trs } from "../lib/quat.js";
@@ -100,5 +101,13 @@ if (W.reads) writeFileSync(join(root, "build/reads.json"), JSON.stringify(W.read
 else rmSync(join(root, "build/reads.json"), { force: true });
 const out = { fps: T.FPS, frames: FRAMES, sub: SUB, samples: SAMPLES, objects, tracks: outTracks, colors: outColors, scalars };
 mkdirSync(join(root, "build"), { recursive: true });
-writeFileSync(join(root, "build/anim.json"), JSON.stringify(out));
+const animJson = JSON.stringify(out);
+writeFileSync(join(root, "build/anim.json"), animJson);
+const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
+const curFilm = JSON.parse(readFileSync(fromFilm("film.json"), "utf8"));
+const { step: _step, ...sceneFilm } = curFilm ?? {};
+writeFileSync(join(root, "build/.anim-meta.json"), JSON.stringify({
+  filmSceneHash: createHash("sha256").update(JSON.stringify(canonical(sceneFilm))).digest("hex"),
+  animHash: createHash("sha256").update(animJson).digest("hex"),
+}, null, 1));
 console.log(`anim.json: ${objects.length} objects, ${Object.keys(outTracks).length} animated, ${keys} keys, ${SAMPLES} samples`);

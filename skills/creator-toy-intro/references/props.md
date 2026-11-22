@@ -62,10 +62,13 @@ A prop is a module in the film's workspace, set in film.json
 
 `ctx` gives `film`, the story's events `E`, `cta`, the floor `path` ([x0,
 x1] in stage metres, where the line appears), `readFilmJSON`, `glyph`
-(the lettering, as a beat has it) and `lib` (lerp, seg, smooth, easeOut,
-easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN, and
-`line`, `declareLine`, `putLine`: a line of lettering, outlined, standing
-by its lowest point, references/beats.md). Words a prop carves (a
+(the lettering, as a beat has it) and `lib` (`clamp01`, `lerp`, `seg`,
+`smooth`, `easeIn`, `easeOut`, `easeInOut`, `backOut`, `TAU`, `v3`, `trs`,
+`qId`, `qEuler`, `qAxis`, `qMul`, `qRot`, `qFlat`, `apply`, `mulT`, `HIDDEN`,
+`picture`, `cutout`, and `line`, `declareLine`, `putLine`, `facing`, `shade`:
+a line of lettering, outlined, standing by its lowest point,
+references/beats.md). Use `lib.qFlat(yaw)` to lay `arc` floor rings flat in
+the `XZ` plane while spinning horizontally. Words a prop carves (a
 trophy's 「最佳风格 · 你的」) go in film.json `cta.prop.text`, so the glyph
 step makes them. Worked example:
 `templates/isnail-30/props/snail.js` (the built-in `cta.prop.kind:
@@ -85,7 +88,10 @@ when a wide/tall prop would clip the bottom or right edge mid-pan—set
 - **Landscape (16:9)**: steady, gently settling camera with the toy and full
   uncropped prop on the left (`x = -0.34`), and the name, handle, and
   two-line slogan stacked unobstructed on the right (`x = 0.22`) starting
-  shortly after landing (4+ s reading time).
+  shortly after landing (4+ s reading time). Long two-line slogans
+  automatically finish typing early enough to pass `pace.py` while keeping
+  `E.final` independent for the camera point (`story.events.lettersEnd`
+  overrides the typing window directly if needed).
 - **Portrait (9:16)**: steady centered camera with stacked text above and
   uncropped toy + prop below.
 

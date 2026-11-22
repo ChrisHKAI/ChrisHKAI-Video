@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import { unexpectedTools, isPlaceholderAnswer } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
 import { makeLabel, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
@@ -486,4 +487,153 @@ test("grok-search allows Web Search and X Search across Grok versions and reject
     }, 6),
     false,
   );
+});
+
+test("qFlat keeps XY rings strictly horizontal in XZ across arbitrary yaw spins", () => {
+  const ringPts = [[1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]];
+  for (const yaw of [0, 0.7, Math.PI / 2, -1.3]) {
+    const q = qFlat(yaw);
+    for (const p of ringPts) {
+      const r = qRot(q, p);
+      assert.ok(Math.abs(r[1]) < 1e-12, `expected y=0 for yaw=${yaw}, got ${r[1]}`);
+      assert.ok(Math.abs(Math.hypot(r[0], r[2]) - 1) < 1e-12);
+    }
+  }
+  // Confirm intrinsic qEuler(-PI/2, 0.7, 0) tilts vertically (why qFlat exists)
+  assert.ok(Math.abs(qRot(qEuler(-Math.PI / 2, 0.7, 0), [1, 0, 0])[1]) > 0.5);
+});
+
+test("cutout() and picture({ cyclic: false, cutout: true }) preserve orientation and cyclic flags", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-pic-"));
+  try {
+    // Minimal valid 200x100 PNG header (24+ bytes)
+    const png = Buffer.alloc(32);
+    png.writeUInt32BE(0x89504e47, 0);
+    png.writeUInt32BE(0x0d0a1a0a, 4);
+    png.writeUInt32BE(13, 8);
+    png.write("IHDR", 12);
+    png.writeUInt32BE(200, 16);
+    png.writeUInt32BE(100, 20);
+    mkdirSync(join(dir, "assets"), { recursive: true });
+    writeFileSync(join(dir, "film.json"), JSON.stringify({ format: { fps: 30, duration: 10, size: [1920, 1080] } }));
+    writeFileSync(join(dir, "assets/icon.png"), png);
+    const prevFilm = process.env.FILM;
+    process.env.FILM = dir;
+    try {
+      const { picture, cutout } = await import("../skills/creator-toy-intro/engine/lib/pictures.js");
+      const c = cutout("assets/icon.png", 0.12);
+      assert.equal(c.geo.type, "plane");
+      assert.equal(c.mat.type, "sticker");
+      assert.ok(Math.abs(c.h - 0.06) < 1e-9);
+      const tr = c.at([1, 2, 3], QID, 0.5);
+      assert.deepEqual(tr.q, QID);
+      assert.deepEqual(tr.s, [0.5, 0.5, 0.5]);
+
+      const c2 = picture("assets/icon.png", 0.12, { cutout: true });
+      assert.equal(c2.geo.type, "plane");
+
+      const vidHold = picture("assets/icon.png", 0.4, { movie: "assets/clip.mp4", frames: 180, start: 61, cyclic: false });
+      assert.equal(vidHold.mat.cyclic, false);
+      assert.ok(Math.abs(vidHold.geo.unitScale - 2.0) < 1e-6);
+
+      const vidLoop = picture("assets/icon.png", 0.4, { movie: "assets/clip.mp4", frames: 180, start: 61 });
+      assert.equal("cyclic" in vidLoop.mat, false);
+    } finally {
+      if (prevFilm === undefined) delete process.env.FILM;
+      else process.env.FILM = prevFilm;
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("offStageObjects catches double-at() and missing-at() props without false positives on multi-beat stages", () => {
+  const box = { type: "roundBox", size: [0.2, 0.04, 0.01], radius: 0.004 };
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([200, 0.2, 0.8]) },
+    { name: "beat1_good", parent: "root", geo: box, tr: pack([200, 0.2, 0]) },
+    { name: "beat1_doubleAt", parent: "root", geo: box, tr: pack([400, 0.2, 0]) },
+    { name: "beat1_missingAt", parent: "root", geo: box, tr: pack([0, 0.2, 0]) },
+  ];
+  const tracks = {
+    // 0..1.5 s on Beat 1 (x=200), 1.5..3.0 s on Beat 2 (x=250) while beat1_good stays unparked at x=200
+    camera: [
+      [0, ...pack([200, 0.2, 0.8])],
+      [44, ...pack([200, 0.2, 0.8])],
+      [45, ...pack([250, 0.2, 0.8])],
+      [89, ...pack([250, 0.2, 0.8])],
+    ],
+    beat1_good: [[0, ...pack([200, 0.2, 0])], [89, ...pack([200, 0.2, 0])]],
+    beat1_doubleAt: [[0, ...pack([400, 0.2, 0])], [44, ...pack([400, 0.2, 0])], [45, ...pack([0, -1, 0], QID, [1e-4, 1e-4, 1e-4])]],
+    beat1_missingAt: [[0, ...pack([0, 0.2, 0])], [44, ...pack([0, 0.2, 0])], [45, ...pack([0, -1, 0], QID, [1e-4, 1e-4, 1e-4])]],
+  };
+  const hits = offStageObjects(makeAnim(objects, tracks, { frames: 90 }));
+  assert.equal(hits.length, 2);
+  const byName = Object.fromEntries(hits.map((h) => [h.name, h]));
+  assert.equal(byName.beat1_doubleAt.cause, "double-at");
+  assert.equal(byName.beat1_missingAt.cause, "off-stage");
+  assert.match(describeOffStageObjects([byName.beat1_doubleAt])[0].text, /called at\(\.\.\.\) twice/);
+});
+
+test("lineOverlaps flags colliding 3D headlines while clearing stacked lines and counter digits", () => {
+  const glyphSq = { type: "curve", rings: [[[0, 0], [0.04, 0], [0.04, 0.04], [0, 0.04]]], depth: 0.003 };
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([0, 0.2, 1.0]) },
+    { name: "beat1_stuck0", letter: "困", line: "stuck", letterIndex: 0, geo: glyphSq, tr: pack([-0.02, 0.25, 0]) },
+    { name: "beat1_dir0", letter: "换", line: "dir", letterIndex: 0, geo: glyphSq, tr: pack([-0.01, 0.25, 0]) },
+    { name: "beat1_sub0", letter: "开", line: "sub", letterIndex: 0, geo: glyphSq, tr: pack([-0.01, 0.18, 0]) },
+    { name: "beat1_r0_7", letter: "7", step: true, geo: glyphSq, tr: pack([-0.20, 0.25, 0]) },
+    { name: "beat1_r1_4", letter: "4", step: true, geo: glyphSq, tr: pack([-0.19, 0.25, 0]) },
+  ];
+  const tracks = {
+    camera: [[0, ...pack([0, 0.2, 1.0])], [30, ...pack([0, 0.2, 1.0])]],
+    beat1_stuck0: [[0, ...pack([-0.02, 0.25, 0])], [15, ...pack([-0.02, 0.25, 0])], [16, ...pack([0, -1, 0], QID, [1e-4, 1e-4, 1e-4])]],
+    beat1_dir0: [[0, ...pack([0, -1, 0], QID, [1e-4, 1e-4, 1e-4])], [5, ...pack([-0.01, 0.25, 0])], [30, ...pack([-0.01, 0.25, 0])]],
+    beat1_sub0: [[0, ...pack([-0.01, 0.18, 0])], [30, ...pack([-0.01, 0.18, 0])]],
+    beat1_r0_7: [[0, ...pack([-0.20, 0.25, 0])], [30, ...pack([-0.20, 0.25, 0])]],
+    beat1_r1_4: [[0, ...pack([-0.19, 0.25, 0])], [30, ...pack([-0.19, 0.25, 0])]],
+  };
+  const hits = lineOverlaps(makeAnim(objects, tracks, { frames: 31 }));
+  assert.equal(hits.length, 1);
+  assert.match(describeLineOverlaps(hits)[0].text, /beat1_dir.*beat1_stuck|beat1_stuck.*beat1_dir/);
+});
+
+test("oversizedUiBoxes catches raw trs() on kit.picture() while clearing pic.at() and UI panels", () => {
+  const picGeo = { type: "uiBox", rect: [-300, -200, 600, 400], uvRect: [0, 0, 600, 400], thickness: 0.01, unitScale: 0.4 };
+  const panelGeo = { type: "uiBox", rect: [-720, -450, 1440, 900], uvRect: [0, 0, 1440, 900], thickness: 0.008 };
+  const objects = [
+    { name: "panel_nav", geo: panelGeo, tr: pack([0, 0, 0], QID, [1, 1, 1]) },
+    { name: "beat1_okPic", geo: picGeo, tr: pack([0, 0.2, 0], UPRIGHT, [0.4, 0.4, 0.4]) },
+    { name: "beat1_rawTrs", geo: picGeo, tr: pack([0, 0.2, 0], QID, [1, 1, 1]) },
+  ];
+  const hits = oversizedUiBoxes(makeAnim(objects, {}, { frames: 12 }));
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].name, "beat1_rawTrs");
+  assert.match(describeOversizedUiBoxes(hits)[0].text, /pic\.at/);
+});
+
+test("movieWraps warns when a cyclic video card runs out of frames while visible and clears cyclic:false or full-length clips", () => {
+  const cardGeo = { type: "uiBox", rect: [-200, -112, 400, 224], uvRect: [0, 0, 400, 224], thickness: 0.005 };
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([200, 0.2, 0.8]) },
+    { name: "beat1_shortWrap", geo: cardGeo, mat: { type: "ui", movie: "assets/short.mp4", frames: 30, start: 11 }, tr: pack([200, 0.2, 0], UPRIGHT, [0.5, 0.5, 0.5]) },
+    { name: "beat1_holdLast", geo: cardGeo, mat: { type: "ui", movie: "assets/short.mp4", frames: 30, start: 11, cyclic: false }, tr: pack([200, 0.2, 0], UPRIGHT, [0.5, 0.5, 0.5]) },
+    { name: "beat1_longEnough", geo: cardGeo, mat: { type: "ui", movie: "assets/long.mp4", frames: 80, start: 11 }, tr: pack([200, 0.2, 0], UPRIGHT, [0.5, 0.5, 0.5]) },
+    { name: "beat1_spinner", geo: cardGeo, mat: { type: "ui", movie: "assets/spin.mp4", frames: 20, start: 1 }, tr: pack([200, 0.2, 0], UPRIGHT, [0.5, 0.5, 0.5]) },
+  ];
+  // Frames 1..50 visible: shortWrap (start 11 + 30 = 41 <= 50, len=40 < 60) wraps once before cut -> flagged!
+  // holdLast has cyclic:false -> clean! longEnough (11 + 80 = 91 > 50) -> clean! spinner (len=50 >= 2*20) -> clean!
+  const park = pack([200, -2, 0], QID, [1e-4, 1e-4, 1e-4]);
+  const show = pack([200, 0.2, 0], UPRIGHT, [0.5, 0.5, 0.5]);
+  const tracks = {
+    camera: [[0, ...pack([200, 0.2, 0.8])], [59, ...pack([200, 0.2, 0.8])]],
+    beat1_shortWrap: [[0, ...park], [9, ...park], [10, ...show], [49, ...show], [50, ...park]],
+    beat1_holdLast: [[0, ...park], [9, ...park], [10, ...show], [49, ...show], [50, ...park]],
+    beat1_longEnough: [[0, ...park], [9, ...park], [10, ...show], [49, ...show], [50, ...park]],
+    beat1_spinner: [[0, ...show], [49, ...show], [50, ...park]],
+  };
+  const hits = movieWraps(makeAnim(objects, tracks, { frames: 60 }));
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].name, "beat1_shortWrap");
+  assert.match(describeMovieWraps(hits)[0].text, /wraps back to frame 1/);
 });

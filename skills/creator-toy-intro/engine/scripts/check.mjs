@@ -8,11 +8,15 @@
 // usage: FILM=<film folder> node engine/scripts/check.mjs [--quiet: only ! and ✗] [--render: and the storyboard
 //        page's checks and the user's sign-off, before the full render]
 import { existsSync, readFileSync, statSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps } from "../lib/clearance.js";
+
+const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
+const filmSceneHash = (f) => { const { step: _step, ...rest } = f ?? {}; return createHash("sha256").update(JSON.stringify(canonical(rest))).digest("hex"); };
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -151,8 +155,8 @@ if (past("toy") && toy && film.profile) {
     } catch (e) {
       say("bad", `the world does not build: ${e.message.split("\n")[0]}`, hint(e));
     }
-    // every picture the scene opens
-    const images = new Set(objects.flatMap((o) => [o.mat?.image, o.geo?.img?.image]).filter(Boolean));
+    // every picture or movie the scene opens
+    const images = new Set(objects.flatMap((o) => [o.mat?.image, o.mat?.movie, o.geo?.img?.image]).filter(Boolean));
     if (objects.some((o) => o.mat?.type === "cover")) ["assets/cover-wall.png", "assets/cover-full.png"].forEach((p) => images.add(p));
     if (film.posts?.pinned?.cover) images.add(film.posts.pinned.cover);
     for (const p of images) if (!existsSync(fromFilm(p))) say("bad", `the scene opens ${p}, which is not there`, whoWrites(p));
@@ -189,7 +193,12 @@ if (past("toy") && toy && film.profile) {
   // where the toy goes into something, from the motion as built (run.mjs anim): worth a look while
   // previewing, a stop before the full render
   const animPath = fromFilm("build/anim.json");
-  if (existsSync(animPath) && statSync(animPath).mtimeMs >= statSync(fromFilm("film.json")).mtimeMs) {
+  const animMeta = json("build/.anim-meta.json");
+  const animFresh = existsSync(animPath) && (
+    statSync(animPath).mtimeMs >= statSync(fromFilm("film.json")).mtimeMs ||
+    (animMeta?.filmSceneHash && animMeta.filmSceneHash === filmSceneHash(film))
+  );
+  if (animFresh) {
     const motion = JSON.parse(readFileSync(animPath, "utf8"));
     const { contacts, height } = clearance(motion, { file: (p) => fromFilm(p) });
     // letters standing on a floor by their baseline sink their lowest strokes into it
@@ -205,6 +214,8 @@ if (past("toy") && toy && film.profile) {
     const labels = describeLabelOverlaps(labelOverlaps(motion));
     for (const m of labels) say(process.argv.includes("--render") ? "bad" : "warn", `end-card labels overlap: ${m.text}`, "widen the gap between film.json cta.slogan / name / handle positions (or use cta.layout: \"two-column\")");
     if (!labels.length) say("ok", "no end-card labels overlap");
+    const lines = describeLineOverlaps(lineOverlaps(motion));
+    for (const m of lines) say(process.argv.includes("--render") ? "bad" : "warn", `3D lettering lines overlap: ${m.text}`, "finish fading the outgoing line before bringing the next line onto the same coordinates (references/beats.md)");
     const [fw, fh] = fmt.size ?? [1920, 1080];
     const crops = describeEdgeCrops(edgeCrops(motion, { aspect: fw / fh, file: (p) => fromFilm(p) }));
     for (const m of crops) say("warn", `edge crop: ${m.text}`, "pull camera back slightly or switch end card to cta.layout: \"two-column\" so nothing is cut off at a frame edge");
@@ -212,6 +223,12 @@ if (past("toy") && toy && film.profile) {
     for (const m of floating) say("warn", `floating small 3D lettering: ${m.text}`, "print small text flat onto the plaque with kit.picture() (or mount flush < 3 mm) so it does not smear with double shadows (references/beats.md)");
     const offStage = describeOffStageHero(offStageHero(motion));
     for (const m of offStage) say(process.argv.includes("--render") ? "bad" : "warn", `off-stage toy: ${m.text}`, "wrap toy positions in at(x, y, z) instead of bare [x, y, z] so the toy stays on the beat's stage (references/beats.md)");
+    const offObjs = describeOffStageObjects(offStageObjects(motion));
+    for (const m of offObjs) say(process.argv.includes("--render") ? "bad" : "warn", `off-stage object: ${m.text}`, "wrap stage-local coordinates in at(x, y, z) once—never call at(...) a second time on a point already in world space");
+    const oversized = describeOversizedUiBoxes(oversizedUiBoxes(motion));
+    for (const m of oversized) say(process.argv.includes("--render") ? "bad" : "warn", `oversized picture card: ${m.text}`, "place kit.picture() cards with pic.at(pos, q, scale) instead of raw trs(...) (references/beats.md)");
+    const wraps = describeMovieWraps(movieWraps(motion));
+    for (const m of wraps) say("warn", `video card wraps while visible: ${m.text}`, "lengthen the video clip to cover the full visible stretch, or pass { cyclic: false } to kit.picture() so it holds its final frame");
   } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
 }
 
@@ -222,7 +239,11 @@ if (process.argv.includes("--render")) {
   const anim = fromFilm("build/anim.json");
   if (!page) say("bad", "no storyboard page yet: the user signs off the previews before the full render", "run.mjs storyboard, render its preview frames, show the page (references/storyboard.md)");
   else {
-    const stale = existsSync(anim) && statSync(fromFilm("build/storyboard/checks.json")).mtimeMs < statSync(anim).mtimeMs;
+    const sbMeta = json("build/storyboard/.meta.json");
+    const curAnimHash = existsSync(anim) && sbMeta?.animHash ? createHash("sha256").update(readFileSync(anim)).digest("hex") : null;
+    const stale = existsSync(anim)
+      && statSync(fromFilm("build/storyboard/checks.json")).mtimeMs < statSync(anim).mtimeMs
+      && !(curAnimHash && curAnimHash === sbMeta.animHash);
     if (stale) say("bad", "the film changed since the storyboard page was made", "run.mjs storyboard again (and the previews it lists), and show the user what changed");
     for (const c of page) if (!c.ok) say("bad", `the storyboard page: ${c.text}`, "fix it, or tell the user why it stays and start with -- --force");
     if (page.every((c) => c.ok) && !stale) say("ok", `the storyboard page: all ${page.length} checks pass`);

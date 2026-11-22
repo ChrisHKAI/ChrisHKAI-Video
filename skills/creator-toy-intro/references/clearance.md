@@ -96,3 +96,14 @@ When fixing a prop or card clash:
   frame edge for `>= 0.25 s` (fast vertical jump entries/exits are ignored).
   Pull the camera back or switch the end card to `cta.layout: "two-column"`
   so nothing clips an edge mid-pan.
+- **3D headline overlaps (`lineOverlaps`)**: checks distinct 3D `letter` lines
+  on the same stage and flags transitions where an outgoing headline has not
+  finished hiding before the incoming headline appears on the same spot.
+- **Off-stage objects (`offStageHero`, `offStageObjects`)**: flags a visible
+  toy or custom beat/CTA prop that never comes within range of the active
+  camera—catching both missing `at(x, y, z)` (`x ≈ 0`) and accidental double
+  `at(POS[0], POS[1], POS[2])` calls (`x ≈ 2 × stage`).
+- **Unscaled picture cards & cyclic video wraps (`oversizedUiBoxes`,
+  `movieWraps`)**: flags `kit.picture()` cards placed with raw `trs(...)`
+  instead of `pic.at(...)`, and warns when a cyclic video card runs out of
+  frames and wraps back to frame 1 while still visible on screen.

@@ -9,10 +9,11 @@
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { film, fromFilm, fromSkill, readFilmJSON } from "#engine/film.js";
-import { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3 } from "#engine/math.js";
-import { trs, qId, qEuler, apply, mulT } from "#engine/quat.js";
+import { clamp01, lerp, seg, smooth, easeIn, easeOut, easeInOut, backOut, TAU, v3 } from "#engine/math.js";
+import { trs, qId, qEuler, qAxis, qMul, qRot, qFlat, apply, mulT } from "#engine/quat.js";
 import { makeSegments } from "#engine/segments.js";
 import { line, declareLine, putLine, facing, shade } from "#engine/lettering.js";
+import { picture, cutout } from "#engine/pictures.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
@@ -75,21 +76,34 @@ const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < S.events.cut 
 // toy's landing on (ride) everything keeps its downbeat
 const early = (v) => (Array.isArray(v) ? v.map(early) : +(v - (S.events.cut - END_FROM)).toFixed(4));
 const EV0 = END_FROM !== undefined ? { ...S.events, cut: END_FROM, ...Object.fromEntries(["logo", "snail", "eyes"].filter((k) => k in S.events).map((k) => [k, early(S.events[k])])) } : S.events;
+export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
+const sloganReadSecs = (text) => {
+  const cjk = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]/g) ?? []).length;
+  const words = (text.match(/[A-Za-z0-9@#]+(?:[,.'%+][A-Za-z0-9]+)*%?/g) ?? []).length;
+  return cjk / 4.5 + words / 3 + 1.5;
+};
+const maxLastLetter = +(STORY_DURATION - sloganReadSecs(SLOGAN) - 0.04).toFixed(4);
 // Steady "two-column" / "still" end cards have no sweeping pan to wait for: bring slogan, name and handle in soon
-// after landing so every line gets 4+ seconds of unobstructed reading time (unless film.json pins its own events).
+// after landing (and early enough for long two-line slogans to pass pace.py) while keeping E.final independent for
+// the camera point (events.lettersEnd overrides the typing window directly when needed).
 const userEv = film.story?.events ?? {};
+const defaultLettersStart = maxLastLetter < EV0.ride + 0.8
+  ? Math.max(+(EV0.cut + 0.06).toFixed(4), +(maxLastLetter - Math.max(0.45, [...SLOGAN].length * 0.025)).toFixed(4))
+  : +(EV0.ride + 0.35).toFixed(4);
 const twoColEv = (CTA_MODE === "two-column" || CTA_MODE === "still") ? {
   ...(!("glide" in userEv) ? { glide: [+(EV0.ride + 0.25).toFixed(4), +(EV0.ride + 0.26).toFixed(4)] } : {}),
-  ...(!("letters" in userEv) ? { letters: +(EV0.ride + 0.35).toFixed(4) } : {}),
+  ...(!("letters" in userEv) ? { letters: defaultLettersStart } : {}),
   ...(!("name" in userEv) ? { name: +(EV0.ride + 1.05).toFixed(4) } : {}),
   ...(!("final" in userEv) ? { final: +(EV0.ride + 1.45).toFixed(4) } : {}),
   ...(!("crown" in userEv) ? { crown: [+(EV0.ride + 1.55).toFixed(4), +(EV0.ride + 1.8).toFixed(4)] } : {}),
 } : {};
 export const EV = { ...EV0, ...twoColEv };
-export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
 // the slogan's letters land a half beat apart; a long one closes up (16th notes, say) so its last letter is
-// down before the final lock, and the line holds to the end
-export const LETTER_STEP = Math.min(BEAT / 2, (EV.final - EV.letters - BEAT / 2) / Math.max(1, [...SLOGAN].length - 1));
+// down before lettersEnd (or final), and the line holds to the end without forcing an early camera point
+const lettersWindowEnd = EV.lettersEnd ?? ((CTA_MODE === "two-column" || CTA_MODE === "still")
+  ? Math.min(EV.final, Math.max(EV.letters + BEAT / 2 + 0.2, +(maxLastLetter + BEAT / 2).toFixed(4)))
+  : EV.final);
+export const LETTER_STEP = Math.min(BEAT / 2, (lettersWindowEnd - EV.letters - BEAT / 2) / Math.max(1, [...SLOGAN].length - 1));
 export const SLOGAN_RED = film.cta.slogan[0].text.length; // the second label's letters are red
 export const CTA = S.stage; // the CTA stage: far beyond every other shot's clip distance
 export const SPOT = S.spots ?? D.spots; // places in UI px
@@ -119,7 +133,7 @@ const propGlyph = {
 };
 export const PROP = (await import(PROP_URL)).makeProp({
   film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON, glyph: propGlyph,
-  lib: { lerp, seg, smooth, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine, facing, shade },
+  lib: { clamp01, lerp, seg, smooth, easeIn, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, qAxis, qMul, qRot, qFlat, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine, facing, shade, picture, cutout },
 });
 export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // camera keys: target = [UI x, UI y, height mm] or a tracker name; dist m,

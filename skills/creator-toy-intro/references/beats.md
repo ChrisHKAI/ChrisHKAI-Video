@@ -106,9 +106,9 @@ The beat is that answer as code.
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
 | `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face, but not its `why` and `music`, which never show; anything else, in any face, through film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }`). A word written in the beat's code is not collected: give the beat an option for it in its entry (`text`, `ask`, `cards`), which also lets the user change it, or name its characters in `"glyphs"` |
 | `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
-| `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width)` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`corridor`/`stack(n, …)` (where n cards go; `corridor`: two walls along a path the toy walks, facing in), `stagger(g, i, n, g0, g1)` (card i's arrival), `backToBack(front, back, p, q, k)` (two cards back to back, a badge's two sides: their two transforms; a card's body runs its thickness behind its face, so faces nearer than both thicknesses lie inside each other and render black); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; and for when things do not go its way, the same poses a story's frames use (`engine/lib/poses.json`): `startle` (thrown back, arms flung up), `duck` (head down, arms over it), `slump` (head hanging), `shrug`, `lookUp`, `push` (leaning into a weight, legs working), `kick(…, side)` (its foot furthest at the middle of the span: that is when what it kicks leaves), `holdUp` (a thing over its head); `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `line`, `declareLine`, `putLine`, `facing`, `shade` (a line of lettering, edged, standing by its lowest point, facing the camera: "Lettering" below); `confetti(…)`; `HIDDEN` |
-| `signature` | the toy's own move (toy.json `signature`) on a pose |
-| `math`, `quat`, `mulberry32`, `readFilmJSON` | the engine's helpers |
+| `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width)` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`), `cutout(file, width)` (or `picture(file, width, { cutout: true })`: an alpha-cutout RGBA PNG badge/icon with the same `.geo`, `.mat` and `.at(p, q, k)` interface so transparent outsides never render black), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`corridor`/`stack(n, …)` (where n cards go; `corridor`: two walls along a path the toy walks, facing in), `stagger(g, i, n, g0, g1)` (card i's arrival), `backToBack(front, back, p, q, k)` (two cards back to back, a badge's two sides: their two transforms; a card's body runs its thickness behind its face, so faces nearer than both thicknesses lie inside each other and render black); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; and for when things do not go its way, the same poses a story's frames use (`engine/lib/poses.json`): `startle` (thrown back, arms flung up), `duck` (head down, arms over it), `slump` (head hanging), `shrug`, `lookUp`, `push` (leaning into a weight, legs working), `kick(…, side)` (its foot furthest at the middle of the span: that is when what it kicks leaves), `holdUp` (a thing over its head); `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `line`, `declareLine`, `putLine`, `facing`, `shade` (a line of lettering, edged, standing by its lowest point, facing the camera: "Lettering" below); `confetti(…)`; `HIDDEN` |
+| `signature` | the toy's own move (toy.json `signature`: any `at` target in toy mm uses IK, otherwise a chibi-safe wave) on a pose |
+| `math`, `quat`, `mulberry32`, `readFilmJSON` | the engine's helpers (`quat.qFlat(yaw)` lays an XY-plane `arc` ring or disc flat onto the XZ floor while spinning horizontally by `yaw`—never use `qEuler(-Math.PI / 2, yaw, 0)`, whose intrinsic X-first order tilts the ring vertically into the air) |
 
 It returns, every time in the beat's own seconds `g` (0 to `len`):
 
@@ -153,9 +153,17 @@ toy. Lettering over a wall of pictures needs a plate of its own behind it (a
 dark `roundBox`): their colours are everywhere behind it, the toy's too.
 
 A card can play a film instead of a still: `kit.picture(firstFrame, w, {
-movie: "assets/work/reel.mp4", frames: 240, start: 1 })` plays its frames from
-the film's frame `start`, round and round. Look for the creator's own footage
-before settling on stills (their reels, a demo, their site's media library).
+movie: "assets/work/reel.mp4", frames: 240, start: 1, cyclic: false })` plays
+its frames from the film's frame `start` (`cyclic: true` by default loops round
+and round; pass `cyclic: false` for a showcase clip or drawing progression so
+it holds its final frame instead of snapping back to frame 1 before the cut—
+`check` warns when a cyclic video card wraps while still visible). Always place
+`kit.picture()` cards via `pic.at(pos, q, scale)` rather than raw `trs(...)`
+(`check` flags unscaled `uiBox` cards), and use `kit.cutout(file, w)` for
+transparent RGBA PNG icons or badges so their corners stay transparent. Inspect
+downloaded footage for single-frame white strobe transitions before encoding.
+Look for the creator's own footage before settling on stills (their reels, a
+demo, their site's media library).
 
 - **Multi-layer transparent PNGs (`mat: { type: "sticker" }`)**: when stacking
   several transparent UI or poster layers in depth (e.g. 5–7 exploded panes),
@@ -289,7 +297,12 @@ readable is built in:
   full quality (glass, glass with an edge, chrome, enamel, a lit sign; a short
   render), and their own colour, before settling on one.
 - A line's `reads` start when its last letter lands: a line rising a letter
-  at a time half a second apart is half a line for two seconds.
+  at a time half a second apart is half a line for two seconds. When replacing
+  one 3D headline with another on the same spot, finish fading the outgoing
+  line (`scale <= kit.HIDDEN`) before popping the incoming line in (`check`
+  flags overlapping 3D lines). For rolling `kit.readout` counters, stepping
+  progress in 8–10 crisp ticks (`Math.floor(u * 8) / 8`) avoids motion-blur
+  digit ghosting on half-second review sheets.
 
 The colours are each beat's own: the face and its edge from the creator's
 colours, against that beat's stage and what glows in it. The story page says
@@ -316,9 +329,14 @@ the last segment's leap) and ends with `kit.leapOut`, so the joins read as
 one toy going from stage to stage. When adjacent beats share the same physical
 workbench or world, vary at least one join (e.g. a lateral pan, push-through,
 or workbench continuity) rather than repeating `leapOut` → `dropIn` onto an
-empty floor on every cut. Always wrap every beat-local toy position in
-`at(x, y, z)`—writing bare `[x, y, z]` teleports the toy back to world origin
-while the camera films another stage (`check` flags this as an off-stage toy).
+empty floor on every cut. Always wrap every beat-local toy or prop position in `at(x, y, z)` **once**—
+writing bare `[x, y, z]` teleports an object to world origin, while calling
+`at(POS[0], POS[1], POS[2])` a second time on a point already returned by
+`at(...)` shifts it off-stage to `2 × stage` (`check` flags both as off-stage).
+On wide-headed chibi toys, raise celebratory arms in a forward-pitched high V
+(`o.armL/R = [-0.95, ±0.35, ±2.05]`) rather than `±1.4` rad horizontal (which
+reads as a stiff T-pose) or pure vertical `±2.4` rad with `x = 0` (which tucks
+short arms behind wide cheeks/hair).
 The first segment is the opening the
 story chose (the page floating, which ends on the pinned post, or standing up
 turning right or left, which ends with the toy out in front), the last the

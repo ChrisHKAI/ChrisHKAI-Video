@@ -29,17 +29,30 @@ export const pictureFiles = (dir) => readdirSync(fromFilm(dir)).filter((f) => /\
 
 // a card's face turned to the camera, as the page's panels are (beats/page-stand.js)
 const UPRIGHT = qAxis([1, 0, 0], Math.PI / 2);
+// an alpha-cutout RGBA PNG (an icon, a badge, a transparent layer) standing vertical and facing +z, with the same
+// .geo / .mat / .at(p, q, k) interface as picture() so transparent outsides never render as black rectangles
+export function cutout(file, w) {
+  const [W, H] = imageSize(file);
+  const h = (w * H) / W;
+  return {
+    file, w, h, t: 0.001,
+    geo: { type: "plane", w, h },
+    mat: { type: "sticker", image: file },
+    at: (p, q = qId(), k = 1) => trs(p, q, Math.max(1e-4, k)),
+  };
+}
 // file: a picture in the film; w: the card's width (m). Declare it with its geo and mat, place it with at(p, q, k):
 // centred at p (world), turned by q (qId() faces the camera's +z), k its size (0 hides it).
 // movie: a film (mp4) on the card instead, file its first frame (for the size): it plays its frames from the film's
-// frame start, round and round
-export function picture(file, w, { thickness = 0.002, movie, frames, start = 1 } = {}) {
+// frame start, round and round (or holds its final frame when cyclic is false). cutout: true delegates to cutout().
+export function picture(file, w, { thickness = 0.002, movie, frames, start = 1, cyclic = true, cutout: isCutout = false } = {}) {
+  if (isCutout) return cutout(file, w);
   const [W, H] = imageSize(file);
   const s = w / (W * 0.001); // built at a millimetre a pixel, then scaled to w
   return {
     file, w, h: (w * H) / W, t: thickness,
-    geo: { type: "uiBox", rect: [-W / 2, -H / 2, W, H], uvRect: [0, 0, W, H], img: { image: file, w: W, h: H }, thickness: thickness / s },
-    mat: movie ? { type: "ui", image: file, movie, frames, start } : { type: "ui", image: file },
+    geo: { type: "uiBox", rect: [-W / 2, -H / 2, W, H], uvRect: [0, 0, W, H], img: { image: file, w: W, h: H }, thickness: thickness / s, unitScale: +s.toFixed(6) },
+    mat: movie ? { type: "ui", image: file, movie, frames, start, ...(cyclic === false ? { cyclic: false } : {}) } : { type: "ui", image: file },
     at: (p, q = qId(), k = 1) => trs(p, qMul(q, UPRIGHT), Math.max(1e-4, s * k)),
   };
 }

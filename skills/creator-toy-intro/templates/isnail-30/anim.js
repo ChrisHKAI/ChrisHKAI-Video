@@ -17,7 +17,7 @@ import { makePeel } from "#engine/peel.js";
 import { counterLayout, countEase, counterGlyphs, counterText, slotCount } from "#engine/counter.js";
 import { mulberry32 } from "#engine/rng.js";
 import { qId, qMul, qAxis, qEuler, qRot, qConj, trs, apply, mulT } from "#engine/quat.js";
-import { restBounds } from "#engine/clearance.js";
+import { restBounds, armLiftLimit } from "#engine/clearance.js";
 
 export const MM = 0.001;
 export const SLAB_T = 0.008;
@@ -217,7 +217,7 @@ function storyPose(t) {
     o.head = v3.add(o.head, [-0.12 * g, -0.1 * g, -0.1 * g]);
     o.body = [-0.06 * g, 0.12 * g, 0];
     o.armR = [0.1 * g, 0, -0.25 - 0.1 * g];
-    o.glint = SIG.move === "glasses" ? Math.exp(-Math.pow((t - E.lensGlint) / 0.09, 2)) : 0;
+    o.glint = (SIG.move === "glasses" || Array.isArray(SIG.at)) ? Math.exp(-Math.pow((t - E.lensGlint) / 0.09, 2)) : 0;
     o.ears = [0, 0, 0.08 * Math.sin(t * 7) * g];
     return o;
   }
@@ -563,13 +563,19 @@ export function mascotAt(t) {
   return { hero: heroT(o, CENTER), o };
 }
 // the toy's own move once it lands and again on the prop (toy.json "signature"):
-// fingers to its glasses at `at` (mm, toy space), or, by default, a wave (a
-// cat's raised paw)
+// hand to a target at `at` (mm, toy space: glasses, cap-tip, hat, badge…), or, by default, a chibi-safe wave
 const SIG = TOY.signature ?? { move: "wave" };
+const SIG_LIFT = armLiftLimit(TOY, fromFilm, 2.3);
+const SIG_FWD = SIG_LIFT < 2.2 ? -0.22 : 0;
 export function signature(o, t, t0, g) {
   if (g <= 0) return;
-  if (SIG.move === "glasses") { o.aimL = { target: SIG.at, k: smooth(g) }; return; }
-  o.armL = [0, 0, lerp(o.armL[2], 2.3 + 0.35 * Math.sin((t - t0) * TAU * 2.5), smooth(g))];
+  if (SIG.move === "glasses" || (Array.isArray(SIG.at) && SIG.at.length === 3)) {
+    const aim = { target: SIG.at, k: smooth(g) };
+    if (SIG.side === "R") o.aimR = aim; else o.aimL = aim;
+    return;
+  }
+  const k = smooth(g), w = (SIG_LIFT < 2.2 ? 0.25 : 0.35) * Math.sin((t - t0) * TAU * 2.5);
+  o.armL = [SIG_FWD * k, 0, lerp(o.armL[2], SIG_LIFT + w, k)];
 }
 export function mascotParts(t) {
   const { hero, o } = mascotAt(t);

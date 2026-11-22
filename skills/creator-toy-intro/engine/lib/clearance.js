@@ -1002,6 +1002,278 @@ export function describeOffStageHero(items) {
 }
 
 /**
+ * Detect custom beat or end-card objects that are visible for >= minSecs yet NEVER come within maxDist m
+ * of the active camera across their entire visible lifetime—catching both missing `at(...)` (placed at
+ * world origin ~150 m away) and double `at(POS[0], POS[1], POS[2])` (shifted to 2× stage offset ~200 m away).
+ */
+export function offStageObjects(anim, { maxDist = 8.0, minSecs = 0.2, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  if (!objects.has("camera") || !anim.tracks?.camera?.length) return [];
+  const SKIP_OFF = /_(floor|conf\d+|flake\d+|spark\d+|bit\d+)$|^cta_floor$/i;
+  const targets = anim.objects.filter((o) => {
+    if (!o.geo || (o.parent && o.parent !== "root")) return false;
+    if (!/^(beat\d+_|cta_)/.test(o.name) || SKIP_OFF.test(o.name)) return false;
+    if (o.mat?.outline) return false;
+    if (o.letter && (o.letterIndex ?? 0) > 0) return false;
+    return true;
+  });
+  if (!targets.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const stats = new Map();
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const cw = worldOf("camera", s, memo);
+    for (const o of targets) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.01) continue;
+      const d = Math.hypot(w.p[0] - cw.p[0], w.p[1] - cw.p[1], w.p[2] - cw.p[2]);
+      const st = stats.get(o.name);
+      if (!st) stats.set(o.name, { name: o.name, from: t, to: t, minDist: d, sampleX: w.p[0], camX: cw.p[0], count: 1 });
+      else {
+        st.to = t;
+        st.count++;
+        if (d < st.minDist) { st.minDist = d; st.sampleX = w.p[0]; st.camX = cw.p[0]; }
+      }
+    }
+  }
+  const out = [];
+  for (const st of stats.values()) {
+    if (st.count >= 2 && st.to - st.from >= minSecs - 1e-6 && st.minDist > maxDist) {
+      const doubleAt = Math.abs(st.camX) > 50 && Math.abs(st.sampleX) > Math.abs(st.camX) * 1.6;
+      out.push({
+        name: st.name,
+        from: st.from,
+        to: st.to,
+        dist: st.minDist,
+        cause: doubleAt ? "double-at" : "off-stage",
+      });
+    }
+  }
+  return out.sort((a, b) => a.from - b.from || b.dist - a.dist);
+}
+
+export function describeOffStageObjects(items) {
+  return items.map((m) => ({
+    kind: "bad",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: ${m.name} is visible but stays ${m.dist.toFixed(1)} m from the camera (${m.cause === "double-at" ? "likely called at(...) twice on a point already in world space" : "likely missing at(...) on its position"})`,
+  }));
+}
+
+/**
+ * Detect two distinct 3D lettering lines overlapping in XY at the same depth (e.g. a headline fading out too
+ * late while the next headline pops onto the same coordinates).
+ */
+export function lineOverlaps(anim, { tol = 0.008, zTol = 0.08, minSecs = 0.15, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const groups = new Map();
+  for (const o of anim.objects) {
+    if (!o.letter || o.pop || o.mat?.outline || /^label\d+_/.test(o.name) || o.geo?.type !== "curve" || !o.geo.rings?.length) continue;
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const corners = [
+      [Math.min(...xs), Math.min(...ys), 0],
+      [Math.max(...xs), Math.min(...ys), 0],
+      [Math.min(...xs), Math.max(...ys), 0],
+      [Math.max(...xs), Math.max(...ys), 0],
+    ];
+    const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+    const key = o.step ? `${beat}_readout` : (o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, ""));
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ o, corners });
+  }
+  if (groups.size < 2) return [];
+
+  const hasCamera = objects.has("camera") && !!anim.tracks?.camera?.length;
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const idxOf = (o) => o.letterIndex ?? +(o.name.match(/(\d+)$/)?.[1] ?? 0);
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camP = hasCamera ? worldOf("camera", s, memo).p : null;
+    const active = [];
+    for (const [key, ls] of groups) {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, zSum = 0, zN = 0;
+      const chars = [];
+      for (const item of ls) {
+        const w = worldOf(item.o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.2) continue;
+        if (camP && Math.hypot(w.p[0] - camP[0], w.p[1] - camP[1], w.p[2] - camP[2]) > 45) continue;
+        for (const c of item.corners) {
+          const wp = apply(w, c);
+          if (wp[0] < x0) x0 = wp[0];
+          if (wp[0] > x1) x1 = wp[0];
+          if (wp[1] < y0) y0 = wp[1];
+          if (wp[1] > y1) y1 = wp[1];
+          zSum += wp[2];
+          zN++;
+        }
+        chars.push(item.o);
+      }
+      if (!zN) continue;
+      const text = chars.sort((a, b) => idxOf(a) - idxOf(b)).map((o) => o.letter).join("");
+      active.push({ key, text, x0, x1, y0, y1, h: y1 - y0, z: zSum / zN });
+    }
+    const seenNow = new Set();
+    for (let i = 0; i < active.length; i++) {
+      for (let j = i + 1; j < active.length; j++) {
+        const A = active[i], B = active[j];
+        if (Math.abs(A.z - B.z) > zTol) continue;
+        const ovX = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0);
+        const ovY = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
+        const minH = Math.max(1e-4, Math.min(A.h, B.h));
+        if (ovX <= tol || ovY <= tol || ovY < 0.25 * minH) continue;
+        const depth = Math.min(ovX, ovY);
+        const pk = [A.key, B.key].sort().join("|");
+        seenNow.add(pk);
+        const cur = open.get(pk);
+        if (!cur) open.set(pk, { a: A.key, b: B.key, textA: A.text, textB: B.text, from: t, to: t, peak: t, depth });
+        else {
+          cur.to = t;
+          if (depth > cur.depth) Object.assign(cur, { depth, peak: t, textA: A.text, textB: B.text });
+        }
+      }
+    }
+    for (const [pk, c] of open) if (!seenNow.has(pk)) { out.push(c); open.delete(pk); }
+  }
+  out.push(...open.values());
+  return out.filter((o) => o.to - o.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.depth - a.depth);
+}
+
+export function describeLineOverlaps(items) {
+  return items.map((m) => ({
+    kind: "bad",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: 3D lines "${m.textA}" (${m.a}) and "${m.textB}" (${m.b}) overlap on screen (${(m.depth / MM).toFixed(0)} mm overlap at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect uiBox picture cards placed with raw `trs(...)` instead of `pic.at(...)`, which omits the
+ * pixel-to-metre scale factor (`unitScale`) and UPRIGHT turn, inflating cards and laying them flat.
+ */
+export function oversizedUiBoxes(anim, { maxSpan = 2.5, every = 4 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const cards = anim.objects.filter((o) => o.geo?.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4);
+  if (!cards.length) return [];
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const found = new Map();
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    for (const o of cards) {
+      const w = worldOf(o.name, s, memo);
+      const minS = Math.min(...w.s.map(Math.abs));
+      if (minS < 0.02) continue;
+      const span = Math.max(Math.abs(o.geo.rect[2] * MM * w.s[0]), Math.abs(o.geo.rect[3] * MM * w.s[1]));
+      const uScale = o.geo.unitScale;
+      const missedUnitScale = Number.isFinite(uScale) && uScale < 0.65 && Math.abs(w.s[0]) > uScale * 2.2 && span > 0.35;
+      if (span <= maxSpan && !missedUnitScale) continue;
+      const cur = found.get(o.name);
+      if (!cur) found.set(o.name, { name: o.name, from: t, to: t, span });
+      else { cur.to = t; if (span > cur.span) cur.span = span; }
+    }
+  }
+  return [...found.values()].sort((a, b) => a.from - b.from || b.span - a.span);
+}
+
+export function describeOversizedUiBoxes(items) {
+  return items.map((m) => ({
+    kind: "bad",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: ${m.name} is ${m.span.toFixed(1)} m wide (likely placed with trs(...) instead of pic.at(...))`,
+  }));
+}
+
+/**
+ * Detect video picture cards (`mat.movie` with `cyclic !== false`) whose frame count runs out while the card
+ * is still visible in front of the active camera, causing Blender's cyclic playback to snap back to frame 1.
+ */
+export function movieWraps(anim) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const vids = anim.objects.filter((o) => o.mat?.movie && Number.isFinite(o.mat?.frames) && o.mat.frames > 0 && o.mat.cyclic !== false);
+  if (!vids.length) return [];
+  const hasCamera = objects.has("camera") && !!anim.tracks?.camera?.length;
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const out = [];
+  for (const o of vids) {
+    const start = o.mat.start ?? 1, dur = o.mat.frames, wrapFrame = start + dur;
+    let spanStart = null, spanEnd = null;
+    const flush = () => {
+      if (spanStart === null) return;
+      const len = spanEnd - spanStart + 1;
+      const intentionalShortLoop = dur <= 45 && len >= dur * 2;
+      if (!intentionalShortLoop && spanStart < wrapFrame && spanEnd >= wrapFrame + 2) {
+        out.push({
+          name: o.name,
+          movie: o.mat.movie,
+          frames: dur,
+          start,
+          wrapFrame,
+          wrapAt: (wrapFrame - 1) / anim.fps,
+          to: spanEnd / anim.fps,
+        });
+      }
+      spanStart = spanEnd = null;
+    };
+    for (let f = 0; f < anim.frames; f++) {
+      const s = f * SUB, bf = f + 1, memo = new Map();
+      const w = worldOf(o.name, s, memo);
+      const camP = hasCamera ? worldOf("camera", s, memo).p : null;
+      const vis = Math.min(...w.s.map(Math.abs)) >= 0.01 && (!camP || Math.hypot(w.p[0] - camP[0], w.p[1] - camP[1], w.p[2] - camP[2]) <= 45);
+      if (vis) {
+        if (spanStart === null) spanStart = bf;
+        spanEnd = bf;
+      } else flush();
+    }
+    flush();
+  }
+  return out.sort((a, b) => a.wrapAt - b.wrapAt);
+}
+
+export function describeMovieWraps(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.name} ("${m.movie}", ${m.frames} frames from frame ${m.start}) wraps back to frame 1 at ${m.wrapAt.toFixed(2)} s while still visible until ${m.to.toFixed(2)} s`,
+  }));
+}
+
+/**
  * Maximum outward Z arm-lift angle (radians) that keeps a toy's hands visible outside its head silhouette.
  * Slender-headed toys keep the full target angle (e.g. 2.5 rad); wide-headed chibi/sculpt toys clamp
  * toward an outward Victory-V (~1.6–1.8 rad) so short arms do not disappear behind the cheeks.

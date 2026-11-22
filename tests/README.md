@@ -160,13 +160,17 @@ node --test tests/clearance.test.mjs
 
 Checks hinged/moving door-through-card piercing, intersecting angled picture
 cards, deep prop-into-prop embedding, settled end-card torn-paper label
-overlaps, camera-frustum edge-crop warnings, zero-false-positive guards for
-compound parts, `declareLine` / `fastReveal` line-name separation (`slo1` vs
-`slo2`), `floatingSmallLetters` double-shadow detection, `armLiftLimit`
-wide-headed chibi arm clamping, the `clearance.mjs` CLI exit codes /
-`build/clearance.json` output, `ui.js` `pageless()` opt-in/auto-detection,
-`places.js` `two-column` non-overlapping default end-card layout, and
-`tim-line/figure.js` `roundBox` mm→m conversion.
+overlaps, colliding 3D headline lines (`lineOverlaps`), camera-frustum
+edge-crop warnings, zero-false-positive guards for compound parts,
+`declareLine` / `fastReveal` line-name separation (`slo1` vs `slo2`),
+`floatingSmallLetters` double-shadow detection, `armLiftLimit` wide-headed
+chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()` and
+double-`at()` detection, `oversizedUiBoxes` raw-`trs()` picture-card detection,
+`movieWraps` cyclic video wrap warnings, `qFlat` horizontal floor-ring
+quaternions, `cutout()` / `picture({ cyclic: false })` helpers, the
+`clearance.mjs` CLI exit codes / `build/clearance.json` output, `ui.js`
+`pageless()` opt-in/auto-detection, `places.js` `two-column` non-overlapping
+default end-card layout, and `tim-line/figure.js` `roundBox` mm→m conversion.
 
 Engine reliability fixes (`pacing.slanted` hidden-letter filtering, `diff-anim.py`
 hidden-track & texture-asset `--images`/`--since` filtering, `reading.match`

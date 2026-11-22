@@ -247,6 +247,27 @@ class CompareAndScoreTests(unittest.TestCase):
         src = (SKILL / "engine/scripts/check.mjs").read_text()
         self.assertIn("playsAct2", src)
         self.assertIn("floatingSmallLetters", src)
+        self.assertIn("offStageObjects", src)
+        self.assertIn("lineOverlaps", src)
+        self.assertIn("oversizedUiBoxes", src)
+        self.assertIn("movieWraps", src)
+        self.assertIn("filmSceneHash", src)
+
+    def test_scene_cyclic_and_template_prop_signature_helpers(self):
+        scene_src = (SKILL / "engine/scripts/scene.py").read_text()
+        self.assertIn('bool(spec.get("cyclic", True))', scene_src)
+        tl_src = (SKILL / "templates/isnail-30/timeline.js").read_text()
+        self.assertIn("lettersWindowEnd", tl_src)
+        self.assertIn("easeIn", tl_src)
+        self.assertIn("qFlat", tl_src)
+        self.assertIn("cutout", tl_src)
+        anim_src = (SKILL / "templates/isnail-30/anim.js").read_text()
+        self.assertIn("Array.isArray(SIG.at)", anim_src)
+        self.assertIn("SIG_LIFT", anim_src)
+        exp_src = (SKILL / "engine/scripts/export-anim.mjs").read_text()
+        self.assertIn(".anim-meta.json", exp_src)
+        sb_src = (SKILL / "engine/scripts/storyboard.py").read_text()
+        self.assertIn('.meta.json', sb_src)
 
 
 class SceneBevelSpikeBlenderTest(unittest.TestCase):

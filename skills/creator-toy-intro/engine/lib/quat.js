@@ -17,6 +17,8 @@ export function qEuler(rx, ry, rz, order = "XYZ") {
   const qx = qAxis([1, 0, 0], rx), qy = qAxis([0, 1, 0], ry), qz = qAxis([0, 0, 1], rz);
   return order === "YXZ" ? qMul(qMul(qy, qx), qz) : qMul(qMul(qx, qy), qz);
 }
+// lays an XY-plane shape (e.g. an arc ring or disc) flat onto the XZ floor while spinning horizontally by yaw
+export const qFlat = (yaw = 0) => qMul(qAxis([0, 1, 0], yaw), qAxis([1, 0, 0], -Math.PI / 2));
 export function qRot(q, v) {
   const [x, y, z, w] = q;
   const ix = w * v[0] + y * v[2] - z * v[1];

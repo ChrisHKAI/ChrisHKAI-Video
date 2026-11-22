@@ -11,6 +11,7 @@ usage: FILM=<film folder> python3 engine/scripts/storyboard.py [--frames] [--lan
 writes build/storyboard/index.html
 """
 import base64
+import hashlib
 import html
 import io
 import json
@@ -498,3 +499,6 @@ for ok, msg in checks:
     print(("  ✓ " if ok else "  ! ") + msg)
 # what the page found, for check (run.mjs render starts only once every one passes, or the user said why not)
 (OUT / "checks.json").write_text(json.dumps([{"ok": bool(ok), "text": msg} for ok, msg in checks], ensure_ascii=False, indent=1))
+anim_file = FILM / "build/anim.json"
+if anim_file.exists():
+    (OUT / ".meta.json").write_text(json.dumps({"animHash": hashlib.sha256(anim_file.read_bytes()).hexdigest()}, indent=1))
