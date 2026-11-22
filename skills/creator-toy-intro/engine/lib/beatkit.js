@@ -2,11 +2,18 @@
 // toy's pose on the beat's own stage, its moves between beats (it drops in,
 // cheers, leaps out of the top of the frame), the toy and its contact shadow
 // from a pose, and a camera from keys in the beat's own seconds.
+import { fromFilm } from "./film.js";
 import { TOY, CENTER, JOINTS, COLORS } from "./toy.js";
+import { armLiftLimit } from "./clearance.js";
 import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "./rig.js";
 import { makeCamera } from "./camera.js";
 import { clamp01, seg, smooth, easeInOut, lerp, lerpAngle, yawTo, TAU, v3 } from "./math.js";
 import { trs, qId, qEuler, mulT } from "./quat.js";
+
+// Wide-headed chibi/sculpt toys tuck short arms behind the cheeks past ~1.7 rad; slender toys keep the full 2.5 rad.
+const ARM_MAX = armLiftLimit(TOY, fromFilm, 2.5);
+const lift = (a) => Math.min(a, ARM_MAX);
+const cheerForward = ARM_MAX < 2.2 ? -0.22 : 0;
 
 // the creator's own pictures as cards, and layouts for many at once (pictures.js)
 export { picture, pictureFiles, layout, stagger, imageSize, backToBack } from "./pictures.js";
@@ -28,7 +35,8 @@ export function dropIn(o, g, g0, g1, spot) {
   const u = seg(g, g0, g1);
   o.pos = v3.add(spot, [0, 0.9 * Math.pow(1 - u, 2), 0]);
   o.ground = spot[1];
-  o.armR = [0, 0, -2.0]; o.armL = [0, 0, 2.0];
+  const a = lift(2.0);
+  o.armR = [0, 0, -a]; o.armL = [0, 0, a];
   o.legR = [-0.4, 0, 0]; o.legL = [-0.4, 0, 0];
   return o;
 }
@@ -38,16 +46,19 @@ export function leapOut(o, g, g0, g1, spot) {
   o.pos = v3.add(spot, [0, 0.85 * Math.pow(s, 0.8), 0]);
   o.ground = spot[1];
   squash(o, crouch(g, g0, 0.16));
-  o.armR = [0, 0, -2.4 * smooth(s)]; o.armL = [0, 0, 2.4 * smooth(s)];
+  const a = lift(2.4) * smooth(s);
+  o.armR = [0, 0, -a]; o.armL = [0, 0, a];
   o.legR = [0.5 * s, 0, 0]; o.legL = [0.5 * s, 0, 0];
   return o;
 }
 // a jump for joy over g0–g1; returns the squash to add (crouch before, landing after)
 export function cheer(o, g, g0, g1) {
   const s = seg(g, g0, g1), up = Math.sin(Math.PI * s);
+  const k = Math.sin(Math.PI * Math.min(1, s * 1.3));
+  const a = lift(2.5) * k;
   o.pos[1] += 0.05 * up;
-  o.armR = [0, 0, -2.5 * Math.sin(Math.PI * Math.min(1, s * 1.3))];
-  o.armL = [0, 0, 2.5 * Math.sin(Math.PI * Math.min(1, s * 1.3))];
+  o.armR = [cheerForward * k, 0, -a];
+  o.armL = [cheerForward * k, 0, a];
   o.legR = [-0.5 * up, 0, 0]; o.legL = [-0.5 * up, 0, 0];
   return crouch(g, g0, 0.12) + landSquash(g, g1, 0.22);
 }
@@ -59,9 +70,10 @@ export function cheer(o, g, g0, g1) {
 const held = (g, g0, g1, edge = 0.18) => smooth(seg(g, g0, g0 + edge)) * (1 - smooth(seg(g, g1 - edge, g1)));
 // one arm up, waving ("L" its left, "R" its right)
 export function wave(o, g, g0, g1, side = "L") {
-  const k = held(g, g0, g1), w = 0.35 * Math.sin((g - g0) * TAU * 2.5);
-  if (side === "L") o.armL = [0, 0, lerp(o.armL[2], 2.3 + w, k)];
-  else o.armR = [0, 0, lerp(o.armR[2], -2.3 - w, k)];
+  const k = held(g, g0, g1), w = (ARM_MAX < 2.2 ? 0.25 : 0.35) * Math.sin((g - g0) * TAU * 2.5);
+  const base = lift(2.3);
+  if (side === "L") o.armL = [cheerForward * k, 0, lerp(o.armL[2], base + w, k)];
+  else o.armR = [cheerForward * k, 0, lerp(o.armR[2], -base - w, k)];
   o.head = [o.head[0], o.head[1], o.head[2] + 0.12 * k * (side === "L" ? -1 : 1)];
   return o;
 }
@@ -120,7 +132,8 @@ export function sit(o, g, g0, g1) {
 // thrown back, arms flung up, a small start off the floor: a surprise, good or bad
 export function startle(o, g, g0, g1) {
   const k = held(g, g0, g1, 0.09);
-  o.armR = [0.2 * k, 0, lerp(o.armR[2], -1.9, k)]; o.armL = [0.2 * k, 0, lerp(o.armL[2], 1.9, k)];
+  const a = lift(1.9);
+  o.armR = [0.2 * k, 0, lerp(o.armR[2], -a, k)]; o.armL = [0.2 * k, 0, lerp(o.armL[2], a, k)];
   o.head = [o.head[0] - 0.28 * k, o.head[1], o.head[2]];
   o.pitch -= 0.16 * k;
   o.legR = [o.legR[0], 0, -0.18 * k]; o.legL = [o.legL[0], 0, 0.18 * k];

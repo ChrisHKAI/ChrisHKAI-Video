@@ -251,6 +251,11 @@ readable is built in:
 - Lettering that stands on a floor stands by its lowest point (`ln.stand`
   above it): set by its baseline, a descender or a low stroke sinks into the
   floor. `check` says which letters sink, how deep and when.
+- Small lettering on a solid plaque, crossbar or badge (`em` under ~0.045 m)
+  stays flat-printed with `kit.picture()` rather than floating 3D `declareLine`
+  meshes in front of a box: floating 4–35 mm off a backing board casts offset
+  double shadows under the key light and smears every stroke. `check` warns
+  when small 3D lettering floats in front of a solid backing.
 - A finish (`finish`, the type material's own fields): `glass` (0–1: light
   through it, a logo's glassy facets), `shine: true` (a hard shine), `metal`
   (its roughness: chrome 0.08, brass 0.3), `side: "#hex"` (its sides and bevel

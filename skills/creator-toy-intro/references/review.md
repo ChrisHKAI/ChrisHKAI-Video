@@ -74,8 +74,11 @@ Score each from 1 (fails) to 5 (nothing to fix):
    what a new viewer remembers about this creator. Check whether the facts
    form the intended progression, whether the opening gives a reason to care
    (not just a camera move), and whether the ending delivers that promise.
-   Flag unsupported causal links and generic achievement lists. When no
-   direction is supplied, judge the film on these questions anyway.
+   Flag unsupported causal links, generic achievement lists, unexplained jumps
+   between two different project names across adjacent beats, and opaque
+   English repo slugs shown on screen that a general viewer in the film's
+   language would not understand in a glance. When no direction is supplied,
+   judge the film on these questions anyway.
 3. **The pacing.** Where does attention first drift? Always answer with a
    time. Look for a hit in the first 3 s, quiet stretches, a move repeated
    for no reason, and a part that stays longer than it has things to show.

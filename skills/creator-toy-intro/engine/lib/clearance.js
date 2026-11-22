@@ -832,6 +832,171 @@ export function describeEdgeCrops(crops) {
   }));
 }
 
+/**
+ * Detect small 3D extruded lettering (height <= maxH) floating 4–35 mm in front of a solid backing
+ * plaque/box, where directional lighting casts offset dark shadows behind every stroke and smears the line.
+ * Small lettering on a plaque should be printed flat via kit.picture() or mounted flush (< 3 mm).
+ */
+export function floatingSmallLetters(anim, { maxH = 0.045, minGap = 0.004, maxGap = 0.035, minSecs = 0.25, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const groups = new Map();
+  for (const o of anim.objects) {
+    if (!o.letter || o.geo?.type !== "curve" || !o.geo.rings?.length || o.mat?.outline || /^label\d+_/.test(o.name)) continue;
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    const h = Math.max(...ys) - Math.min(...ys);
+    const backZ = (o.geo.depth ?? 0) / 2 + (o.geo.bevel ?? 0);
+    const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+    const key = o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, "");
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ o, cx, cy, h, backZ });
+  }
+  if (!groups.size) return [];
+
+  const hexLum = (hex) => {
+    if (typeof hex !== "string" || !/^#[0-9a-f]{6}$/i.test(hex)) return 0.5;
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  // Include all non-hero solid boxes so a dark signboard occludes bright trim behind it;
+  // only warn when the NEAREST surface behind the line is light/mid (lum > 0.08) and shows double shadows.
+  const backings = anim.objects
+    .filter((o) => o.geo && !under(o, "hero") && !o.letter && !o.mat?.outline && !SKIP_NAME.test(o.name) && boxSpec(o))
+    .map((o) => ({ o, spec: boxSpec(o), lum: hexLum(o.mat?.color) }));
+  if (!backings.length) return [];
+
+  const hasCamera = objects.has("camera") && !!anim.tracks?.camera?.length;
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camP = hasCamera ? worldOf("camera", s, memo).p : null;
+    const activeBackings = [];
+    for (const b of backings) {
+      const ws = worldOf(b.o.name, s, memo);
+      if (Math.min(...ws.s.map(Math.abs)) < 1e-3) continue;
+      if (camP && Math.hypot(ws.p[0] - camP[0], ws.p[1] - camP[1], ws.p[2] - camP[2]) > 45) continue;
+      activeBackings.push({ ...b, ws });
+    }
+    const seenNow = new Set();
+    for (const [key, ls] of groups) {
+      const vis = [];
+      for (const item of ls) {
+        const w = worldOf(item.o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+        const hW = item.h * Math.abs(w.s[1]);
+        vis.push({ item, w, hW });
+      }
+      if (!vis.length) continue;
+      const hs = vis.map((v) => v.hW).sort((a, b) => a - b);
+      const medH = hs[hs.length >> 1];
+      if (medH > maxH) continue;
+
+      // Sample center of visible letters + letter backward normal
+      const mid = vis[vis.length >> 1];
+      const backDir = rot(mid.w.q, [0, 0, -1]);
+      const pCenter = vis.reduce((acc, v) => {
+        const p = apply(v.w, [v.item.cx, v.item.cy, -v.item.backZ]);
+        return [acc[0] + p[0] / vis.length, acc[1] + p[1] / vis.length, acc[2] + p[2] / vis.length];
+      }, [0, 0, 0]);
+
+      let nearest = null;
+      for (const b of activeBackings) {
+        if (Math.hypot(pCenter[0] - b.ws.p[0], pCenter[1] - b.ws.p[1], pCenter[2] - b.ws.p[2]) > 1.5) continue;
+        const lp = toLocal(b.ws, pCenter);
+        const ld = rot([-b.ws.q[0], -b.ws.q[1], -b.ws.q[2], b.ws.q[3]], backDir);
+        const absD = ld.map(Math.abs);
+        const ax = absD[0] >= absD[1] && absD[0] >= absD[2] ? 0 : absD[1] >= absD[2] ? 1 : 2;
+        if (absD[ax] < 0.7) continue;
+        const H = b.spec.h.map((v, i) => v * Math.abs(b.ws.s[i]));
+        const C = b.spec.c.map((v, i) => v * Math.abs(b.ws.s[i]));
+        const o1 = (ax + 1) % 3, o2 = (ax + 2) % 3;
+        if (Math.abs(lp[o1] - C[o1]) > H[o1] || Math.abs(lp[o2] - C[o2]) > H[o2]) continue;
+        const gap = ld[ax] < 0 ? (lp[ax] - (C[ax] + H[ax])) / -ld[ax] : ((C[ax] - H[ax]) - lp[ax]) / ld[ax];
+        if (gap < -0.005 || gap > maxGap) continue;
+        if (!nearest || gap < nearest.gap) nearest = { backing: b.o.name, gap, lum: b.lum };
+      }
+      const hit = nearest && nearest.gap >= minGap && nearest.lum > 0.08 ? nearest : null;
+      if (!hit) continue;
+      const pk = `${key}|${hit.backing}`;
+      seenNow.add(pk);
+      const cur = open.get(pk);
+      if (!cur) {
+        const idxOf = (o) => o.letterIndex ?? +(o.name.match(/(\d+)$/)?.[1] ?? 0);
+        const text = ls.slice().sort((a, b) => idxOf(a.o) - idxOf(b.o)).map((x) => x.o.letter).join("");
+        open.set(pk, { name: key, text, backing: hit.backing, from: t, to: t, peak: t, gap: hit.gap, height: medH });
+      } else {
+        cur.to = t;
+        if (hit.gap > cur.gap) Object.assign(cur, { gap: hit.gap, peak: t, height: medH });
+      }
+    }
+    for (const [pk, c] of open) if (!seenNow.has(pk)) { out.push(c); open.delete(pk); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.gap - a.gap);
+}
+
+export function describeFloatingLetters(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: small 3D line "${m.text}" (${(m.height / MM).toFixed(0)} mm tall) floats ${(m.gap / MM).toFixed(0)} mm in front of ${m.backing} (casts double shadow)`,
+  }));
+}
+
+/**
+ * Maximum outward Z arm-lift angle (radians) that keeps a toy's hands visible outside its head silhouette.
+ * Slender-headed toys keep the full target angle (e.g. 2.5 rad); wide-headed chibi/sculpt toys clamp
+ * toward an outward Victory-V (~1.6–1.8 rad) so short arms do not disappear behind the cheeks.
+ */
+export function armLiftLimit(toy, file = (p) => p, target = 2.5) {
+  const joints = toy?.joints ?? {};
+  const parts = toy?.parts ?? [];
+  const sh = joints.armR?.p ?? joints.armL?.p;
+  if (!sh || !parts.length) return target;
+  const underJoint = (g, want) => {
+    for (let cur = g; cur; cur = joints[cur]?.parent) if (cur === want) return true;
+    return false;
+  };
+  let headHalfX = 0, headTopY = -Infinity, armReach = 0;
+  for (const p of parts) {
+    const [a, b] = partBox(p, file);
+    if (!a) continue;
+    const pos = p.pos ?? [0, 0, 0];
+    const lo = [a[0] + pos[0], a[1] + pos[1], a[2] + pos[2]];
+    const hi = [b[0] + pos[0], b[1] + pos[1], b[2] + pos[2]];
+    if (underJoint(p.group, "head")) {
+      headHalfX = Math.max(headHalfX, Math.abs(lo[0]), Math.abs(hi[0]));
+      headTopY = Math.max(headTopY, hi[1]);
+    } else if (p.group === "armR" || p.group === "armL") {
+      const jp = joints[p.group]?.p ?? sh;
+      for (const x of [lo[0], hi[0]]) for (const y of [lo[1], hi[1]]) {
+        armReach = Math.max(armReach, Math.hypot(x - jp[0], y - jp[1]));
+      }
+    }
+  }
+  const shX = Math.abs(sh[0]), shY = sh[1];
+  if (headHalfX <= 0 || armReach <= 0) return target;
+  const handReach = 0.85 * armReach;
+  const outAtTarget = shX + handReach * Math.sin(target);
+  const tipYAtTarget = shY - armReach * Math.cos(target);
+  if (tipYAtTarget >= headTopY || outAtTarget >= headHalfX + 0.004) return target;
+  const sinMin = Math.min(1, Math.max(0, (headHalfX + 0.006 - shX) / Math.max(1e-4, handReach)));
+  return +Math.max(Math.PI / 2, Math.min(target, Math.PI - Math.asin(sinMin))).toFixed(3);
+}
+
 // ── transforms ──
 function trackReader(anim) {
   const T = anim.tracks ?? {};

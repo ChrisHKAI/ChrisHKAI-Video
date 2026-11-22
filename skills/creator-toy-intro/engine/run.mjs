@@ -5,6 +5,8 @@
 //   steps:  next     where the film stands: what its step still lacks, the commands in order, what to show
 //           check    before Blender, in plain words, what will break (render, estimate and animatic run it
 //                    first; the full render also wants the storyboard page clean and signed off; -- --force)
+//           clearance  frame-by-frame 3D clearance (toy, props/cards, end-card labels, edge crops, floating small type)
+//           diff     which frames to re-render after a motion or texture change (-- old.json new.json | -- --images a.jpg | -- --since build/render)
 //           recipes  the film's own recipe scripts (film.json "recipes": cover cuts, stickers, logo…)
 //           fonts    the faces here that have every character the film shows (each film chooses its own)
 //           typesheet  the film's lines in the faces it might choose, at phone size, read back
@@ -167,6 +169,8 @@ for (const [i, step] of steps.entries()) {
   if (step === "render") gate(!more.includes("--frames") || !more.includes("--samples"));
   switch (step) {
     case "check": run("node", [fromSkill("engine/scripts/check.mjs"), ...more]); break;
+    case "clearance": run("node", [fromSkill("engine/scripts/clearance.mjs"), ...more]); break;
+    case "diff": run(PY, [fromSkill("engine/scripts/diff-anim.py"), ...more]); break;
     case "next": run("node", [fromSkill("engine/scripts/next.mjs")]); break;
     case "recipes":
       // "@tool" is one of the engine's tools (engine/scripts/tool.py); anything else is the film's own recipe

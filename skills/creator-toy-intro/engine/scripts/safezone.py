@@ -11,6 +11,7 @@ hold is among them, is also checked by itself.
 usage: FILM=<film folder> python3 engine/scripts/safezone.py [--in build/previs] [--frames 16,391,871] [--publish douyin,ig]
 writes build/safezone-check.jpg
 """
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -121,8 +122,22 @@ sheet.save(CHECK, quality=90)
 print(f"{len(frames)} frames, {', '.join(PLATFORMS[p]['name'] for p in publish)} → {CHECK.relative_to(FILM)}")
 print("Look at it: counters, labels and the end card's text belong inside the white box, clear of the shaded controls.")
 
-# the end card by itself, when a frame of its hold is here: its content against each platform's controls
-hold = [f for f in frames if int(f.stem) >= (DURATION - 1.5) * FPS]
+# the end card by itself, when a frame of its hold is here: its content against each platform's controls.
+# Read EV.final from build/timeline.json when present so steady early-lock layouts (cta.layout: "two-column")
+# recognize their settled hold frames before DURATION - 1.5 s.
+hold_from = DURATION - 1.5
+tl_path = FILM / "build/timeline.json"
+if tl_path.exists():
+    try:
+        ev = json.loads(tl_path.read_text()).get("EV") or {}
+        final_t = ev.get("final")
+        if isinstance(final_t, (int, float)) and final_t < DURATION:
+            crown = ev.get("crown")
+            crown_end = crown[1] + 0.1 if isinstance(crown, list) and len(crown) == 2 else 0.0
+            hold_from = min(hold_from, max(final_t + 0.5, crown_end))
+    except (OSError, ValueError, TypeError):
+        pass
+hold = [f for f in frames if int(f.stem) >= hold_from * FPS]
 if hold:
     end = Image.open(hold[-1]).convert("RGB")
     box = content_box(end)
@@ -136,4 +151,4 @@ if hold:
         if o:
             print(f"  under {PLATFORMS[p]['name']} {z['kind']}: {o[2] - o[0]}x{o[3] - o[1]} px (labels, toy and prop count together: look whether any text is there)")
 else:
-    print(f"(no frame from the end card's hold, {DURATION - 1.5:g}s on, among them: add one to check the end card by itself)")
+    print(f"(no frame from the end card's hold, {hold_from:g}s on, among them: add one to check the end card by itself)")

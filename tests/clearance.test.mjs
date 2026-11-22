@@ -5,8 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, fastReveal } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { line, declareLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
+import { makeLabel, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
 import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
 import { places } from "../skills/creator-toy-intro/templates/isnail-30/places.js";
 import { buildFigure } from "../skills/creator-toy-intro/characters/tim-line/figure.js";
@@ -313,4 +314,99 @@ test("declareLine tags line/letterIndex so fastReveal keeps slo1 and slo2 separa
   const hits = fastReveal({ fps: 30, frames: 30, sub: 1, objects: fastObjs, tracks: fastTracks });
   assert.equal(hits.length, 1);
   assert.equal(hits[0].text, "把想法做出来");
+});
+
+test("places two-column default label coordinates pass labelOverlaps with zero manual overrides", () => {
+  const L = {
+    UI_W: 1280, UI_H: 720,
+    AVATAR: { c: [200, 200], d: 120 },
+    PANELS: { pinned: [100, 300, 600, 200] },
+    ANCHORS: { pinnedCover: [120, 340, 560, 140], count: [500, 480], second: [100, 520, 600, 180], secondCover: [120, 540, 560, 120] },
+  };
+  const { cta } = places(L, { portrait: false, aspect: 16 / 9, safe: [0.05, 0.05, 0.95, 0.9], ctaLayout: "two-column" }, { w: 0.4, h2: 0.16, h3: 0.16 });
+  const adv = (k) => (k.split(":")[1].codePointAt(0) >= 0x2e80 ? 1.0 : 0.62);
+  const defs = [
+    { id: "s0", text: "AI 视觉工作流", em: cta.slogan[0].em, paper: "cream", c: cta.slogan[0].at, tilt: cta.slogan[0].tilt },
+    { id: "s1", text: "开源找卧云", em: cta.slogan[1].em, paper: "red", c: cta.slogan[1].at, tilt: cta.slogan[1].tilt },
+    { id: "nm", text: "Levi 卧云", em: cta.name.em, paper: "cream", c: cta.name.at, tilt: cta.name.tilt },
+    { id: "hd", text: "@Leviwoyun", em: cta.handle.em, paper: "blue", c: cta.handle.at, tilt: cta.handle.tilt },
+  ];
+  const objects = [], tracks = {};
+  defs.forEach((d, i) => {
+    const lb = makeLabel({ ...d, at: 0, letterAt: () => 0, adv });
+    tear(lb, i);
+    const name = `label${i}_rim`;
+    objects.push({ name, parent: "root", geo: { type: "curve", rings: [lb.rim], depth: 0.002 }, tr: pack(d.c, qAxis([0, 0, 1], d.tilt)) });
+    tracks[name] = [[0, ...pack(d.c, qAxis([0, 0, 1], d.tilt))], [30, ...pack(d.c, qAxis([0, 0, 1], d.tilt))]];
+  });
+  const overlaps = labelOverlaps(makeAnim(objects, tracks, { frames: 30 }));
+  assert.deepEqual(overlaps, [], `expected zero two-column overlaps, got: ${JSON.stringify(describeLabelOverlaps(overlaps))}`);
+});
+
+test("floatingSmallLetters flags small 3D text floating in front of a plaque and ignores flush, large, or open-air text", () => {
+  const mkGlyph = (h) => ({
+    has: () => true,
+    adv: () => 0.85,
+    geo: () => ({ type: "curve", rings: [[[0, 0], [h * 0.8, 0], [h * 0.8, h], [0, h]]], depth: 0.0028, bevel: 0.0003 }),
+  });
+  const objects = [
+    // Warm-cream plaque at z = 0, thickness 0.012 -> front face at z = +0.006 (light surface shows double shadows!)
+    { name: "beat2_arch_subPlaque", parent: "root", geo: { type: "roundBox", size: [0.52, 0.07, 0.012], radius: 0.003 }, mat: { type: "type", color: "#F6E4C8" }, tr: pack([0, 0.35, 0]) },
+    // Near-black navy scoreboard at y = 0.50 with bright gold trim directly behind it (dark board occludes trim -> no false alarm!)
+    { name: "beat2_arch_board", parent: "root", geo: { type: "roundBox", size: [0.52, 0.12, 0.012], radius: 0.003 }, mat: { type: "type", color: "#0F244B" }, tr: pack([0, 0.50, 0]) },
+    { name: "beat2_arch_goldTrim", parent: "root", geo: { type: "roundBox", size: [0.54, 0.13, 0.010], radius: 0.003 }, mat: { type: "type", color: "#FBBF24" }, tr: pack([0, 0.50, -0.006]) },
+  ];
+  const tracks = {
+    beat2_arch_subPlaque: [[0, ...pack([0, 0.35, 0])], [30, ...pack([0, 0.35, 0])]],
+    beat2_arch_board: [[0, ...pack([0, 0.50, 0])], [30, ...pack([0, 0.50, 0])]],
+    beat2_arch_goldTrim: [[0, ...pack([0, 0.50, -0.006])], [30, ...pack([0, 0.50, -0.006])]],
+  };
+  const addLine = (key, text, em, y, z) => {
+    const g = mkGlyph(em);
+    const ln = line(g, text, em);
+    declareLine((o) => {
+      const name = `beat2_${o.name}`;
+      const pos = [o.letterIndex * em * 0.9 - 0.1, y, z];
+      objects.push({ parent: "root", tr: pack(pos), ...o, name });
+      tracks[name] = [[0, ...pack(pos)], [30, ...pack(pos)]];
+    }, key, ln);
+  };
+  // 1) Small 34 mm 3D text floating 10 mm off cream plaque (z = 0.018 -> ~10 mm gap): CAUGHT
+  addLine("floatSub", "开源16天", 0.034, 0.335, 0.018);
+  // 2) Small 34 mm 3D text mounted flush (z = 0.0085 -> gap ~0.8 mm < 4 mm): NOT flagged
+  addLine("flushSub", "贴面文字", 0.034, 0.335, 0.0085);
+  // 3) Large 65 mm display title 12 mm off plaque: NOT flagged (> 45 mm maxH)
+  addLine("bigTitle", "2071", 0.065, 0.33, 0.020);
+  // 4) Small 34 mm 3D text floating in front of near-black navy scoreboard: NOT flagged
+  addLine("navyUnit", "Stars", 0.030, 0.485, 0.018);
+  // 5) Small 34 mm 3D text over open air (y = 0.80, nowhere near plaque): NOT flagged
+  addLine("airText", "浮空大字", 0.034, 0.80, 0.018);
+
+  const hits = floatingSmallLetters(makeAnim(objects, tracks, { frames: 30 }));
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].text, "开源16天");
+  assert.equal(hits[0].backing, "beat2_arch_subPlaque");
+  assert.match(describeFloatingLetters(hits)[0].text, /casts double shadow/);
+});
+
+test("armLiftLimit preserves 2.5 rad on slender toys (isnail) and clamps wide-headed chibi toys outward", () => {
+  const isnailDir = join(root, "skills/creator-toy-intro/example/isnail");
+  const isnail = JSON.parse(readFileSync(join(isnailDir, "toy.json"), "utf8"));
+  assert.equal(armLiftLimit(isnail, (p) => join(isnailDir, p), 2.5), 2.5);
+
+  const chibi = {
+    joints: {
+      body: { p: [0, 0.026, 0], parent: null },
+      head: { p: [0, 0.053, 0], parent: "body" },
+      armR: { p: [-0.0128, 0.0495, 0], parent: "body" },
+      armL: { p: [0.0128, 0.0495, 0], parent: "body" },
+    },
+    parts: [
+      { name: "head", group: "head", shape: "ellipsoid", pos: [0, 0.080, 0], r: [0.032, 0.036, 0.030] },
+      { name: "armR", group: "armR", shape: "roundBox", pos: [-0.015, 0.035, 0], size: [0.009, 0.028, 0.009], radius: 0.003 },
+      { name: "armL", group: "armL", shape: "roundBox", pos: [0.015, 0.035, 0], size: [0.009, 0.028, 0.009], radius: 0.003 },
+    ],
+  };
+  const lim = armLiftLimit(chibi, (p) => p, 2.5);
+  assert.ok(lim >= 1.57 && lim <= 1.9, `expected wide-headed chibi arm lift clamp in [1.57, 1.9], got ${lim}`);
 });

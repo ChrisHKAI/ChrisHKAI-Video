@@ -104,8 +104,9 @@ ${frames.map((f, n) => `${n + 1}. \`${f.picture ? resolve(dir, f.picture) : "(no
 2. What would you come to them for?
 3. Which one frame do you remember, and why that one?
 4. Where did you smile, or feel something? Give the frame's number; "nowhere" is an answer.
-5. Where were you lost, or bored? Name what you could not make out: a thing you did not recognise, a word you did
-   not know, a figure not doing what the line under it says.
+5. Where were you lost, or bored? Name what you could not make out: a thing you did not recognise, an opaque
+   English repo/project name you did not understand, an unexplained jump from one project to another, or a figure
+   not doing what the line under it says.
 6. What did the words add that the pictures had not already told you? (You saw the frames without their words
    first. If you did not: set aside every word and the "moves" lines above, and say which frames still say
    something from the picture alone, and which say nothing.)
@@ -147,9 +148,15 @@ paid search, modelling or rendering. Answer in the creator's language.
    it? A paid service the sources never show does not count.
 2. Continuation: why watch the next beat? Name the question, contrast or demonstration
    that connects the beats; for a one-beat film explain the hook-to-payoff link.
+   If adjacent beats switch from one project to another (e.g. a failed earlier project
+   to a new breakthrough project), verify the on-screen copy states the pivot explicitly
+   ("previous project failed → switched approach, new project") rather than swapping
+   two project names with no bridge.
 3. Specificity: replace the creator's name with another. What actual work, method,
    words or distinctive detail stops the story being interchangeable? A name,
-   avatar or impressive number alone is not an answer.
+   avatar or impressive number alone is not an answer. Also flag any opaque English
+   GitHub repo slug or internal code name shown on screen without explaining in the
+   viewer's plain language what the project actually is.
 4. Action meaning: for each major toy action, what does the viewer learn? Apply
    the deletion test: if the meaning survives unchanged when the action is removed,
    simplify/remove it unless it has a brief, explicit navigation or identity role.

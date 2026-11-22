@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters } from "../lib/clearance.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -62,8 +62,11 @@ if (!toy) {
 if (film.grok === true && !existsSync(fromFilm("research/grok.json"))) say("warn", "the user chose Grok for the X search, but research/grok.json is not there: it has not run, or it failed", "node <skill>/engine/scripts/grok-search.mjs <film> (references/research.md); if it fails, tell the user what it needs");
 if (past("research")) {
   for (const k of ["profile", "cta"]) if (!film[k]) say("bad", `film.json has no "${k}" yet`, "run apply-research (references/research.md)");
+  const segsForAct2 = film.story?.segments;
+  const [a2, b2] = existsSync(fromTemplate("story.json")) ? (JSON.parse(readFileSync(fromTemplate("story.json"), "utf8")).pieces?.act2 ?? [6, 12]) : [6, 12];
+  const playsAct2 = !segsForAct2?.length || segsForAct2.some((s) => s.story === "act2" || s.story === "whole" || (Array.isArray(s.story) && s.story[0] < b2 && (s.story[1] === "end" ? Infinity : s.story[1]) > a2));
   const c = film.counter;
-  if (c) {
+  if (c && playsAct2) {
     const shown = c.display ?? `${c.value}${c.unit}`;
     if (!/^\+?\d[\d,]*(\.\d+)?\s*\S{0,2}$/.test(String(shown).trim())) say("bad", `the counter "${shown}" does not read as a number`, "write it as the platform does: 304万, 6.5万, 7,253, 46K");
     else say("ok", `the counter: ${shown} ${c.label}`);
@@ -71,7 +74,7 @@ if (past("research")) {
   const facts = json("research/facts.json");
   // the number on screen is the one the user picked, written the same way
   const pick = facts?.picks?.proof1;
-  if (c && pick?.post) {
+  if (c && playsAct2 && pick?.post) {
     const n = facts.posts?.find((p) => p.id === pick.post)?.numbers?.[pick.number];
     if (n && c.display && n.display !== c.display) say("bad", `the counter shows ${c.display}, but the pick was ${n.display}`, "run apply-research again, or put the picked number in film.json counter.display");
   }
@@ -205,6 +208,8 @@ if (past("toy") && toy && film.profile) {
     const [fw, fh] = fmt.size ?? [1920, 1080];
     const crops = describeEdgeCrops(edgeCrops(motion, { aspect: fw / fh, file: (p) => fromFilm(p) }));
     for (const m of crops) say("warn", `edge crop: ${m.text}`, "pull camera back slightly or switch end card to cta.layout: \"two-column\" so nothing is cut off at a frame edge");
+    const floating = describeFloatingLetters(floatingSmallLetters(motion));
+    for (const m of floating) say("warn", `floating small 3D lettering: ${m.text}`, "print small text flat onto the plaque with kit.picture() (or mount flush < 3 mm) so it does not smear with double shadows (references/beats.md)");
   } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
 }
 

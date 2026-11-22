@@ -180,6 +180,18 @@ The points (`facts.story`) are what the scene is made of, not its outline:
 one or two stretches of it (`beats`), each a part of the same scene. A point
 that needs a stage of its own and a device of its own is a second film.
 
+Name projects for a first-time viewer, not a GitHub URL:
+- **Plain-language project names**: never flash an opaque English repo slug
+  (like `gif-factory` or `project-memory`) as the only label on screen unless it
+  is already a household brand. Say what the project actually *is* in the film's
+  spoken language (e.g. `Image 2.6 GIF 表情包`), so a stranger understands in
+  half a second.
+- **Explicit pivot when switching projects**: keep at most one named product in
+  a 30 s film. When the story contrasts an earlier failed attempt with the
+  breakthrough project, drop the competing second repo name and write the causal
+  bridge explicitly on screen (e.g. `上个项目 · 做好了再发` → `换打法 · 新开…`),
+  so viewers never think project A magically renamed itself into project B.
+
 Numbers are evidence and scale. One counts up at most, the one the story
 turns on; the others stand as they are written, on the thing they belong to
 (a cover, a stamp beside the name). `materials.mjs` says when a direction has

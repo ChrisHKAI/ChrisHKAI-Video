@@ -122,9 +122,13 @@ A story told as a scene is asked three more things in the review below:
      And could they finish "when I need ___, I find ___ with them" from what the
      film shows (the direction's `viewer`, references/story-directions.md)?
    - **Continuation:** why would they watch the next beat, or the payoff of a
-     one-beat story?
+     one-beat story? If one beat contrasts a failed earlier project with a new
+     project in the next beat, does the on-screen copy state that strategy
+     switch explicitly so the two beats never feel spliced together?
    - **Specificity:** what work, method, words or detail prevents this from
-     being the same film after swapping the creator's name?
+     being the same film after swapping the creator's name? Flag any opaque
+     English GitHub repo slug shown on screen without a plain-language
+     explanation of what the project actually is.
    - **Action meaning:** what does each main action communicate, and does it
      survive the deletion test?
    - **Material:** what is special about each beat's material, and does its

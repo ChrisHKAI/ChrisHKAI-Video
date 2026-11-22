@@ -85,11 +85,11 @@ function landscape(frame, { spots, K, A, P, R, cx, cb }) {
   const cta = twoCol ? {
     path: [-0.34, -0.34],
     pointAt: [0.02, 0.17 + 1.30 * Math.sin(0.14), 1.30 * Math.cos(0.14)],
-    slogan: [{ em: 0.072, at: [0.22, 0.142, -0.055], tilt: -0.012 }, { em: 0.072, at: [0.22, 0.048, -0.055], tilt: 0.015 }],
-    sloganStep: [0, -0.094, 0],
+    slogan: [{ em: 0.062, at: [0.22, 0.160, -0.055], tilt: -0.010 }, { em: 0.062, at: [0.22, 0.052, -0.055], tilt: 0.012 }],
+    sloganStep: [0, -0.108, 0],
     sloganWidth: 0.62,
-    name: { em: 0.092, at: [0.22, 0.345, -0.08], tilt: -0.022 },
-    handle: { em: 0.056, at: [0.22, 0.245, -0.075], tilt: 0.016 },
+    name: { em: 0.082, at: [0.22, 0.382, -0.08], tilt: -0.015 },
+    handle: { em: 0.050, at: [0.22, 0.268, -0.075], tilt: 0.012 },
   } : {
     path: [-0.4, 0.47],
     pointAt: [0.03, 0.15 + 1.5 * Math.sin(0.157), 1.5 * Math.cos(0.157)],

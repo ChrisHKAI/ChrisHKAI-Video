@@ -183,6 +183,71 @@ class CompareAndScoreTests(unittest.TestCase):
         self.assertIn("GROOVE_KICKS", src)
         self.assertIn("unknown groove", src)
 
+    def test_diff_anim_tracks_modified_textures_and_since(self):
+        park = [0, -2, 0, 0, 0, 0, 1, 1e-4, 1e-4, 1e-4]
+        show = [250, 0.35, 0, 0, 0, 0, 1, 1, 1, 1]
+        cam_beat2 = [250, 0.25, 1.4, 0, 0, 0, 1, 1, 1, 1]
+        cam_cta = [100, 0.25, 1.4, 0, 0, 0, 1, 1, 1, 1]
+        anim = {
+            "fps": 30,
+            "frames": 20,
+            "sub": 1,
+            "objects": [
+                {"name": "camera", "parent": "root", "camera": True, "geo": None, "tr": cam_beat2},
+                {"name": "beat2_arch_subPlaque", "parent": "root", "geo": {"type": "uiBox"}, "mat": {"type": "ui", "image": "assets/work/props/sub-plaque.jpg"}, "tr": park},
+                {"name": "beat1_card", "parent": "root", "geo": {"type": "uiBox"}, "mat": {"type": "ui", "image": "assets/work/props/other.jpg"}, "tr": show},
+            ],
+            "tracks": {
+                # Camera is on Beat 2 (x=250) on samples 0..15, then cuts to CTA stage (x=100, 150m away) on samples 16..18.
+                "camera": [[s, *(cam_beat2 if s <= 15 else cam_cta)] for s in range(19)],
+                # subPlaque sits on Beat 2 unparked from sample 10 onward, so only samples 10..15 are in camera clip!
+                "beat2_arch_subPlaque": [[s, *(show if s >= 10 else park)] for s in range(19)],
+                "beat1_card": [[0, *show], [18, *show]],
+            },
+            "colors": {},
+            "scalars": {},
+        }
+        frames, objs = diff_anim.image_frames(anim, ["assets/work/props/sub-plaque.jpg"])
+        self.assertEqual(objs, ["beat2_arch_subPlaque"])
+        self.assertGreaterEqual(min(frames), 10)
+        self.assertLessEqual(max(frames), 18)
+        self.assertNotIn(1, frames)
+        self.assertNotIn(20, frames)
+        # Basename matching works too
+        frames_base, _ = diff_anim.image_frames(anim, ["sub-plaque.jpg"])
+        self.assertEqual(frames_base, frames)
+        # --since detects only files newer than reference file
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            props = fdir / "assets/work/props"
+            props.mkdir(parents=True)
+            other = props / "other.jpg"
+            other.write_bytes(b"old")
+            ref = fdir / "ref.mp4"
+            ref.write_bytes(b"ref")
+            sub = props / "sub-plaque.jpg"
+            sub.write_bytes(b"new")
+            os.utime(other, (1_000_000, 1_000_000))
+            os.utime(ref, (1_000_010, 1_000_010))
+            os.utime(sub, (1_000_020, 1_000_020))
+            newer = diff_anim.newer_images(anim, fdir, ref)
+            self.assertEqual(newer, ["assets/work/props/sub-plaque.jpg"])
+
+    def test_run_mjs_registers_clearance_and_diff_steps(self):
+        src = (SKILL / "engine/run.mjs").read_text()
+        self.assertIn('case "clearance":', src)
+        self.assertIn('case "diff":', src)
+
+    def test_safezone_uses_timeline_final_for_early_two_column_hold(self):
+        src = (SKILL / "engine/scripts/safezone.py").read_text()
+        self.assertIn('build/timeline.json', src)
+        self.assertIn('hold_from = min(hold_from', src)
+
+    def test_check_mjs_gates_counter_on_playsAct2_and_calls_floatingSmallLetters(self):
+        src = (SKILL / "engine/scripts/check.mjs").read_text()
+        self.assertIn("playsAct2", src)
+        self.assertIn("floatingSmallLetters", src)
+
 
 class SceneBevelSpikeBlenderTest(unittest.TestCase):
     def test_blender_flattens_hairpin_curve_bevel_spike(self):
