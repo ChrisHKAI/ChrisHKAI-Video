@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, fastReveal } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { line, declareLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
 import { places } from "../skills/creator-toy-intro/templates/isnail-30/places.js";
 import { buildFigure } from "../skills/creator-toy-intro/characters/tim-line/figure.js";
@@ -278,4 +279,38 @@ test("tim-line finish() converts roundBox size and radius from mm to metres", ()
   assert.ok(pocket);
   assert.deepEqual(pocket.size.map((v) => +v.toFixed(6)), [0.012, 0.014, 0.004]);
   assert.equal(+pocket.radius.toFixed(6), 0.002);
+});
+
+test("declareLine tags line/letterIndex so fastReveal keeps slo1 and slo2 separate", () => {
+  const fakeGlyph = {
+    has: () => true,
+    adv: () => 0.9,
+    geo: () => ({ type: "curve", rings: [[[0, 0], [0.02, 0], [0.02, 0.02], [0, 0.02]]], depth: 0.002, bevel: 0 }),
+  };
+  const objects = [];
+  const add = (o) => objects.push({ parent: "root", tr: pack([0, 0, 0]), ...o, name: `beat3_${o.name}` });
+  declareLine(add, "slo1", line(fakeGlyph, "把想法做出来", 0.03));
+  declareLine(add, "slo2", line(fakeGlyph, "开源工具找", 0.03));
+
+  // slo1 arrives whole at frame 10; slo2 arrives whole 6 frames (0.2s) later at frame 16.
+  // Previously stripping trailing digits merged slo1 + slo2 into one 11-char line arriving in 0.2s.
+  const tracks = {};
+  for (const o of objects) {
+    const start = o.line === "slo1" ? 10 : 16;
+    tracks[o.name] = Array.from({ length: 30 }, (_, f) => [f, ...pack([0, 0, 0], [0, 0, 0, 1], f >= start ? [1, 1, 1] : [1e-4, 1e-4, 1e-4])]);
+  }
+  const anim = { fps: 30, frames: 30, sub: 1, objects, tracks };
+  assert.deepEqual(fastReveal(anim), []);
+
+  // A single line typed too quickly (1 frame = 0.033s per letter across 6 letters = 0.17s < 0.25s) IS still caught.
+  const fastObjs = [];
+  declareLine((o) => fastObjs.push({ parent: "root", tr: pack([0, 0, 0]), ...o, name: `beat3_${o.name}` }), "fast", line(fakeGlyph, "把想法做出来", 0.03));
+  const fastTracks = {};
+  for (const o of fastObjs) {
+    const start = 5 + o.letterIndex;
+    fastTracks[o.name] = Array.from({ length: 30 }, (_, f) => [f, ...pack([0, 0, 0], [0, 0, 0, 1], f >= start ? [1, 1, 1] : [1e-4, 1e-4, 1e-4])]);
+  }
+  const hits = fastReveal({ fps: 30, frames: 30, sub: 1, objects: fastObjs, tracks: fastTracks });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].text, "把想法做出来");
 });

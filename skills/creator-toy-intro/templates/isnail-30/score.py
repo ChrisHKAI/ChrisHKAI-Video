@@ -84,13 +84,20 @@ DROP = EV["pop"]
 kick_times = []
 
 
+GROOVE_KICKS = {"normal": (0, 3, 4), "half": (0,), "double": (0, 3, 4, 6), "light": (0, 4)}
+
+
 def groove(t0, t1, mode="normal", gain=1.0):
-    """8th-note steps; normal = pop groove, half = heavy, double = 16th hats"""
+    """8th-note steps; normal = pop groove, half = heavy, double = 16th hats, light = sparse.
+    Unknown groove names fall back to 'light' with a warning instead of crashing score generation."""
+    if mode not in GROOVE_KICKS:
+        print(f"! score.py: unknown groove {mode!r}; falling back to 'light'", flush=True)
+        mode = "light"
     b, k = t0, 0
     step = BEAT / 2
     while b < t1 - 1e-6:
         pos = k % 8
-        kicks = {"normal": (0, 3, 4), "half": (0,), "double": (0, 3, 4, 6), "light": (0, 4)}[mode]
+        kicks = GROOVE_KICKS[mode]
         if pos in kicks:
             drums.add(kick(big=(pos == 0)), b, gain=gain)
             kick_times.append(b)

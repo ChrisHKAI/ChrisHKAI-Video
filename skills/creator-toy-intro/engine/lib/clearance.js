@@ -107,7 +107,9 @@ export function fastReveal(anim, { each = 0.05 } = {}) {
   const sizeOf = (name, s) => Math.min(...(sampleAt(name, s) ?? unpack(objects.get(name).tr)).s.map(Math.abs));
   const lines = new Map();
   for (const o of anim.objects) if (o.letter && o.anim && !o.pop && !/^label\d+_l\d+$/.test(o.name)) {
-    const key = o.name.replace(/\d+$/, "");
+    // Prefer explicit `line` tag from kit.declareLine (scoped by beat prefix) so lines like slo1 / slo2 stay separate.
+    const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+    const key = o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, "");
     if (!lines.has(key)) lines.set(key, []);
     lines.get(key).push(o);
   }
@@ -123,7 +125,8 @@ export function fastReveal(anim, { each = 0.05 } = {}) {
       const came = sizes.map((z, i) => { for (let g = f; g < Math.min(anim.frames, f + anim.fps * 4); g++) if (z[g] >= full[i] / 2) return g; return null; });
       if (came.some((g) => g == null)) continue;
       const spread = (Math.max(...came) - Math.min(...came)) / anim.fps;
-      const order = ls.map((o, i) => [+o.name.match(/(\d+)$/)[1], o.letter, came[i]]).sort((a, b) => a[0] - b[0]);
+      const idxOf = (o) => o.letterIndex ?? +(o.name.match(/(\d+)$/)?.[1] ?? 0);
+      const order = ls.map((o, i) => [idxOf(o), o.letter, came[i]]).sort((a, b) => a[0] - b[0]);
       const need = each * (ls.length - 1);
       // all at once is a line that arrives whole, not typed
       if (spread > 0 && spread < need) out.push({ name, text: order.map((x) => x[1]).join(""), n: ls.length, at: f / anim.fps, secs: +spread.toFixed(2), need: +need.toFixed(2) });

@@ -776,12 +776,36 @@ def islands(rings):
     return list(groups.values())
 
 
+def bevel_spiked(rings, me, bevel):
+    """True when Blender's 2D curve bevel shot a miter spike past the glyph's outline (a near-180° hairpin corner
+    in a CJK font can send a vertex metres across the frame with no bevel miter limit)."""
+    if bevel <= 0 or not rings or not me.vertices:
+        return False
+    xs = [p[0] for r in rings for p in r]
+    ys = [p[1] for r in rings for p in r]
+    if not xs:
+        return False
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+    pad = max(bevel * 4.0, 0.002)
+    for v in me.vertices:
+        if v.co.x < x0 - pad or v.co.x > x1 + pad or v.co.y < y0 - pad or v.co.y > y1 + pad:
+            return True
+    return False
+
+
 def filled(bm, name, rings, g):
-    """The rings filled and extruded (as a curve, its holes cut) into the mesh being built."""
+    """The rings filled and extruded (as a curve, its holes cut) into the mesh being built.
+    If curve bevel shoots a miter spike outside the outline, falls back to bevel=0 for this island."""
     cu = ring_curve(name, rings, g)
     tmp = bpy.data.objects.new(cu.name, cu)
     bpy.context.scene.collection.objects.link(tmp)
     me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+    bevel = g.get("bevel", 0.0005)
+    if bevel > 0 and bevel_spiked(rings, me, bevel):
+        print(f"! {name}: curve bevel ({bevel:.4g}) spiked past outline; rendered flat-edged", flush=True)
+        bpy.data.meshes.remove(me)
+        cu.bevel_depth = 0.0
+        me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
     bm.from_mesh(me)
     bpy.data.objects.remove(tmp)
     bpy.data.curves.remove(cu)
@@ -839,6 +863,17 @@ def curve_piece(o):
     side = (o.get("mat") or {}).get("side")  # its sides and bevel in a colour of their own (a glass face, a blue edge)
     if len(parts) <= 1 and not side:
         data = ring_curve(o["name"], g["rings"], g)
+        bevel = g.get("bevel", 0.0005)
+        if bevel > 0:
+            tmp = bpy.data.objects.new(o["name"] + ".chk", data)
+            bpy.context.scene.collection.objects.link(tmp)
+            me = bpy.data.meshes.new_from_object(tmp.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+            spiked = bevel_spiked(g["rings"], me, bevel)
+            bpy.data.objects.remove(tmp)
+            bpy.data.meshes.remove(me)
+            if spiked:
+                print(f"! {o['name']}: curve bevel ({bevel:.4g}) spiked past outline; rendered flat-edged", flush=True)
+                data.bevel_depth = 0.0
     else:
         bm = bmesh.new()
         for k, rings in enumerate(parts):

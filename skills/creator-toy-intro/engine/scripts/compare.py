@@ -112,6 +112,9 @@ def nearest(t, fps):
 
 def main():
     at, fps = moments()
+    if "--frames" in argv:
+        print(",".join(str(n) for n in sorted({round(at[k] * fps) + 1 for k in KINDS})))
+        return
     W, H = 480, 270
     pad, head = 10, 34
     sheet = Image.new("RGB", (pad + (W + pad) * (1 + len(REFS)), head + (H + 44 + pad) * len(KINDS)), (24, 24, 26))

@@ -161,6 +161,15 @@ node --test tests/clearance.test.mjs
 Checks hinged/moving door-through-card piercing, intersecting angled picture
 cards, deep prop-into-prop embedding, settled end-card torn-paper label
 overlaps, camera-frustum edge-crop warnings, zero-false-positive guards for
-compound parts, the `clearance.mjs` CLI exit codes / `build/clearance.json`
-output, `ui.js` `pageless()` opt-in/auto-detection, `places.js` `two-column`
-steady end-card layout, and `tim-line/figure.js` `roundBox` mm→m conversion.
+compound parts, `declareLine` / `fastReveal` line-name separation (`slo1` vs
+`slo2`), the `clearance.mjs` CLI exit codes / `build/clearance.json` output,
+`ui.js` `pageless()` opt-in/auto-detection, `places.js` `two-column` steady
+end-card layout, and `tim-line/figure.js` `roundBox` mm→m conversion.
+
+Engine reliability fixes (`pacing.slanted` hidden-letter filtering, `diff-anim.py`
+hidden-track filtering, `reading.match` split-line cover, `compare.py --frames`,
+`score.py` groove fallback, and Blender 2D curve bevel miter-spike flattening):
+
+```sh
+python3 tests/engine-fixes.test.py
+```

@@ -68,7 +68,7 @@ export function declareLine(add, name, ln, { color = "#F7F4EC", emit = 0, depth,
   const fin = { ...finish, ...(side ? { side } : {}) };
   if (!side) delete fin.side;
   for (const it of ln.items) {
-    add({ name: `${name}${it.i}`, letter: it.c, geo: ln.geo(it.key, ln.em, d, b), mat: { type: "type", color, emit, ...fin, ...(rim ? { edge: rim } : {}) }, anim: true });
+    add({ name: `${name}${it.i}`, letter: it.c, line: name, letterIndex: it.i, geo: ln.geo(it.key, ln.em, d, b), mat: { type: "type", color, emit, ...fin, ...(rim ? { edge: rim } : {}) }, anim: true });
     if (rim) add({ name: `${name}o${it.i}`, geo: { ...ln.geo(it.key, ln.em, d, 0), grow: ln.em * edge }, mat: outline === true ? { type: "glass", outline: true } : { type: "type", color: rim, emit: 0, outline: true }, anim: true });
   }
 }

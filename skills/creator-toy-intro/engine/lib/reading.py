@@ -284,7 +284,25 @@ def match(expected, lines, base=None):
     if full:
         return ("shaky" if max(full) < threshold else "ok"), said
     own = [(t, c) for t, c in near if _mostly(t, want)] or near
-    confs = [c for t, c in own if c is not None]
+    # When Vision splits one mixed-script line into multiple boxes (e.g. "OpenPencil 开源" at 1.0 + "AI 设计" at 0.30,
+    # alongside a noisy background card logo at 0.30), greedily pick the highest-confidence boxes that cover `want`
+    # and weight confidence by covered characters instead of letting one short token or background duplicate veto all.
+    if len(own) > 1:
+        covered = set()
+        picked = []
+        for t, c in sorted(own, key=lambda x: (-(x[1] if x[1] is not None else -1.0), -len(x[0]))):
+            pos = {i for b in SequenceMatcher(None, want, t, autojunk=False).get_matching_blocks() for i in range(b.a, b.a + b.size)}
+            fresh = pos - covered
+            if fresh:
+                covered |= fresh
+                if c is not None:
+                    picked.append((len(fresh), c))
+            if len(covered) >= len(want):
+                break
+        if picked and len(covered) >= len(want):
+            weighted = sum(w * c for w, c in picked) / sum(w for w, _ in picked)
+            return ("shaky" if weighted < threshold else "ok"), said
+    confs = [c for _, c in own if c is not None]
     return ("shaky" if confs and min(confs) < threshold else "ok"), said
 
 

@@ -21,7 +21,10 @@ running the animatic or full render, visually compare each beat's preview
 against the paper frame it came from: confirm the toy has not shrunk relative
 to the frame and that every promised visual element (such as a profile banner,
 origin card, or unresolved hook slot) actually stays inside the frame instead
-of scrolling off an edge. If a custom opening beat uses the creator's rendered
+of scrolling off an edge. When carrying a prop across consecutive beats (such
+as a desk lamp staying on a shared studio desk), check the widest camera framing
+of each beat so an offstage prop does not poke back into a corner edge and clip
+against a card. If a custom opening beat uses the creator's rendered
 profile page (`assets/ui.png`), either reference `assets/ui.png` in the beat
 or set `film.story.profilePage: true` so `run.mjs ui` keeps the real page
 instead of writing a blank slab.
@@ -51,8 +54,7 @@ proposal without claiming the animation pipeline has been validated.
 
 ```bash
 FILM=<film> node <skill>/engine/run.mjs data                     # everything the story needs
-FILM=<film> node <skill>/engine/run.mjs storyboard -- --frames   # the moments to preview
-FILM=<film> node <skill>/engine/run.mjs render -- --frames <those> --samples 24 --scale 50 --out build/previs
+FILM=<film> node <skill>/engine/run.mjs previs                   # storyboard + compare preview frames (24 samples, 50%)
 FILM=<film> node <skill>/engine/run.mjs safezone                 # the platforms' controls over them
 FILM=<film> node <skill>/engine/run.mjs storyboard -- --lang <the user's language>
 ```

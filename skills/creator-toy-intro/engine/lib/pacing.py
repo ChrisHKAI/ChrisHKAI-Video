@@ -254,7 +254,9 @@ def rotate(q, v):
 
 def slanted(anim, segments):
     """Where a beat's lettering stands turned from the camera while it is on: [{beat, at, deg, names}], the letters'
-    median angle between the way they face (+z) and the way to the camera, over a stretch of half a second or more."""
+    median angle between the way they face (+z) and the way to the camera, over a stretch of half a second or more.
+    Only letters visible at each sample (scale > 1e-3) count, so a hidden earlier/later line in the same beat never
+    skews the angle of the line currently on screen."""
     if "camera" not in anim["tracks"]:
         return []
     rate = anim["fps"] * anim["sub"]
@@ -264,16 +266,28 @@ def slanted(anim, segments):
         lo, hi = int(a * rate), min(int(z * rate), len(cam))
         if hi - lo < 2:
             continue
-        degs = []
+        degs, vis_names = [], []
         for n in names:
             tr = track(anim, n)[lo:hi]
+            vis = np.min(np.abs(tr[:, 7:10]), axis=1) > 1e-3
+            if not vis.any():
+                continue
             face = rotate(tr[:, 3:7], np.tile([0.0, 0.0, 1.0], (len(tr), 1)))
             to = cam[lo:hi, :3] - tr[:, :3]
             to /= np.maximum(np.linalg.norm(to, axis=1, keepdims=True), 1e-9)
-            degs.append(np.degrees(np.arccos(np.clip(np.sum(face * to, axis=1), -1, 1))))
-        deg = float(np.median(np.median(np.array(degs), axis=0)))
+            ang = np.degrees(np.arccos(np.clip(np.sum(face * to, axis=1), -1, 1)))
+            degs.append(np.where(vis, ang, np.nan))
+            vis_names.append((n, float(np.nanmedian(np.where(vis, ang, np.nan)))))
+        if not degs:
+            continue
+        mat = np.array(degs)
+        per_sample = np.array([float(np.nanmedian(col)) for col in mat.T if np.isfinite(col).any()])
+        if not len(per_sample):
+            continue
+        deg = float(np.median(per_sample))
         if deg > SLANT:
-            out.append({"beat": k, "at": [a, z], "deg": round(deg), "names": names[:3]})
+            bad = [n for n, d in vis_names if d > SLANT] or [n for n, _ in vis_names]
+            out.append({"beat": k, "at": [a, z], "deg": round(deg), "names": bad[:3]})
     return out
 
 

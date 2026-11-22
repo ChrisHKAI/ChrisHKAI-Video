@@ -23,6 +23,7 @@
 //           estimate three frames at the final settings → how long the full render takes
 //           sample   a stretch at the final quality with its sound, to watch before the hours of the whole
 //                    (-- --from 6 --to 14, seconds; else the film's own beat, else 6–14 s) → out/<film>-sample.mp4
+//           previs   render all storyboard + compare preview frames in one pass (24 samples, 50% → build/previs)
 //           render   Blender Cycles frames → build/render/ (args after -- go to scene.py; --resume skips frames on disk)
 //           finish   bloom, vignette, grain, H.264 + AAC → out/ (and the effects-only cut), then covers and qa
 //           covers   each platform's covers cut from the last frame → out/covers/
@@ -162,7 +163,7 @@ for (const [i, step] of steps.entries()) {
   const more = i === steps.length - 1 ? extra : [];
   // the animatic is part of making the storyboard; the full render waits for the page and the user's sign-off
   // (preview frames, the animatic and the estimate need only that nothing breaks)
-  if ((step === "animatic" && !more.includes("--stop")) || step === "estimate" || step === "sample") gate(false);
+  if ((step === "animatic" && !more.includes("--stop")) || step === "estimate" || step === "sample" || step === "previs") gate(false);
   if (step === "render") gate(!more.includes("--frames") || !more.includes("--samples"));
   switch (step) {
     case "check": run("node", [fromSkill("engine/scripts/check.mjs"), ...more]); break;
@@ -215,6 +216,29 @@ for (const [i, step] of steps.entries()) {
       if (!steps.slice(0, i).includes("hero")) run("node", [fromSkill("engine/scripts/dump-hero.mjs")]);
       run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", "--poses", ...more]);
       break;
+    case "previs": {
+      // Collect the union of storyboard preview frames and compare reference moments, then render them in one pass
+      const askFrames = (script) => {
+        const r = spawnSync(PY, [fromSkill("engine/scripts", script), "--frames"], { cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), encoding: "utf8" });
+        if (r.status !== 0) return [];
+        const line = (r.stdout ?? "").trim().split(/\r?\n/).pop() ?? "";
+        return line.split(",").map((x) => +x.trim()).filter((n) => Number.isInteger(n) && n > 0);
+      };
+      const union = [...new Set([...askFrames("storyboard.py"), ...askFrames("compare.py")])].sort((a, b) => a - b);
+      if (!union.length) { console.error("no preview frames found: run anim first so build/timeline.json exists"); process.exit(1); }
+      const defaults = [
+        ...(more.includes("--frames") ? [] : ["--frames", union.join(",")]),
+        ...(more.includes("--samples") ? [] : ["--samples", "24"]),
+        ...(more.includes("--scale") ? [] : ["--scale", "50"]),
+        ...(more.includes("--out") ? [] : ["--out", "build/previs"]),
+      ];
+      const outIdx = more.indexOf("--out");
+      const outDir = fromFilm(outIdx >= 0 && more[outIdx + 1] ? more[outIdx + 1] : "build/previs");
+      console.log(`previs: ${union.length} frame(s) (storyboard + compare) → ${union.join(",")}`);
+      const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]);
+      await runRender(cmd, args, outDir);
+      break;
+    }
     case "render": {
       // no --frames: the whole film, its frame count from film.json (duration × fps)
       const all = more.includes("--frames") ? [] : ["--frames", `1-${film.format.duration * film.format.fps}`];
