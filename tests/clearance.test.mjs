@@ -5,8 +5,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit } from "../skills/creator-toy-intro/engine/lib/clearance.js";
-import { line, declareLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { line, declareLine, putLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
+import { unexpectedTools, isPlaceholderAnswer } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
 import { makeLabel, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
 import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
 import { places } from "../skills/creator-toy-intro/templates/isnail-30/places.js";
@@ -409,4 +410,80 @@ test("armLiftLimit preserves 2.5 rad on slender toys (isnail) and clamps wide-he
   };
   const lim = armLiftLimit(chibi, (p) => p, 2.5);
   assert.ok(lim >= 1.57 && lim <= 1.9, `expected wide-headed chibi arm lift clamp in [1.57, 1.9], got ${lim}`);
+});
+
+test("putLine passes (it, idx) cleanly and throws on NaN scale or position instead of silently hiding text", () => {
+  const glyph = {
+    has: () => true,
+    adv: () => 0.8,
+    geo: () => ({ type: "curve", rings: [[[0, 0], [0.02, 0], [0.02, 0.03], [0, 0.03]]], depth: 0.002, bevel: 0.0003 }),
+  };
+  const ln = line(glyph, "AB CD", 0.04);
+  const placed = new Map();
+  const seenIdx = [];
+  putLine(
+    (name, tr) => placed.set(name, tr),
+    "sub",
+    ln,
+    (it, idx) => { seenIdx.push(idx); return [it.x, ln.stand, 0]; },
+    QID,
+    (_it, idx) => 0.5 + idx * 0.1,
+    { outline: true },
+  );
+  assert.deepEqual(seenIdx, [0, 1, 2, 3]);
+  assert.equal(placed.get("sub0").s[0], 0.5);
+  assert.ok(Math.abs(placed.get("sub4").s[0] - 0.8) < 1e-6);
+
+  assert.throws(
+    () => putLine(() => {}, "bad", ln, (it) => [it.x, 0, 0], QID, () => Number.NaN),
+    /scale.*not a finite number/i,
+  );
+  assert.throws(
+    () => putLine(() => {}, "badPos", ln, () => [Number.NaN, 0, 0], QID, () => 1),
+    /position.*not finite/i,
+  );
+});
+
+test("offStageHero catches a visible toy teleported to world origin (missing at(...)) and ignores normal or hidden stretches", () => {
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([18, 0.2, 1.0]) },
+    { name: "hero", parent: "root", tr: pack([18, 0.02, 0]) },
+  ];
+  // 0..1 s normal on beat stage (x=18), 1..2 s teleported to origin (x=0, ~18 m away), 2..3 s hidden at origin
+  const tracks = {
+    camera: [[0, ...pack([18, 0.2, 1.0])], [90, ...pack([18, 0.2, 1.0])]],
+    hero: [
+      [0, ...pack([18, 0.02, 0])],
+      [29, ...pack([18, 0.02, 0])],
+      [30, ...pack([0, 0.02, 0])],
+      [59, ...pack([0, 0.02, 0])],
+      [60, ...pack([0, -1, 0], QID, [1e-4, 1e-4, 1e-4])],
+      [90, ...pack([0, -1, 0], QID, [1e-4, 1e-4, 1e-4])],
+    ],
+  };
+  const hits = offStageHero(makeAnim(objects, tracks, { frames: 90 }));
+  assert.equal(hits.length, 1);
+  assert.ok(hits[0].from >= 0.9 && hits[0].to <= 2.1);
+  assert.ok(hits[0].dist > 17);
+  assert.match(describeOffStageHero(hits)[0].text, /missing at\(\.\.\.\)/);
+});
+
+test("grok-search allows Web Search and X Search across Grok versions and rejects placeholder stubs", () => {
+  assert.deepEqual(unexpectedTools({ WebSearch: 5 }), []);
+  assert.deepEqual(unexpectedTools({ "Web Search": 3, "X Search": 22 }), []);
+  assert.deepEqual(unexpectedTools({ "Web Search": 2, "X Search": 10, run_terminal_command: 1 }), ["run_terminal_command"]);
+
+  // Turn-1 stub must be rejected
+  assert.equal(isPlaceholderAnswer({ pinned: { url: "pending", first_line: "searching" }, top: [], milestones: [], ideas: [] }, 1), true);
+  assert.equal(isPlaceholderAnswer({ top: [], milestones: [], ideas: [] }, 1), true);
+  // Real search output must pass
+  assert.equal(
+    isPlaceholderAnswer({
+      pinned: { url: "https://x.com/Lonely__MH/status/123456", first_line: "自媒体创作不完全指南" },
+      top: [],
+      milestones: [],
+      ideas: [{ idea: "demo", from: "pinned" }],
+    }, 6),
+    false,
+  );
 });

@@ -13,7 +13,7 @@ const folder = process.argv.slice(2).find((a, i, all) => !a.startsWith("--") && 
 if (folder) process.env.FILM = resolve(folder);
 if (!process.env.FILM) { console.error("usage: node engine/scripts/clearance.mjs <film folder> [--json] [--tol <mm>]"); process.exit(1); }
 const { film, fromFilm } = await import("../lib/film.js");
-const { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, floatingSmallLetters, describeFloatingLetters } = await import("../lib/clearance.js");
+const { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero } = await import("../lib/clearance.js");
 
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const path = fromFilm("build/anim.json");
@@ -29,14 +29,16 @@ const rawLabels = labelOverlaps(anim);
 const labels = describeLabelOverlaps(rawLabels);
 const crops = describeEdgeCrops(edgeCrops(anim, { aspect: fw / fh, file: (p) => fromFilm(p) }));
 const floating = describeFloatingLetters(floatingSmallLetters(anim));
-writeFileSync(fromFilm("build/clearance.json"), JSON.stringify({ tol: limit, moments, contacts, clashes, rawClashes, labels, crops, floating }, null, 1));
-if (process.argv.includes("--json")) console.log(JSON.stringify({ moments, clashes, labels, crops, floating }, null, 1));
-else if (!moments.length && !clashes.length && !labels.length && !crops.length && !floating.length) console.log(`✓ the toy and props go through nothing (deeper than ${(limit * 1000).toFixed(1)} mm)`);
+const offStage = describeOffStageHero(offStageHero(anim));
+writeFileSync(fromFilm("build/clearance.json"), JSON.stringify({ tol: limit, moments, contacts, clashes, rawClashes, labels, crops, floating, offStage }, null, 1));
+if (process.argv.includes("--json")) console.log(JSON.stringify({ moments, clashes, labels, crops, floating, offStage }, null, 1));
+else if (!moments.length && !clashes.length && !labels.length && !crops.length && !floating.length && !offStage.length) console.log(`✓ the toy and props go through nothing (deeper than ${(limit * 1000).toFixed(1)} mm)`);
 else {
   for (const m of moments) console.log(`${m.kind === "into" ? "✗" : "!"} ${m.text}`);
   for (const m of clashes) console.log(`✗ ${m.text}`);
   for (const m of labels) console.log(`✗ ${m.text}`);
+  for (const m of offStage) console.log(`✗ ${m.text}`);
   for (const m of crops) console.log(`! ${m.text}`);
   for (const m of floating) console.log(`! ${m.text}`);
 }
-process.exit(moments.some((m) => m.kind === "into") || clashes.length || labels.length ? 1 : 0);
+process.exit(moments.some((m) => m.kind === "into") || clashes.length || labels.length || offStage.length ? 1 : 0);

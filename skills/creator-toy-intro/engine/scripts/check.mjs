@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero } from "../lib/clearance.js";
 
 const quiet = process.argv.includes("--quiet");
 const out = { ok: 0, warn: 0, bad: 0 };
@@ -210,6 +210,8 @@ if (past("toy") && toy && film.profile) {
     for (const m of crops) say("warn", `edge crop: ${m.text}`, "pull camera back slightly or switch end card to cta.layout: \"two-column\" so nothing is cut off at a frame edge");
     const floating = describeFloatingLetters(floatingSmallLetters(motion));
     for (const m of floating) say("warn", `floating small 3D lettering: ${m.text}`, "print small text flat onto the plaque with kit.picture() (or mount flush < 3 mm) so it does not smear with double shadows (references/beats.md)");
+    const offStage = describeOffStageHero(offStageHero(motion));
+    for (const m of offStage) say(process.argv.includes("--render") ? "bad" : "warn", `off-stage toy: ${m.text}`, "wrap toy positions in at(x, y, z) instead of bare [x, y, z] so the toy stays on the beat's stage (references/beats.md)");
   } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
 }
 

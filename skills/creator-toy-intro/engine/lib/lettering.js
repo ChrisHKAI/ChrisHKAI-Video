@@ -73,16 +73,20 @@ export function declareLine(add, name, ln, { color = "#F7F4EC", emit = 0, depth,
   }
 }
 
-// places them: base(it) the letter's origin in the world (its baseline's left end: add ln.stand to stand the line
-// on a floor), q its turn (kit.facing: towards the camera), k(it) its size (0 hides). The edge's plate sits behind
-// the face by half its depth, so the face stands proud of it (depth: as declareLine was given)
+// places them: base(it, idx) the letter's origin in the world (its baseline's left end: add ln.stand to stand the line
+// on a floor), q its turn (kit.facing(camera(g).pos, origin) in sample when the camera moves), k(it, idx) its size
+// (0 hides). The edge's plate sits behind the face by half its depth, so the face stands proud of it (depth: as
+// declareLine was given). Throws on NaN scale or position instead of silently hiding the line.
 export function putLine(put, name, ln, base, q, k, { outline = false, depth, back } = {}) {
   const d = depth ?? ln.em * DEPTH;
   // behind, as the line faces: the offset turned with it
   const off = apply(trs([0, 0, 0], q, 1), back ?? [0, 0, -(d / 2 + 0.0004)]);
-  for (const it of ln.items) {
-    const s = k(it), p = base(it), size = s > 0 ? s : 1e-4;
+  ln.items.forEach((it, idx) => {
+    const s = k(it, idx), p = base(it, idx);
+    if (!Number.isFinite(s)) throw new Error(`putLine("${name}"): scale for "${it.c}" (index ${idx}) is not a finite number (${s})`);
+    if (!Array.isArray(p) || p.length < 3 || !p.slice(0, 3).every(Number.isFinite)) throw new Error(`putLine("${name}"): position for "${it.c}" (index ${idx}) is not finite`);
+    const size = s > 0 ? s : 1e-4;
     put(`${name}${it.i}`, trs(p, q, size));
     if (outline) put(`${name}o${it.i}`, trs([p[0] + off[0] * s, p[1] + off[1] * s, p[2] + off[2] * s], q, size));
-  }
+  });
 }

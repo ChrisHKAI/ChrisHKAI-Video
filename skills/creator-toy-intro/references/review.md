@@ -95,7 +95,10 @@ Score each from 1 (fails) to 5 (nothing to fix):
 5. **The lettering.** Does every line stay long enough to read (the brief
    says how long each needs)? Can it be read against what is behind it and
    the toy beside it? Do its strokes stay clean, not lumps? Is its face the
-   creator's own, or one that suits their material? Is it inside the safe box?
+   creator's own, or one that suits their material? In mixed CJK + short Latin
+   3D display headlines, do punctuation and case sit on a clean baseline
+   (prefer space + uppercase over full-width comma + descenders)? Is it inside
+   the safe box?
 6. **The look.** Does the dark stage stay dark? Do whites read as white
    without glowing? Does the toy look like vinyl? Is the light on the toy,
    not on the world?
@@ -103,7 +106,9 @@ Score each from 1 (fails) to 5 (nothing to fix):
    judge whether every hit has its sound, whether a sound plays over
    nothing, and whether the moments that matter are marked.
 8. **The finish.** Look for flicker, jumps at a join between parts, a frame
-   that shows both sides of a cut, and anything cut off at an edge.
+   that shows both sides of a cut, anything cut off at an edge, and overlaid
+   annotations (selection boxes, callouts, arrows on stills) accidentally
+   slicing through the text they are meant to frame.
 9. **The jury.** Judge it as a jury at Annie (Best Sponsored Production),
    Annecy (Commissioned Films) or D&AD would. Does a stranger feel something,
    with a person at its heart rather than a number? Is there one idea, and does it

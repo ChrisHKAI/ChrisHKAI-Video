@@ -25,9 +25,39 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { findGrok } from "../lib/tools.js";
 import { researchPrompt } from "../lib/research-prompt.js";
 
+// Allowed read-only search tool labels printed by `grok export` across versions
+// (older Grok Build prints "WebSearch", 1.0.92+ prints "Web Search" and "X Search").
+const ALLOWED_SEARCH_TOOLS = new Set(["websearch", "xsearch"]);
+export function unexpectedTools(tools) {
+  return Object.keys(tools ?? {}).filter((k) => !ALLOWED_SEARCH_TOOLS.has(k.replace(/\s+/g, "").toLowerCase()));
+}
+
+const isRealUrl = (u) => typeof u === "string" && /^https?:\/\//i.test(u.trim());
+const isStubText = (s) => typeof s === "string" && /^(pending|searching|tbd|n\/a|\.\.\.)\.{0,3}$/i.test(s.trim());
+// Grok sometimes answers on turn 1 before any search with empty arrays or a placeholder pinned object
+// such as { url: "pending", first_line: "searching" }: treat that as an unanswered run.
+export function isPlaceholderAnswer(found, numTurns = null) {
+  if (!found || typeof found !== "object") return true;
+  const realPinned = !!(found.pinned && isRealUrl(found.pinned.url) && !isStubText(found.pinned.first_line));
+  const realTop = (found.top ?? []).some((p) => isRealUrl(p?.url) && !isStubText(p?.first_line));
+  const realMilestones = (found.milestones ?? []).some((m) => m?.what && !isStubText(m.what));
+  const realLeads = (found.story_leads ?? []).some((l) => l?.what && !isStubText(l.what));
+  const realGaps = (found.gap_answers ?? []).some((g) => g && (g.status === "not_found" || (g.answer && !isStubText(g.answer))));
+  const hasRealContent = realPinned || realTop || realMilestones || realLeads || realGaps;
+  if (hasRealContent) return false;
+  const hasStub = !!(found.pinned && (!isRealUrl(found.pinned.url) || isStubText(found.pinned.first_line)));
+  return hasStub || (numTurns ?? 1) <= 1;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  main();
+}
+
+function main() {
 const argv = process.argv.slice(2);
 const arg = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
 const dir = resolve(argv.find((a, i) => !a.startsWith("--") && !["--handle", "--max-turns"].includes(argv[i - 1])) ?? process.env.FILM ?? ".");
@@ -119,10 +149,10 @@ try {
   console.error(`grok answered, but not in the shape asked for: see research/${stem}-raw.json (${e.message})`);
   process.exit(1);
 }
-// with a schema Grok sometimes answers on its first turn, before any search: nothing found is then not an answer
-const empty = !found.pinned && !found.top?.length && !found.milestones?.length && !found.story_leads?.length && !found.gap_answers?.length;
-if (empty && (out.num_turns ?? 2) <= 1) {
-  console.error(`grok answered before searching (one turn, nothing found): run it again; see research/${stem}-raw.json`);
+// with a schema Grok sometimes answers on its first turn, before any search, or emits a placeholder stub
+// like { pinned: { url: "pending", first_line: "searching" } }: reject so the caller retries cleanly
+if (isPlaceholderAnswer(found, out.num_turns)) {
+  console.error(`grok answered before searching (placeholder or empty result, turns: ${out.num_turns ?? "?"}): run it again; see research/${stem}-raw.json`);
   process.exit(1);
 }
 const tools = toolsUsed(out.sessionId);
@@ -131,8 +161,9 @@ writeFileSync(join(dir, `research/${stem}.json`), JSON.stringify(lead, null, 2) 
 // what it found; its minutes and cost stay in the file (costUSD), for the record, not for the user
 // gap answers only from a --gaps run: the first round may answer some of its own questions, which is not that search
 console.log(`research/${stem}.json: pinned ${found.pinned ? "yes" : "no"}, ${found.top?.length ?? 0} top posts, ${found.milestones?.length ?? 0} milestones, ${found.story_leads?.length ?? 0} story leads${followup ? `, ${found.gap_answers?.length ?? 0} gap answers` : ""}`);
-const odd = Object.keys(tools ?? {}).filter((k) => k !== "WebSearch");
+const odd = unexpectedTools(tools);
 if (odd.length) console.error(`! Grok used tools beyond its searches (${odd.map((k) => `${k} ×${tools[k]}`).join(", ")}): one slipped past the list it is denied, perhaps renamed. Tell the user, see what it did (grok export ${out.sessionId}), and add its name to DENY in engine/scripts/grok-search.mjs`);
 else if (!tools && !argv.includes("--from-raw")) console.log(`could not read back which tools Grok used (grok export ${out.sessionId ?? "<session>"}): check it ran only its searches`);
 if (found.notes) console.log(`grok's note: ${found.notes}`);
 console.log("leads only: open each post on the page and take its numbers from there (references/research.md)");
+}

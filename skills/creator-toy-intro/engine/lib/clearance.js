@@ -957,6 +957,51 @@ export function describeFloatingLetters(items) {
 }
 
 /**
+ * Detect stretches where the visible hero toy sits far away from the active camera (> maxDist m),
+ * typically caused by writing bare `[x, y, z]` instead of `at(x, y, z)` in a beat's pose(), which
+ * teleports the toy back to world origin while the camera films another stage offset.
+ */
+export function offStageHero(anim, { toy = "hero", maxDist = 5.0, minSecs = 0.2, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  if (!objects.has(toy) || !objects.has("camera") || !anim.tracks?.camera?.length) return [];
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  let cur = null;
+  const out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const hw = worldOf(toy, s, memo);
+    const visible = Math.min(...hw.s.map(Math.abs)) >= 1e-3;
+    const cw = worldOf("camera", s, memo);
+    const dist = visible ? Math.hypot(hw.p[0] - cw.p[0], hw.p[1] - cw.p[1], hw.p[2] - cw.p[2]) : 0;
+    if (visible && dist > maxDist) {
+      if (!cur) cur = { from: t, to: t, peak: t, dist };
+      else { cur.to = t; if (dist > cur.dist) { cur.dist = dist; cur.peak = t; } }
+    } else if (cur) {
+      out.push(cur);
+      cur = null;
+    }
+  }
+  if (cur) out.push(cur);
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6);
+}
+
+export function describeOffStageHero(items) {
+  return items.map((m) => ({
+    kind: "bad",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: the toy is ${m.dist.toFixed(1)} m from the camera (worst at ${m.peak.toFixed(2)} s): likely missing at(...) on o.pos`,
+  }));
+}
+
+/**
  * Maximum outward Z arm-lift angle (radians) that keeps a toy's hands visible outside its head silhouette.
  * Slender-headed toys keep the full target angle (e.g. 2.5 rad); wide-headed chibi/sculpt toys clamp
  * toward an outward Victory-V (~1.6–1.8 rad) so short arms do not disappear behind the cheeks.

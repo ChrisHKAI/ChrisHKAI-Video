@@ -157,6 +157,23 @@ movie: "assets/work/reel.mp4", frames: 240, start: 1 })` plays its frames from
 the film's frame `start`, round and round. Look for the creator's own footage
 before settling on stills (their reels, a demo, their site's media library).
 
+- **Multi-layer transparent PNGs (`mat: { type: "sticker" }`)**: when stacking
+  several transparent UI or poster layers in depth (e.g. 5–7 exploded panes),
+  keep the empty glass interior alpha very low (`<= 15/255`, ~5% tint) and add
+  a crisp local backing halo *only* behind opaque letters/icons. Higher full-pane
+  alpha stacks into milky haze in Cycles and dithered grey noise in EEVEE;
+  always verify layered transparency on a Cycles preview frame rather than
+  judging from the EEVEE animatic alone.
+- **Annotated stills & overlays (selection boxes, callouts, arrows)**: compute
+  box/callout coordinates programmatically from the target element's real
+  pixel bounding box (`getbbox()` on its source layer/crop) plus clean padding—
+  never eyeball hardcoded pixel numbers—and visually inspect the generated
+  image standalone before placing it in the scene.
+- **Multi-card showcases (4–5 works)**: do not pull the camera far back just
+  to cram five cards into one flat row where each card shrinks under ~20% of
+  frame height and UI text turns unreadable. Stagger two depth rows or feature
+  2–3 larger hero cards with flanking wings so real screenshots stay legible.
+
 ### Choosing the faces
 
 No face is the skill's own: a face that suits one film has never suited the
@@ -223,8 +240,16 @@ readable is built in:
   from a little above shows the tops of its strokes, and in the face's own
   colour they thicken every stroke until 懂 is one block.
 - It faces the camera while it is read (`kit.facing`): a line standing
-  upright with the camera 20° above it shows those tops in every frame. The
-  story page says where lettering is turned more than 15° from the camera.
+  upright with the camera 20° above it shows those tops in every frame. When
+  the camera dollies or orbits during a hold, compute `kit.facing(camera(g).pos, origin)`
+  dynamically inside `sample` rather than freezing one quaternion at declare
+  time. The story page says where lettering is turned more than 15° from the
+  camera.
+- **Mixed CJK + short Latin 3D display lines**: avoid copying social-bio
+  punctuation verbatim into large 3D headlines—a full-width comma leaves an
+  awkward gap and lowercase descenders (`g`, `y`, `p`) break the baseline.
+  Prefer a clean space and uppercase for short English terms (`生命不息 BUG不止`
+  instead of `生命不息，Bug不止`) so cap-heights align with Chinese characters.
 - It does not glow (`emit` 0): the finish's bloom fills a lit letter's
   counters.
 - Its edge (`outline`) is a flat plate, the letter grown evenly all round
@@ -288,7 +313,13 @@ facing the camera or in other colours.
 
 A beat usually opens with the toy dropping in from above (the cut from
 the last segment's leap) and ends with `kit.leapOut`, so the joins read as
-one toy going from stage to stage. The first segment is the opening the
+one toy going from stage to stage. When adjacent beats share the same physical
+workbench or world, vary at least one join (e.g. a lateral pan, push-through,
+or workbench continuity) rather than repeating `leapOut` → `dropIn` onto an
+empty floor on every cut. Always wrap every beat-local toy position in
+`at(x, y, z)`—writing bare `[x, y, z]` teleports the toy back to world origin
+while the camera films another stage (`check` flags this as an off-stage toy).
+The first segment is the opening the
 story chose (the page floating, which ends on the pinned post, or standing up
 turning right or left, which ends with the toy out in front), the last the
 template's end card; apply-research writes both. An opening of the film's own
