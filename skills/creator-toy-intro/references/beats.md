@@ -353,4 +353,12 @@ every beat with its whole body: the rig turns a point into a lean.
 frames are in the list; render them as previews with the rest
 (`references/storyboard.md`). Look at each: the toy on the beat's floor
 (not floating, not sunk), its text readable and inside the safe box, the
-camera on it from the first frame of the beat to the last.
+camera on it from the first frame of the beat to the last. Keep simultaneous
+hero picture cards side-by-side in camera space rather than popping a second
+card directly in front of the first (`cardScreenOverlaps`), arc hand-held
+props around the toy's head rather than lowering them across the eyes
+(`heroFaceOcclusions`), and spawn downbeat confetti lower or to the sides so
+flakes do not shoot across 3D readouts and degrade phone-size OCR
+(`confettiOverText`). When updating an animatic after a surgical beat edit,
+pass `-- --frames <diff-list>` to `run.mjs animatic` to re-render only the
+changed EEVEE frames.

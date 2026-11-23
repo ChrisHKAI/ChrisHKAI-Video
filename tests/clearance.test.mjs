@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import { unexpectedTools, isPlaceholderAnswer } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
@@ -636,4 +636,109 @@ test("movieWraps warns when a cyclic video card runs out of frames while visible
   assert.equal(hits.length, 1);
   assert.equal(hits[0].name, "beat1_shortWrap");
   assert.match(describeMovieWraps(hits)[0].text, /wraps back to frame 1/);
+});
+
+test("edgeCrops catches custom beat props and 3D headlines clipped at frame edges while ignoring wide backdrops", () => {
+  const clapGeo = { type: "roundBox", size: [0.12, 0.08, 0.02], radius: 0.003 };
+  const bgGeo = { type: "box", size: [3.2, 1.5, 0.01] };
+  const glyphSq = { type: "curve", rings: [[[0, 0], [0.18, 0], [0.18, 0.05], [0, 0.05]]], depth: 0.004 };
+  // Camera at z=0.80, fov=30 deg -> tanY ≈ 0.268, tanX ≈ 0.476 -> half-width at z=0 is ~0.381 m
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([0, 0.15, 0.80]) },
+    { name: "beat1_bg_wall", parent: "root", geo: bgGeo, tr: pack([0, 0.2, -0.8]) },
+    { name: "beat1_clap_slate", parent: "root", geo: clapGeo, tr: pack([-0.38, 0.08, 0]) },
+    { name: "beat1_ok_slate", parent: "root", geo: clapGeo, tr: pack([-0.10, 0.08, 0]) },
+    { name: "beat0_rl0", parent: "root", letter: "专", line: "rl", letterIndex: 0, geo: glyphSq, tr: pack([-0.46, 0.20, 0]) },
+  ];
+  const tracks = {
+    camera: [[0, ...pack([0, 0.15, 0.80])], [30, ...pack([0, 0.15, 0.80])]],
+  };
+  const anim = { ...makeAnim(objects, tracks, { frames: 31 }), scalars: { fov: Array(31).fill(30) } };
+  const hits = edgeCrops(anim, { aspect: 16 / 9 });
+  const targets = hits.map((h) => h.target).sort();
+  assert.deepEqual(targets, ["beat0_rl", "beat1_clap"]);
+  assert.match(describeEdgeCrops(hits)[0].text, /left frame edge/);
+});
+
+test("cardScreenOverlaps flags stacked foreground/background picture cards and clears side-by-side monitors", () => {
+  const cardGeo = { type: "uiBox", rect: [-160, -90, 320, 180], uvRect: [0, 0, 320, 180], thickness: 0.004 };
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([0, 0.15, 1.0]) },
+    // Stacked on left: scr2 at z=+0.05 covers scr1 at z=-0.12 (170 mm apart in Z so zero 3D collision, >70% 2D overlap)
+    { name: "beat2_scr1_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([-0.20, 0.15, -0.12], UPRIGHT, [1, 1, 1]) },
+    { name: "beat2_scr2_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([-0.18, 0.14, 0.05], UPRIGHT, [1, 1, 1]) },
+    // Clean side-by-side card on right
+    { name: "beat2_scr3_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([0.28, 0.15, 0.0], UPRIGHT, [1, 1, 1]) },
+  ];
+  const anim = { ...makeAnim(objects, { camera: [[0, ...pack([0, 0.15, 1.0])], [30, ...pack([0, 0.15, 1.0])]] }, { frames: 31 }), scalars: { fov: Array(31).fill(30) } };
+  const hits = cardScreenOverlaps(anim, { aspect: 16 / 9 });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].front, "beat2_scr2_pic");
+  assert.equal(hits[0].back, "beat2_scr1_pic");
+  assert.ok(hits[0].share > 0.6);
+  assert.match(describeCardScreenOverlaps(hits)[0].text, /covers \d+% of beat2_scr1_pic/);
+});
+
+test("heroFaceOcclusions catches foreground props crossing in front of hero_head and clears side/overhead props", () => {
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([0, 0.15, 0.9]) },
+    { name: "hero", parent: "root", tr: pack([0, 0, 0.10]) },
+    { name: "hero_head", parent: "hero", tr: pack([0, 0.13, 0]) },
+    { name: "hero_face", parent: "hero_head", geo: { type: "ellipsoid", r: [0.045, 0.042, 0.04] }, tr: pack([0, 0, 0]) },
+    // Prop crossing right in front of face (z=0.22 > hero z=0.10)
+    { name: "beat1_clap_slate", parent: "root", geo: { type: "roundBox", size: [0.10, 0.07, 0.015], radius: 0.003 }, tr: pack([0, 0.13, 0.22]) },
+    // Prop held cleanly overhead (y=0.28)
+    { name: "beat1_high_slate", parent: "root", geo: { type: "roundBox", size: [0.10, 0.07, 0.015], radius: 0.003 }, tr: pack([0, 0.28, 0.22]) },
+  ];
+  const anim = { ...makeAnim(objects, { camera: [[0, ...pack([0, 0.15, 0.9])], [20, ...pack([0, 0.15, 0.9])]] }, { frames: 21 }), scalars: { fov: Array(21).fill(30) } };
+  const hits = heroFaceOcclusions(anim, { aspect: 16 / 9 });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].prop, "beat1_clap");
+  assert.match(describeHeroFaceOcclusions(hits)[0].text, /crosses in front of the toy's face/);
+});
+
+test("confettiOverText flags dense confetti lingering across a 3D readout while clearing low bursts", () => {
+  const glyphSq = { type: "curve", rings: [[[0, 0], [0.04, 0], [0.04, 0.06], [0, 0.06]]], depth: 0.004 };
+  const flakeGeo = { type: "box", size: [0.008, 0.001, 0.006] };
+  const objects = [
+    { name: "camera", parent: "root", tr: pack([0, 0.2, 1.0]) },
+    { name: "beat2_n0", letter: "5", step: true, geo: glyphSq, tr: pack([-0.06, 0.32, 0.04]) },
+    { name: "beat2_n1", letter: ".", step: true, geo: glyphSq, tr: pack([-0.02, 0.32, 0.04]) },
+    { name: "beat2_n2", letter: "6", step: true, geo: glyphSq, tr: pack([0.02, 0.32, 0.04]) },
+    { name: "beat2_n3", letter: "万", step: true, geo: glyphSq, tr: pack([0.06, 0.32, 0.04]) },
+    ...[0, 1, 2, 3].map((i) => ({ name: `beat2_conf${i}`, geo: flakeGeo, mat: { type: "flake" }, tr: pack([-0.03 + i * 0.02, 0.34, 0.08]) })),
+  ];
+  const anim = { ...makeAnim(objects, { camera: [[0, ...pack([0, 0.2, 1.0])], [20, ...pack([0, 0.2, 1.0])]] }, { frames: 21 }), scalars: { fov: Array(21).fill(30) } };
+  const hits = confettiOverText(anim, { aspect: 16 / 9 });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].line, "beat2_readout");
+  assert.match(describeConfettiOverText(hits)[0].text, /confetti crosses 3D lettering "5\.6万"/);
+
+  // Move flakes down to y=0.14 -> zero overlap with readout at y=0.32
+  const cleanObjs = objects.map((o) => (o.name.includes("conf") ? { ...o, tr: pack([0, 0.14, 0.08]) } : o));
+  const cleanAnim = { ...makeAnim(cleanObjs, { camera: [[0, ...pack([0, 0.2, 1.0])], [20, ...pack([0, 0.2, 1.0])]] }, { frames: 21 }), scalars: { fov: Array(21).fill(30) } };
+  assert.equal(confettiOverText(cleanAnim, { aspect: 16 / 9 }).length, 0);
+});
+
+test("pageless detects custom opening beats using page.image / page.panels and honors profilePage: false", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-ui-"));
+  try {
+    mkdirSync(join(dir, "beats"), { recursive: true });
+    writeFileSync(join(dir, "beats/opening-slate.js"), "export function makeBeat({ page }) { const UI = { image: page.image, panels: page.panels }; return UI; }\n");
+    const film = {
+      format: { bpm: 120 },
+      story: { segments: [{ beat: "beats/opening-slate.js", bars: 3 }, { story: "endCard" }] },
+    };
+    assert.equal(pageless(film, dir), false);
+    assert.equal(pageless({ ...film, story: { ...film.story, profilePage: false } }, dir), true);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("apply-research preserves hand-tuned custom beat bars when facts.json omits bars, and story-test flags noun-pile shorthand", () => {
+  const applySrc = readFileSync(join(root, "skills/creator-toy-intro/engine/scripts/apply-research.mjs"), "utf8");
+  assert.match(applySrc, /prevBeats\.get\(beatPath\)/);
+  const storyTestSrc = readFileSync(join(root, "skills/creator-toy-intro/engine/scripts/story-test.mjs"), "utf8");
+  assert.match(storyTestSrc, /telegraphic noun-pile or insider shorthand/);
 });

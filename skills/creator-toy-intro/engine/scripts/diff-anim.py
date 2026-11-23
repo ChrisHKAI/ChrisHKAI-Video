@@ -77,8 +77,15 @@ def diff_frames(old, new):
         hit[i // SUB] = True
         hit[np.minimum((i + 1) // SUB, F - 1)] = True  # a half-frame sample blurs into the next frame
 
-    # a new, removed or rebuilt object (shape, material, parent): the frames where it shows, before or after
-    ob = lambda a: {o["name"]: json.dumps({k: o.get(k) for k in ("parent", "geo", "mat", "tr")}, sort_keys=True) for o in a["objects"]}  # noqa: E731
+    # a new, removed or rebuilt object (shape, material, parent): the frames where it shows, before or after.
+    # Strip clearance-only metadata keys (e.g. unitScale on uiBox) that scene.py ignores when building geometry.
+    def _clean_geo(g):
+        return {k: v for k, v in g.items() if k != "unitScale"} if isinstance(g, dict) else g
+
+    ob = lambda a: {  # noqa: E731
+        o["name"]: json.dumps({"parent": o.get("parent"), "geo": _clean_geo(o.get("geo")), "mat": o.get("mat"), "tr": o.get("tr")}, sort_keys=True)
+        for o in a["objects"]
+    }
     oo, no = ob(old), ob(new)
     changed = sorted(k for k in set(oo) | set(no) if oo.get(k) != no.get(k))
     cam_old = _world_pos(old, "camera", N) if "camera" in old.get("tracks", {}) else None

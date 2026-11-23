@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText } from "../lib/clearance.js";
 
 const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
 const filmSceneHash = (f) => { const { step: _step, ...rest } = f ?? {}; return createHash("sha256").update(JSON.stringify(canonical(rest))).digest("hex"); };
@@ -160,6 +160,12 @@ if (past("toy") && toy && film.profile) {
     if (objects.some((o) => o.mat?.type === "cover")) ["assets/cover-wall.png", "assets/cover-full.png"].forEach((p) => images.add(p));
     if (film.posts?.pinned?.cover) images.add(film.posts.pinned.cover);
     for (const p of images) if (!existsSync(fromFilm(p))) say("bad", `the scene opens ${p}, which is not there`, whoWrites(p));
+    if (images.has("assets/ui.png") && existsSync(fromFilm("ui/profile.html"))) {
+      const uiHtml = readFileSync(fromFilm("ui/profile.html"), "utf8");
+      if (uiHtml.length < 250 && !/class=|id=|<svg|<img/i.test(uiHtml)) {
+        say("bad", "the scene opens assets/ui.png, but ui wrote a blank pageless texture", "run.mjs ui (or set story.profilePage: true in film.json)");
+      }
+    }
     // the motion at a few moments of the film
     const D = T?.DURATION ?? fmt.duration;
     for (const t of [0, 0.25, 0.5, 0.75, 0.999].map((k) => k * D)) {
@@ -229,6 +235,12 @@ if (past("toy") && toy && film.profile) {
     for (const m of oversized) say(process.argv.includes("--render") ? "bad" : "warn", `oversized picture card: ${m.text}`, "place kit.picture() cards with pic.at(pos, q, scale) instead of raw trs(...) (references/beats.md)");
     const wraps = describeMovieWraps(movieWraps(motion));
     for (const m of wraps) say("warn", `video card wraps while visible: ${m.text}`, "lengthen the video clip to cover the full visible stretch, or pass { cyclic: false } to kit.picture() so it holds its final frame");
+    const cardOcc = describeCardScreenOverlaps(cardScreenOverlaps(motion, { aspect: fw / fh }));
+    for (const m of cardOcc) say("warn", `picture cards overlap on camera: ${m.text}`, "place simultaneous hero screens side-by-side or hide the earlier card before popping the next one in front");
+    const faceOcc = describeHeroFaceOcclusions(heroFaceOcclusions(motion, { aspect: fw / fh, file: (p) => fromFilm(p) }));
+    for (const m of faceOcc) say("warn", `prop blocks the toy's face: ${m.text}`, "arc hand-held props outward around the head or lower them outside key poses so the character's eyes stay clear");
+    const confText = describeConfettiOverText(confettiOverText(motion, { aspect: fw / fh }));
+    for (const m of confText) say("warn", `confetti over 3D lettering: ${m.text}`, "spawn confetti lower or to the sides so flakes do not shoot across headlines or readouts");
   } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
 }
 

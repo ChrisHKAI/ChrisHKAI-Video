@@ -144,7 +144,18 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
   it is three frames or it is not a picture yet.
 - **What is drawn is recognised without its label.** A microphone that reads
   as a grey disc is a grey disc; a plane that could be taking off does not
-  say "landing". The blind reading says which were not.
+  say "landing"; a featureless grey circle-on-square placeholder reads as a
+  logged-out avatar icon rather than a stiff passport photo (give it a white
+  photo border, blue ID backdrop, rigid deadpan face and a red `✗`; give an
+  error popup a window title bar with control dots, not a bare slab). Avoid
+  detached 2D anime drops (such as a floating blue ellipsoid for sweat) that
+  read in 3D PBR lighting as hovering pills or balloons—let the toy's posture
+  and concrete props carry the emotion. The blind reading says which were not.
+- **Plain everyday words, never insider shorthand.** Do not compress a
+  creator's pain point into telegraphic nouns stripped of verbs (writing
+  `证件照  拦截翻车` for "AI portraits come out stiff like ID photos and hit
+  safety errors" made viewers think an ID card upload was blocked; `生图死板 ·
+  审核报错` is understood in half a second by someone who never read the post).
 - **With its words blurred off, it still says its part.** `story-test.mjs`
   makes that picture of every frame (`research/frames/silent/`): look at
   them yourself first. Run the frames' script once more with

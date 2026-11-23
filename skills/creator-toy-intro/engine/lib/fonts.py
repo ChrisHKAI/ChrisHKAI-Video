@@ -69,9 +69,33 @@ def _scan(extra_dirs=()):
     return faces
 
 
+def _parse_face_entry(item):
+    """Accept {family, style} dicts or 'Family:Style' strings (matching typesheet --faces)."""
+    if isinstance(item, dict) and "family" in item and "style" in item:
+        return [(item["family"], item["style"])]
+    if isinstance(item, str):
+        out = []
+        for part in item.split(","):
+            part = part.strip()
+            if ":" in part:
+                fam, sty = part.split(":", 1)
+                if fam.strip() and sty.strip():
+                    out.append((fam.strip(), sty.strip()))
+        return out
+    return []
+
+
 def chosen(type_):
     """film.json "type" as {role: [(family, style), …]}: the roles it names (its "why" and other notes left out)."""
-    return {role: [(p["family"], p["style"]) for p in v] for role, v in (type_ or {}).items() if role in ROLES and isinstance(v, list)}
+    out = {}
+    for role, v in (type_ or {}).items():
+        if role not in ROLES:
+            continue
+        items = v if isinstance(v, list) else [v]
+        parsed = [pair for item in items for pair in _parse_face_entry(item)]
+        if parsed:
+            out[role] = parsed
+    return out
 
 
 def face(role, prefs=(), extra_dirs=(), chosen_roles=None):

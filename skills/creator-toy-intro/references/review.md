@@ -75,10 +75,15 @@ Score each from 1 (fails) to 5 (nothing to fix):
    form the intended progression, whether the opening gives a reason to care
    (not just a camera move), and whether the ending delivers that promise.
    Flag unsupported causal links, generic achievement lists, unexplained jumps
-   between two different project names across adjacent beats, and opaque
-   English repo slugs shown on screen that a general viewer in the film's
-   language would not understand in a glance. When no direction is supplied,
-   judge the film on these questions anyway.
+   between two different project names across adjacent beats, opaque English
+   repo slugs shown on screen that a general viewer in the film's language
+   would not understand in a glance, and cryptic noun-pile insider shorthand
+   (especially on "stuck" / pain-point beats, such as bare nouns whose missing
+   verbs create a false literal reading for someone who never read the source
+   post). Also check count-consistency: if a headline claims N items (e.g. "6
+   skills"), all N items must read distinctly on screen rather than two of them
+   shrinking or hiding behind the toy ("writes six, shows four"). When no
+   direction is supplied, judge the film on these questions anyway.
 3. **The pacing.** Where does attention first drift? Always answer with a
    time. Look for a hit in the first 3 s, quiet stretches, a move repeated
    for no reason, and a part that stays longer than it has things to show.
@@ -106,9 +111,12 @@ Score each from 1 (fails) to 5 (nothing to fix):
    judge whether every hit has its sound, whether a sound plays over
    nothing, and whether the moments that matter are marked.
 8. **The finish.** Look for flicker, jumps at a join between parts, a frame
-   that shows both sides of a cut, anything cut off at an edge, and overlaid
-   annotations (selection boxes, callouts, arrows on stills) accidentally
-   slicing through the text they are meant to frame.
+   that shows both sides of a cut, anything cut off at an edge, a foreground
+   prop or confetti burst crossing in front of the toy's face or a 3D readout,
+   one picture card popping up in front of another and covering most of it,
+   detached 2D anime marks (e.g. a floating blue "sweat" oval hovering in
+   mid-air in 3D), and overlaid annotations (selection boxes, callouts, arrows
+   on stills) accidentally slicing through the text they are meant to frame.
 9. **The jury.** Judge it as a jury at Annie (Best Sponsored Production),
    Annecy (Commissioned Films) or D&AD would. Does a stranger feel something,
    with a person at its heart rather than a number? Is there one idea, and does it

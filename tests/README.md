@@ -161,23 +161,29 @@ node --test tests/clearance.test.mjs
 Checks hinged/moving door-through-card piercing, intersecting angled picture
 cards, deep prop-into-prop embedding, settled end-card torn-paper label
 overlaps, colliding 3D headline lines (`lineOverlaps`), camera-frustum
-edge-crop warnings, zero-false-positive guards for compound parts,
-`declareLine` / `fastReveal` line-name separation (`slo1` vs `slo2`),
-`floatingSmallLetters` double-shadow detection, `armLiftLimit` wide-headed
-chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()` and
-double-`at()` detection, `oversizedUiBoxes` raw-`trs()` picture-card detection,
-`movieWraps` cyclic video wrap warnings, `qFlat` horizontal floor-ring
-quaternions, `cutout()` / `picture({ cyclic: false })` helpers, the
+edge-crop warnings (including custom-beat props and 3D headlines), 2D
+camera-space picture-card occlusions (`cardScreenOverlaps`), foreground props
+crossing in front of `hero_head` (`heroFaceOcclusions`), dense confetti bursts
+lingering over 3D readouts (`confettiOverText`), zero-false-positive guards for
+compound parts, `declareLine` / `fastReveal` line-name separation (`slo1` vs
+`slo2`), `floatingSmallLetters` double-shadow detection, `armLiftLimit`
+wide-headed chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()`
+and double-`at()` detection, `oversizedUiBoxes` raw-`trs()` picture-card
+detection, `movieWraps` cyclic video wrap warnings, `qFlat` horizontal
+floor-ring quaternions, `cutout()` / `picture({ cyclic: false })` helpers, the
 `clearance.mjs` CLI exit codes / `build/clearance.json` output, `ui.js`
-`pageless()` opt-in/auto-detection, `places.js` `two-column` non-overlapping
-default end-card layout, and `tim-line/figure.js` `roundBox` mm→m conversion.
+`pageless()` opt-in/opt-out and `page.image`/`page.panels` auto-detection,
+`places.js` `two-column` non-overlapping default end-card layout, and
+`tim-line/figure.js` `roundBox` mm→m conversion.
 
 Engine reliability fixes (`pacing.slanted` hidden-letter filtering, `diff-anim.py`
-hidden-track & texture-asset `--images`/`--since` filtering, `reading.match`
+hidden-track, `unitScale`-metadata & texture-asset `--images`/`--since`
+filtering, `fonts.chosen` `"Family:Style"` string shorthand, `reading.match`
 split-line cover, `compare.py --frames`, `score.py` groove fallback,
-`run.mjs` `clearance`/`diff` steps, `safezone.py` dynamic `EV.final` hold
-threshold, `check.mjs` active-`act2` counter gating, and Blender 2D curve
-bevel miter-spike flattening):
+`run.mjs` `clearance`/`diff` & incremental `animatic -- --frames` steps,
+`safezone.py` dynamic `EV.final` hold threshold, `check.mjs` active-`act2`
+counter & blank-`ui.png` gating, and Blender 2D curve bevel miter-spike
+flattening):
 
 ```sh
 python3 tests/engine-fixes.test.py

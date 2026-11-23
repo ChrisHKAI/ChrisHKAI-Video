@@ -149,20 +149,22 @@ let segments = film.story?.segments;
 let act3Then = false; // act 3 with a beat after it: its exit plays a bar, and the toy leaps (references/exits.md)
 if (!legacy) {
   // an opening of the film's own (direction.opening { id: "own", beat, pitch, sketch }): a beat written for this film
+  const prevBeats = new Map((film.story?.segments ?? []).filter((g) => g?.beat && Number.isFinite(g.bars)).map((g) => [g.beat, g.bars]));
   const ownOpening = () => {
     const o = selection.direction?.opening?.id === "own" ? selection.direction.opening : {};
     const beat = o.beat ?? "beats/opening.js";
     if (!existsSync(join(dir, beat))) warn.push(`the film opens with an opening of its own: write ${beat} before the story step: it starts on their page and brings the toy out of their picture (references/beats.md)`);
-    return { beat, bars: o.bars ?? 2 };
+    return { beat, bars: o.bars ?? prevBeats.get(beat) ?? 2 };
   };
   segments = [opening === "own" ? ownOpening() : segOf(opening) ?? fail(`unknown opening "${opening}": one of ${CAT.filter((a) => a.group === "opening").map((a) => a.id).join(", ")}, or "own" (one written for this film)`)];
   // why each part is there, for the storyboard page: what the viewer learns from it (the direction's action.means)
   const whyOf = (id) => { const m = selection.direction?.beats?.find((x) => x.story === id)?.action?.means; return m ? { why: m } : {}; };
   for (const [k, { s, b }] of picked.entries()) {
     if (b.anim === "own") {
-      // an animation written for this film (references/beats.md, "A beat of your own")
-      segments.push({ beat: b.beat ?? `beats/${s.id}.js`, bars: b.bars ?? 3, ...(b.opts ?? {}), ...whyOf(s.id) });
-      if (!existsSync(join(dir, b.beat ?? `beats/${s.id}.js`))) warn.push(`"${s.line}" becomes an animation of its own: write ${b.beat ?? `beats/${s.id}.js`} before the story step (references/beats.md)`);
+      // an animation written for this film (references/beats.md, "A beat of your own"); preserve hand-tuned bars in film.json when facts.json leaves bars unset
+      const beatPath = b.beat ?? `beats/${s.id}.js`;
+      segments.push({ beat: beatPath, bars: b.bars ?? prevBeats.get(beatPath) ?? 3, ...(b.opts ?? {}), ...whyOf(s.id) });
+      if (!existsSync(join(dir, beatPath))) warn.push(`"${s.line}" becomes an animation of its own: write ${beatPath} before the story step (references/beats.md)`);
       continue;
     }
     const seg = segOf(b.anim, b.opts) ?? fail(`story point "${s.id}" becomes "${b.anim}", which beats/catalog.json does not have (or "own" for one written for this film)`);

@@ -13,7 +13,7 @@ const folder = process.argv.slice(2).find((a, i, all) => !a.startsWith("--") && 
 if (folder) process.env.FILM = resolve(folder);
 if (!process.env.FILM) { console.error("usage: node engine/scripts/clearance.mjs <film folder> [--json] [--tol <mm>]"); process.exit(1); }
 const { film, fromFilm } = await import("../lib/film.js");
-const { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps } = await import("../lib/clearance.js");
+const { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText } = await import("../lib/clearance.js");
 
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const path = fromFilm("build/anim.json");
@@ -33,9 +33,12 @@ const floating = describeFloatingLetters(floatingSmallLetters(anim));
 const offStage = [...describeOffStageHero(offStageHero(anim)), ...describeOffStageObjects(offStageObjects(anim))];
 const oversized = describeOversizedUiBoxes(oversizedUiBoxes(anim));
 const wraps = describeMovieWraps(movieWraps(anim));
-writeFileSync(fromFilm("build/clearance.json"), JSON.stringify({ tol: limit, moments, contacts, clashes, rawClashes, labels, lines, crops, floating, offStage, oversized, wraps }, null, 1));
-if (process.argv.includes("--json")) console.log(JSON.stringify({ moments, clashes, labels, lines, crops, floating, offStage, oversized, wraps }, null, 1));
-else if (!moments.length && !clashes.length && !labels.length && !lines.length && !crops.length && !floating.length && !offStage.length && !oversized.length && !wraps.length) console.log(`✓ the toy and props go through nothing (deeper than ${(limit * 1000).toFixed(1)} mm)`);
+const cardOverlaps = describeCardScreenOverlaps(cardScreenOverlaps(anim, { aspect: fw / fh }));
+const faceOcclusions = describeHeroFaceOcclusions(heroFaceOcclusions(anim, { aspect: fw / fh, file: (p) => fromFilm(p) }));
+const confettiText = describeConfettiOverText(confettiOverText(anim, { aspect: fw / fh }));
+writeFileSync(fromFilm("build/clearance.json"), JSON.stringify({ tol: limit, moments, contacts, clashes, rawClashes, labels, lines, crops, floating, offStage, oversized, wraps, cardOverlaps, faceOcclusions, confettiText }, null, 1));
+if (process.argv.includes("--json")) console.log(JSON.stringify({ moments, clashes, labels, lines, crops, floating, offStage, oversized, wraps, cardOverlaps, faceOcclusions, confettiText }, null, 1));
+else if (!moments.length && !clashes.length && !labels.length && !lines.length && !crops.length && !floating.length && !offStage.length && !oversized.length && !wraps.length && !cardOverlaps.length && !faceOcclusions.length && !confettiText.length) console.log(`✓ the toy and props go through nothing (deeper than ${(limit * 1000).toFixed(1)} mm)`);
 else {
   for (const m of moments) console.log(`${m.kind === "into" ? "✗" : "!"} ${m.text}`);
   for (const m of clashes) console.log(`✗ ${m.text}`);
@@ -46,5 +49,8 @@ else {
   for (const m of crops) console.log(`! ${m.text}`);
   for (const m of floating) console.log(`! ${m.text}`);
   for (const m of wraps) console.log(`! ${m.text}`);
+  for (const m of cardOverlaps) console.log(`! ${m.text}`);
+  for (const m of faceOcclusions) console.log(`! ${m.text}`);
+  for (const m of confettiText) console.log(`! ${m.text}`);
 }
 process.exit(moments.some((m) => m.kind === "into") || clashes.length || labels.length || lines.length || offStage.length || oversized.length ? 1 : 0);

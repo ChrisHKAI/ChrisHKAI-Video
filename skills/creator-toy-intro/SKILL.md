@@ -360,3 +360,9 @@ film and names the three biggest problems with their times
 - The toy is the star: on screen it stands at least 8% of the frame's height
   (`pace`), never a speck beside a wall.
 - Small lettering stays printed: pushed out of a wall it smears.
+- Plain words and concrete props on "stuck" beats: never squeeze a pain point
+  into bare insider nouns whose missing verbs create a false literal reading
+  (`证件照  拦截翻车` read to strangers as "ID card got intercepted"; `生图死板 ·
+  审核报错` paired with a white-bordered blue ID mugshot + red `✗` and a
+  windowed error dialog reads in half a second), and never float 2D anime
+  sweat ovals in mid-air beside a 3D vinyl toy.

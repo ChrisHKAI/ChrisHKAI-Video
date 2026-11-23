@@ -91,11 +91,19 @@ When fixing a prop or card clash:
   strips touching or overlapping by `>= 8 mm` block `--render`; widen their
   horizontal gap, reduce `em`, or use `cta.layout: "two-column"`.
 - **Edge crops (`edgeCrops`)**: `clearance.mjs` and `check.mjs` project the
-  settled toy (`hero`) and end-card prop (`cta_prop`) through the active
-  camera frustum and warn (`!`) whenever either is partially cut off by a
-  frame edge for `>= 0.25 s` (fast vertical jump entries/exits are ignored).
-  Pull the camera back or switch the end card to `cta.layout: "two-column"`
-  so nothing clips an edge mid-pan.
+  settled toy (`hero`), end-card prop (`cta_prop`), bounded custom-beat prop
+  groups (`beat<k>_<group>`), and 3D beat headlines (`beat<k>_<line>`) through
+  the active camera frustum and warn (`!`) whenever any of them is partially
+  cut off by a frame edge for `>= 0.25 s` (fast vertical jump entries/exits are
+  ignored). Pull the camera back, lock horizontal camera drift, or switch the
+  end card to `cta.layout: "two-column"` so nothing clips an edge mid-pan.
+- **2D camera-space occlusions (`cardScreenOverlaps`, `heroFaceOcclusions`,
+  `confettiOverText`)**: even when objects are separated in Z depth so 3D SAT
+  reports zero physical collision, `clearance.mjs` and `check.mjs` warn when a
+  foreground picture card covers `>= 45%` of another visible picture card on
+  camera (`>= 0.6 s`), when a foreground prop crosses in front of the toy's
+  face (`>= 30%` of `hero_head` for `>= 0.2 s`), or when `>= 3` confetti flakes
+  shoot across an active 3D headline/readout (which breaks phone-size OCR).
 - **3D headline overlaps (`lineOverlaps`)**: checks distinct 3D `letter` lines
   on the same stage and flags transitions where an outgoing headline has not
   finished hiding before the incoming headline appears on the same spot.

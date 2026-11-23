@@ -311,7 +311,14 @@ for (const [i, step] of steps.entries()) {
       if (stopGroup(PID)) console.log("an animatic was still rendering (an older story?): stopped it");
       const animAt = () => (existsSync(fromFilm("build/anim.json")) ? statSync(fromFilm("build/anim.json")).mtimeMs : 0);
       const t0 = animAt();
-      await runGroup(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `1-${film.format.duration * film.format.fps}`, "--engine", "eevee", "--samples", "4", "--scale", "33", "--out", "build/eev", ...more]), PID);
+      const defaults = [
+        ...(more.includes("--frames") ? [] : ["--frames", `1-${film.format.duration * film.format.fps}`]),
+        ...(more.includes("--engine") ? [] : ["--engine", "eevee"]),
+        ...(more.includes("--samples") ? [] : ["--samples", "4"]),
+        ...(more.includes("--scale") ? [] : ["--scale", "33"]),
+        ...(more.includes("--out") ? [] : ["--out", "build/eev"]),
+      ];
+      await runGroup(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]), PID);
       if (animAt() !== t0) console.log("! build/anim.json changed while the animatic rendered: it shows the motion from before; run it again");
       run(PY, [fromSkill("engine/scripts/animatic.py")]);
       break;

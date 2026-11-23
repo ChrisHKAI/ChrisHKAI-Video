@@ -135,6 +135,21 @@ class DiffAnimTests(unittest.TestCase):
         self.assertLessEqual(max(frames), 41)
         self.assertLess(len(frames), 25)
 
+    def test_unitscale_geo_metadata_does_not_mark_unchanged_picture_cards(self):
+        old = self._base_anim(park_x=0.0, show_lamp=True)
+        old["objects"].append({
+            "name": "beat0_cyc",
+            "parent": "root",
+            "geo": {"type": "uiBox", "rect": [-750, -250, 1500, 500], "uvRect": [0, 0, 1500, 500], "thickness": 0.003},
+            "mat": {"type": "ui", "image": "assets/banner.jpg"},
+            "tr": [0, 0.2, -0.8, 0, 0, 0, 1, 0.6, 0.6, 0.6],
+        })
+        new = json.loads(json.dumps(old))
+        new["objects"][-1]["geo"]["unitScale"] = 0.613333
+        frames, changed = diff_anim.diff_frames(old, new)
+        self.assertEqual(changed, [])
+        self.assertEqual(frames, [])
+
 
 class ReadingSplitCoverTests(unittest.TestCase):
     def test_vision_split_mixed_script_line_passes_with_background_duplicate(self):
@@ -268,6 +283,27 @@ class CompareAndScoreTests(unittest.TestCase):
         self.assertIn(".anim-meta.json", exp_src)
         sb_src = (SKILL / "engine/scripts/storyboard.py").read_text()
         self.assertIn('.meta.json', sb_src)
+
+    def test_fonts_chosen_accepts_string_shorthand_and_dicts(self):
+        import fonts
+        parsed = fonts.chosen({
+            "heavy": "Lantinghei SC:Demibold, PingFang SC:Semibold",
+            "display": ["Songti SC:Bold", {"family": "Heiti SC", "style": "Medium"}],
+            "why": "test reason",
+        })
+        self.assertEqual(parsed["heavy"], [("Lantinghei SC", "Demibold"), ("PingFang SC", "Semibold")])
+        self.assertEqual(parsed["display"], [("Songti SC", "Bold"), ("Heiti SC", "Medium")])
+        self.assertNotIn("why", parsed)
+
+    def test_animatic_step_respects_frames_override_and_check_guards_blank_ui(self):
+        run_src = (SKILL / "engine/run.mjs").read_text()
+        self.assertIn('more.includes("--frames") ? [] : ["--frames"', run_src)
+        self.assertIn('more.includes("--engine") ? [] : ["--engine", "eevee"]', run_src)
+        check_src = (SCRIPTS / "check.mjs").read_text()
+        self.assertIn("the scene opens assets/ui.png, but ui wrote a blank pageless texture", check_src)
+        self.assertIn("cardScreenOverlaps", check_src)
+        self.assertIn("heroFaceOcclusions", check_src)
+        self.assertIn("confettiOverText", check_src)
 
 
 class SceneBevelSpikeBlenderTest(unittest.TestCase):

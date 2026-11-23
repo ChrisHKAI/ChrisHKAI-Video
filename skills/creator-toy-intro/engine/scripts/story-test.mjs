@@ -154,9 +154,14 @@ paid search, modelling or rendering. Answer in the creator's language.
    two project names with no bridge.
 3. Specificity: replace the creator's name with another. What actual work, method,
    words or distinctive detail stops the story being interchangeable? A name,
-   avatar or impressive number alone is not an answer. Also flag any opaque English
-   GitHub repo slug or internal code name shown on screen without explaining in the
-   viewer's plain language what the project actually is.
+   avatar or impressive number alone is not an answer. Also flag:
+   - any opaque English GitHub repo slug or internal code name shown on screen without
+     explaining in the viewer's plain language what the project actually is;
+   - any telegraphic noun-pile or insider shorthand on a "stuck" or "turn" headline
+     where missing verbs create an unintended literal reading for someone who has not
+     read the creator's posts (e.g. compressing "portraits look like stiff ID photos &
+     prompts hit safety blocks" into bare nouns "证件照  拦截翻车", which reads to a
+     stranger as "ID card got intercepted" instead of plain "生图死板 · 审核报错").
 4. Action meaning: for each major toy action, what does the viewer learn? Apply
    the deletion test: if the meaning survives unchanged when the action is removed,
    simplify/remove it unless it has a brief, explicit navigation or identity role.

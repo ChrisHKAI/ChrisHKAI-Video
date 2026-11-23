@@ -11,6 +11,7 @@ const STORY = JSON.parse(readFileSync(new URL("./story.json", import.meta.url), 
 // Opt in with film.story.profilePage = true, or automatically when any custom beat file references assets/ui.png.
 export function pageless(film, filmDir = process.env.FILM) {
   if (film.story?.profilePage === true) return false;
+  if (film.story?.profilePage === false) return true;
   const segs = film.story?.segments ?? [];
   const bar = (60 / (film.format?.bpm ?? 120)) * 4, end = STORY.pieces.endCard[0];
   const allCustom = segs.length > 0 && segs.every((s) => (s.beat ? s.beat !== "page-stand" : s.story === "endCard" || (Array.isArray(s.story) && s.story[0] > end - bar)));
@@ -19,7 +20,10 @@ export function pageless(film, filmDir = process.env.FILM) {
     for (const s of segs) {
       if (!s.beat) continue;
       const p = join(filmDir, s.beat);
-      if (existsSync(p) && /assets\/ui\.png/.test(readFileSync(p, "utf8"))) return false;
+      if (!existsSync(p)) continue;
+      const src = readFileSync(p, "utf8");
+      // Custom opening beats receive `{ page }` from makeBeat and read `page.image` / `page.panels` rather than literal "assets/ui.png"
+      if (/assets\/ui\.png|\bpage\s*\.\s*(?:image|panels|slab|px|avatar|w|h)\b/.test(src)) return false;
     }
   }
   return true;

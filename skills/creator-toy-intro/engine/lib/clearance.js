@@ -710,6 +710,36 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
         .map((o) => ({ o, spec: boxSpec(o) }))
     : [];
 
+  // Custom beat prop groups (e.g. beat1_clap) and 3D headline lines (e.g. beat0_rl1): exclude wide backdrops,
+  // floor rails/pools, and profile-page slabs so only bounded foreground props and headlines are checked.
+  const SKIP_BEAT_CROP = /^beat\d+_(p_|back$|avatar$|cyc|bg|rail|pool|floor|desk_platform|desk_trim|rostrum)/;
+  const beatPropGroups = new Map();
+  for (const o of anim.objects) {
+    if (!/^beat\d+_/.test(o.name) || SKIP_BEAT_CROP.test(o.name) || SKIP_NAME.test(o.name)) continue;
+    if (!o.geo || under(o, toy) || o.letter || o.mat?.outline) continue;
+    const spec = boxSpec(o);
+    if (!spec || Math.max(...spec.h) * 2 > 0.55) continue;
+    const grp = groupOf(o.name);
+    if (!beatPropGroups.has(grp)) beatPropGroups.set(grp, []);
+    beatPropGroups.get(grp).push({ o, spec });
+  }
+  const beatLineGroups = new Map();
+  for (const o of anim.objects) {
+    if (!/^beat\d+_/.test(o.name) || !o.letter || o.mat?.outline || o.geo?.type !== "curve" || !o.geo.rings?.length) continue;
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const corners = [
+      [Math.min(...xs), Math.min(...ys), 0],
+      [Math.max(...xs), Math.min(...ys), 0],
+      [Math.min(...xs), Math.max(...ys), 0],
+      [Math.max(...xs), Math.max(...ys), 0],
+    ];
+    const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+    const key = o.step ? `${beat}readout` : (o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, ""));
+    if (!beatLineGroups.has(key)) beatLineGroups.set(key, []);
+    beatLineGroups.get(key).push({ o, corners });
+  }
+
   const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
   const worldOf = (name, s, memo) => {
     if (memo.has(name)) return memo.get(name);
@@ -815,6 +845,37 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
     } else if (open.has("cta_prop")) {
       out.push(open.get("cta_prop")); open.delete("cta_prop");
       prevCenter.delete("cta_prop");
+    }
+
+    // 3) custom beat prop groups & 3D headline lines (within 5 m of active beat camera)
+    for (const [grp, parts] of beatPropGroups) {
+      const pts = [];
+      let maxSpan = 0;
+      for (const { o, spec } of parts) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+        if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
+        const obb = worldOBB(spec, w);
+        maxSpan = Math.max(maxSpan, obb.h[0] * 2, obb.h[1] * 2, obb.h[2] * 2);
+        for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+          pts.push([
+            obb.c[0] + sx * obb.h[0] * obb.axes[0][0] + sy * obb.h[1] * obb.axes[1][0] + sz * obb.h[2] * obb.axes[2][0],
+            obb.c[1] + sx * obb.h[0] * obb.axes[0][1] + sy * obb.h[1] * obb.axes[1][1] + sz * obb.h[2] * obb.axes[2][1],
+            obb.c[2] + sx * obb.h[0] * obb.axes[0][2] + sy * obb.h[1] * obb.axes[1][2] + sz * obb.h[2] * obb.axes[2][2],
+          ]);
+        }
+      }
+      checkTarget(grp, maxSpan <= 0.55 ? pts : [], f, t, camW, tanX, tanY);
+    }
+    for (const [key, ls] of beatLineGroups) {
+      const pts = [];
+      for (const { o, corners } of ls) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.3) continue;
+        if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
+        for (const c of corners) pts.push(apply(w, c));
+      }
+      checkTarget(key, pts, f, t, camW, tanX, tanY);
     }
   }
   out.push(...open.values());
@@ -1270,6 +1331,321 @@ export function describeMovieWraps(items) {
     kind: "warn",
     ...m,
     text: `${m.name} ("${m.movie}", ${m.frames} frames from frame ${m.start}) wraps back to frame 1 at ${m.wrapAt.toFixed(2)} s while still visible until ${m.to.toFixed(2)} s`,
+  }));
+}
+
+/**
+ * Detect when one visible uiBox picture card occludes >= minShare of another picture card in 2D camera screen space
+ * for >= minSecs, even when separated in Z depth so 3D solidClashes reports zero physical intersection.
+ */
+export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.45, minSecs = 0.6, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const SKIP_CARD_SCREEN = /^(beat\d+_)?(p_|back$|cyc|bg|floor)/;
+  const cards = anim.objects
+    .filter((o) => o.geo?.type === "uiBox" && !SKIP_CARD_SCREEN.test(o.name) && !SKIP_NAME.test(o.name) && boxSpec(o))
+    .map((o) => ({ o, spec: boxSpec(o), group: groupOf(o.name) }));
+  if (cards.length < 2) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const proj = [];
+    for (const c of cards) {
+      const w = worldOf(c.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 8) continue;
+      const obb = worldOBB(c.spec, w);
+      if (Math.max(obb.h[0], obb.h[1], obb.h[2]) * 2 > 0.9) continue;
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, depthSum = 0, ok = true;
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+        const wp = [
+          obb.c[0] + sx * obb.h[0] * obb.axes[0][0] + sy * obb.h[1] * obb.axes[1][0] + sz * obb.h[2] * obb.axes[2][0],
+          obb.c[1] + sx * obb.h[0] * obb.axes[0][1] + sy * obb.h[1] * obb.axes[1][1] + sz * obb.h[2] * obb.axes[2][1],
+          obb.c[2] + sx * obb.h[0] * obb.axes[0][2] + sy * obb.h[1] * obb.axes[1][2] + sz * obb.h[2] * obb.axes[2][2],
+        ];
+        const lp = toLocal(camW, wp);
+        if (lp[2] >= -0.05) { ok = false; break; }
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+        if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+        depthSum += -lp[2];
+      }
+      if (!ok || x1 <= -1 || x0 >= 1 || y1 <= -1 || y0 >= 1) continue;
+      const area = Math.max(1e-6, (x1 - x0) * (y1 - y0));
+      proj.push({ c, x0, x1, y0, y1, area, depth: depthSum / 8 });
+    }
+    const seenNow = new Set();
+    for (let i = 0; i < proj.length; i++) {
+      for (let j = i + 1; j < proj.length; j++) {
+        const A = proj[i], B = proj[j];
+        if (A.c.group === B.c.group) continue;
+        const ix = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0);
+        const iy = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
+        if (ix <= 0 || iy <= 0) continue;
+        const share = (ix * iy) / Math.min(A.area, B.area);
+        if (share < minShare) continue;
+        const [front, back] = A.depth <= B.depth ? [A, B] : [B, A];
+        const pk = [A.c.o.name, B.c.o.name].sort().join("|");
+        seenNow.add(pk);
+        const cur = open.get(pk);
+        if (!cur) open.set(pk, { front: front.c.o.name, back: back.c.o.name, from: t, to: t, peak: t, share });
+        else {
+          cur.to = t;
+          if (share > cur.share) Object.assign(cur, { front: front.c.o.name, back: back.c.o.name, share, peak: t });
+        }
+      }
+    }
+    for (const [pk, cur] of open) if (!seenNow.has(pk)) { out.push(cur); open.delete(pk); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+}
+
+export function describeCardScreenOverlaps(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: ${m.front} covers ${Math.round(m.share * 100)}% of ${m.back} on camera (worst at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect foreground props/cards passing between the active camera and the toy's head (`hero_head*` or upper toy bounds),
+ * catching props that block the character's face/eyes on screen without physically colliding in 3D.
+ */
+export function heroFaceOcclusions(anim, { aspect = 16 / 9, toy = "hero", minShare = 0.30, minSecs = 0.20, every = 2, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has(toy) || !objects.has("camera") || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const headRoot = objects.has(`${toy}_head`) ? `${toy}_head` : toy;
+  const headProbes = anim.objects
+    .filter((o) => o.geo && o.name !== toy && under(o, headRoot))
+    .map((o) => ({ o, pts: probesOf(o.geo, file) }))
+    .filter((p) => p.pts.length);
+  if (!headProbes.length) return [];
+
+  const SKIP_FACE_PROP = /^(beat\d+_)?(p_|back$|avatar$|cyc|bg|rail|pool|floor)|^(panel_|piece|wall|label\d+_)/;
+  const fgGroups = new Map();
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, toy) || o.letter || o.mat?.outline || SKIP_NAME.test(o.name) || SKIP_FACE_PROP.test(o.name)) continue;
+    if (o.mat?.type === "flake" || o.mat?.type === "glow") continue;
+    const spec = boxSpec(o);
+    if (!spec || Math.max(...spec.h) * 2 > 0.65) continue;
+    const grp = groupOf(o.name);
+    if (!fgGroups.has(grp)) fgGroups.set(grp, []);
+    fgGroups.get(grp).push({ o, spec });
+  }
+  if (!fgGroups.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+
+    let hx0 = Infinity, hx1 = -Infinity, hy0 = Infinity, hy1 = -Infinity, hDepth = 0, hn = 0;
+    for (const { o, pts } of headProbes) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      for (const [lp0] of pts) {
+        const lp = toLocal(camW, apply(w, lp0));
+        if (lp[2] >= -0.05) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < hx0) hx0 = nx; if (nx > hx1) hx1 = nx;
+        if (ny < hy0) hy0 = ny; if (ny > hy1) hy1 = ny;
+        hDepth += -lp[2];
+        hn++;
+      }
+    }
+    if (!hn || hx1 <= -1 || hx0 >= 1 || hy1 <= -1 || hy0 >= 1) {
+      for (const [k, c] of open) { out.push(c); open.delete(k); }
+      continue;
+    }
+    if (headRoot === toy) hy0 = hy0 + (hy1 - hy0) * 0.55;
+    const hArea = Math.max(1e-6, (hx1 - hx0) * (hy1 - hy0));
+    const meanHDepth = hDepth / hn;
+
+    const seenNow = new Set();
+    for (const [grp, parts] of fgGroups) {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, pDepth = 0, pn = 0;
+      for (const { o, spec } of parts) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+        if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
+        const obb = worldOBB(spec, w);
+        for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+          const wp = [
+            obb.c[0] + sx * obb.h[0] * obb.axes[0][0] + sy * obb.h[1] * obb.axes[1][0] + sz * obb.h[2] * obb.axes[2][0],
+            obb.c[1] + sx * obb.h[0] * obb.axes[0][1] + sy * obb.h[1] * obb.axes[1][1] + sz * obb.h[2] * obb.axes[2][1],
+            obb.c[2] + sx * obb.h[0] * obb.axes[0][2] + sy * obb.h[1] * obb.axes[1][2] + sz * obb.h[2] * obb.axes[2][2],
+          ];
+          const lp = toLocal(camW, wp);
+          if (lp[2] >= -0.05) continue;
+          const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+          if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+          if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+          pDepth += -lp[2];
+          pn++;
+        }
+      }
+      if (!pn || pDepth / pn >= meanHDepth - 0.015) continue;
+      const ix = Math.min(hx1, x1) - Math.max(hx0, x0);
+      const iy = Math.min(hy1, y1) - Math.max(hy0, y0);
+      if (ix <= 0 || iy <= 0) continue;
+      const share = (ix * iy) / hArea;
+      if (share < minShare) continue;
+      seenNow.add(grp);
+      const cur = open.get(grp);
+      if (!cur) open.set(grp, { prop: grp, from: t, to: t, peak: t, share });
+      else {
+        cur.to = t;
+        if (share > cur.share) Object.assign(cur, { share, peak: t });
+      }
+    }
+    for (const [grp, cur] of open) if (!seenNow.has(grp)) { out.push(cur); open.delete(grp); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+}
+
+export function describeHeroFaceOcclusions(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: ${m.prop} crosses in front of the toy's face (${Math.round(m.share * 100)}% of head covered at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect confetti/flake bursts shooting across active 3D lettering lines or numeric readouts in camera space,
+ * which breaks phone-size OCR and muddies key numbers on downbeat locks.
+ */
+export function confettiOverText(anim, { aspect = 16 / 9, minFlakes = 3, minDensity = 0.75, minSecs = 0.30, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const flakes = anim.objects.filter((o) => o.mat?.type === "flake" || /(^|_)conf\d+$/.test(o.name));
+  if (flakes.length < minFlakes) return [];
+
+  const lineGroups = new Map();
+  for (const o of anim.objects) {
+    if (!o.letter || o.pop || o.mat?.outline || /^label\d+_/.test(o.name) || o.geo?.type !== "curve" || !o.geo.rings?.length) continue;
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const corners = [
+      [Math.min(...xs), Math.min(...ys), 0],
+      [Math.max(...xs), Math.min(...ys), 0],
+      [Math.min(...xs), Math.max(...ys), 0],
+      [Math.max(...xs), Math.max(...ys), 0],
+    ];
+    const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+    const key = o.step ? `${beat}readout` : (o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, ""));
+    if (!lineGroups.has(key)) lineGroups.set(key, []);
+    lineGroups.get(key).push({ o, corners });
+  }
+  if (!lineGroups.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const idxOf = (o) => o.letterIndex ?? +(o.name.match(/(\d+)$/)?.[1] ?? 0);
+  const open = new Map(), out = [];
+
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+
+    const flakePts = [];
+    for (const fl of flakes) {
+      const w = worldOf(fl.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      const lp = toLocal(camW, w.p);
+      if (lp[2] >= -0.05 || -lp[2] > 8) continue;
+      const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+      if (nx >= -1 && nx <= 1 && ny >= -1 && ny <= 1) flakePts.push([nx, ny, -lp[2]]);
+    }
+    if (flakePts.length < minFlakes) {
+      for (const [k, c] of open) { out.push(c); open.delete(k); }
+      continue;
+    }
+
+    const seenNow = new Set();
+    for (const [key, ls] of lineGroups) {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, dSum = 0, dn = 0;
+      const chars = [];
+      for (const { o, corners } of ls) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.3) continue;
+        let vis = false;
+        for (const c of corners) {
+          const lp = toLocal(camW, apply(w, c));
+          if (lp[2] >= -0.05 || -lp[2] > 8) continue;
+          const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+          if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+          if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+          dSum += -lp[2]; dn++; vis = true;
+        }
+        if (vis) chars.push(o);
+      }
+      if (!dn) continue;
+      const lineDepth = dSum / dn;
+      const hits = flakePts.filter(([fx, fy, fd]) => fx >= x0 && fx <= x1 && fy >= y0 && fy <= y1 && fd <= lineDepth + 0.12).length;
+      if (hits < Math.max(minFlakes, Math.ceil(chars.length * minDensity))) continue;
+      seenNow.add(key);
+      const text = chars.sort((a, b) => idxOf(a) - idxOf(b)).map((o) => o.letter).join("");
+      const cur = open.get(key);
+      if (!cur) open.set(key, { line: key, text, from: t, to: t, peak: t, flakes: hits });
+      else {
+        cur.to = t;
+        if (hits > cur.flakes) Object.assign(cur, { flakes: hits, peak: t, text });
+      }
+    }
+    for (const [k, c] of open) if (!seenNow.has(k)) { out.push(c); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.flakes - a.flakes);
+}
+
+export function describeConfettiOverText(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: confetti crosses 3D lettering "${m.text}" (${m.line}, ${m.flakes} flakes over text at ${m.peak.toFixed(2)} s)`,
   }));
 }
 
