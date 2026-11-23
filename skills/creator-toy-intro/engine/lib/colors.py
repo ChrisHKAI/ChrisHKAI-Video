@@ -7,6 +7,7 @@ black stage, and of white digits on a white post: the stage decides what reads).
 """
 import json
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -176,7 +177,41 @@ def film_colours(film):
                 break
     conf = [c for c in (F.get("pop") or {}).get("confetti", []) if isinstance(c, str)]
     conf_rows = [{"hex": c.upper(), "contrast": contrast(c, STAGE)} for c in conf]
-    return {"stage": STAGE, "toy": toy_rows, "text": text_rows, "confetti": conf_rows}
+    card_rows = []
+    if not stage_for(film)[1].get("light"):
+        from PIL import Image
+        seen_cards = set()
+        for o in anim["objects"]:
+            name = o["name"]
+            if not name.startswith("beat") or re.match(r"^beat\d+_(p_|back$|avatar$|cyc|bg|rail|pool|floor)", name) or not shown(name):
+                continue
+            if (o.get("geo") or {}).get("type") != "uiBox":
+                continue
+            img_rel = (o.get("mat") or {}).get("image")
+            if not isinstance(img_rel, str) or (name, img_rel) in seen_cards or not (film / img_rel).is_file():
+                continue
+            seen_cards.add((name, img_rel))
+            try:
+                im = Image.open(film / img_rel).convert("RGBA")
+                im.thumbnail((160, 160))
+                a = np.asarray(im, dtype=float) / 255
+                opaque = a[..., 3] > 0.5
+                if not opaque.any():
+                    continue
+                mean_hex = hexof(a[..., :3][opaque].mean(axis=0))
+                h_px, w_px = a.shape[:2]
+                bw, bh = max(2, round(w_px * 0.04)), max(2, round(h_px * 0.04))
+                ring = np.zeros((h_px, w_px), dtype=bool)
+                ring[:bh, :] = ring[-bh:, :] = ring[:, :bw] = ring[:, -bw:] = True
+                ring &= opaque
+                b_hex = hexof(a[..., :3][ring].mean(axis=0)) if ring.any() else mean_hex
+                c_mean, c_border = round(contrast(mean_hex, STAGE), 2), round(contrast(b_hex, STAGE), 2)
+                card_rows.append({"name": name, "image": img_rel, "hex": mean_hex, "borderHex": b_hex,
+                                  "contrast": c_mean, "borderContrast": c_border,
+                                  "melts": bool(c_mean < MELT and c_border < 2.2)})
+            except Exception:
+                continue
+    return {"stage": STAGE, "toy": toy_rows, "text": text_rows, "confetti": conf_rows, "cards": card_rows}
 
 
 def from_oklab(lab):

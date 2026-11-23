@@ -710,15 +710,30 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
         .map((o) => ({ o, spec: boxSpec(o) }))
     : [];
 
-  // Custom beat prop groups (e.g. beat1_clap) and 3D headline lines (e.g. beat0_rl1): exclude wide backdrops,
-  // floor rails/pools, and profile-page slabs so only bounded foreground props and headlines are checked.
-  const SKIP_BEAT_CROP = /^beat\d+_(p_|back$|avatar$|cyc|bg|rail|pool|floor|desk_platform|desk_trim|rostrum)/;
+  // Custom beat prop groups (e.g. beat1_clap), showcase picture cards (1–5 uiBox cards on a beat), and 3D headline
+  // lines (e.g. beat0_rl1): exclude wide backdrops, floor rails/pools, full-bleed walls, and profile-page slabs.
+  const SKIP_BEAT_CROP = /^beat\d+_(p_|back$|avatar$|cyc|bg|rail|pool|floor|desk_platform|desk_trim|rostrum|wall|bleed)/;
+  const peakScale = (o) => {
+    const rows = anim.tracks?.[o.name];
+    if (!rows?.length) return Math.max(...unpack(o.tr).s.map(Math.abs));
+    return Math.max(...rows.map((r) => Math.max(Math.abs(r[8]), Math.abs(r[9]), Math.abs(r[10]))));
+  };
   const beatPropGroups = new Map();
+  const beatCardsByBeat = new Map();
   for (const o of anim.objects) {
     if (!/^beat\d+_/.test(o.name) || SKIP_BEAT_CROP.test(o.name) || SKIP_NAME.test(o.name)) continue;
     if (!o.geo || under(o, toy) || o.letter || o.mat?.outline) continue;
     const spec = boxSpec(o);
-    if (!spec || Math.max(...spec.h) * 2 > 0.55) continue;
+    if (!spec) continue;
+    if (spec.card) {
+      const unit = o.geo.unitScale ?? peakScale(o);
+      if (unit <= 1e-3 || Math.max(...spec.h) * 2 * unit > 0.95) continue;
+      const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+      if (!beatCardsByBeat.has(beat)) beatCardsByBeat.set(beat, []);
+      beatCardsByBeat.get(beat).push({ o, spec, unit });
+      continue;
+    }
+    if (Math.max(...spec.h) * 2 > 0.55) continue;
     const grp = groupOf(o.name);
     if (!beatPropGroups.has(grp)) beatPropGroups.set(grp, []);
     beatPropGroups.get(grp).push({ o, spec });
@@ -866,6 +881,33 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
         }
       }
       checkTarget(grp, maxSpan <= 0.55 ? pts : [], f, t, camW, tanX, tanY);
+    }
+    for (const [, cards] of beatCardsByBeat) {
+      const vis = [];
+      for (const item of cards) {
+        const w = worldOf(item.o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.05 * item.unit || Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) {
+          vis.push({ name: item.o.name, pts: [], active: false });
+          continue;
+        }
+        const obb = worldOBB(item.spec, w);
+        if (Math.max(obb.h[0] * 2, obb.h[1] * 2, obb.h[2] * 2) > 0.95) {
+          vis.push({ name: item.o.name, pts: [], active: false });
+          continue;
+        }
+        const pts = [];
+        for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+          pts.push([
+            obb.c[0] + sx * obb.h[0] * obb.axes[0][0] + sy * obb.h[1] * obb.axes[1][0] + sz * obb.h[2] * obb.axes[2][0],
+            obb.c[1] + sx * obb.h[0] * obb.axes[0][1] + sy * obb.h[1] * obb.axes[1][1] + sz * obb.h[2] * obb.axes[2][1],
+            obb.c[2] + sx * obb.h[0] * obb.axes[0][2] + sy * obb.h[1] * obb.axes[1][2] + sz * obb.h[2] * obb.axes[2][2],
+          ]);
+        }
+        vis.push({ name: item.o.name, pts, active: true });
+      }
+      // 6+ simultaneous picture cards on one beat (layout.wall / corridor / dense grid) are intentional montages
+      const montage = vis.filter((x) => x.active).length > 5;
+      for (const x of vis) checkTarget(x.name, montage ? [] : x.pts, f, t, camW, tanX, tanY);
     }
     for (const [key, ls] of beatLineGroups) {
       const pts = [];
@@ -1441,15 +1483,22 @@ export function heroFaceOcclusions(anim, { aspect = 16 / 9, toy = "hero", minSha
   if (!headProbes.length) return [];
 
   const SKIP_FACE_PROP = /^(beat\d+_)?(p_|back$|avatar$|cyc|bg|rail|pool|floor)|^(panel_|piece|wall|label\d+_)/;
+  const peakScale = (o) => {
+    const rows = anim.tracks?.[o.name];
+    if (!rows?.length) return Math.max(...unpack(o.tr).s.map(Math.abs));
+    return Math.max(...rows.map((r) => Math.max(Math.abs(r[8]), Math.abs(r[9]), Math.abs(r[10]))));
+  };
   const fgGroups = new Map();
   for (const o of anim.objects) {
     if (!o.geo || under(o, toy) || o.letter || o.mat?.outline || SKIP_NAME.test(o.name) || SKIP_FACE_PROP.test(o.name)) continue;
     if (o.mat?.type === "flake" || o.mat?.type === "glow") continue;
     const spec = boxSpec(o);
-    if (!spec || Math.max(...spec.h) * 2 > 0.65) continue;
-    const grp = groupOf(o.name);
+    if (!spec) continue;
+    const unit = spec.card ? (o.geo.unitScale ?? peakScale(o)) : 1;
+    if (unit <= 1e-3 || Math.max(...spec.h) * 2 * unit > 0.65) continue;
+    const grp = spec.card ? o.name : groupOf(o.name);
     if (!fgGroups.has(grp)) fgGroups.set(grp, []);
-    fgGroups.get(grp).push({ o, spec });
+    fgGroups.get(grp).push({ o, spec, unit });
   }
   if (!fgGroups.size) return [];
 
@@ -1495,9 +1544,9 @@ export function heroFaceOcclusions(anim, { aspect = 16 / 9, toy = "hero", minSha
     const seenNow = new Set();
     for (const [grp, parts] of fgGroups) {
       let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, pDepth = 0, pn = 0;
-      for (const { o, spec } of parts) {
+      for (const { o, spec, unit } of parts) {
         const w = worldOf(o.name, s, memo);
-        if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+        if (Math.min(...w.s.map(Math.abs)) < 0.05 * unit) continue;
         if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
         const obb = worldOBB(spec, w);
         for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {

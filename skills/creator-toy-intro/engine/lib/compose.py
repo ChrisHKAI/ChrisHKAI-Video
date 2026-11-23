@@ -127,8 +127,8 @@ def example(ctx):
             notes = [midi(x) for x in CHORDS[ch]]
             span = min(ctx.bar, sec["f1"] - t)
             if R:
-                ctx.add(out, R.note("jazz_bass", notes[0] - 12, ctx.beat * 1.8, 0.7), t, 0.9, -0.1)
-                ctx.add(out, R.note("jazz_bass", notes[0] - 12 + 7, ctx.beat * 1.6, 0.55), t + 2 * ctx.beat, 0.7, -0.1)
+                ctx.add(out, R.note("electric_bass", notes[0] - 12, ctx.beat * 1.8, 0.7), t, 0.9, -0.1)
+                ctx.add(out, R.note("electric_bass", notes[0] - 12 + 7, ctx.beat * 1.6, 0.55), t + 2 * ctx.beat, 0.7, -0.1)
                 ctx.add(out, R.chord("piano", [m + 12 for m in notes[1:]], span, vel=0.42, strum=0.02), t, 0.6, 0.15)
             else:
                 ctx.add(out, S.sub(hz(notes[0] - 12), span * 0.95), t, 0.8, 0.0)
@@ -151,17 +151,17 @@ def example(ctx):
                 if groove == "none":
                     continue
                 if s8 in kick:
-                    ctx.add(out, R.hit("drum_kit", "kick", 0.7) if R else S.kick(), ts, 0.6, 0.0)
+                    ctx.add(out, R.hit("drum_kit", "kick_drum_left", 0.7) if R else S.kick(), ts, 0.6, 0.0)
                 if s8 in (2, 6) and groove != "half":
-                    ctx.add(out, R.hit("claps", "group", 0.5) if R else S.snare(), ts, 0.35, 0.05)
-                ctx.add(out, R.hit("hihat", "closed", 0.4 if s8 % 2 else 0.6) if R else S.hat(), ts, 0.25, 0.3)
+                    ctx.add(out, R.hit("drum_kit", "snare_1", 0.5) if R else S.snare(), ts, 0.35, 0.05)
+                ctx.add(out, R.hit("drum_kit", "hi_hat_closed", 0.4 if s8 % 2 else 0.6) if R else S.hat(), ts, 0.25, 0.3)
             t += ctx.bar
             k += 1
     # every big hit: a held chord and a cymbal
     for h in ctx.hits:
         if R:
             ctx.add(out, R.chord("piano", [midi(x) + 12 for x in CHORDS["G"][1:]], 1.6, vel=0.6), h, 0.5, 0.0)
-            ctx.add(out, R.hit("sus_cymbal", "hit", 0.45), h, 0.3, 0.2)
+            ctx.add(out, R.hit("crash", None, 0.45), h, 0.3, 0.2)
         else:
             ctx.add(out, S.bell(hz(midi("G5")), 1.2), h, 0.4, 0.0)
     return R.room(out, size=0.4, mix=0.14) if R else out

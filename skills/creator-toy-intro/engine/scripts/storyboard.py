@@ -26,6 +26,7 @@ from film import FILM, FILM_JSON, TEMPLATE  # noqa: E402  the film workspace (FI
 from publish import PLATFORMS, SAFE, platforms, orientation, content_box, past  # noqa: E402
 import pacing  # noqa: E402
 import colors  # noqa: E402
+import fonts  # noqa: E402
 import ledger  # noqa: E402
 
 argv = sys.argv[1:]
@@ -288,7 +289,7 @@ if (FILM / "build/anim.json").exists():
         checks.append((True, W["c_ledger_own"].format(own=said(theirs))))
 # the faces the film chose (no face is the skill's own: engine/lib/fonts.py), and why
 TYPE = FILM_JSON.get("type") or {}
-picked = [f"{v[0]['family']} {v[0]['style']}" for k, v in TYPE.items() if k in ("heavy", "display") and isinstance(v, list) and v]
+picked = [f"{pairs[0][0]} {pairs[0][1]}".strip() for k, pairs in fonts.chosen(TYPE).items() if k in ("heavy", "display") and pairs]
 checks.append((bool(picked) and bool(str(TYPE.get("why", "")).strip()), W["c_faces"].format(x=W["sep"].join(picked), why=TYPE.get("why", "")) if picked else W["c_nofaces"]))
 # the lettering read as a viewer meets it: every preview frame with a line on it (build/reads.json), with the
 # finish's bloom, shrunk to phone size, read by the computer's own text recognition (engine/lib/reading.py)

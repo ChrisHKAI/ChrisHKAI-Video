@@ -31,7 +31,7 @@ const SAFE = JSON.parse(readFileSync(fromSkill("engine/lib/platforms.json"), "ut
 // the cover walls once they stand up (m): their width is the story's, their height the cover's
 const coverAspect = (f, w, h) => { const c = readFilmJSON(f, null); return c ? c.h / c.w : h / w; };
 const WALL_W_M = S.coverMM / 1000;
-const CTA_MODE = film.cta?.layout ?? "sweep";
+export const CTA_MODE = film.cta?.layout ?? "sweep";
 const D = places(L, { portrait: PORTRAIT, aspect: ASPECT, safe: SAFE, ctaLayout: CTA_MODE }, { w: WALL_W_M, h2: WALL_W_M * coverAspect("build/cover2.json", 1983, 793), h3: WALL_W_M * coverAspect("build/cover.json", 1028, 411) });
 // the end card's layout: film.json "cta" pins positions, else the defaults for the orientation
 export const CTA_LAYOUT = D.cta;

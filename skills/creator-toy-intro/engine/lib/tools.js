@@ -22,14 +22,18 @@ export const PY_MODULES = ["numpy", "scipy", "PIL", "fontTools", "contourpy", "s
 const runs = (cmd, args = ["--version"]) => spawnSync(cmd, args, { encoding: "utf8", timeout: 60000 }).status === 0;
 export const onPath = (cmd) => runs(WIN ? "where" : "which", [cmd]);
 
-// BLENDER first (a Blender kept anywhere else), then the usual places: newest version first
-export function blenderCandidates() {
+// BLENDER first (a Blender kept anywhere else), then the usual places: newest version first.
+// Remote multi-GPU wrappers (BIN/blender, ~/.local/bin/blender) are skipped when `local: true` or `COLAB_LOCAL=1`
+// (unless `COLAB_ALL=1`), so non-sequence steps (lookdev, poses, estimate, previs, animatic) run on the local GPU.
+export function blenderCandidates({ local = false } = {}) {
   const exe = WIN ? "blender.exe" : "blender";
   // in each folder, its versions' own folders ("Blender 5.2", "blender-5.2.3-windows-x64")
   const inside = (dir) => newestFirst(readdirSafe(dir)).map((d) => join(dir, d, exe));
   const env = process.env;
+  const skipWrappers = (local || env.COLAB_LOCAL === "1") && env.COLAB_ALL !== "1";
   return [
     env.BLENDER,
+    ...(WIN || skipWrappers ? [] : [join(BIN, exe), join(homedir(), ".local/bin", exe)]),
     "/Applications/Blender.app/Contents/MacOS/Blender",
     join(homedir(), "Applications/Blender.app/Contents/MacOS/Blender"),
     // a portable Blender (doctor's, or a .zip / .tar.xz unpacked by hand) in the skill's home
@@ -42,9 +46,15 @@ export function blenderCandidates() {
     ] : []),
   ].filter(Boolean);
 }
-export function findBlender() {
-  return blenderCandidates().find((p) => existsSync(p)) ?? (onPath("blender") ? "blender" : null);
+export function findBlender({ local = false } = {}) {
+  const found = blenderCandidates({ local }).find((p) => existsSync(p));
+  if (found) return found;
+  const exe = WIN ? "blender.exe" : "blender";
+  const skipWrappers = (local || process.env.COLAB_LOCAL === "1") && process.env.COLAB_ALL !== "1";
+  if (skipWrappers && [join(BIN, exe), join(homedir(), ".local/bin", exe)].some((p) => existsSync(p))) return null;
+  return onPath("blender") ? "blender" : null;
 }
+export const findLocalBlender = () => findBlender({ local: true });
 
 // the Python that has every module the scripts import
 export function findPython() {

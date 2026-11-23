@@ -137,5 +137,8 @@ for k, r in bad:
     else:
         what = f"confetti {r['hex']}"
     print(f"  ! {what}: {r['contrast']:.1f}:1 on the stage, will not read")
-if fc and not bad:
-    print("  ✓ the toy, the lettering and the confetti all read on the stage")
+for r in (fc or {}).get("cards", []):
+    if r.get("melts"):
+        print(f"  ! picture card {r['name']} ({r['image']}): {r['contrast']:.1f}:1 on the stage with a dark edge ({r['borderContrast']:.1f}:1) — wrap in a bright window frame or lift midtones so it does not vanish")
+if fc and not bad and not any(r.get("melts") for r in fc.get("cards", [])):
+    print("  ✓ the toy, the lettering, the picture cards and the confetti all read on the stage")

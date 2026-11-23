@@ -171,9 +171,18 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
   as a heart on an avatar, was read as a fan; a joke that is a word blurred
   off was a blank square kicked. Who the story turns on is drawn as a person
   in their place, and the act is chosen so the picture carries it.
-- **The background does not tell the ending.** Their page in the first frame
-  shows them before the story: a bio that already says "official ambassador"
-  was read first and gave the turn away.
+- **The background does not tell the ending, or leak the operator's browser.**
+  Their page in the first frame shows them before the story: a bio that already
+  says "official ambassador" was read first and gave the turn away. And when
+  using a live browser screenshot of a profile or post, crop strictly to the
+  creator's centre column—never leave the logged-in operator's sidebar handle,
+  account switcher or "Who to follow" rail in the frame, where a blind reader
+  mistakes a bystander's name for part of the story.
+- **Dark screens need a lit bezel on a dark set.** A dark-mode IDE, terminal or
+  audio visualizer (`< 10%` mean brightness) dropped raw onto a dark stage
+  reads as an empty black slab in both paper frames and Cycles renders: lift
+  its midtones slightly and wrap it in a crisp bright window frame so its
+  silhouette and UI panes read at phone size.
 - **A feeling reads one way.** Confetti beside a startled, clenched face is
   good news or bad; the pose and the mark say the same thing.
 - **What comes back was met before.** A companion first seen in frame 1 and

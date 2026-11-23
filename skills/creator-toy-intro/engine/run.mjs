@@ -59,7 +59,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { film, FILM, fromFilm, fromSkill, fromTemplate, importTemplate, OWN_TEMPLATE } from "./lib/film.js";
-import { HOME, findBlender, findPython, toolEnv } from "./lib/tools.js";
+import { HOME, findBlender, findLocalBlender, findPython, toolEnv } from "./lib/tools.js";
 
 const argv = process.argv.slice(2);
 const dash = argv.indexOf("--");
@@ -76,8 +76,56 @@ if (!steps.length) {
 }
 
 // Blender, the Python with the pipeline's modules, the skill's bin on PATH (engine/lib/tools.js)
+// Full-quality sequence steps (`render`, `sample`) use `blender` (honoring remote multi-GPU wrappers unless COLAB_LOCAL=1);
+// non-sequence / fast local steps (`lookdev`, `poses`, `previs`, `estimate`, `animatic`) use `localBlender` by default.
 const blender = findBlender() ?? "blender";
+const localBlender = (process.env.COLAB_ALL === "1" ? blender : findLocalBlender()) ?? blender;
 const PY = findPython() ?? "python3";
+
+function parseFrameSet(spec, total) {
+  if (!spec) {
+    const s = new Set();
+    for (let k = 1; k <= total; k++) s.add(k);
+    return s;
+  }
+  const s = new Set();
+  for (const part of String(spec).split(",")) {
+    const t = part.trim();
+    if (!t) continue;
+    if (t.includes("-")) {
+      const [a, b] = t.split("-").map((x) => +x.trim());
+      if (Number.isInteger(a) && Number.isInteger(b)) for (let k = a; k <= b; k++) s.add(k);
+    } else if (Number.isInteger(+t)) s.add(+t);
+  }
+  return s;
+}
+
+function seedResumeFrames(outDir, moreArgs, totalFrames) {
+  if (!moreArgs.includes("--resume") || outDir !== fromFilm("build/render")) return 0;
+  const opt = (flag) => (moreArgs.includes(flag) ? moreArgs[moreArgs.indexOf(flag) + 1] : null);
+  if ((opt("--samples") ?? "48") !== "48" || (opt("--scale") ?? "100") !== "100") return 0;
+  const animAt = existsSync(fromFilm("build/anim.json")) ? statSync(fromFilm("build/anim.json")).mtimeMs : 0;
+  const glyphAt = existsSync(fromFilm("build/glyphs.json")) ? statSync(fromFilm("build/glyphs.json")).mtimeMs : 0;
+  const minMtime = Math.max(animAt, glyphAt);
+  const want = parseFrameSet(opt("--frames"), totalFrames);
+  mkdirSync(outDir, { recursive: true });
+  let copied = 0;
+  for (const srcRel of ["build/sample", "build/estimate"]) {
+    const srcDir = fromFilm(srcRel);
+    if (!existsSync(srcDir)) continue;
+    for (const f of readdirSync(srcDir)) {
+      const m = f.match(/^(\d{4,})\.png$/);
+      if (!m || !want.has(+m[1])) continue;
+      const dst = join(outDir, f);
+      if (existsSync(dst)) continue;
+      const src = join(srcDir, f);
+      if (statSync(src).mtimeMs < minMtime) continue;
+      cpSync(src, dst);
+      copied++;
+    }
+  }
+  return copied;
+}
 // the Blender scene: the film's own copy (engine/scene.py) when it has one, else the skill's
 const scene = () => {
   if (!existsSync(fromFilm("engine/scene.py"))) return fromSkill("engine/scripts/scene.py");
@@ -212,13 +260,13 @@ for (const [i, step] of steps.entries()) {
     case "lookdev":
       // the turnaround reads build/hero.json: write it from toy.json first, so a changed toy always shows
       if (!steps.slice(0, i).includes("hero")) run("node", [fromSkill("engine/scripts/dump-hero.mjs")]);
-      run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
+      run(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", ...more]);
       if (!more.includes("--avatar") && !more.includes("--parts")) run(PY, [fromSkill("engine/scripts/toysheet.py"), ...(more.includes("--out") ? ["--in", more[more.indexOf("--out") + 1]] : [])]);
       break;
     case "poses":
       // the toy alone in the poses a story's frames need, on a clear background (references/frames.md): seconds each
       if (!steps.slice(0, i).includes("hero")) run("node", [fromSkill("engine/scripts/dump-hero.mjs")]);
-      run(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", "--poses", ...more]);
+      run(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", "--poses", ...more]);
       break;
     case "previs": {
       // Collect the union of storyboard preview frames and compare reference moments, then render them in one pass
@@ -239,15 +287,18 @@ for (const [i, step] of steps.entries()) {
       const outIdx = more.indexOf("--out");
       const outDir = fromFilm(outIdx >= 0 && more[outIdx + 1] ? more[outIdx + 1] : "build/previs");
       console.log(`previs: ${union.length} frame(s) (storyboard + compare) → ${union.join(",")}`);
-      const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]);
+      const [cmd, args] = awake(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]);
       await runRender(cmd, args, outDir);
       break;
     }
     case "render": {
       // no --frames: the whole film, its frame count from film.json (duration × fps)
-      const all = more.includes("--frames") ? [] : ["--frames", `1-${film.format.duration * film.format.fps}`];
+      const totalFrames = film.format.duration * film.format.fps;
+      const all = more.includes("--frames") ? [] : ["--frames", `1-${totalFrames}`];
       const outIdx = more.indexOf("--out");
       const outDir = fromFilm(outIdx >= 0 && more[outIdx + 1] ? more[outIdx + 1] : "build/render");
+      const seeded = seedResumeFrames(outDir, more, totalFrames);
+      if (seeded > 0) console.log(`(reused ${seeded} fresh pre-rendered frame(s) from build/sample or build/estimate)`);
       console.log(`\n${SLEEP_NOTE}`);
       const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...all, ...more]);
       await runRender(cmd, args, outDir);
@@ -258,7 +309,7 @@ for (const [i, step] of steps.entries()) {
       // goes first and is not counted, as it carries Cycles' start (kernels, BVH, textures): counted, it made
       // a 1.3 h film read as 6.4 h
       const n = film.format.duration * film.format.fps, at = [0.2, 0.3, 0.55, 0.85].map((k) => Math.round(n * k));
-      const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", at.join(","), "--samples", "48", "--scale", "100", "--out", "build/estimate", ...more]);
+      const [cmd, args] = awake(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", at.join(","), "--samples", "48", "--scale", "100", "--out", "build/estimate", ...more]);
       console.log(`\n▶ ${cmd} ${args.join(" ")}`);
       const r = spawnSync(cmd, args, { cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), encoding: "utf8", maxBuffer: 1 << 26 });
       const secs = [...(r.stdout ?? "").matchAll(/rendered frame \d+ in ([\d.]+)s/g)].map((m) => +m[1]).slice(1);
@@ -318,7 +369,7 @@ for (const [i, step] of steps.entries()) {
         ...(more.includes("--scale") ? [] : ["--scale", "33"]),
         ...(more.includes("--out") ? [] : ["--out", "build/eev"]),
       ];
-      await runGroup(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]), PID);
+      await runGroup(...awake(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]), PID);
       if (animAt() !== t0) console.log("! build/anim.json changed while the animatic rendered: it shows the motion from before; run it again");
       run(PY, [fromSkill("engine/scripts/animatic.py")]);
       break;

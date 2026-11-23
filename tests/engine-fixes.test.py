@@ -308,7 +308,9 @@ class CompareAndScoreTests(unittest.TestCase):
 
 class SceneBevelSpikeBlenderTest(unittest.TestCase):
     def test_blender_flattens_hairpin_curve_bevel_spike(self):
-        blender = shutil.which("blender") or ("/Applications/Blender.app/Contents/MacOS/Blender" if Path("/Applications/Blender.app/Contents/MacOS/Blender").exists() else None)
+        local_mac = "/Applications/Blender.app/Contents/MacOS/Blender"
+        home_mac = str(Path.home() / "Applications/Blender.app/Contents/MacOS/Blender")
+        blender = (local_mac if Path(local_mac).exists() else None) or (home_mac if Path(home_mac).exists() else None) or shutil.which("blender")
         if not blender:
             self.skipTest("Blender not installed")
         # Build a tiny temporary film workspace with a hairpin-corner curve that shoots a huge miter spike under bevel!
@@ -364,6 +366,112 @@ print("RESULT:" + json.dumps(out))
             self.assertGreaterEqual(data["spiky_sided"]["y"][0], -0.005)
             # Normal square keeps its bevel intact!
             self.assertAlmostEqual(data["clean_sq"]["bevel"], 0.0005, places=5)
+
+
+class V089EngineImprovementTests(unittest.TestCase):
+    def test_fonts_chosen_and_storyboard_shorthand_consistency(self):
+        import fonts
+        for spec in (
+            {"heavy": "PingFang SC:Semibold", "why": "clean strokes"},
+            {"heavy": {"family": "PingFang SC", "style": "Semibold"}, "why": "clean strokes"},
+            {"heavy": [{"family": "PingFang SC", "style": "Semibold"}], "why": "clean strokes"},
+        ):
+            picked = [f"{pairs[0][0]} {pairs[0][1]}".strip() for k, pairs in fonts.chosen(spec).items() if k in ("heavy", "display") and pairs]
+            self.assertEqual(picked, ["PingFang SC Semibold"])
+
+    def test_glyphs_merge_extra_accepts_string_and_dict(self):
+        src = (SCRIPTS / "glyphs.py").read_text()
+        ns = {}
+        start = src.index("def merge_extra_glyphs")
+        end = src.index("\nmerge_extra_glyphs(")
+        exec(src[start:end], ns)
+        merge_extra_glyphs = ns["merge_extra_glyphs"]
+
+        chars = {"latin": "0123456789", "cjk": "万", "heavy": "", "display": ""}
+        merge_extra_glyphs(chars, "20岁+AI")
+        self.assertIn("岁", chars["heavy"])
+        self.assertIn("岁", chars["cjk"])
+        self.assertIn("+", chars["latin"])
+        self.assertIn("A", chars["latin"])
+
+        chars2 = {"latin": "0123456789", "cjk": "万", "heavy": "", "display": ""}
+        merge_extra_glyphs(chars2, {"heavy": "官方", "latin": "%"})
+        self.assertEqual(chars2["heavy"], "官方")
+        self.assertIn("%", chars2["latin"])
+
+    def test_dark_picture_card_detection_and_bright_bezel_fix(self):
+        import colors
+        from PIL import Image, ImageDraw
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "assets/work").mkdir(parents=True)
+            (fdir / "build").mkdir()
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "dark-card-test",
+                "step": "story",
+                "format": {"fps": 30, "duration": 2, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "pop": {"confetti": ["#38E0FF"]},
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12,
+                "colors": {"coat": "#F4F6FA"},
+                "parts": [{"name": "body", "group": "body", "shape": "roundBox", "size": [0.06, 0.08, 0.05], "mat": "coat"}],
+            }))
+            # 1) Unframed dark IDE screenshot (#0E1117) -> melts into #0B0C10 dark stage
+            raw_im = Image.new("RGB", (320, 200), (14, 17, 23))
+            raw_im.save(fdir / "assets/work/dark.png")
+            # 2) Same dark IDE screenshot wrapped in a crisp cyan window frame -> reads cleanly
+            framed_im = Image.new("RGB", (320, 200), (14, 17, 23))
+            d = ImageDraw.Draw(framed_im)
+            d.rectangle((0, 0, 319, 199), outline=(56, 224, 255), width=8)
+            framed_im.save(fdir / "assets/work/framed.png")
+
+            (fdir / "build/anim.json").write_text(json.dumps({
+                "fps": 30, "frames": 2, "sub": 1, "samples": 2,
+                "objects": [
+                    {"name": "camera", "parent": "root", "tr": [0, 0.2, 1.2, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_raw_ui", "parent": "root", "geo": {"type": "uiBox", "rect": [-160, -100, 320, 200], "thickness": 0.002}, "mat": {"type": "ui", "image": "assets/work/dark.png"}, "tr": [-0.2, 0.2, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_framed_ui", "parent": "root", "geo": {"type": "uiBox", "rect": [-160, -100, 320, 200], "thickness": 0.002}, "mat": {"type": "ui", "image": "assets/work/framed.png"}, "tr": [0.2, 0.2, 0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {"camera": [[0, 0, 0.2, 1.2, 0, 0, 0, 1, 1, 1, 1], [1, 0, 0.2, 1.2, 0, 0, 0, 1, 1, 1, 1]]},
+                "scalars": {"fov": [30.0, 30.0]},
+            }))
+            fc = colors.film_colours(fdir)
+            by_name = {c["name"]: c for c in fc["cards"]}
+            self.assertTrue(by_name["beat1_raw_ui"]["melts"])
+            self.assertFalse(by_name["beat1_framed_ui"]["melts"])
+
+    def test_pacing_reports_long_sfx_cue_gaps(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "film.json").write_text(json.dumps({"format": {"fps": 30, "duration": 10, "size": [1920, 1080]}, "toy": "toy.json"}))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12}))
+            (fdir / "build/anim.json").write_text(json.dumps({"fps": 30, "frames": 300, "sub": 1, "samples": 300, "objects": [], "tracks": {}, "scalars": {}}))
+            (fdir / "build/timeline.json").write_text(json.dumps({
+                "DURATION": 10.0, "BAR": 2.0,
+                "cues": [{"t": 0.5, "kind": "pop"}, {"t": 6.8, "kind": "lock"}, {"t": 9.2, "kind": "ding"}],
+            }))
+            res = pacing.check(fdir)
+            self.assertEqual(res["cueGaps"], [(0.5, 6.8)])
+
+    def test_compose_example_uses_core_packs_and_renders_synth_fallback(self):
+        import compose
+        import synth
+        src = (LIB / "compose.py").read_text()
+        for removed in ("jazz_bass", "claps", "sus_cymbal", '"hihat"'):
+            self.assertNotIn(removed, src)
+        c = compose.Ctx()
+        c.dur, c.sr, c.n = 4.0, synth.SR, int(4.0 * synth.SR)
+        c.bpm, c.beat, c.bar = 120, 0.5, 2.0
+        c.film, c.synth, c.real = {}, synth, None
+        c.cues, c.hits = [], [2.0]
+        c.sections = [{"f0": 0.0, "f1": 4.0, "kind": "beat", "name": "beats/demo.js", "music": {"groove": "light", "chords": ["C", "G"]}}]
+        c.add, c.midi = compose.add, compose.midi
+        buf = compose.example(c)
+        self.assertEqual(buf.shape, (c.n, 2))
+        self.assertGreater(float(np.abs(buf).max()), 0.05)
 
 
 if __name__ == "__main__":

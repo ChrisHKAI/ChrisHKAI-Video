@@ -663,6 +663,7 @@ export const SLOGAN_LETTER = (i) => E.letters + i * T.LETTER_STEP;
 // the slogan's labels run on from one another, a letter per 8th note; the name
 // and the handle are slapped up together at E.name
 const CTA_TEXT = film.cta;
+const STEADY_CTA = T.CTA_MODE === "two-column" || T.CTA_MODE === "still";
 const sloganPlaces = (scale = 1, xs = null) => {
   let sloganAt = 0;
   return CTA_TEXT.slogan.map((p, k) => {
@@ -670,7 +671,7 @@ const sloganPlaces = (scale = 1, xs = null) => {
     sloganAt += [...p.text].length;
     const d = T.CTA_LAYOUT.slogan[k] ?? { ...T.CTA_LAYOUT.slogan.at(-1), at: T.CTA_LAYOUT.slogan.at(-1).at.map((v, j) => v + T.CTA_LAYOUT.sloganStep[j] * (k - T.CTA_LAYOUT.slogan.length + 1)) };
     const at = p.at ?? (xs ? [xs[k], d.at[1], d.at[2]] : d.at);
-    const L = label(`slogan${k}`, p.text, p.em ?? d.em, p.paper, ...at, p.tilt ?? d.tilt, SLOGAN_LETTER(first) - 0.06, (i) => SLOGAN_LETTER(first + i));
+    const L = label(`slogan${k}`, p.text, p.em ?? d.em, p.paper, ...at, p.tilt ?? d.tilt, SLOGAN_LETTER(first) - (STEADY_CTA ? 0.02 : 0.06), (i) => SLOGAN_LETTER(first + i));
     if (scale !== 1) L.fit = scale; // the whole label set smaller (labels.js labelT), its lettering cut at full size
     return L;
   });
@@ -702,9 +703,9 @@ const sloganLabels = fitSlogan();
 const N = { ...T.CTA_LAYOUT.name, ...CTA_TEXT.name }, HD = { ...T.CTA_LAYOUT.handle, ...CTA_TEXT.handle };
 export const LABELS = [
   ...sloganLabels,
-  label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + 0.05 + 0.05 * i),
+  label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + (STEADY_CTA ? 0.01 + 0.04 * i : 0.05 + 0.05 * i)),
   // no handle (none, or the ending leaves it off: film.json cta.handle.text ""): the name alone
-  ...(HD.text ? [label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + 0.18, (i) => E.name + 0.22 + 0.025 * i)] : []),
+  ...(HD.text ? [label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + (STEADY_CTA ? 0.20 : 0.18), (i) => E.name + (STEADY_CTA ? 0.21 : 0.22) + 0.025 * i)] : []),
 ];
 LABELS.forEach(tear);
 const labelAt = (L, t) => labelT(L, t, cta);
@@ -749,7 +750,10 @@ export function flakeAt(i, t) {
 export const SPARKS = 22;
 export function sparkAt(i, t) {
   const stk = () => onWall(t, STICKER.cx / MM, STICKER.cy / MM, 40);
-  const bursts = [[E.lock, () => statCentre(t), "#FFFFFF"], [E.peak, () => onWall(t, ...PEAK_AT), "#FFD25A"], ...(T.EXIT === "sticker" ? [[E.flat[0], stk, "#FFF4E0"], [E.repop, stk, "#FFF4E0"]] : []), [E.final, () => heroCentre(t), "#FFFFFF"]];
+  const finalBurst = STEADY_CTA
+    ? [E.final, () => v3.add(heroCentre(t), [0, 0.10, -0.14]), "#FFE6A3"]
+    : [E.final, () => heroCentre(t), "#FFFFFF"];
+  const bursts = [[E.lock, () => statCentre(t), "#FFFFFF"], [E.peak, () => onWall(t, ...PEAK_AT), "#FFD25A"], ...(T.EXIT === "sticker" ? [[E.flat[0], stk, "#FFF4E0"], [E.repop, stk, "#FFF4E0"]] : []), finalBurst];
   for (const [t0, at, color] of bursts) {
     const dt = t - t0;
     if (dt < 0 || dt > 0.7) continue;
@@ -783,7 +787,9 @@ export function fxAt(t) {
   if (t < 17) return { p: onWall(t, -160, 190, 120), energy: pulse(E.slam, 2.2, 0.16), color: "#FFD8C8" };
   if (t < E.cut) return { p: onWall(t, ...PEAK_LIGHT), energy: pulse(E.peak, 2.0, 0.3) + pulse(E.rise7[1], 0.8, 0.2) + pulse(E.repop, 0.8, 0.15), color: "#FFE6B0" };
   if (t < 26) return { p: cta(-0.4, 0.25, 0.25), energy: pulse(E.logo[1], 1.2, 0.2) + pulse(E.ride, 0.6, 0.15) + pulse(E.glint2, 0.4, 0.1), color: "#E6FFEE" };
-  return { p: v3.add(heroCentre(t), [0, 0.08, 0.15]), energy: pulse(E.final, 2.0, 0.3), color: "#FFF4E0" };
+  return STEADY_CTA
+    ? { p: v3.add(heroCentre(t), [0, 0.14, 0.32]), energy: pulse(E.final, 0.75, 0.24), color: "#FFF4E0" }
+    : { p: v3.add(heroCentre(t), [0, 0.08, 0.15]), energy: pulse(E.final, 2.0, 0.3), color: "#FFF4E0" };
 }
 // the cover: 0 = without the 2D mascot (he is out), 1 = as published
 export function coverMix(t) {

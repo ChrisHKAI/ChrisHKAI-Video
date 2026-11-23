@@ -74,11 +74,30 @@ if BEATS:
 CHARS["heavy"] += words((cta.get("prop") or {}).get("text", ""))
 CHARS["display"] += words((cta.get("prop") or {}).get("text", ""))
 # what a film's own template or scene shows beyond these: film.json "glyphs" adds characters
-# to a face ({"latin": ",", "heavy": "官方认证"}: a count written 10,000, a film-local scene's words)
-for role, chars in F.get("glyphs", {}).items():
-    if role not in CHARS:
-        raise SystemExit(f'film.json "glyphs": no face "{role}" (the faces: {", ".join(CHARS)})')
-    CHARS[role] += chars
+# to a face ({"latin": ",", "heavy": "官方认证"} or shorthand string "20岁大四…")
+def merge_extra_glyphs(chars_by_role, extra):
+    if not extra:
+        return
+    if isinstance(extra, str):
+        for ch in extra:
+            if ch.isspace():
+                continue
+            chars_by_role["heavy"] += ch
+            chars_by_role["display"] += ch
+            role = "latin" if ord(ch) < 0x2E80 else "cjk"
+            if ch not in chars_by_role[role]:
+                chars_by_role[role] += ch
+        return
+    if isinstance(extra, dict):
+        for role, chars in extra.items():
+            if role not in chars_by_role:
+                raise SystemExit(f'film.json "glyphs": no face "{role}" (the faces: {", ".join(chars_by_role)})')
+            chars_by_role[role] += str(chars)
+        return
+    raise SystemExit('film.json "glyphs": expected a string or an object mapping face roles to characters')
+
+
+merge_extra_glyphs(CHARS, F.get("glyphs"))
 FONTS = {}
 for role, chars in CHARS.items():
     path, index, name = face(role, prefs.get(role, ()), [str(FILM / "fonts")], prefs)

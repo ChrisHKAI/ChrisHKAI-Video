@@ -241,6 +241,12 @@ if (past("toy") && toy && film.profile) {
     for (const m of faceOcc) say("warn", `prop blocks the toy's face: ${m.text}`, "arc hand-held props outward around the head or lower them outside key poses so the character's eyes stay clear");
     const confText = describeConfettiOverText(confettiOverText(motion, { aspect: fw / fh }));
     for (const m of confText) say("warn", `confetti over 3D lettering: ${m.text}`, "spawn confetti lower or to the sides so flakes do not shoot across headlines or readouts");
+    const palPath = fromFilm("build/palette.json");
+    if (existsSync(palPath) && statSync(palPath).mtimeMs >= statSync(animPath).mtimeMs) {
+      for (const c of json("build/palette.json")?.film?.cards ?? []) {
+        if (c.melts) say("warn", `dark picture card melts into stage: ${c.name} (${c.image}, ${c.contrast}:1 mean, ${c.borderContrast}:1 border)`, "wrap dark UI/terminal screenshots in a bright window frame and lift midtones so the card silhouette reads on the dark stage (references/beats.md)");
+      }
+    }
   } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
 }
 

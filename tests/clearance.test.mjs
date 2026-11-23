@@ -13,6 +13,7 @@ import { makeLabel, tear } from "../skills/creator-toy-intro/engine/lib/labels.j
 import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
 import { places } from "../skills/creator-toy-intro/templates/isnail-30/places.js";
 import { buildFigure } from "../skills/creator-toy-intro/characters/tim-line/figure.js";
+import { blenderCandidates } from "../skills/creator-toy-intro/engine/lib/tools.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const clearanceCli = join(root, "skills/creator-toy-intro/engine/scripts/clearance.mjs");
@@ -741,4 +742,121 @@ test("apply-research preserves hand-tuned custom beat bars when facts.json omits
   assert.match(applySrc, /prevBeats\.get\(beatPath\)/);
   const storyTestSrc = readFileSync(join(root, "skills/creator-toy-intro/engine/scripts/story-test.mjs"), "utf8");
   assert.match(storyTestSrc, /telegraphic noun-pile or insider shorthand/);
+});
+
+test("edgeCrops catches clipped high-res uiBox wing cards, clears tucked cards, and skips 6+ card wall montages", () => {
+  // 1440×900 screenshot placed at 0.36 m wide (unitScale = 0.25): unscaled rect is 1440 mm > 550 mm
+  const hiResCard = {
+    type: "uiBox",
+    rect: [-720, -450, 1440, 900],
+    uvRect: [0, 0, 1440, 900],
+    thickness: 0.008,
+    unitScale: 0.25,
+  };
+  const s = [0.25, 0.25, 0.25];
+  const mkWingScene = (leftX, rightX, count = 3) => {
+    const cards = count === 3
+      ? [
+          { name: "beat2_c_agy", geo: hiResCard, mat: { type: "ui" }, tr: pack([leftX, 0.22, 0], UPRIGHT, s) },
+          { name: "beat2_c_cli", geo: hiResCard, mat: { type: "ui" }, tr: pack([0, 0.26, -0.05], UPRIGHT, s) },
+          { name: "beat2_c_road", geo: hiResCard, mat: { type: "ui" }, tr: pack([rightX, 0.22, 0], UPRIGHT, s) },
+        ]
+      : Array.from({ length: count }, (_, i) => ({
+          name: `beat2_c_${i}`,
+          geo: hiResCard,
+          mat: { type: "ui" },
+          tr: pack([-0.75 + i * 0.3, 0.22, 0], UPRIGHT, s),
+        }));
+    return {
+      fps: 30,
+      frames: 24,
+      sub: 1,
+      scalars: { fov: Array(24).fill(30) },
+      objects: [
+        { name: "camera", geo: null, camera: true, tr: pack([0, 0.22, 1.4]) },
+        ...cards,
+      ],
+      tracks: {},
+    };
+  };
+
+  // Wing cards at ±0.56 with width 0.36 -> outer edges at ±0.74 past frustum (~0.668 at dist 1.4, fov 30, 16:9)
+  const clipped = edgeCrops(mkWingScene(-0.56, 0.56), { every: 1 });
+  assert.deepEqual(clipped.map((c) => c.target).sort(), ["beat2_c_agy", "beat2_c_road"]);
+  assert.ok(clipped.find((c) => c.target === "beat2_c_agy").edges.includes("left"));
+  assert.ok(clipped.find((c) => c.target === "beat2_c_road").edges.includes("right"));
+
+  // Tucked cleanly inside 16:9 frustum (±0.42 -> outer edges ±0.60 < 0.668)
+  assert.deepEqual(edgeCrops(mkWingScene(-0.42, 0.42), { every: 1 }), []);
+
+  // 6+ card montage (layout.wall / corridor) intentionally bleeds past frame edges without false warnings
+  assert.deepEqual(edgeCrops(mkWingScene(-0.56, 0.56, 6), { every: 1 }), []);
+});
+
+test("heroFaceOcclusions detects a high-res uiBox crossing the head and ignores separate left/right wing cards", () => {
+  const hiResCard = {
+    type: "uiBox",
+    rect: [-720, -450, 1440, 900],
+    uvRect: [0, 0, 1440, 900],
+    thickness: 0.008,
+    unitScale: 0.16,
+  };
+  const s = [0.16, 0.16, 0.16]; // 0.23 m × 0.144 m card
+  const baseObjs = [
+    { name: "camera", parent: "root", tr: pack([0, 0.16, 1.0]) },
+    { name: "hero", parent: "root", tr: pack([0, 0, 0]) },
+    { name: "hero_head", parent: "hero", tr: pack([0, 0.16, 0]) },
+    { name: "hero_skull", parent: "hero_head", geo: { type: "ellipsoid", r: [0.045, 0.045, 0.045] }, tr: pack([0, 0, 0]) },
+  ];
+
+  // Two wing cards sharing prefix `beat2_c_*` on left and right of head: must NOT merge across the face!
+  const flanked = {
+    ...makeAnim(
+      [
+        ...baseObjs,
+        { name: "beat2_c_left", parent: "root", geo: hiResCard, mat: { type: "ui" }, tr: pack([-0.24, 0.16, 0.20], UPRIGHT, s) },
+        { name: "beat2_c_right", parent: "root", geo: hiResCard, mat: { type: "ui" }, tr: pack([0.24, 0.16, 0.20], UPRIGHT, s) },
+      ],
+      {},
+      { frames: 18 },
+    ),
+    scalars: { fov: Array(18).fill(30) },
+  };
+  assert.deepEqual(heroFaceOcclusions(flanked, { aspect: 16 / 9 }), []);
+
+  // Single high-res uiBox directly in front of head: caught cleanly
+  const blocked = {
+    ...makeAnim(
+      [
+        ...baseObjs,
+        { name: "beat2_c_center", parent: "root", geo: hiResCard, mat: { type: "ui" }, tr: pack([0, 0.16, 0.20], UPRIGHT, s) },
+      ],
+      {},
+      { frames: 18 },
+    ),
+    scalars: { fov: Array(18).fill(30) },
+  };
+  const hits = heroFaceOcclusions(blocked, { aspect: 16 / 9 });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].prop, "beat2_c_center");
+});
+
+test("blenderCandidates({ local: true }) skips ~/.local/bin/blender remote wrappers while preserving explicit BLENDER", () => {
+  const prevBlender = process.env.BLENDER;
+  const prevLocal = process.env.COLAB_LOCAL;
+  const prevAll = process.env.COLAB_ALL;
+  try {
+    delete process.env.BLENDER;
+    delete process.env.COLAB_LOCAL;
+    delete process.env.COLAB_ALL;
+    const localList = blenderCandidates({ local: true });
+    assert.ok(localList.every((p) => !p.includes(".local/bin/blender") && !p.endsWith("/bin/blender")));
+
+    process.env.BLENDER = "/custom/blender-bin";
+    assert.equal(blenderCandidates({ local: true })[0], "/custom/blender-bin");
+  } finally {
+    if (prevBlender === undefined) delete process.env.BLENDER; else process.env.BLENDER = prevBlender;
+    if (prevLocal === undefined) delete process.env.COLAB_LOCAL; else process.env.COLAB_LOCAL = prevLocal;
+    if (prevAll === undefined) delete process.env.COLAB_ALL; else process.env.COLAB_ALL = prevAll;
+  }
 });

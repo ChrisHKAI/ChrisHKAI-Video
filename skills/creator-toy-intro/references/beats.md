@@ -104,7 +104,7 @@ The beat is that answer as code.
 | `len`, `bar`, `beat` | its length, a bar and a beat (s) |
 | `stage`, `at(x, y, z)` | its own place, 50 m from everything else (past the camera's 40 m clip), and stage metres → world |
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
-| `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face, but not its `why` and `music`, which never show; anything else, in any face, through film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }`). A word written in the beat's code is not collected: give the beat an option for it in its entry (`text`, `ask`, `cards`), which also lets the user change it, or name its characters in `"glyphs"` |
+| `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face, but not its `why` and `music`, which never show; anything else, in any face, through film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }` or a plain string `"glyphs": "20岁大四…"`). A word written in the beat's code is not collected: give the beat an option for it in its entry (`text`, `ask`, `cards`), which also lets the user change it, or name its characters in `"glyphs"` |
 | `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
 | `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width)` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`), `cutout(file, width)` (or `picture(file, width, { cutout: true })`: an alpha-cutout RGBA PNG badge/icon with the same `.geo`, `.mat` and `.at(p, q, k)` interface so transparent outsides never render black), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`corridor`/`stack(n, …)` (where n cards go; `corridor`: two walls along a path the toy walks, facing in), `stagger(g, i, n, g0, g1)` (card i's arrival), `backToBack(front, back, p, q, k)` (two cards back to back, a badge's two sides: their two transforms; a card's body runs its thickness behind its face, so faces nearer than both thicknesses lie inside each other and render black); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; and for when things do not go its way, the same poses a story's frames use (`engine/lib/poses.json`): `startle` (thrown back, arms flung up), `duck` (head down, arms over it), `slump` (head hanging), `shrug`, `lookUp`, `push` (leaning into a weight, legs working), `kick(…, side)` (its foot furthest at the middle of the span: that is when what it kicks leaves), `holdUp` (a thing over its head); `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows); `line`, `declareLine`, `putLine`, `facing`, `shade` (a line of lettering, edged, standing by its lowest point, facing the camera: "Lettering" below); `confetti(…)`; `HIDDEN` |
 | `signature` | the toy's own move (toy.json `signature`: any `at` target in toy mm uses IK, otherwise a chibi-safe wave) on a pose |
@@ -177,10 +177,25 @@ demo, their site's media library).
   pixel bounding box (`getbbox()` on its source layer/crop) plus clean padding—
   never eyeball hardcoded pixel numbers—and visually inspect the generated
   image standalone before placing it in the scene.
-- **Multi-card showcases (4–5 works)**: do not pull the camera far back just
-  to cram five cards into one flat row where each card shrinks under ~20% of
-  frame height and UI text turns unreadable. Stagger two depth rows or feature
-  2–3 larger hero cards with flanking wings so real screenshots stay legible.
+- **Multi-card showcases (4–5 works) & frame-edge margins**: do not pull the
+  camera far back just to cram five cards into one flat row where each card
+  shrinks under ~20% of frame height and UI text turns unreadable. Stagger two
+  depth rows or feature 2–3 larger hero cards with flanking wings tucked well
+  inside the 16:9 / 9:16 frustum (`clearance` / `check` flags any 1–5 card
+  showcase whose wing cards clip past a frame edge).
+- **Dark-mode screenshots on dark stages**: dark IDE, terminal or dashboard
+  captures (`< 1.6:1` contrast against `#0B0C10` with a dark border) vanish into
+  the background as illegible black rectangles. Wrap them in a bright window
+  bezel and gently lift midtones before rendering (`palette` and `check` warn
+  when a beat's picture card melts into the stage).
+- **Obstacle-to-turn staging & varied beat entrances**: when a beat pivots from
+  an obstacle (an error card, quota wall, heavy block) to the creator's answer,
+  finish shoving or dropping the obstacle clear *before* the answer's stage
+  rises so the two solids never overlap (`clearance` checks 3D OBB pierce/embed).
+  Across consecutive custom beats, vary how the toy enters—use lateral rail
+  glides or forward walks instead of repeating vertical sky-drops on every cut,
+  and pair active moves with SFX cues so no beat sits in >4.5 s of effect
+  silence (`pace` warns on long cue gaps).
 
 ### Choosing the faces
 
@@ -216,7 +231,8 @@ the story page reads the film's own frames afterwards. Then:
 ```
 
 `heavy` is the film's words (the beats' lines and the end card; the name is
-the role's first face, it means whatever the film chose), `display` a beat's
+the role's first face, it means whatever the film chose, and a single face can
+also be written as `"PingFang TC:Semibold"`), `display` a beat's
 own line in the creator's own face, `cjk` and `latin` the counter's unit and
 digits; a role left out takes the words' face. `track` (em) sets the air
 between the end card's letters for the face chosen. Several faces in a role

@@ -23,6 +23,8 @@ if not p["dead"]:
     print(f"  ✓ something new at least every two bars ({2 * bar:g} s)")
 for a, z in p["dead"]:
     print(f"  ! {a}–{z} s: {z - a:.1f} s with nothing new (two bars: {2 * bar:g} s): add a move, or cut it shorter")
+for a, z in p.get("cueGaps", []):
+    print(f"  ! {a}–{z} s: {z - a:.1f} s with no sound effects: add beat cues so moves land by ear too")
 for a, z, n in p["alone"]:
     print(f"  ! {a}–{z} s: only the toy hopping ({n} hops), nothing else new: does it need them?")
 for a, z, k in p["small"]:

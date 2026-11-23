@@ -359,6 +359,11 @@ def check(film):
                 wide[int(s["f0"] * rate):int(s["f1"] * rate)] = True
         small = [(a, z, round(float(np.median(share[int(a * rate):int(z * rate)])), 3)) for a, z in stretches(on & (share < SMALL) & ~wide, rate)]
         off = stretches(shown & ~on, rate, 2 * LONG)
-    return {"duration": dur, "bar": bar, "dead": dead, "alone": alone, "hook": hits[0] if hits else None,
+    # sound-effect dead air: stretches > 2.25 bars (or 4.5 s) with zero SFX cues in timeline.json
+    cue_ts = [0.0] + sorted(float(c["t"]) for c in tl["cues"] if 0.0 <= float(c["t"]) <= dur) + [float(dur)]
+    max_cue_gap = max(2.25 * bar, 4.5)
+    cue_gaps = [(round(a, 2), round(z, 2)) for a, z in zip(cue_ts, cue_ts[1:]) if z - a > max_cue_gap + 1e-6]
+
+    return {"duration": dur, "bar": bar, "dead": dead, "cueGaps": cue_gaps, "alone": alone, "hook": hits[0] if hits else None,
             "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "off": off,
             "slant": slanted(anim, tl.get("SEGMENTS"))}
