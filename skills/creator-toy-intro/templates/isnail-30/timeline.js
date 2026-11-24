@@ -90,11 +90,12 @@ const userEv = film.story?.events ?? {};
 const defaultLettersStart = maxLastLetter < EV0.ride + 0.8
   ? Math.max(+(EV0.cut + 0.10).toFixed(4), +(maxLastLetter - Math.max(0.65, [...SLOGAN].length * 0.055)).toFixed(4))
   : +(EV0.ride + 0.35).toFixed(4);
+const twoColFinal = userEv.final ?? +(EV0.ride + 1.45).toFixed(4);
 const twoColEv = (CTA_MODE === "two-column" || CTA_MODE === "still") ? {
-  ...(!("glide" in userEv) ? { glide: [+(EV0.ride + 0.25).toFixed(4), +(EV0.ride + 0.26).toFixed(4)] } : {}),
+  ...(!("glide" in userEv) ? { glide: [+(EV0.ride + 0.62).toFixed(4), +(Math.max(EV0.ride + 0.68, twoColFinal - 0.16)).toFixed(4)] } : {}),
   ...(!("letters" in userEv) ? { letters: defaultLettersStart } : {}),
   ...(!("name" in userEv) ? { name: +(EV0.ride + 1.05).toFixed(4) } : {}),
-  ...(!("final" in userEv) ? { final: +(EV0.ride + 1.45).toFixed(4) } : {}),
+  ...(!("final" in userEv) ? { final: twoColFinal } : {}),
   ...(!("crown" in userEv) ? { crown: [+(EV0.ride + 1.55).toFixed(4), +(EV0.ride + 1.8).toFixed(4)] } : {}),
 } : {};
 export const EV = { ...EV0, ...twoColEv };

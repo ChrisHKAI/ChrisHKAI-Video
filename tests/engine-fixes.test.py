@@ -23,12 +23,13 @@ SKILL = ROOT / "skills/creator-toy-intro"
 LIB = SKILL / "engine/lib"
 SCRIPTS = SKILL / "engine/scripts"
 
-# Re-exec with the skill's venv Python if this interpreter lacks numpy.
+# Re-exec with the skill's venv Python if this interpreter lacks numpy or soxr.
 try:
     import numpy as np  # noqa: F401
+    import soxr  # noqa: F401
 except ImportError:
     venv_py = Path.home() / ".chrishkai-video/venv/bin/python3"
-    if venv_py.exists() and Path(sys.executable).resolve() != venv_py.resolve():
+    if venv_py.exists() and Path(sys.prefix) != venv_py.parents[1]:
         os.execv(str(venv_py), [str(venv_py), __file__, *sys.argv[1:]])
     raise
 
@@ -730,6 +731,161 @@ class V0811EngineImprovementTests(unittest.TestCase):
             Image.new("RGB", (64, 36), (220, 120, 40)).save(fdir / "build/render/0002.png")
             r3 = subprocess.run([sys.executable, str(SCRIPTS / "finish.py"), "--workers", "1"], env=env, capture_output=True, text=True, check=True)
             self.assertIn("reusing 2/3 unchanged finished frame(s); finishing 1", r3.stdout)
+
+
+class V0812EngineImprovementTests(unittest.TestCase):
+    def test_glyphs_harvests_bannerLine_and_readoutBadge_label(self):
+        glyphs_mod = load_script("glyphs_v0812", SCRIPTS / "glyphs.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "beats").mkdir()
+            (fdir / "beats/custom.js").write_text(
+                'export function makeBeat({ glyph, kit }) {\n'
+                '  const b = kit.bannerLine(glyph, "前助教公开", { em: 0.03 });\n'
+                '  const c = kit.readoutBadge(glyph, { to: 1.4, label: "关注者" });\n'
+                '  return { storyboard: { part: { label: { zh: "忽略分镜" } } } };\n'
+                '}\n',
+                encoding="utf-8",
+            )
+            film_json = {"story": {"segments": [{"beat": "beats/custom.js", "bars": 2}]}}
+            got = glyphs_mod.harvest_js_glyphs(fdir, film_json)
+            for ch in "前助教公关注者":
+                self.assertIn(ch, got["heavy"])
+            self.assertNotIn("忽", got["heavy"])
+
+    def test_reading_baseline_handles_mixed_latin_I_lookalike_ceiling(self):
+        from unittest.mock import patch
+
+        fake_face = None
+        for cand in ("/System/Library/Fonts/PingFang.ttc", "/System/Library/Fonts/STHeiti Medium.ttc"):
+            if Path(cand).exists():
+                fake_face = (cand, 0)
+                break
+        if not fake_face:
+            self.skipTest("No local CJK font found for PIL ImageFont")
+
+        def fake_read(_r, paths):
+            out = {}
+            for i, p in enumerate(paths):
+                # Variant 0 ("AI 练好听说") scores 0.5; variant 1 ("Al 练好听说") scores 0.3
+                out[str(p)] = [("AI 练好听说", 0.5)] if str(p).endswith("_0.png") else [("Al 练好听说", 0.3)]
+            return out
+
+        with patch.object(reading, "read", side_effect=fake_read):
+            base = reading.baseline(("vision", "mock"), ["AI 练好听说"], fake_face)
+        self.assertAlmostEqual(base["AI 练好听说"], 0.3, places=3)
+        # Full character match at 0.30 meets the 0.30 look-alike ceiling -> "ok"
+        how, _ = reading.match("AI 练好听说", [("Al 练好听说", 0.30)], base["AI 练好听说"])
+        self.assertEqual(how, "ok")
+        # Missing character still fails as "wrong"
+        how_bad, _ = reading.match("AI 练好听说", [("Al 练好听", 0.30)], base["AI 练好听说"])
+        self.assertEqual(how_bad, "wrong")
+
+    def test_two_column_default_glide_and_idle_keep_cta_alive_without_changing_sweep(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            g_stub = {"advance": 1.0, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            chars = "0123456789.万阅读Momo@momoAI+英语干货纯小白友好测试"
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in chars
+            }))
+            for mode in ("two-column", "sweep"):
+                (fdir / "film.json").write_text(json.dumps({
+                    "id": "cta-test",
+                    "template": "isnail-30",
+                    "theme": "x-desktop",
+                    "format": {"fps": 30, "bpm": 120, "duration": 30, "size": [1920, 1080]},
+                    "toy": "toy.json",
+                    "profile": {"name": "Momo", "handle": "@momo", "bio": ["AI"]},
+                    "posts": {"pinned": {"count": "42.1万"}, "retro": {"count": "35.7万"}},
+                    "counter": {"value": 42.1, "unit": "万", "label": "阅读"},
+                    "story": {"exit": "jump", "events": {"ride": 24.48, "final": 28.0}, "segments": [{"beat": "phrase", "bars": 12, "text": "测试"}, {"story": [24, "end"]}]},
+                    "cta": {
+                        "layout": mode,
+                        "slogan": [{"text": "AI + 英语干货"}, {"text": "纯小白友好"}],
+                        "name": {"text": "Momo"},
+                        "handle": {"text": "@momo"},
+                        "prop": {"kind": "plinth"},
+                    },
+                }))
+                (fdir / "toy.json").write_text(json.dumps({
+                    "height": 0.12,
+                    "center": [0, 0.06, 0],
+                    "colors": {"body": "#FADAE5", "plinth": "#FAF0F5", "plinthTop": "#FADAE5"},
+                    "joints": {"body": {"p": [0, 0.04, 0]}, "head": {"p": [0, 0.08, 0], "parent": "body"}, "armL": {"p": [0.03, 0.06, 0], "parent": "body"}, "armR": {"p": [-0.03, 0.06, 0], "parent": "body"}, "legL": {"p": [0.015, 0.02, 0], "parent": "body"}, "legR": {"p": [-0.015, 0.02, 0], "parent": "body"}},
+                    "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.05, 0], "size": [0.05, 0.06, 0.04], "mat": "body"}],
+                }))
+                tl_url = (SKILL / "templates/isnail-30/timeline.js").as_uri()
+                anim_url = (SKILL / "templates/isnail-30/anim.js").as_uri()
+                probe = (
+                    f"import * as T from {json.dumps(tl_url)};"
+                    f"import * as A from {json.dumps(anim_url)};"
+                    "const h285 = A.mascotAt(28.5).o.head, h292 = A.mascotAt(29.2).o.head;"
+                    "console.log(JSON.stringify({ glide: T.EV.glide, movedAfterFinal: Math.hypot(...h285.map((v,i)=>v-h292[i])) > 1e-4 }));"
+                )
+                r = subprocess.run(["node", "--input-type=module", "-e", probe], cwd=str(SKILL), env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}, capture_output=True, text=True, check=True)
+                data = json.loads(r.stdout.strip().splitlines()[-1])
+                if mode == "two-column":
+                    self.assertGreater(data["glide"][1] - data["glide"][0], 2.0)
+                    self.assertTrue(data["movedAfterFinal"])
+                else:
+                    self.assertFalse(data["movedAfterFinal"])
+
+    def test_scene_bubble_shader_and_stale_resume_invalidation(self):
+        blender_bin = "/Applications/Blender.app/Contents/MacOS/Blender"
+        if not Path(blender_bin).exists():
+            blender_bin = shutil.which("blender") or ""
+        if not blender_bin:
+            self.skipTest("Blender not installed")
+        import time
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build/out").mkdir(parents=True)
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "bub-test",
+                "theme": "x-desktop",
+                "format": {"fps": 30, "bpm": 120, "duration": 0.1, "size": [64, 36]},
+                "toy": "toy.json",
+                "cta": {},
+                "look": {},
+            }))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12, "colors": {"body": "#FADAE5"}}))
+            # Frame 1 stale (older than anim.json), Frame 2 fresh (newer than anim.json)
+            p1 = fdir / "build/out/0001.png"
+            p2 = fdir / "build/out/0002.png"
+            Image.new("RGB", (32, 18), (0, 0, 0)).save(p1)
+            old_t = time.time() - 30
+            os.utime(p1, (old_t, old_t))
+            (fdir / "build/anim.json").write_text(json.dumps({
+                "fps": 30, "sub": 1, "frames": 2, "samples": 2,
+                "objects": [
+                    {"name": "camera", "parent": "root", "camera": True, "geo": None, "tr": [0, 0, 1.0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "fx", "parent": "root", "light": True, "geo": None, "tr": [0, 1, 1.0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "bub", "parent": "root", "geo": {"type": "ellipsoid", "r": [0.05, 0.05, 0.05]}, "mat": {"type": "bubble", "color": "#FADCF0"}, "tr": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "tint_glass", "parent": "root", "geo": {"type": "ellipsoid", "r": [0.03, 0.03, 0.03]}, "mat": {"type": "glass", "color": "#C4B5FD", "clear": True}, "tr": [0.1, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {"camera": [[0, 0, 0, 1.0, 0, 0, 0, 1, 1, 1, 1], [1, 0, 0, 1.0, 0, 0, 0, 1, 1, 1, 1]]},
+                "colors": {},
+                "scalars": {"fov": [35.0, 35.0], "focus": [1.0, 1.0], "fstop": [5.6, 5.6], "fx_energy": [1.0, 1.0], "fx_color": [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]},
+            }))
+            Image.new("RGB", (32, 18), (0, 255, 0)).save(p2)
+            fresh_t = time.time() + 5
+            os.utime(p2, (fresh_t, fresh_t))
+
+            r = subprocess.run(
+                [blender_bin, "-b", "--factory-startup", "--python-exit-code", "1", "-P", str(SCRIPTS / "scene.py"),
+                 "--", "--engine", "eevee", "--samples", "2", "--scale", "50", "--frames", "1-2", "--out", "build/out", "--resume"],
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)},
+                capture_output=True, text=True, check=True,
+            )
+            self.assertIn("invalidating 1 stale frame(s)", r.stdout)
+            self.assertIn("resuming: 1 fresh frame(s) already in out/", r.stdout)
+            self.assertGreater(p1.stat().st_mtime, old_t + 10)
+            # Fresh frame 2 stayed untouched (still pure green sentinel)
+            self.assertEqual(Image.open(p2).getpixel((0, 0)), (0, 255, 0))
 
 
 if __name__ == "__main__":

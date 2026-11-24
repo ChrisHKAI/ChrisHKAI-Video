@@ -50,7 +50,10 @@ A prop is a module in the film's workspace, set in film.json
   extruded from outline rings (a logo or a product's silhouette:
   `@shape` cuts one from a picture into `build/logo.json`); `mat` is
   `{ type: "toy", key: <colour name> }` with the colours in film.json
-  `cta.prop.colors`, or `{ type: "type", color, emit }` for a lit mark.
+  `cta.prop.colors`, `{ type: "type", color, emit }` for a lit mark, or
+  `{ type: "bubble", color }` for translucent refractive soap/crystal bubbles
+  with a luminous rim on dark stages (note bare `{ type: "glass" }` without
+  `color`/`clear` is the dark counter housing).
 - `sample(put, t)`: every object's transform at film time t,
   `put(name, trs(position, quaternion, scale))`, in the end card's stage
   (`ctx.cta(x, y, z)` turns stage metres into the world). Hidden before it

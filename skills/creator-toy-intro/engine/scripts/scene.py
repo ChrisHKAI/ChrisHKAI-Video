@@ -253,9 +253,32 @@ def material(spec):
         keyed.append(("glint", nt, g))
         L.new(e.outputs["Emission"], out.inputs["Surface"])
     elif kind == "glass":
-        p = principled(nt, "#0b0c0f", 0.14, 0.6, coat=0.9, coat_rough=0.04)
-        p.inputs["Metallic"].default_value = 0.2
+        if spec.get("clear") or spec.get("color"):
+            col = spec.get("color", "#FFFFFF")
+            p = principled(nt, col, float(spec.get("rough", 0.04)), 0.5, coat=1.0, coat_rough=0.02)
+            p.inputs["Transmission Weight"].default_value = float(spec.get("transmission", 0.86))
+            p.inputs["IOR"].default_value = float(spec.get("ior", 1.38))
+            p.inputs["Emission Color"].default_value = rgba(col)
+            p.inputs["Emission Strength"].default_value = float(spec.get("emit", 0.06))
+        else:
+            p = principled(nt, "#0b0c0f", 0.14, 0.6, coat=0.9, coat_rough=0.04)
+            p.inputs["Metallic"].default_value = 0.2
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
+    elif kind == "bubble":  # translucent soap/crystal bubble: clear refractive core + luminous Fresnel rim on dark stages
+        col = spec.get("color", "#FADCF0")
+        p = principled(nt, col, float(spec.get("rough", 0.04)), 0.55, coat=1.0, coat_rough=0.02)
+        p.inputs["Transmission Weight"].default_value = float(spec.get("transmission", 0.88))
+        p.inputs["IOR"].default_value = float(spec.get("ior", 1.36))
+        lw = nt.nodes.new("ShaderNodeLayerWeight")
+        lw.inputs["Blend"].default_value = float(spec.get("blend", 0.35))
+        rim = nt.nodes.new("ShaderNodeEmission")
+        rim.inputs["Color"].default_value = rgba(spec.get("rimColor", col))
+        rim.inputs["Strength"].default_value = float(spec.get("rim", 0.65))
+        mx = nt.nodes.new("ShaderNodeMixShader")
+        L.new(lw.outputs["Facing"], mx.inputs["Fac"])
+        L.new(p.outputs["BSDF"], mx.inputs[1])
+        L.new(rim.outputs["Emission"], mx.inputs[2])
+        L.new(mx.outputs["Shader"], out.inputs["Surface"])
     elif kind == "screen":
         p = principled(nt, "#050506", 0.2, 0.4, coat=0.8, coat_rough=0.05)
         t = tex_node(nt, image(spec["image"]), "REPEAT")
@@ -1175,10 +1198,17 @@ if spec:
     for part in spec.split(","):
         a, _, b = part.partition("-")
         frames += list(range(int(a), int(b or a) + 1))
-    # --resume: frames already on disk stay (a long render picks up where it stopped)
-    todo = [f for f in frames if not ("--resume" in argv and (OUT / f"{f:04d}.png").exists())]
+    # --resume: fresh frames rendered after build/anim.json stay (crash recovery); stale frames from an older anim.json re-render
+    anim_mtime = (ROOT / "build/anim.json").stat().st_mtime if (ROOT / "build/anim.json").exists() else 0.0
+    def _is_fresh(f_idx):
+        p = OUT / f"{f_idx:04d}.png"
+        return p.exists() and p.stat().st_mtime >= anim_mtime - 0.05
+    stale = [f for f in frames if "--resume" in argv and (OUT / f"{f:04d}.png").exists() and not _is_fresh(f)]
+    if stale:
+        print(f"invalidating {len(stale)} stale frame(s) in {OUT.name}/ older than build/anim.json", flush=True)
+    todo = [f for f in frames if not ("--resume" in argv and _is_fresh(f))]
     if len(todo) < len(frames):
-        print(f"resuming: {len(frames) - len(todo)} frames already in {OUT.name}/", flush=True)
+        print(f"resuming: {len(frames) - len(todo)} fresh frame(s) already in {OUT.name}/", flush=True)
     # the time left goes by the last frames' pace, so a stop (the computer slept: a closed lid or Sleep, which
     # caffeinate does not hold off) neither counts in it nor passes unsaid
     recent = []

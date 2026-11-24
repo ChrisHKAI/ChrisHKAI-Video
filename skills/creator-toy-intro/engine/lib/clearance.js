@@ -388,7 +388,7 @@ function segDist(p, a, b) {
 
 // ── prop-vs-prop & prop-vs-card 3D clearance (OBB SAT) ──
 const BOX_GEOS = new Set(["box", "roundBox", "uiBox", "wallSlab"]);
-const SKIP_PROP_MATS = new Set(["flake", "glow", "paper"]);
+const SKIP_PROP_MATS = new Set(["flake", "glow", "paper", "bubble"]);
 
 function boxSpec(o) {
   const g = o.geo;
@@ -399,6 +399,39 @@ function boxSpec(o) {
     return { c: [(x0 + w / 2) * MM, -g.thickness / 2, (y0 + h / 2) * MM], h: [(w * MM) / 2, g.thickness / 2, (h * MM) / 2], card: true };
   }
   return { c: [0, g.h / 2, -g.d / 2], h: [g.w / 2, g.h / 2, g.d / 2], card: false };
+}
+
+/** Bounding-box spec for screen-space framing/occlusion checks, including curve, ellipsoid, arc, and tube props. */
+function propBoundsSpec(o) {
+  const b = boxSpec(o);
+  if (b) return b;
+  const g = o.geo;
+  if (!g) return null;
+  if (g.type === "curve" && g.rings?.length) {
+    const pts = g.rings.flat();
+    if (!pts.length) return null;
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const bev = g.bevel ?? 0, dep = (g.depth ?? 0.004) / 2 + bev;
+    return {
+      c: [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, 0],
+      h: [(Math.max(...xs) - Math.min(...xs)) / 2 + bev, (Math.max(...ys) - Math.min(...ys)) / 2 + bev, dep],
+      card: false,
+    };
+  }
+  if ((g.type === "ellipsoid" || g.type === "blob") && g.r != null) {
+    const r = Array.isArray(g.r) ? g.r : [g.r, g.r, g.r];
+    return { c: [0, 0, 0], h: [Math.abs(r[0]), Math.abs(r[1] ?? r[0]), Math.abs(r[2] ?? r[0])], card: false };
+  }
+  if ((g.type === "tube" || g.type === "loop") && g.pts?.length) {
+    const rad = Math.max(...(g.radii ?? [0.003]));
+    const xs = g.pts.map((q) => q[0]), ys = g.pts.map((q) => q[1]), zs = g.pts.map((q) => q[2]);
+    return {
+      c: [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, (Math.min(...zs) + Math.max(...zs)) / 2],
+      h: [(Math.max(...xs) - Math.min(...xs)) / 2 + rad, (Math.max(...ys) - Math.min(...ys)) / 2 + rad, (Math.max(...zs) - Math.min(...zs)) / 2 + rad],
+      card: false,
+    };
+  }
+  return null;
 }
 
 function groupOf(name) {
@@ -706,8 +739,8 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
   const propSpecs = ctaCenter
     ? anim.objects
         .filter((o) => o.geo && !under(o, toy) && !o.letter && !o.mat?.outline && !SKIP_NAME.test(o.name)
-          && !/^label\d+_/.test(o.name) && o.name !== "crown" && boxSpec(o))
-        .map((o) => ({ o, spec: boxSpec(o) }))
+          && !/^label\d+_/.test(o.name) && o.name !== "crown" && propBoundsSpec(o))
+        .map((o) => ({ o, spec: propBoundsSpec(o) }))
     : [];
 
   // Custom beat prop groups (e.g. beat1_clap), showcase picture cards (1–5 uiBox cards on a beat), and 3D headline
@@ -723,7 +756,7 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
   for (const o of anim.objects) {
     if (!/^beat\d+_/.test(o.name) || SKIP_BEAT_CROP.test(o.name) || SKIP_NAME.test(o.name)) continue;
     if (!o.geo || under(o, toy) || o.letter || o.mat?.outline) continue;
-    const spec = boxSpec(o);
+    const spec = propBoundsSpec(o);
     if (!spec) continue;
     if (spec.card) {
       const unit = o.geo.unitScale ?? peakScale(o);
@@ -772,8 +805,9 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
   const prevCenter = new Map();
   const open = new Map();
   const out = [];
+  const beatEdgeMargin = Math.min(margin, 0.008);
 
-  const checkTarget = (name, pts, f, t, camW, tanX, tanY) => {
+  const checkTarget = (name, pts, f, t, camW, tanX, tanY, edgeTol = margin) => {
     if (!pts.length) {
       if (open.has(name)) { out.push(open.get(name)); open.delete(name); }
       prevCenter.delete(name);
@@ -809,7 +843,7 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
     const edges = [];
     let past = 0;
     for (const [edge, v] of [["left", -minX - 1], ["right", maxX - 1], ["bottom", -minY - 1], ["top", maxY - 1]]) {
-      if (v > margin) { edges.push(edge); if (v > past) past = v; }
+      if (v > edgeTol) { edges.push(edge); if (v > past) past = v; }
     }
     if (!edges.length) {
       if (open.has(name)) { out.push(open.get(name)); open.delete(name); }
@@ -880,7 +914,7 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
           ]);
         }
       }
-      checkTarget(grp, maxSpan <= 0.55 ? pts : [], f, t, camW, tanX, tanY);
+      checkTarget(grp, maxSpan <= 0.55 ? pts : [], f, t, camW, tanX, tanY, beatEdgeMargin);
     }
     for (const [, cards] of beatCardsByBeat) {
       const vis = [];
@@ -917,7 +951,7 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
         if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
         for (const c of corners) pts.push(apply(w, c));
       }
-      checkTarget(key, pts, f, t, camW, tanX, tanY);
+      checkTarget(key, pts, f, t, camW, tanX, tanY, beatEdgeMargin);
     }
   }
   out.push(...open.values());
@@ -1844,7 +1878,10 @@ export function lineBackdropClashes(anim, { aspect = 16 / 9, toy = "hero", minSh
     for (const [pk, c] of open) if (!seenNow.has(pk)) { out.push(c); open.delete(pk); }
   }
   out.push(...open.values());
-  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+  const toyMinSecs = Math.min(minSecs, 0.16);
+  return out
+    .filter((c) => c.to - c.from >= (c.backdrop === toy ? toyMinSecs : minSecs) - 1e-6)
+    .sort((a, b) => a.from - b.from || b.share - a.share);
 }
 
 export function describeLineBackdropClashes(items) {
@@ -1856,9 +1893,10 @@ export function describeLineBackdropClashes(items) {
 }
 
 /**
- * Detect foreground custom-beat picture cards or plaques (`uiBox`) placed between the camera and the standing toy
- * that slice off >= 25% of the toy's visible body/legs for >= 0.40 s (which `heroFaceOcclusions` misses when the
- * card stays below the chin). Mount plaques lower on the pedestal step so the full vinyl figure reads cleanly.
+ * Detect foreground custom-beat picture cards (`uiBox`) or 3D prop groups (`curve`, `roundBox`, `ellipsoid`, `tube`)
+ * placed between the camera and the standing toy that slice off >= 25% of the toy's visible body/legs for >= 0.40 s
+ * (which `heroFaceOcclusions` misses when the prop stays below the chin). Lift the prop above the toy's hands or
+ * mount plaques lower on the pedestal step so the full vinyl figure reads cleanly.
  */
 export function propCoversToyBody(anim, { aspect = 16 / 9, toy = "hero", minHeightShare = 0.25, minWidthShare = 0.40, minSecs = 0.40, every = 2, file = (p) => p } = {}) {
   const objects = new Map(anim.objects.map((o) => [o.name, o]));
@@ -1872,12 +1910,23 @@ export function propCoversToyBody(anim, { aspect = 16 / 9, toy = "hero", minHeig
     .filter((p) => p.pts.length);
   if (!heroProbes.length) return [];
 
-  const SKIP_FG = /^beat\d+_(p_|back$|avatar$|cyc|bg|floor|wall|bleed)/;
+  const SKIP_FG = /^beat\d+_(p_|back$|avatar$|cyc|bg|floor|desk|pad|stage|rostrum|plinth|wall|bleed)/;
   const fgCards = anim.objects
     .filter((o) => /^beat\d+_/.test(o.name) && !SKIP_FG.test(o.name) && !SKIP_NAME.test(o.name) && o.geo?.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4)
     .map((o) => ({ o, spec: boxSpec(o) }))
     .filter((x) => x.spec);
-  if (!fgCards.length) return [];
+
+  const fgPropGroups = new Map();
+  for (const o of anim.objects) {
+    if (!/^beat\d+_/.test(o.name) || SKIP_FG.test(o.name) || SKIP_NAME.test(o.name)) continue;
+    if (!o.geo || o.geo.type === "uiBox" || under(o, toy) || o.letter || o.mat?.outline) continue;
+    const spec = propBoundsSpec(o);
+    if (!spec || Math.max(...spec.h) * 2 > 0.55) continue;
+    const grp = groupOf(o.name);
+    if (!fgPropGroups.has(grp)) fgPropGroups.set(grp, []);
+    fgPropGroups.get(grp).push({ o, spec });
+  }
+  if (!fgCards.length && !fgPropGroups.size) return [];
 
   const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
   const worldOf = (name, s, memo) => {
@@ -1889,7 +1938,63 @@ export function propCoversToyBody(anim, { aspect = 16 / 9, toy = "hero", minHeig
     return w;
   };
 
+  // 2D Andrew monotone-chain convex hull & point-in-convex-polygon for exact angled-prop screen coverage
+  const hull2D = (pts) => {
+    if (pts.length <= 2) return pts;
+    const sorted = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lo = [], hi = [];
+    for (const p of sorted) {
+      while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop();
+      lo.push(p);
+    }
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const p = sorted[i];
+      while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop();
+      hi.push(p);
+    }
+    lo.pop(); hi.pop();
+    return lo.concat(hi);
+  };
+  const inHull = (poly, x, y) => {
+    if (poly.length < 3) return false;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i], b = poly[(i + 1) % poly.length];
+      if ((b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]) < -1e-9) return false;
+    }
+    return true;
+  };
+
+  const COLS = 5, ROWS = 10;
   const open = new Map(), out = [];
+  const evalGroupPolys = (name, polys, maxY, hx0, hW, hy0, hH, t, seenNow) => {
+    if (!polys.length || maxY <= hy0 + 0.16 * hH) return;
+    const by0 = hy0, by1 = hy0 + hH;
+    let hits = 0, colsHit = 0;
+    for (let c = 0; c < COLS; c++) {
+      const sx = hx0 + ((c + 0.5) / COLS) * hW;
+      let colAny = false;
+      for (let r = 0; r < ROWS; r++) {
+        const sy = by0 + ((r + 0.5) / ROWS) * (by1 - by0);
+        if (polys.some((poly) => sx >= poly.x0 && sx <= poly.x1 && sy >= poly.y0 && sy <= poly.y1 && inHull(poly.pts, sx, sy))) {
+          hits++;
+          colAny = true;
+        }
+      }
+      if (colAny) colsHit++;
+    }
+    const wShare = colsHit / COLS;
+    const bodyShare = hits / (COLS * ROWS);
+    if (wShare < minWidthShare || bodyShare < minHeightShare) return;
+    seenNow.add(name);
+    const cur = open.get(name);
+    if (!cur) open.set(name, { card: name, from: t, to: t, peak: t, share: bodyShare });
+    else {
+      cur.to = t;
+      if (bodyShare > cur.share) Object.assign(cur, { share: bodyShare, peak: t });
+    }
+  };
+
   for (let f = 0; f < anim.frames; f += every) {
     const s = f * SUB, t = f / anim.fps, memo = new Map();
     const camW = worldOf("camera", s, memo);
@@ -1916,33 +2021,49 @@ export function propCoversToyBody(anim, { aspect = 16 / 9, toy = "hero", minHeig
     const meanHDepth = hDepth / hn;
     const hW = Math.max(1e-5, hx1 - hx0), hH = Math.max(1e-5, hy1 - hy0);
 
+    const projectOBB = (obb) => {
+      const raw = [];
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, dSum = 0;
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+        const wp = [
+          obb.c[0] + sx * obb.h[0] * obb.axes[0][0] + sy * obb.h[1] * obb.axes[1][0] + sz * obb.h[2] * obb.axes[2][0],
+          obb.c[1] + sx * obb.h[0] * obb.axes[0][1] + sy * obb.h[1] * obb.axes[1][1] + sz * obb.h[2] * obb.axes[2][1],
+          obb.c[2] + sx * obb.h[0] * obb.axes[0][2] + sy * obb.h[1] * obb.axes[1][2] + sz * obb.h[2] * obb.axes[2][2],
+        ];
+        const lp = toLocal(camW, wp);
+        if (lp[2] >= -0.05 || -lp[2] > 6) return null;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        raw.push([nx, ny]);
+        if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+        if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+        dSum += -lp[2];
+      }
+      if (dSum / 8 >= meanHDepth - 0.025) return null;
+      return { pts: hull2D(raw), x0, x1, y0, y1 };
+    };
+
     const seenNow = new Set();
     for (const { o, spec } of fgCards) {
       const w = worldOf(o.name, s, memo);
       const unit = o.geo.unitScale ?? 1;
       if (Math.min(...w.s.map(Math.abs)) < 0.05 * unit) continue;
-      let cx0 = Infinity, cx1 = -Infinity, cy0 = Infinity, cy1 = -Infinity, cDepth = 0, cn = 0;
-      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
-        const lp = toLocal(camW, apply(w, [spec.c[0] + sx * spec.h[0], spec.c[1] + sy * spec.h[1], spec.c[2] + sz * spec.h[2]]));
-        if (lp[2] >= -0.05 || -lp[2] > 6) continue;
-        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
-        if (nx < cx0) cx0 = nx; if (nx > cx1) cx1 = nx;
-        if (ny < cy0) cy0 = ny; if (ny > cy1) cy1 = ny;
-        cDepth += -lp[2]; cn++;
+      const poly = projectOBB(worldOBB(spec, w));
+      if (!poly) continue;
+      evalGroupPolys(o.name, [poly], poly.y1, hx0, hW, hy0, hH, t, seenNow);
+    }
+    for (const [grp, parts] of fgPropGroups) {
+      const polys = [];
+      let maxY = -Infinity, maxSpan = 0;
+      for (const { o, spec } of parts) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+        const obb = worldOBB(spec, w);
+        maxSpan = Math.max(maxSpan, obb.h[0] * 2, obb.h[1] * 2, obb.h[2] * 2);
+        const poly = projectOBB(obb);
+        if (poly) { polys.push(poly); if (poly.y1 > maxY) maxY = poly.y1; }
       }
-      if (!cn || cDepth / cn >= meanHDepth - 0.025) continue;
-      const ovX = Math.min(hx1, cx1) - Math.max(hx0, cx0);
-      const ovY = Math.min(hy1, cy1) - Math.max(hy0, cy0);
-      if (ovX <= 0 || ovY <= 0) continue;
-      const wShare = ovX / hW, hShare = ovY / hH;
-      if (wShare < minWidthShare || hShare < minHeightShare) continue;
-      seenNow.add(o.name);
-      const cur = open.get(o.name);
-      if (!cur) open.set(o.name, { card: o.name, from: t, to: t, peak: t, share: hShare });
-      else {
-        cur.to = t;
-        if (hShare > cur.share) Object.assign(cur, { share: hShare, peak: t });
-      }
+      if (!polys.length || maxSpan > 0.55) continue;
+      evalGroupPolys(grp, polys, maxY, hx0, hW, hy0, hH, t, seenNow);
     }
     for (const [k, c] of open) if (!seenNow.has(k)) { out.push(c); open.delete(k); }
   }
@@ -1954,7 +2075,7 @@ export function describePropCoversToyBody(items) {
   return items.map((m) => ({
     kind: "warn",
     ...m,
-    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: foreground card ${m.card} cuts across ${Math.round(m.share * 100)}% of the toy's standing body (worst at ${m.peak.toFixed(2)} s)`,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: foreground prop ${m.card} cuts across ${Math.round(m.share * 100)}% of the toy's standing body (worst at ${m.peak.toFixed(2)} s)`,
   }));
 }
 

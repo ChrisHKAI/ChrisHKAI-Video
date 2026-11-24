@@ -117,7 +117,7 @@ function seedResumeFrames(outDir, moreArgs, totalFrames) {
       const m = f.match(/^(\d{4,})\.png$/);
       if (!m || !want.has(+m[1])) continue;
       const dst = join(outDir, f);
-      if (existsSync(dst)) continue;
+      if (existsSync(dst) && statSync(dst).mtimeMs >= minMtime) continue;
       const src = join(srcDir, f);
       if (statSync(src).mtimeMs < minMtime) continue;
       cpSync(src, dst);

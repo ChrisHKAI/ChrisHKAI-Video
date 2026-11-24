@@ -549,7 +549,9 @@ function ctaPose(o, t) {
     o.yaw = lerp(0.45, 0.1, k);
     o.aimR = { world: CTA_CAM, k, len: 1.15 };
     o.pointR = k;
-    o.head = [0.05 * k, -0.15 * k, 0];
+    const idle = (T.CTA_MODE === "two-column" || T.CTA_MODE === "still") ? smooth(seg(t, E.final + 0.35, E.final + 0.75)) : 0;
+    const breathe = idle * Math.sin((t - E.final) * TAU * 0.75);
+    o.head = [0.05 * k + 0.025 * breathe, -0.15 * k + 0.04 * breathe, 0.035 * breathe];
     o.legR = [-0.2 * k, 0, 0];
   }
   q += crouch(t, E.final - 0.05, 0.1) + landSquash(t, E.final, 0.15);

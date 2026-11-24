@@ -69,11 +69,11 @@ def harvest_js_glyphs(film_dir, film_json):
     found = {"heavy": "", "display": "", "cjk": "", "latin": ""}
     str_lit = r"""(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|`((?:\\.|[^`$\\])*)`)"""
     patterns = [
-        re.compile(rf"""\b(?:kit\s*\.\s*)?line\s*\([^,]+,\s*{str_lit}"""),
+        re.compile(rf"""\b(?:kit\s*\.\s*)?(?:line|bannerLine)\s*\([^,]+,\s*{str_lit}"""),
         re.compile(rf"""\b(?:const|let|var)\s+[A-Za-z0-9_]*(?:TEXT|STR|LINE|TITLE|SUB|HOOK|NAME|LABEL|SLOGAN|WORD|STAMP|BADGE|UNIT)[A-Za-z0-9_]*\s*=\s*(?:String\s*\([^?]*\?\?\s*)?{str_lit}""", re.I),
         re.compile(rf"""\bopts\.[A-Za-z0-9_]+\s*\?\?\s*{str_lit}"""),
         re.compile(rf"""\[\s*\.\.\.\s*{str_lit}\s*\]"""),
-        re.compile(rf"""\btext\s*:\s*{str_lit}"""),
+        re.compile(rf"""\b(?:text|label)\s*:\s*{str_lit}"""),
     ]
     geo_pat = re.compile(r"""\bglyph\s*\.\s*(?:geo|adv|has)\s*\(\s*["'`](heavy|display|cjk|latin):([^"'`$\\]+)["'`]""")
 

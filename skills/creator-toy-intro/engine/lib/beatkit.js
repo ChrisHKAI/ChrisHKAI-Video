@@ -114,6 +114,32 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
     },
   };
 }
+// centred, flush-mounted 3D text banner plaque (< 3 mm gap: zero double shadow; `level: true` avoids inverted-V tilt on paired bottom bars)
+export function bannerLine(glyph, text, { em = 0.032, edge = 0.07, track = 0.08, padX = em * 1.15, padY = em * 0.52, depth = 0.006 } = {}) {
+  const ln = makeLine(glyph, text, em, { edge, track });
+  const plateSize = [ln.W + padX, em + padY, depth];
+  return {
+    ln, em, plateSize,
+    declare(add, prefix = "ban", { plateColor = "#241232", color = "#FFFFFF", outline = "#12071A", emit = 0.06 } = {}) {
+      declLine(add, `${prefix}_ln_`, ln, { color, emit, outline, edge });
+      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: plateColor }, anim: true });
+    },
+    put(put, prefix, centerWorld, eyeWorld, scale = 1, { level = false } = {}) {
+      const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);
+      if (scale <= 0.01) {
+        put(`${prefix}_plate`, park);
+        placeLine(put, `${prefix}_ln_`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => HIDDEN, { outline: true });
+        return;
+      }
+      const aimFrom = level ? [0, centerWorld[1], centerWorld[2]] : centerWorld;
+      const q = faceCam(eyeWorld, aimFrom);
+      const root = trs(centerWorld, q, 1);
+      // Front face of `depth` plate sits 1.2 mm behind lettering z = 0 (< 3 mm flush threshold: zero double shadow)
+      put(`${prefix}_plate`, trs(apply(root, [0, ln.stand + em * 0.36, -(depth / 2 + 0.0012)]), q, scale));
+      placeLine(put, `${prefix}_ln_`, ln, (it) => apply(root, [it.x, ln.stand, 0]), q, () => scale, { outline: true });
+    },
+  };
+}
 // a jump for joy over g0–g1; returns the squash to add (crouch before, landing after)
 export function cheer(o, g, g0, g1) {
   const s = seg(g, g0, g1), up = Math.sin(Math.PI * s);

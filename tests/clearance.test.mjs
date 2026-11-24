@@ -1068,3 +1068,101 @@ test("readout.centerAt, readoutBadge, strideIn, and strideOut keep badges symmet
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("propCoversToyBody catches waist-high 3D curve/ellipsoid bow groups and clears overhead bow + angled side ribbons", () => {
+  const wingL = { type: "curve", rings: [[[0, 0], [-0.075, 0.04], [-0.08, -0.03]]], depth: 0.012, bevel: 0.002 };
+  const wingR = { type: "curve", rings: [[[0, 0], [0.075, 0.04], [0.08, -0.03]]], depth: 0.012, bevel: 0.002 };
+  const qAngL = [0, 0, Math.sin(0.36 / 2), Math.cos(0.36 / 2)];
+  const qAngR = [0, 0, Math.sin(-0.36 / 2), Math.cos(-0.36 / 2)];
+  const mkBowScene = (bowY, withSideRibbons = false) => ({
+    ...makeAnim(
+      [
+        { name: "camera", parent: "root", camera: true, tr: pack([0, 0.18, 0.95]) },
+        { name: "hero", parent: "root", tr: pack([0, 0.05, 0]) },
+        { name: "hero_legs", parent: "hero", geo: { type: "box", size: [0.07, 0.07, 0.05] }, tr: pack([0, 0.035, 0]) },
+        { name: "hero_torso", parent: "hero", geo: { type: "box", size: [0.08, 0.07, 0.05] }, tr: pack([0, 0.10, 0]) },
+        { name: "hero_head_mesh", parent: "hero", geo: { type: "ellipsoid", r: [0.05, 0.05, 0.05] }, tr: pack([0, 0.17, 0]) },
+        { name: "beat1_bow_wingL", parent: "root", geo: wingL, mat: { type: "type" }, tr: pack([0, bowY, 0.12]) },
+        { name: "beat1_bow_wingR", parent: "root", geo: wingR, mat: { type: "type" }, tr: pack([0, bowY, 0.12]) },
+        { name: "beat1_bow_knot", parent: "root", geo: { type: "ellipsoid", r: [0.022, 0.022, 0.014] }, mat: { type: "type" }, tr: pack([0, bowY, 0.13]) },
+        ...(withSideRibbons ? [
+          { name: "beat1_rib_pull_L", parent: "root", geo: { type: "roundBox", size: [0.22, 0.014, 0.008], radius: 0.004 }, mat: { type: "glow" }, tr: pack([-0.12, 0.23, 0.04], qAngL) },
+          { name: "beat1_rib_pull_R", parent: "root", geo: { type: "roundBox", size: [0.22, 0.014, 0.008], radius: 0.004 }, mat: { type: "glow" }, tr: pack([0.12, 0.23, 0.04], qAngR) },
+        ] : []),
+      ],
+      {},
+      { frames: 24 },
+    ),
+    scalars: { fov: Array(24).fill(36) },
+  });
+
+  // Waist-high 3D bow group (y=0.11) slices across the standing figure -> flagged!
+  const hits = propCoversToyBody(mkBowScene(0.11), { aspect: 16 / 9 });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].card, "beat1_bow");
+  assert.ok(hits[0].share >= 0.25);
+
+  // Lifted overhead (y=0.30) with angled L/R side ribbons framing open air around hero -> 100% clear!
+  assert.deepEqual(propCoversToyBody(mkBowScene(0.30, true), { aspect: 16 / 9 }), []);
+});
+
+test("lineBackdropClashes flags a 0.20 s grounded hop covering a 3D headline, and bannerLine({ level: true }) stays flush & level", async () => {
+  const charGeo = { type: "curve", rings: [[[0, 0], [0.028, 0], [0.028, 0.036], [0, 0.036]]], depth: 0.003 };
+  // 7-frame (0.20 s) grounded hop at frames 4..10 pushes hero_head_mesh onto beat0_ln_intro_0
+  const hopTrack = Array.from({ length: 18 }, (_, f) => {
+    const hop = f >= 4 && f <= 10 ? 0.035 * Math.sin(Math.PI * ((f - 4) / 6)) : 0;
+    return [f * 2, ...pack([0, 0.05 + hop, 0.02])];
+  });
+  const hopAnim = {
+    ...makeAnim(
+      [
+        { name: "camera", parent: "root", camera: true, tr: pack([0, 0.16, 0.70]) },
+        { name: "hero", parent: "root", tr: pack([0, 0.05, 0.02]) },
+        { name: "hero_head_mesh", parent: "hero", geo: { type: "ellipsoid", r: [0.048, 0.048, 0.045] }, tr: pack([0, 0.145, 0]) },
+        { name: "beat0_ln_intro_0", parent: "root", letter: "央", line: "ln_intro_", letterIndex: 0, geo: charGeo, tr: pack([-0.014, 0.205, 0.01]) },
+        { name: "beat0_ln_intro_1", parent: "root", letter: "企", line: "ln_intro_", letterIndex: 1, geo: charGeo, tr: pack([0.016, 0.205, 0.01]) },
+      ],
+      { hero: hopTrack },
+      { frames: 18 },
+    ),
+    scalars: { fov: Array(35).fill(36) },
+  };
+  const clashes = lineBackdropClashes(hopAnim, { aspect: 16 / 9 });
+  assert.equal(clashes.length, 1);
+  assert.equal(clashes[0].backdrop, "hero");
+
+  // Verify kit.bannerLine flush plate (< 3 mm) and level:true zero-yaw orientation for off-center bottom bars
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-ban-"));
+  try {
+    writeFileSync(join(dir, "film.json"), JSON.stringify({ format: { fps: 30, duration: 4, size: [1920, 1080] }, toy: "toy.json" }));
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({ height: 0.12, colors: { body: "#F4DCE7" }, joints: {}, parts: [] }));
+    const kitUrl = new URL("../skills/creator-toy-intro/engine/lib/beatkit.js", import.meta.url).href;
+    const probe = `
+      import * as kit from ${JSON.stringify(kitUrl)};
+      const glyph = {
+        has: () => true,
+        adv: () => 1.0,
+        geo: (_k, em, depth, bevel) => ({ type: "curve", rings: [[[0, 0], [em * 0.8, 0], [em * 0.8, em * 0.85], [0, em * 0.85]]], depth, bevel }),
+      };
+      const ban = kit.bannerLine(glyph, "前助教公开", { em: 0.028 });
+      const declared = [];
+      ban.declare((o) => declared.push(o), "beat2_sub");
+      const placed = {}, hidden = {};
+      ban.put((n, tr) => { placed[n] = tr; }, "beat2_sub", [-0.16, 0.03, 0.17], [0, 0.18, 0.85], 1, { level: true });
+      ban.put((n, tr) => { hidden[n] = tr; }, "beat2_sub", [-0.16, 0.03, 0.17], [0, 0.18, 0.85], 0, { level: true });
+      console.log(JSON.stringify({ declared, placed, hidden }));
+    `;
+    const sub = spawnSync("node", ["--input-type=module", "-e", probe], { env: { ...process.env, FILM: dir }, encoding: "utf8" });
+    assert.equal(sub.status, 0, sub.stderr);
+    const { declared, placed, hidden } = JSON.parse(sub.stdout.trim().split(/\r?\n/).pop());
+    // level: true keeps quaternion strictly pitch-only (qy === 0, qz === 0) even at x = -0.16!
+    assert.ok(Math.abs(placed.beat2_sub_plate.q[1]) < 1e-9);
+    assert.ok(Math.abs(placed.beat2_sub_plate.q[2]) < 1e-9);
+    // scale=0 parks objects underground at y = -2
+    assert.equal(hidden.beat2_sub_plate.p[1], -2);
+    const animObjs = declared.map((o) => ({ ...o, parent: "root", tr: pack(placed[o.name].p, placed[o.name].q, placed[o.name].s) }));
+    assert.deepEqual(floatingSmallLetters(makeAnim(animObjs, {}, { frames: 18 })), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

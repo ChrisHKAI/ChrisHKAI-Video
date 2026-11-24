@@ -168,12 +168,14 @@ plaques cutting across the toy's standing body (`propCoversToyBody`), airborne
 sky-drops/leaps streaking across active 3D headlines or readouts
 (`heroStreaksOverText`), dense confetti bursts
 lingering over 3D readouts (`confettiOverText`), custom-beat 3D headlines
-projecting over the toy or showcase cards in 2D camera space
-(`lineBackdropClashes`), zero-false-positive guards for
-compound parts and flat floor `route`/`lane`/`carpet`/`runway` strips,
+projecting over the toy (including short 0.16 s+ grounded hops) or showcase
+cards in 2D camera space (`lineBackdropClashes`), foreground `uiBox` cards and
+multi-part 3D `curve`/`ellipsoid` prop groups cutting across the toy's standing
+body (`propCoversToyBody`), zero-false-positive guards for
+compound parts, angled side ribbons, and flat floor `route`/`lane`/`carpet`/`runway` strips,
 `declareLine` / `fastReveal` line-name separation (`slo1` vs
 `slo2`), `floatingSmallLetters` double-shadow detection, `readout.centerAt` /
-`readoutBadge` symmetric flush-mounted counter badges, `strideIn` / `strideOut`
+`readoutBadge` / `bannerLine` symmetric flush-mounted counter & headline badges, `strideIn` / `strideOut`
 floor-level beat transitions, `paperOf` saturated orange/crimson/cobalt cream-ink
 contrast & explicit `ink` overrides, `armLiftLimit`
 wide-headed chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()`
@@ -195,7 +197,9 @@ collection, `fonts.chosen` `"Family:Style"` string shorthand, `reading.match` /
 geometric-ring OCR ghost filtering, `real.py` unknown-instrument & single-hit
 variant suggestions, `finish.py` `.finish-meta.json` incremental frame & encode
 caching,
-`timeline.js` two-column long-slogan typing cadence, `compare.py --frames`,
+`timeline.js` two-column long-slogan typing cadence & active `glide`/post-`final`
+breathing motion, `reading.baseline` mixed-script `I`/`l` look-alike ceiling,
+`scene.py` translucent `bubble` shader & `--resume` stale-frame invalidation, `compare.py --frames`,
 `score.py` groove fallback, `run.mjs` `clearance`/`diff` & incremental
 `previs` / `animatic -- --frames` steps,
 `safezone.py` dynamic `EV.final` hold threshold, `check.mjs` active-`act2`

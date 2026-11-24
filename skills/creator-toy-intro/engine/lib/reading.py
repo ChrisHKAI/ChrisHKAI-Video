@@ -333,17 +333,31 @@ def baseline(r, texts, face, em=120):
     face: (path, index). What the reader gives a line it cannot miss is its ceiling for that line."""
     if not r or not texts:
         return {}
+    import re
     import tempfile
     from PIL import ImageDraw, ImageFont
     f = ImageFont.truetype(face[0], em, index=face[1])
     tmp = Path(tempfile.mkdtemp())
     paths = {}
     for i, t in enumerate(texts):
-        w = round(f.getlength(t)) + em
-        img = Image.new("RGB", (w, round(em * 2)), "white")
-        ImageDraw.Draw(img).text((em // 2, em // 3), t, font=f, fill="black")
-        paths[t] = tmp / f"{i}.png"
-        img.save(paths[t])
-    got = read(r, list(paths.values()))
+        variants = [t]
+        # Rounded sans-serif uppercase 'I' in mixed Latin+CJK tokens (e.g. "AI 练好听说") is often read as 'l' ("Al …")
+        # on 3D bevels, which Vision scores lower (~0.3) despite identical normalised characters; measure both ceilings.
+        if any(ord(c) >= 0x3400 for c in t) and re.search(r"(?<=[A-Za-z])I|I(?=[A-Za-z])", t):
+            variants.append(re.sub(r"(?<=[A-Za-z])I|I(?=[A-Za-z])", "l", t))
+        paths[t] = []
+        for j, v in enumerate(variants):
+            w = round(f.getlength(v)) + em
+            img = Image.new("RGB", (w, round(em * 2)), "white")
+            ImageDraw.Draw(img).text((em // 2, em // 3), v, font=f, fill="black")
+            p = tmp / f"{i}_{j}.png"
+            img.save(p)
+            paths[t].append(p)
+    all_paths = [p for ps in paths.values() for p in ps]
+    got = read(r, all_paths)
     shutil.rmtree(tmp, ignore_errors=True)
-    return {t: confidence(t, got.get(str(p), [])) for t, p in paths.items()}
+    out = {}
+    for t, ps in paths.items():
+        confs = [c for p in ps if (c := confidence(t, got.get(str(p), []))) is not None]
+        out[t] = min(confs) if confs else None
+    return out
