@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes } from "../lib/clearance.js";
 
 const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
 const filmSceneHash = (f) => { const { step: _step, ...rest } = f ?? {}; return createHash("sha256").update(JSON.stringify(canonical(rest))).digest("hex"); };
@@ -69,6 +69,9 @@ if (past("research")) {
   const segsForAct2 = film.story?.segments;
   const [a2, b2] = existsSync(fromTemplate("story.json")) ? (JSON.parse(readFileSync(fromTemplate("story.json"), "utf8")).pieces?.act2 ?? [6, 12]) : [6, 12];
   const playsAct2 = !segsForAct2?.length || segsForAct2.some((s) => s.story === "act2" || s.story === "whole" || (Array.isArray(s.story) && s.story[0] < b2 && (s.story[1] === "end" ? Infinity : s.story[1]) > a2));
+  if (playsAct2 && !film.posts?.pinned?.cover) {
+    say("bad", "act 2 stands the pinned post's cover up as a wall, but film.posts.pinned.cover is empty", "set posts.pinned.cover to its image in assets/, or replace act 2 with a custom beat for a text-only post");
+  }
   const c = film.counter;
   if (c && playsAct2) {
     const shown = c.display ?? `${c.value}${c.unit}`;
@@ -146,6 +149,13 @@ if (past("toy") && toy && film.profile) {
     for (const w of T.SEG?.warnings ?? []) say("warn", w);
   } catch (e) {
     say("bad", `the story does not build: ${e.message.split("\n")[0]}`, hint(e));
+  }
+  if (T) {
+    const segsEnd = film.story?.segments;
+    const hasEndCard = !segsEnd?.length || segsEnd.some((s) => s.story === "endCard" || (Array.isArray(s.story) && s.story[1] === "end"));
+    if (hasEndCard && T.LETTER_STEP != null && T.LETTER_STEP < 0.045) {
+      say("warn", `end-card slogan types at ${(T.LETTER_STEP * 1000).toFixed(0)} ms a letter (too fast to read as typing)`, "widen or omit story.events.lettersEnd so two-column slogans step at >= 50 ms a letter");
+    }
   }
   if (W) {
     const objects = [];
@@ -249,6 +259,8 @@ if (past("toy") && toy && film.profile) {
     for (const m of streaks) say("warn", `sky-drop crosses 3D lettering: ${m.text}`, "use floor-level kit.strideIn / kit.strideOut instead of vertical dropIn / leapOut so the toy does not streak across top headlines or readouts");
     const edgeOn = describeEdgeOnCards(edgeOnCards(motion, { aspect: fw / fh }));
     for (const m of edgeOn) say("warn", `plaque or card stands edge-on to camera: ${m.text}`, "face plaques and showcase cards toward cam.tr.p (pass eyeWorld = cam.tr.p to bannerLine/readoutBadge) so they do not turn sideways");
+    const pedClashes = describePedestalSideClashes(pedestalSideClashes(motion));
+    for (const m of pedClashes) say("warn", `side prop intersects pedestal: ${m.text}`, "offset side-standing sub-props cleanly outside the main pedestal rim (references/props.md)");
     const palPath = fromFilm("build/palette.json");
     if (existsSync(palPath) && statSync(palPath).mtimeMs >= statSync(animPath).mtimeMs) {
       for (const c of json("build/palette.json")?.film?.cards ?? []) {

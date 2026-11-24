@@ -29,9 +29,19 @@ export function shade(hex, k = 0.5) {
   return "#" + [0, 2, 4].map((i) => Math.round(parseInt(h.slice(i, i + 2), 16) * k).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
+// unwraps a camera sample (`camera(g)` / `{ pos }` / `{ tr: { p } }`) or bare `[x, y, z]` eye point and throws early on non-finite input
+export function eyePoint(eye) {
+  const p = Array.isArray(eye) ? eye : (eye?.pos ?? eye?.tr?.p);
+  if (!Array.isArray(p) || p.length < 3 || !p.slice(0, 3).every(Number.isFinite)) {
+    throw new Error(`camera eye position must be [x, y, z] or a camera sample { pos } (got ${JSON.stringify(eye)})`);
+  }
+  return p;
+}
+
 // the turn that faces a line standing at `at` to the camera at `eye` (its +z towards it: turned, then leant back)
 export function facing(eye, at) {
-  const d = [eye[0] - at[0], eye[1] - at[1], eye[2] - at[2]];
+  const e = eyePoint(eye);
+  const d = [e[0] - at[0], e[1] - at[1], e[2] - at[2]];
   return qMul(qEuler(0, Math.atan2(d[0], d[2]), 0), qEuler(-Math.atan2(d[1], Math.hypot(d[0], d[2])), 0, 0));
 }
 

@@ -176,12 +176,12 @@ compound parts, angled side ribbons, and flat floor `route`/`lane`/`carpet`/`run
 `declareLine` / `fastReveal` line-name separation (`slo1` vs
 `slo2`), `floatingSmallLetters` double-shadow detection, `readout.centerAt` / `readoutBadge` / `bannerLine` symmetric flush-mounted counter & shimmer-free outline-free matte-paper headline badges (level by default on X-offset custom beat stages, plus object/string `fmt` shorthands), `skyPoint` / `raiseArms` chibi-safe overhead silhouettes & off-stage `aim.world` double-`at()` guards, `strideIn` / `strideOut`
 floor-level beat transitions, `paperOf` saturated orange/crimson/cobalt cream-ink
-contrast & explicit `ink` overrides, `grok-search` search-first retry prompt generation, `isRemoteBlenderWrapper` local-step Colab wrapper filtering, `armLiftLimit`
+contrast & explicit `ink` overrides, `grok-search` search-first retry prompt generation, `isRemoteBlenderWrapper` local-step Colab wrapper filtering and automatic remote-to-local render/sample fallback, `armLiftLimit`
 wide-headed chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()`
 and double-`at()` detection, `oversizedUiBoxes` raw-`trs()` picture-card
 detection, `movieWraps` cyclic video wrap warnings, `qFlat` horizontal
 floor-ring quaternions, `cutout()` / `picture({ cyclic: false, antiglare: true })` helpers, the
-`clearance.mjs` CLI exit codes / `build/clearance.json` output, `ui.js`
+`clearance.mjs` CLI exit codes / `build/clearance.json` output, `pedestalSideClashes` side-prop-vs-pedestal overlaps, `plate`/`arc`/`card2d` clearance bounds & `0.10 s` fast face-flyover occlusion checks, `eyePoint` camera-eye unwrapping, text-only X pinned/featured post rendering (`themes/x-desktop` & `themes/x-mobile`), `ui.js`
 `pageless()` opt-in/opt-out and `page.image`/`page.panels` auto-detection,
 `places.js` `two-column` non-overlapping default end-card layout, and
 `tim-line/figure.js` `roundBox` mm→m conversion.
@@ -192,18 +192,19 @@ Engine reliability fixes (`pacing.slanted` hidden-letter filtering,
 hidden-track, animated-`tr`, `FILM`-relative CLI path, `unitScale`-metadata & texture-asset `--images`/`--since`
 filtering, `glyphs.harvest_js_glyphs` custom `.js` beat/prop character
 collection, `fonts.chosen` `"Family:Style"` string shorthand, `reading.match` /
-`reading.confidence` split-line & background-duplicate handling, `silent.py`
+`reading.confidence` split-line & background-duplicate handling, `reading.baseline` `·` middle-dot CJK confidence ceiling, `silent.py`
 geometric-ring OCR ghost filtering, `real.py` unknown-instrument & single-hit
 variant suggestions, `finish.py` `.finish-meta.json` incremental frame, main MP4 & `-sfx.mp4`
 caching/auto-refresh, `pictures.ensureCloudSafeMovie` `.mp4`/`.mov` → `.mkv` lossless remuxing for cloud GPU workers,
 `stagekit.paper` `paper=`/`fill=` keyword aliases, `stagekit.antiglare` & `empty_avatar_socket`/`card_socket_coords` helpers, `colors.film_colours` stark-white card glare & plated dark-ink contrast checks, `run.mjs` `score`/`audio` step aliases,
-`timeline.js` two-column `28.0 s` downbeat point, wider torn-paper margins, long-slogan typing cadence & active `glide`/post-`final`
+`timeline.js` two-column `28.0 s` downbeat point, wider torn-paper margins, dense `<75 ms` chime thinning, long-slogan typing cadence & active `glide`/post-`final`
 breathing motion, `reading.baseline` mixed-script `I`/`l` look-alike ceiling,
+`review.py` stale `review-blind.txt` warning when older than the reviewed video,
 `scene.py` translucent `bubble` shader & `--resume` stale-frame invalidation, `compare.py --frames`,
 `score.py` groove fallback, `run.mjs` `clearance`/`diff` & incremental
 `previs` / `animatic -- --frames` steps,
 `safezone.py` dynamic `EV.final` hold threshold, `check.mjs` active-`act2`
-counter & blank-`ui.png` gating, and Blender 2D curve bevel miter-spike
+counter, missing pinned-cover, crunched-slogan & blank-`ui.png` gating, and Blender 2D curve bevel miter-spike
 flattening):
 
 ```sh

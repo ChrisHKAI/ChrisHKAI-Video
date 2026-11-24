@@ -8,7 +8,7 @@ import { armLiftLimit } from "./clearance.js";
 import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "./rig.js";
 import { makeCamera } from "./camera.js";
 import { readout, formatCount } from "./counter.js";
-import { line as makeLine, declareLine as declLine, putLine as placeLine, facing as faceCam } from "./lettering.js";
+import { line as makeLine, declareLine as declLine, putLine as placeLine, facing as faceCam, eyePoint } from "./lettering.js";
 import { clamp01, seg, smooth, easeIn, easeOut, easeInOut, lerp, lerpAngle, yawTo, TAU, v3 } from "./math.js";
 import { trs, qId, qEuler, mulT, apply } from "./quat.js";
 
@@ -20,7 +20,7 @@ const cheerForward = ARM_MAX < 2.2 ? -0.22 : 0;
 // the creator's own pictures as cards, and layouts for many at once (pictures.js)
 export { picture, cutout, pictureFiles, layout, stagger, imageSize, backToBack } from "./pictures.js";
 // a line of 3D lettering: laid out, edged, standing by its lowest point, facing the camera (lettering.js)
-export { line, declareLine, putLine, facing, shade } from "./lettering.js";
+export { line, declareLine, putLine, facing, eyePoint, shade } from "./lettering.js";
 
 export const HIDDEN = 1e-4;
 export const POP = 1.3; // the toy's size on a beat's small stage, as on the end card
@@ -108,8 +108,9 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
         if (ln) placeLine(put, `${prefix}_lbl`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => 0, { outline: hasOutline, depth: letterDepth });
         return;
       }
-      const aimFrom = level ? [eyeWorld[0], centerWorld[1], centerWorld[2]] : centerWorld;
-      const q = faceCam(eyeWorld, aimFrom);
+      const eye = eyePoint(eyeWorld);
+      const aimFrom = level ? [eye[0], centerWorld[1], centerWorld[2]] : centerWorld;
+      const q = faceCam(eye, aimFrom);
       const root = trs(centerWorld, q, 1);
       // Plate front face sits at z = -1.3 mm (inside solid letter depth [-halfD, +halfD], behind any optional outline)
       const frontBack = hasOutline ? letterDepth + 0.0014 : 0.0013;
@@ -146,8 +147,9 @@ export function bannerLine(glyph, text, { em = 0.032, edge = 0.07, track = 0.08,
         return;
       }
       // Use eyeWorld[0] rather than world X=0 so custom beats on offset stages (x = 50, 100, 150 m) stay dead-level!
-      const aimFrom = level ? [eyeWorld[0], centerWorld[1], centerWorld[2]] : centerWorld;
-      const q = faceCam(eyeWorld, aimFrom);
+      const eye = eyePoint(eyeWorld);
+      const aimFrom = level ? [eye[0], centerWorld[1], centerWorld[2]] : centerWorld;
+      const q = faceCam(eye, aimFrom);
       const root = trs(centerWorld, q, 1);
       // Plate front face sits at z = -1.3 mm (inside solid letter depth [-halfD, +halfD]: zero gap, zero stroke shimmer)
       const frontBack = hasOutline ? letterDepth + 0.0014 : 0.0013;

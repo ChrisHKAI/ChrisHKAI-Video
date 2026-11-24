@@ -80,9 +80,10 @@ step makes them. Worked example:
 Its height: the end card's camera is framed for the snail, whose top (where
 the toy's feet stand, `topAt`) is about 0.08 m above the stage. A prop much
 taller than that is cut by the frame: keep its top near 0.08 m, or move the
-end card's camera (film.json `story.camera2`), and keep miniature side towers
-or cards behind or below the toy's standing silhouette (`check` warns if a
-custom prop cuts across the toy's body).
+end card's camera (film.json `story.camera2`), and keep miniature side towers,
+globes or cards cleanly outside the main pedestal rim as well as behind or below the
+toy's standing silhouette (`check` warns if a custom prop cuts across the toy's
+body or overlaps its own pedestal).
 
 ## End-card layout (`cta.layout`)
 

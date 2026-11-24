@@ -69,17 +69,22 @@ const px = (r) => `left:${r[0]}px;top:${r[1]}px;width:${r[2]}px;height:${r[3]}px
 function postBody({ film, L, post, pinned, cover }) {
   const { S, icon, badge, pr, NAME } = kit({ film });
   const names = ["reply", "repost", "like", "views"];
-  const actions = `<div class="acts">${names.map((n, i) => `<span style="left:${L.ACTION_X[i]}px">${icon(n, 28, "#71767B", 1.7)}${post.counts[i]}</span>`).join("")}
+  const counts = post.counts ?? ["", "", "", ""];
+  const actions = `<div class="acts">${names.map((n, i) => `<span style="left:${L.ACTION_X[i]}px">${icon(n, 28, "#71767B", 1.7)}${counts[i] ?? ""}</span>`).join("")}
     </div>`;
+  const kind = post.kind ?? "article";
+  const body = cover
+    ? `<div class="card">${cover}<div class="tt">${post.title}</div>${kind === "article" ? `<div class="chip">${icon("mail", 22, "#71767B")}${S.article}</div>` : ""}</div>`
+    : `<div class="txt" style="position:absolute;left:${L.CARD.x}px;top:${L.CARD.y}px;width:${L.CARD.w}px;font-size:25px;line-height:34px;white-space:pre-line">${post.title ?? ""}</div>`;
   return `${pinned && post.pinned !== false ? `<div class="post-top">${icon("pin", 22, "#71767B", 2)}${S.pinned}</div>` : ""}
     <div class="av"></div>
-    <div class="who"><b>${NAME}</b>${badge(26)}<span class="grey">@${pr.handle} · ${post.date}</span></div>
-    <div class="card">${cover}<div class="tt">${post.title}</div>${(post.kind ?? "article") === "article" ? `<div class="chip">${icon("mail", 22, "#71767B")}${S.article}</div>` : ""}</div>
+    <div class="who"><b>${NAME}</b>${badge(26)}<span class="grey">@${pr.handle} · ${post.date ?? ""}</span></div>
+    ${body}
     ${actions}`;
 }
 
 export const SOCKET_COVER = `<div class="cover" style="background:#050506;box-shadow:inset 0 10px 30px #000"></div>`;
-export const pictureCover = (asset, path) => `<div class="cover" style="background:url(${asset(path)}) center/cover"></div>`;
+export const pictureCover = (asset, path) => (path ? `<div class="cover" style="background:url(${asset(path)}) center/cover"></div>` : "");
 
 export function profilePage({ film, L, asset, pinned }) {
   const { S, icon, badge, pr, NAME } = kit({ film });
@@ -104,7 +109,7 @@ export function profilePage({ film, L, asset, pinned }) {
   <div class="line" style="top:308px"><b>${pr.following}</b> <span class="grey">${S.following}</span>&nbsp;&nbsp;&nbsp;<b>${pr.followers}</b> <span class="grey">${S.followers}</span></div>
 </section>
 <section class="panel" style="${px(P.tabs)}"><div class="tabs">${S.tabs.map((t, i) => `<div class="tab${i ? "" : " on"}">${t}</div>`).join("")}</div><div class="sep" style="bottom:0"></div></section>
-<section class="panel" style="${px(P.pinned)}">${postBody({ film, L, post: pinned.post, pinned: true, cover: pinned.cover })}<div class="sep" style="bottom:0"></div></section>
+<section class="panel" style="${px(P.pinned)}">${pinned ? postBody({ film, L, post: pinned.post, pinned: true, cover: pinned.cover }) : ""}<div class="sep" style="bottom:0"></div></section>
 <section class="panel" style="${px(P.retro)}"><div class="av" style="top:16px"></div></section>
 <section class="panel" style="${px(P.tabbar)};border-top:2px solid #2F3336">
   <div class="bar">${["home", "search", "people", "bell", "mail"].map((n, i) => icon(n, 40, "currentColor", i ? 1.8 : 2.4)).join("")}</div>

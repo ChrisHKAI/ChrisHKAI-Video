@@ -1136,5 +1136,211 @@ class V0814EngineImprovementTests(unittest.TestCase):
         self.assertIn('ALIASES = { score: "sound", audio: "sound" }', run_src)
 
 
+class V0815EngineImprovementTests(unittest.TestCase):
+    def test_timeline_thins_dense_slogan_chimes_only_when_sub_75ms(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "build/glyphs.json").write_text("{}")
+            chars = "0123456789.万查看测试夏林果的出海日记@momo_peggyWeb与转行实战喜欢您来找"
+            g_stub = {"advance": 1.0, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in set(chars)
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12,
+                "center": [0, 0.06, 0],
+                "colors": {"body": "#F8B2CB"},
+                "joints": {"body": {"p": [0, 0.04, 0]}, "head": {"p": [0, 0.08, 0], "parent": "body"}},
+                "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.05, 0], "size": [0.05, 0.06, 0.04], "mat": "body"}],
+            }))
+            base_film = {
+                "id": "v0815-chimes",
+                "template": "isnail-30",
+                "theme": "x-desktop",
+                "format": {"fps": 30, "bpm": 120, "duration": 30, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "profile": {"name": "夏林果", "handle": "momo_peggy", "bio": ["Web"]},
+                "posts": {"pinned": {"count": "1万", "cover": "assets/p.jpg"}, "retro": {"count": "1万", "cover": "assets/r.jpg"}},
+                "counter": {"value": 1, "unit": "万", "label": "查看", "display": "1万"},
+                "story": {
+                    "exit": "jump",
+                    "segments": [{"beat": "phrase", "bars": 12, "text": "测试"}, {"story": [24, "end"]}],
+                    "events": {"letters": 24.44, "lettersEnd": 24.90, "final": 28.0},
+                },
+                "cta": {
+                    "layout": "two-column",
+                    "slogan": [{"text": "Web出海实战"}, {"text": "喜欢您来找我"}],
+                    "name": {"text": "夏林果"},
+                    "handle": {"text": "@momo_peggy"},
+                    "prop": {"kind": "plinth"},
+                },
+            }
+            (fdir / "film.json").write_text(json.dumps(base_film))
+            tl_url = (SKILL / "templates/isnail-30/timeline.js").as_uri()
+            probe = f'import * as T from {json.dumps(tl_url)}; console.log(JSON.stringify({{ step: T.LETTER_STEP, cues: T.soundCues().filter((c) => c.kind === "letter") }}));'
+            r = subprocess.run(["node", "--input-type=module", "-e", probe], cwd=str(SKILL), env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}, capture_output=True, text=True, check=True)
+            fast = json.loads(r.stdout.strip().splitlines()[-1])
+            self.assertLess(fast["step"], 0.075)
+            # Intermediate chimes thinned (~>= 80 ms apart) while still hitting start & red switch & end
+            self.assertLess(len(fast["cues"]), 13)
+            self.assertGreaterEqual(len(fast["cues"]), 4)
+
+            # Normal slow step (>= 0.075 s) keeps 1 chime per character untouched (reference films invariant)
+            slow_film = json.loads(json.dumps(base_film))
+            slow_film["story"]["events"] = {"letters": 24.5, "lettersEnd": 28.0, "final": 28.0}
+            (fdir / "film.json").write_text(json.dumps(slow_film))
+            r2 = subprocess.run(["node", "--input-type=module", "-e", probe], cwd=str(SKILL), env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}, capture_output=True, text=True, check=True)
+            slow = json.loads(r2.stdout.strip().splitlines()[-1])
+            self.assertGreaterEqual(slow["step"], 0.075)
+            self.assertEqual(len(slow["cues"]), 13)
+
+    def test_reading_baseline_measures_middle_dot_variants(self):
+        from unittest import mock
+        from PIL import ImageFont
+
+        font_path = None
+        for cand in [
+            "/System/Library/Fonts/PingFang.ttc",
+            "/System/Library/Fonts/STHeiti Light.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+        ]:
+            if Path(cand).exists():
+                font_path = cand
+                break
+        if font_path is None:
+            self.skipTest("no CJK system font available for ImageFont.truetype")
+
+        # Verify font can load before running baseline
+        ImageFont.truetype(font_path, 40, index=0)
+        seen_calls = []
+
+        def fake_read(_r, paths):
+            out = {}
+            for p in paths:
+                key = str(p)
+                seen_calls.append(key)
+                # First variant (·) returns high conf, middle-dot lookalike (•) simulates 0.30 Vision score
+                conf = 0.30 if "_1.png" in key else 0.99
+                out[key] = [("喜欢您来•找夏林果" if "_1.png" in key else "喜欢您来 · 找夏林果", conf)]
+            return out
+
+        with mock.patch.object(reading, "read", side_effect=fake_read):
+            base = reading.baseline(("vision", "fake-bin"), ["喜欢您来 · 找夏林果"], (font_path, 0))
+        self.assertGreaterEqual(len(seen_calls), 3)
+        self.assertAlmostEqual(base["喜欢您来 · 找夏林果"], 0.30, places=2)
+
+    def test_review_flags_stale_blind_notes_older_than_source(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build/previs").mkdir(parents=True)
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12, "colors": {"body": "#F8B2CB"}, "parts": []}))
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "rev-stale",
+                "template": "isnail-30",
+                "theme": "x-desktop",
+                "language": "zh-Hans",
+                "toy": "toy.json",
+                "format": {"fps": 30, "bpm": 120, "duration": 6, "size": [1920, 1080]},
+                "profile": {"name": "夏林果", "handle": "momo_peggy"},
+                "counter": {"value": 10, "unit": "万", "label": "查看", "display": "10万"},
+                "cta": {"slogan": [{"text": "测试"}]},
+            }))
+            (fdir / "build/timeline.json").write_text(json.dumps({
+                "DURATION": 6.0, "FPS": 30, "BPM": 120, "BAR": 2.0,
+                "EV": {"cut": 4.0},
+                "SEGMENTS": [{"kind": "beat", "beat": "beats/open.js", "f0": 0.0, "f1": 6.0, "why": "intro"}],
+                "cues": [{"t": 0.5, "kind": "pop"}],
+            }))
+            (fdir / "build/anim.json").write_text(json.dumps({
+                "fps": 30, "sub": 1, "frames": 180, "samples": 180,
+                "objects": [], "tracks": {}, "scalars": {},
+            }))
+            previs_png = fdir / "build/previs/0001.png"
+            Image.new("RGB", (320, 180), (16, 16, 20)).save(previs_png)
+            blind_txt = fdir / "build/review-blind.txt"
+            blind_txt.write_text("1. 旧版盲测\n2. B\n3. C\n4. D\n5. E\n6. F\n")
+            old_t = previs_png.stat().st_mtime - 20.0
+            os.utime(blind_txt, (old_t, old_t))
+
+            r_stale = subprocess.run(
+                [sys.executable, str(SCRIPTS / "review.py")],
+                cwd=str(ROOT),
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)},
+                capture_output=True, text=True, check=True,
+            )
+            self.assertIn("older than the picture being reviewed", r_stale.stdout)
+            self.assertIn("EARLIER cut before this render", (fdir / "build/review.md").read_text())
+
+            # Fresh review-blind.txt written after source clears the stale warning
+            blind_txt.write_text("1. 新版盲测\n2. B\n3. C\n4. D\n5. E\n6. F\n")
+            now_t = previs_png.stat().st_mtime + 5.0
+            os.utime(blind_txt, (now_t, now_t))
+            r_fresh = subprocess.run(
+                [sys.executable, str(SCRIPTS / "review.py")],
+                cwd=str(ROOT),
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)},
+                capture_output=True, text=True, check=True,
+            )
+            self.assertNotIn("older than the picture being reviewed", r_fresh.stdout)
+            self.assertNotIn("EARLIER cut before this render", (fdir / "build/review.md").read_text())
+
+    def test_check_flags_missing_act2_pinned_cover_and_crunched_slogan_and_run_has_local_fallback(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            chars = "0123456789.万查看测试夏林果@momo_peggyWeb出海实战"
+            g_stub = {"advance": 1.0, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in set(chars)
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12,
+                "center": [0, 0.06, 0],
+                "colors": {"body": "#F8B2CB"},
+                "joints": {"body": {"p": [0, 0.04, 0]}},
+                "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.05, 0], "size": [0.05, 0.06, 0.04], "mat": "body"}],
+            }))
+            # Plays act 2 with empty pinned.cover + crunched slogan step (< 45 ms)
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "chk-v0815",
+                "template": "isnail-30",
+                "theme": "x-desktop",
+                "step": "render",
+                "format": {"fps": 30, "bpm": 120, "duration": 30, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "profile": {"name": "夏林果", "handle": "momo_peggy", "bio": ["Web"]},
+                "posts": {"pinned": {"count": "1万"}, "retro": {"count": "1万"}},
+                "counter": {"value": 1, "unit": "万", "label": "查看", "display": "1万"},
+                "story": {
+                    "exit": "jump",
+                    "segments": [{"story": [0, 12]}, {"story": [24, "end"]}],
+                    "events": {"letters": 24.4, "lettersEnd": 24.85, "final": 28.0},
+                },
+                "cta": {
+                    "layout": "two-column",
+                    "slogan": [{"text": "Web出海实战", "paper": "cream"}, {"text": "找夏林果", "paper": "red"}],
+                    "name": {"text": "夏林果", "paper": "cream"},
+                    "handle": {"text": "@momo_peggy", "paper": "blue"},
+                    "prop": {"kind": "plinth"},
+                },
+            }))
+            r = subprocess.run(
+                ["node", str(SCRIPTS / "check.mjs")],
+                cwd=str(ROOT),
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)},
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("film.posts.pinned.cover is empty", r.stdout)
+            self.assertIn("too fast to read as typing", r.stdout)
+
+        run_src = (SKILL / "engine/run.mjs").read_text()
+        self.assertIn("isRemoteBlenderWrapper(blender)", run_src)
+        self.assertIn("falling back to local Blender", run_src)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

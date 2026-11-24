@@ -243,9 +243,17 @@ export function soundCues() {
   add(E.glint2, "glint");
   const TUNE = ["G5", "A5", "B5", "D6", "E6", "G6", "A6", "B6"];
   // a letter a note up the scale; a slogan longer than the scale spreads it over every letter, still rising
+  // (when tight typing puts letters < 75 ms apart, thin intermediate chimes to ~85 ms so they play cleanly)
   const n = [...SLOGAN].length;
   const note = (i) => TUNE[n <= TUNE.length ? i : Math.round((i * (TUNE.length - 1)) / (n - 1))];
-  [...SLOGAN].forEach((_, i) => add(EV.letters + i * LETTER_STEP, "letter", { note: note(i), red: i >= SLOGAN_RED }));
+  let lastLetterCue = -Infinity;
+  [...SLOGAN].forEach((_, i) => {
+    const off = i * LETTER_STEP;
+    if (LETTER_STEP >= 0.075 || i === 0 || i === SLOGAN_RED || i === n - 1 || off - lastLetterCue >= 0.085 - 1e-6) {
+      add(EV.letters + off, "letter", { note: note(i), red: i >= SLOGAN_RED });
+      lastLetterCue = off;
+    }
+  });
   add(E.final, "lock", { big: true });
   add(E.final + 0.02, "sparkle");
   add(E.final + 0.15, "glint");

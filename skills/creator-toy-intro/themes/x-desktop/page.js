@@ -102,17 +102,21 @@ const px = (r) => `left:${r[0]}px;top:${r[1]}px;width:${r[2]}px;height:${r[3]}px
 function postBody({ film, L, post, pinned, cover }) {
   const { S, icon, badge, pr, NAME } = kit({ film, L });
   const names = ["reply", "repost", "like", "views"];
-  const actions = `<div class="acts">${names.map((n, i) => `<span style="left:${L.ACTION_X[i]}px">${icon(n, 19, "#71767B", 1.7)}${post.counts[i]}</span>`).join("")}
+  const counts = post.counts ?? ["", "", "", ""];
+  const actions = `<div class="acts">${names.map((n, i) => `<span style="left:${L.ACTION_X[i]}px">${icon(n, 19, "#71767B", 1.7)}${counts[i] ?? ""}</span>`).join("")}
     <span style="right:34px">${icon("bookmark", 19, "#71767B", 1.7)}</span><span style="right:0">${icon("share", 19, "#71767B", 1.7)}</span></div>`;
   // the post as X shows it: "已置顶" only on a pinned one; an article (the default) with its chip, a video with a
-  // play mark on its picture, a picture post with its picture alone
+  // play mark on its picture, a picture post with its picture alone; when there is no cover, a plain text post
   const kind = post.kind ?? "article";
   const chip = kind === "article" ? `<div class="chip">${icon("mail", 15, "#71767B")}${S.article}</div>` : "";
   const play = kind === "video" ? `<div style="position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:rgba(29,155,240,.92);display:flex;align-items:center;justify-content:center"><svg width="30" height="30" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="#fff"/></svg></div>` : "";
+  const body = cover
+    ? `<div class="card">${cover}${play}<div class="tt">${post.title}</div>${chip}</div>`
+    : `<div class="txt" style="position:absolute;left:${L.CARD.x}px;top:${L.CARD.y}px;width:${L.CARD.w}px;font-size:17px;line-height:24px;white-space:pre-line">${post.title ?? ""}</div>`;
   return `${pinned && post.pinned !== false ? `<div class="post-top" style="top:12px;left:40px">${icon("pin", 14, "#71767B", 2)}${S.pinned}</div>` : ""}
     <div class="av"></div>
-    <div class="who"><b>${NAME}</b>${badge(18)}<span class="grey">@${pr.handle} · ${post.date}</span><span style="margin-left:auto"></span></div>
-    <div class="card">${cover}${play}<div class="tt">${post.title}</div>${chip}</div>
+    <div class="who"><b>${NAME}</b>${badge(18)}<span class="grey">@${pr.handle} · ${post.date ?? ""}</span><span style="margin-left:auto"></span></div>
+    ${body}
     ${actions}`;
 }
 
@@ -128,7 +132,7 @@ export const metaSpans = (m, icon, s) => [
 
 // the empty socket a 3D object stands in (the profile picture, a cover wall)
 export const SOCKET_COVER = `<div class="cover" style="background:#050506;box-shadow:inset 0 8px 24px #000"></div>`;
-export const pictureCover = (asset, path) => `<div class="cover" style="background:url(${asset(path)}) center/cover"></div>`;
+export const pictureCover = (asset, path) => (path ? `<div class="cover" style="background:url(${asset(path)}) center/cover"></div>` : "");
 
 export function profilePage({ film, L, asset, pinned, below }) {
   const { S, icon, badge, pr, NAME } = kit({ film, L });
@@ -158,7 +162,7 @@ export function profilePage({ film, L, asset, pinned, below }) {
   <div class="line" style="top:258px"><b>${pr.following}</b> <span class="grey">${S.following}</span>&nbsp;&nbsp;&nbsp;&nbsp;<b>${pr.followers}</b> <span class="grey">${S.followers}</span></div>
 </section>
 <section class="panel" style="${px(P.tabs)}"><div class="tabs">${S.tabs.map((t, i) => `<div class="tab${i ? "" : " on"}">${t}</div>`).join("")}</div><div class="sep" style="bottom:0"></div></section>
-<section class="panel" style="${px(P.pinned)}">${postBody({ film, L, post: pinned.post, pinned: true, cover: pinned.cover })}<div class="sep" style="bottom:0"></div></section>
+<section class="panel" style="${px(P.pinned)}">${pinned ? postBody({ film, L, post: pinned.post, pinned: true, cover: pinned.cover }) : ""}<div class="sep" style="bottom:0"></div></section>
 <section class="panel" style="${px(P.retro)}">
   <div class="av" style="top:14px"></div>
   <div style="position:absolute;left:68px;top:18px">${[[180, 14], [460, 14], [400, 14], [300, 14]].map(([w, h], i) => `<i style="display:block;width:${w}px;height:${h}px;margin-bottom:12px;background:#16181c;border-radius:7px"></i>`).join("")}</div>

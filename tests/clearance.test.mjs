@@ -5,9 +5,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
-import { line, declareLine, putLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
+import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
+import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
+import * as xMobile from "../skills/creator-toy-intro/themes/x-mobile/page.js";
+import * as xDesktopLayout from "../skills/creator-toy-intro/themes/x-desktop/layout.js";
+import * as xMobileLayout from "../skills/creator-toy-intro/themes/x-mobile/layout.js";
 import { readout, formatCount } from "../skills/creator-toy-intro/engine/lib/counter.js";
 import { unexpectedTools, isPlaceholderAnswer, retrySearchPrompt } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
 import { makeLabel, paperOf, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
@@ -1423,4 +1427,99 @@ test("v0.8.14: shimmer-free bannerLine/readoutBadge defaults, skyPoint/raiseArms
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("v0.8.15: plate/arc/card2d bounds, fast face-flyover occlusions, pedestalSideClashes, eyePoint unwrap, and text-only X posts", () => {
+  // 1) plate without outline uses [w, t, d] instead of an inflated cube
+  const { lo, hi } = restBounds([{ name: "tray", shape: "plate", w: 0.20, d: 0.08, t: 0.006 }], [{ p: [0, 0, 0], q: QID, s: [1, 1, 1] }]);
+  assert.ok(Math.abs((hi[1] - lo[1]) - 0.006) < 1e-6);
+  assert.ok(Math.abs((hi[0] - lo[0]) - 0.20) < 1e-6);
+  assert.ok(Math.abs((hi[2] - lo[2]) - 0.08) < 1e-6);
+
+  // 2) Fast 4-frame (0.133 s) paper-plane `plate` crossing in front of hero_head triggers heroFaceOcclusions,
+  //    while background `beat0_banner_win` does not trigger false occlusions.
+  const faceAnim = makeAnim(
+    [
+      { name: "camera", parent: "root", tr: pack([0, 0.16, 0.85]) },
+      { name: "hero", parent: "root", tr: pack([0, 0, 0]) },
+      { name: "hero_head", parent: "hero", geo: { type: "ellipsoid", r: [0.04, 0.04, 0.04] }, tr: pack([0, 0.12, 0]) },
+      {
+        name: "beat0_plane_wing",
+        parent: "root",
+        geo: { type: "plate", t: 0.004, outline: [[-0.08, -0.04], [0.08, 0], [-0.08, 0.04]] },
+        mat: { type: "paper", color: "#F7A8C4" },
+        tr: pack([0, 0.12, 0.08], qEuler(0.65, 0, 0)),
+      },
+      {
+        name: "beat0_banner_win",
+        parent: "root",
+        geo: { type: "plane", w: 0.50, h: 0.28 },
+        mat: { type: "card2d", image: "assets/banner.jpg" },
+        tr: pack([0, 0.22, -0.15]),
+      },
+    ],
+    {
+      camera: [[0, ...pack([0, 0.16, 0.85])], [20, ...pack([0, 0.16, 0.85])]],
+      beat0_plane_wing: [
+        [0, ...pack([-0.35, 0.12, 0.08], qEuler(0.65, 0, 0))],
+        [4, ...pack([-0.02, 0.12, 0.08], qEuler(0.65, 0, 0))],
+        [8, ...pack([0.02, 0.12, 0.08], qEuler(0.65, 0, 0))],
+        [9, ...pack([0.35, 0.12, 0.08], qEuler(0.65, 0, 0))],
+        [20, ...pack([0.35, 0.12, 0.08], qEuler(0.65, 0, 0))],
+      ],
+    },
+    { frames: 21, fps: 30, sub: 1 },
+  );
+  faceAnim.scalars = { fov: Array(21).fill(35) };
+  const faceHits = heroFaceOcclusions(faceAnim, { aspect: 16 / 9 });
+  assert.equal(faceHits.length, 1);
+  assert.equal(faceHits[0].prop, "beat0_plane");
+  assert.match(describeHeroFaceOcclusions(faceHits)[0].text, /crosses in front of the toy's face/);
+
+  // 3) pedestalSideClashes catches side-standing sub-props (`pod_globe_*`) biting into `pod_base` while ignoring
+  //    coaxial upper tiers (`pod_deck`) and clean side placement.
+  const pedAnim = makeAnim(
+    [
+      { name: "camera", parent: "root", tr: pack([250, 0.18, 1.0]) },
+      { name: "pod_base", parent: "root", geo: { type: "plate", t: 0.048, outline: [[-0.145, -0.145], [0.145, -0.145], [0.145, 0.145], [-0.145, 0.145]] }, mat: { type: "paper", color: "#FAF0E2" }, tr: pack([249.75, 0.024, 0.04]) },
+      { name: "pod_deck", parent: "root", geo: { type: "plate", t: 0.026, outline: [[-0.11, -0.11], [0.11, -0.11], [0.11, 0.11], [-0.11, 0.11]] }, mat: { type: "type", color: "#E25241" }, tr: pack([249.75, 0.06, 0.04]) },
+      { name: "pod_globe_foot", parent: "root", geo: { type: "plate", t: 0.010, outline: [[-0.04, -0.04], [0.04, -0.04], [0.04, 0.04], [-0.04, 0.04]] }, mat: { type: "paper", color: "#F5E5CF" }, tr: pack([249.59, 0.005, 0.04]) },
+      { name: "pod_globe_ocean", parent: "root", geo: { type: "ellipsoid", r: [0.052, 0.052, 0.052] }, mat: { type: "type", color: "#5BBCE0" }, tr: pack([249.59, 0.08, 0.04]) },
+    ],
+    {
+      camera: [[0, ...pack([250, 0.18, 1.0])], [29, ...pack([250, 0.18, 1.0])]],
+      pod_globe_foot: [[0, ...pack([249.59, 0.005, 0.04])], [14, ...pack([249.59, 0.005, 0.04])], [15, ...pack([249.52, 0.005, 0.04])], [29, ...pack([249.52, 0.005, 0.04])]],
+      pod_globe_ocean: [[0, ...pack([249.59, 0.08, 0.04])], [14, ...pack([249.59, 0.08, 0.04])], [15, ...pack([249.52, 0.08, 0.04])], [29, ...pack([249.52, 0.08, 0.04])]],
+    },
+    { frames: 30, fps: 30, sub: 1 },
+  );
+  const pedHits = pedestalSideClashes(pedAnim);
+  assert.equal(pedHits.length, 1);
+  assert.equal(pedHits[0].sat, "pod_globe");
+  assert.equal(pedHits[0].base, "pod_base");
+  assert.ok(pedHits[0].to < 0.6);
+  assert.match(describePedestalSideClashes(pedHits)[0].text, /pod_globe overlaps pedestal pod_base/);
+
+  // 4) eyePoint unwraps bare vectors, camera samples ({ pos }), and legacy ({ tr: { p } }) uniformly
+  assert.deepEqual(eyePoint([1, 2, 3]), [1, 2, 3]);
+  assert.deepEqual(eyePoint({ pos: [4, 5, 6] }), [4, 5, 6]);
+  assert.deepEqual(eyePoint({ tr: { p: [7, 8, 9] } }), [7, 8, 9]);
+  assert.throws(() => facing(undefined, [0, 0, 0]), /camera eye position must be/i);
+
+  // 5) Text-only pinned/featured X posts (no cover path, or pinned=null) render cleanly in both desktop & mobile themes
+  const textFilm = {
+    language: "zh-Hans",
+    profile: { name: "夏林果", handle: "momo_peggy", banner: "assets/banner.jpg", avatar: "assets/avatar.jpg", bio: ["Web出海"], following: "100", followers: "7,820", postsCount: "100" },
+    branding: { logo: "", badge: "" },
+  };
+  const asset = (p) => `'assets/${p}'`;
+  assert.equal(xDesktop.pictureCover(asset, undefined), "");
+  assert.equal(xMobile.pictureCover(asset, ""), "");
+  const textPinned = { post: { date: "9月29日", title: "纯文字置顶帖测试", counts: ["1", "2", "3", "4"] }, cover: "" };
+  const htmlD = xDesktop.profilePage({ film: textFilm, L: xDesktopLayout, asset, pinned: textPinned });
+  const htmlM = xMobile.profilePage({ film: textFilm, L: xMobileLayout, asset, pinned: textPinned });
+  assert.match(htmlD, /class="txt"[^>]*>纯文字置顶帖测试/);
+  assert.match(htmlM, /class="txt"[^>]*>纯文字置顶帖测试/);
+  assert.ok(xDesktop.profilePage({ film: textFilm, L: xDesktopLayout, asset, pinned: null }).includes("<!doctype html>"));
+  assert.ok(xMobile.profilePage({ film: textFilm, L: xMobileLayout, asset, pinned: null }).includes("<!doctype html>"));
 });

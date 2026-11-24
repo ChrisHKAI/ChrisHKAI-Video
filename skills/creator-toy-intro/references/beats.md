@@ -285,6 +285,7 @@ readable is built in:
 - It faces the camera while it is read (`kit.facing`): a line standing
   upright with the camera 20° above it shows those tops in every frame. When
   the camera dollies or orbits during a hold, compute `kit.facing(camera(g).pos, origin)`
+  (or pass `camera(g)` / `camera(g).pos` to `bannerLine` / `readoutBadge`)
   dynamically inside `sample` rather than freezing one quaternion at declare
   time. The story page says where lettering is turned more than 15° from the
   camera.

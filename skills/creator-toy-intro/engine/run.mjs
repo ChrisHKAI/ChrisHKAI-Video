@@ -59,7 +59,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { film, FILM, fromFilm, fromSkill, fromTemplate, importTemplate, OWN_TEMPLATE } from "./lib/film.js";
-import { HOME, findBlender, findLocalBlender, findPython, toolEnv } from "./lib/tools.js";
+import { HOME, findBlender, findLocalBlender, findPython, isRemoteBlenderWrapper, toolEnv } from "./lib/tools.js";
 
 const argv = process.argv.slice(2);
 const dash = argv.indexOf("--");
@@ -81,6 +81,7 @@ if (!steps.length) {
 // non-sequence / fast local steps (`lookdev`, `poses`, `previs`, `estimate`, `animatic`) use `localBlender` by default.
 const blender = findBlender() ?? "blender";
 const localBlender = (process.env.COLAB_ALL === "1" ? blender : findLocalBlender()) ?? blender;
+const remoteFallback = process.env.COLAB_ALL !== "1" && isRemoteBlenderWrapper(blender) && localBlender && localBlender !== blender ? localBlender : null;
 const PY = findPython() ?? "python3";
 
 function parseFrameSet(spec, total) {
@@ -138,11 +139,11 @@ const scene = () => {
 // occurred, streaming output live so real failures on frame 1 still fail fast.
 const GPU_TRANSIENT = /kIOGPUCommandBufferCallbackErrorInnocentVictim|MTLCommandBufferErrorDomain|Command buffer not completed|GPU error\/recovery/i;
 const pngCount = (dir) => { try { return readdirSync(dir).filter((f) => f.endsWith(".png")).length; } catch { return 0; } };
-const runRender = (cmd, args, outDir, maxRetries = 4) => new Promise((done) => {
-  const attempt = (n, curArgs) => {
+const runRender = (cmd, args, outDir, { maxRetries = 4, fallback = null } = {}) => new Promise((done) => {
+  const attempt = (n, curCmd, curArgs, usedFallback) => {
     const before = pngCount(outDir);
-    console.log(`\n▶ ${cmd} ${curArgs.join(" ")}`);
-    const c = spawn(cmd, curArgs, { stdio: ["inherit", "pipe", "pipe"], cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
+    console.log(`\n▶ ${curCmd} ${curArgs.join(" ")}`);
+    const c = spawn(curCmd, curArgs, { stdio: ["inherit", "pipe", "pipe"], cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }) });
     let tail = "";
     const tap = (stream) => (chunk) => {
       stream.write(chunk);
@@ -158,13 +159,18 @@ const runRender = (cmd, args, outDir, maxRetries = 4) => new Promise((done) => {
       if (n < maxRetries && (progressed || transient)) {
         const nextArgs = curArgs.includes("--resume") ? curArgs : [...curArgs, "--resume"];
         console.error(`\n! render interrupted (${transient ? "transient GPU recovery" : `${after - before} new frame(s) written`}); auto-resuming pass ${n + 2}/${maxRetries + 1}...`);
-        setTimeout(() => attempt(n + 1, nextArgs), 3000);
+        setTimeout(() => attempt(n + 1, curCmd, nextArgs, usedFallback), 3000);
+        return;
+      }
+      if (!usedFallback && fallback) {
+        console.error(`\n! remote render wrapper failed (exit ${code ?? 1}); falling back to local Blender (${fallback.bin})...`);
+        setTimeout(() => attempt(0, fallback.cmd, fallback.args, true), 1000);
         return;
       }
       process.exit(code ?? 1);
     });
   };
-  attempt(0, args);
+  attempt(0, cmd, args, false);
 });
 // long renders keep a Mac awake while the command runs (caffeinate -i: idle sleep; -s: system sleep on power); neither
 // holds off a closed lid or Sleep from the menu, so the full render says so before it starts
@@ -330,8 +336,12 @@ for (const [i, step] of steps.entries()) {
       const seeded = seedResumeFrames(outDir, more, totalFrames);
       if (seeded > 0) console.log(`(reused ${seeded} fresh pre-rendered frame(s) from build/sample or build/estimate)`);
       console.log(`\n${SLEEP_NOTE}`);
-      const [cmd, args] = awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...all, ...more]);
-      await runRender(cmd, args, outDir);
+      const scPath = scene();
+      const bArgs = ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scPath, "--", ...all, ...more];
+      const [cmd, args] = awake(blender, bArgs);
+      const fbArgs = bArgs.includes("--resume") ? bArgs : [...bArgs, "--resume"];
+      const fallback = remoteFallback ? (() => { const [fc, fa] = awake(remoteFallback, fbArgs); return { bin: remoteFallback, cmd: fc, args: fa }; })() : null;
+      await runRender(cmd, args, outDir, { fallback });
       break;
     }
     case "estimate": {
@@ -362,9 +372,14 @@ for (const [i, step] of steps.entries()) {
         [a, b] = own ? [own.f0, Math.min(own.f1, own.f0 + 10)] : [6, 14];
       }
       const rest = more.filter((v, j) => !["--from", "--to"].includes(v) && !["--from", "--to"].includes(more[j - 1]));
-      rmSync(fromFilm("build/sample"), { recursive: true, force: true });
+      const sampleDir = fromFilm("build/sample");
+      rmSync(sampleDir, { recursive: true, force: true });
       console.log(`the sample: ${a.toFixed(1)}–${b.toFixed(1)} s at 48 samples, full size`);
-      run(...awake(blender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `${Math.round(a * fps) + 1}-${Math.round(b * fps)}`, "--samples", "48", "--scale", "100", "--out", "build/sample", ...rest]));
+      const bArgs = ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", "--frames", `${Math.round(a * fps) + 1}-${Math.round(b * fps)}`, "--samples", "48", "--scale", "100", "--out", "build/sample", ...rest];
+      const [cmd, args] = awake(blender, bArgs);
+      const fbArgs = bArgs.includes("--resume") ? bArgs : [...bArgs, "--resume"];
+      const fallback = remoteFallback ? (() => { const [fc, fa] = awake(remoteFallback, fbArgs); return { bin: remoteFallback, cmd: fc, args: fa }; })() : null;
+      await runRender(cmd, args, sampleDir, { fallback });
       run(...awake(PY, [fromSkill("engine/scripts/finish.py"), "--in", "build/sample", "--out", (film.output ?? "out/film.mp4").replace(/(\.mp4)?$/, "-sample.mp4")]));
       break;
     }

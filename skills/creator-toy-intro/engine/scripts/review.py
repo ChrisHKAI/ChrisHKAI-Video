@@ -76,13 +76,16 @@ if "--final" in sys.argv:
     if not final.exists():
         raise SystemExit(f"no {final.relative_to(FILM)} yet: finish the film first (or leave out --final)")
     source, shots = f"the finished film ({final.name})", from_video(final)
+    source_mtime = final.stat().st_mtime
 elif animatic.exists():
     source, shots = "the animatic (EEVEE, a third of the size: the light and materials are close to the final, not the same)", from_video(animatic)
+    source_mtime = animatic.stat().st_mtime
 else:
     previs = sorted((B / "previs").glob("*.png"))
     if not previs:
         raise SystemExit("nothing to look at yet: render the preview frames or the animatic first (references/storyboard.md)")
     source, shots = "the preview frames (Cycles, half size; only these moments)", [((int(p.stem) - 1) / FPS, p) for p in previs]
+    source_mtime = max(p.stat().st_mtime for p in previs)
 made = sheets(shots)
 
 # the film's parts: its segments, or the template's own parts on the story's events, their {names} filled as on the page
@@ -178,13 +181,20 @@ Then answer, in {F.get('language', 'zh-Hans')}:
 
 Save the answers as build/review-blind.txt, six lines.
 """)
-blind_said = (B / "review-blind.txt").read_text().strip() if (B / "review-blind.txt").exists() else None
+blind_path = B / "review-blind.txt"
+blind_said = blind_path.read_text().strip() if blind_path.exists() else None
+blind_stale = bool(blind_said) and blind_path.stat().st_mtime + 1.0 < source_mtime
 retold = (direction or {}).get("retold")
 planted = ""
 if retold or blind_said:
+    blind_hdr = (
+        "A viewer told nothing, who saw an EARLIER cut before this render (stale — re-run build/review-blind.md for this cut), answered:"
+        if blind_stale else
+        "A viewer told nothing, who saw only the sheets, answered:"
+    )
     planted = "\n## The line it means to plant, and what a blind viewer said\n\n" \
         + (f"It means a viewer to say: {retold}\n\n" if retold else "It names no line a viewer would retell (story.direction.retold).\n\n") \
-        + (f"A viewer told nothing, who saw only the sheets, answered:\n\n```\n{blind_said}\n```\n" if blind_said
+        + (f"{blind_hdr}\n\n```\n{blind_said}\n```\n" if blind_said
            else "No blind viewing yet: give build/review-blind.md to a viewer who is told nothing (before this brief), and save the answer as build/review-blind.txt.\n")
 # the story as it was seen on paper before anything was built (references/frames.md): the reviewer holds the film
 # beside it. A film may frame things better than its paper did; it may not shrink them
@@ -232,5 +242,10 @@ The words on screen are in {F.get('language', 'zh-Hans')}.
 """
 (B / "review.md").write_text(brief)
 print(f"review → build/review.md, {len(made)} sheet(s) in build/review/ from {source.split(' (')[0]}")
-print("first give build/review-blind.md to a viewer who is told nothing, and save the answer as build/review-blind.txt" if not blind_said else "the blind viewing's answer is in the brief")
+if not blind_said:
+    print("first give build/review-blind.md to a viewer who is told nothing, and save the answer as build/review-blind.txt")
+elif blind_stale:
+    print("! build/review-blind.txt is older than the picture being reviewed: run a fresh blind viewing on build/review-blind.md first so stale notes from an earlier cut do not mislead the reviewer")
+else:
+    print("the blind viewing's answer is in the brief")
 print("give build/review.md to a fresh reviewer (references/review.md); fix its three, render what they touch")

@@ -30,6 +30,9 @@ person: a fork of this conversation has read the story), save the answer as
 run `review` again: the answer goes into the brief, beside the line the film
 means to plant. A film is understood by people who were told nothing; the
 reviewer who reads the intended story first can no longer say whether it is.
+In step 5 (`review -- --final`), re-run `build/review-blind.md` on the finished
+sheets too (`review` warns if `build/review-blind.txt` is left over from an
+earlier cut).
 
 `build/review.md` is the reviewer's whole brief:
 - the creator and the platform;

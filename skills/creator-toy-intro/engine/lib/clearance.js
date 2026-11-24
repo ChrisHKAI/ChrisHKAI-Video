@@ -235,11 +235,13 @@ function partBox(p, file) {
     case "tube": case "loop": return path(p.pts, p.radii);
     case "prism": { const m = Math.max(p.r, p.depth / 2); return sym([m, m, m]); }
     case "plate": {
-      if (p.outline) { // a slab of any outline (a logo's pieces): its own bounds, x and z, t thick along y
+      const t = p.t ?? 0.004;
+      if (p.outline?.length) { // a slab of any outline (a logo's pieces): its own bounds, x and z, t thick along y
         const xs = p.outline.map((q) => q[0]), zs = p.outline.map((q) => q[1]);
-        return [[Math.min(...xs), -p.t / 2, Math.min(...zs)], [Math.max(...xs), p.t / 2, Math.max(...zs)]];
+        return [[Math.min(...xs), -t / 2, Math.min(...zs)], [Math.max(...xs), t / 2, Math.max(...zs)]];
       }
-      const m = Math.max(p.w ?? 0, p.d ?? 0) / 2 || 0.01; return sym([m, m, m]);
+      const hx = (p.w ?? 0.02) / 2, hz = (p.d ?? p.w ?? 0.02) / 2;
+      return [[-hx, -t / 2, -hz], [hx, t / 2, hz]];
     }
     case "mesh": {
       const v = npy(file(p.file), "verts.npy");
@@ -401,12 +403,33 @@ function boxSpec(o) {
   return { c: [0, g.h / 2, -g.d / 2], h: [g.w / 2, g.h / 2, g.d / 2], card: false };
 }
 
-/** Bounding-box spec for screen-space framing/occlusion checks, including curve, ellipsoid, arc, and tube props. */
+/** Bounding-box spec for screen-space framing/occlusion checks, including plate, arc, curve, ellipsoid, tube, and card2d props. */
 function propBoundsSpec(o) {
   const b = boxSpec(o);
   if (b) return b;
   const g = o.geo;
   if (!g) return null;
+  if (g.type === "plate") {
+    const t = g.t ?? 0.004, bev = g.bevel ?? 0;
+    if (g.outline?.length) {
+      const xs = g.outline.map((q) => q[0]), zs = g.outline.map((q) => q[1]);
+      return {
+        c: [(Math.min(...xs) + Math.max(...xs)) / 2, 0, (Math.min(...zs) + Math.max(...zs)) / 2],
+        h: [(Math.max(...xs) - Math.min(...xs)) / 2 + bev, t / 2 + bev, (Math.max(...zs) - Math.min(...zs)) / 2 + bev],
+        card: false,
+      };
+    }
+    return { c: [0, 0, 0], h: [(g.w ?? 0.02) / 2 + bev, t / 2 + bev, (g.d ?? g.w ?? 0.02) / 2 + bev], card: false };
+  }
+  if (g.type === "arc" && g.radius != null) {
+    const tube = Math.abs(g.tube ?? 0.003), r = Math.abs(g.radius) + tube;
+    return { c: [0, 0, 0], h: [r, r, tube], card: false };
+  }
+  if (g.type === "plane" && (o.mat?.type === "card2d" || o.mat?.type === "sticker") && g.w && g.h) {
+    return g.flat
+      ? { c: [0, 0, 0], h: [g.w / 2, 0.001, g.h / 2], card: true }
+      : { c: [0, 0, 0], h: [g.w / 2, g.h / 2, 0.001], card: true };
+  }
   if (g.type === "curve" && g.rings?.length) {
     const pts = g.rings.flat();
     if (!pts.length) return null;
@@ -1504,7 +1527,7 @@ export function describeCardScreenOverlaps(items) {
  * Detect foreground props/cards passing between the active camera and the toy's head (`hero_head*` or upper toy bounds),
  * catching props that block the character's face/eyes on screen without physically colliding in 3D.
  */
-export function heroFaceOcclusions(anim, { aspect = 16 / 9, toy = "hero", minShare = 0.30, minSecs = 0.20, every = 2, file = (p) => p } = {}) {
+export function heroFaceOcclusions(anim, { aspect = 16 / 9, toy = "hero", minShare = 0.28, minSecs = 0.10, every = 1, file = (p) => p } = {}) {
   const objects = new Map(anim.objects.map((o) => [o.name, o]));
   const fovs = anim.scalars?.fov;
   if (!objects.has(toy) || !objects.has("camera") || !fovs?.length) return [];
@@ -1516,7 +1539,7 @@ export function heroFaceOcclusions(anim, { aspect = 16 / 9, toy = "hero", minSha
     .filter((p) => p.pts.length);
   if (!headProbes.length) return [];
 
-  const SKIP_FACE_PROP = /^(beat\d+_)?(p_|back$|avatar$|cyc|bg|rail|pool|floor)|^(panel_|piece|wall|label\d+_)/;
+  const SKIP_FACE_PROP = /^(beat\d+_)?(p_|back$|avatar$|banner|cyc|bg|rail|pool|floor)|^(panel_|piece|wall|label\d+_)/;
   const peakScale = (o) => {
     const rows = anim.tracks?.[o.name];
     if (!rows?.length) return Math.max(...unpack(o.tr).s.map(Math.abs));
@@ -1526,7 +1549,7 @@ export function heroFaceOcclusions(anim, { aspect = 16 / 9, toy = "hero", minSha
   for (const o of anim.objects) {
     if (!o.geo || under(o, toy) || o.letter || o.mat?.outline || SKIP_NAME.test(o.name) || SKIP_FACE_PROP.test(o.name)) continue;
     if (o.mat?.type === "flake" || o.mat?.type === "glow") continue;
-    const spec = boxSpec(o);
+    const spec = propBoundsSpec(o);
     if (!spec) continue;
     const unit = spec.card ? (o.geo.unitScale ?? peakScale(o)) : 1;
     if (unit <= 1e-3 || Math.max(...spec.h) * 2 * unit > 0.65) continue;
@@ -2309,6 +2332,99 @@ export function edgeOnCards(anim, { aspect = 16 / 9, maxAngleDeg = 68, minSecs =
   }
   out.push(...open.values());
   return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.angle - a.angle);
+}
+
+/**
+ * Detect side-standing compound sub-props (e.g. `pod_globe_*`) colliding laterally with their shared-prefix
+ * pedestal (`pod_base`, `pod_deck`, `beat*_pad`, etc.), which `solidClashes` skips due to shared top group or
+ * matte `paper` plinth materials. Coaxial tiers and parts resting above the pedestal top are ignored.
+ */
+export function pedestalSideClashes(anim, { toy = "hero", minPen = 0.010, minSecs = 0.25, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const BASE_RE = /^((?:beat\d+_)?[A-Za-z0-9]+)_(base|deck|pad|plinth|pedestal|tier\d*)$/;
+  const SAT_RE = /^((?:beat\d+_)?[A-Za-z0-9]+)_([A-Za-z0-9]+)_.+$/;
+  const NON_SAT = new Set(["base", "deck", "pad", "plinth", "pedestal", "ln", "lbl", "plate", "rim", "trim", "face", "ptr", "star"]);
+
+  const bases = [];
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, toy) || o.letter || o.mat?.outline || SKIP_NAME.test(o.name)) continue;
+    const m = o.name.match(BASE_RE);
+    if (!m) continue;
+    const spec = propBoundsSpec(o);
+    if (spec) bases.push({ o, spec, root: m[1] });
+  }
+  if (!bases.length) return [];
+  const roots = new Set(bases.map((b) => b.root));
+  const sats = [];
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, toy) || o.letter || o.mat?.outline || SKIP_NAME.test(o.name)) continue;
+    if (o.mat?.type === "flake" || o.mat?.type === "glow") continue;
+    const m = o.name.match(SAT_RE);
+    if (!m || !roots.has(m[1]) || NON_SAT.has(m[2])) continue;
+    const spec = propBoundsSpec(o);
+    if (spec) sats.push({ o, spec, root: m[1], satGroup: `${m[1]}_${m[2]}` });
+  }
+  if (!sats.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const hasCam = objects.has("camera");
+  const open = new Map(), raw = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = hasCam ? worldOf("camera", s, memo) : null;
+    const baseState = new Map();
+    for (const b of bases) {
+      const w = worldOf(b.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      if (camW && Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
+      baseState.set(b.o.name, { b, obb: worldOBB(b.spec, w) });
+    }
+    const seenNow = new Set();
+    for (const st of sats) {
+      const w = worldOf(st.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      if (camW && Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
+      const satOBB = worldOBB(st.spec, w);
+      for (const { b, obb: baseOBB } of baseState.values()) {
+        if (b.root !== st.root) continue;
+        const baseR = Math.max(baseOBB.h[0], baseOBB.h[2]);
+        const lat = Math.hypot(satOBB.c[0] - baseOBB.c[0], satOBB.c[2] - baseOBB.c[2]);
+        if (lat < Math.max(baseR * 0.55, 0.045)) continue;
+        if (satOBB.c[1] - satOBB.h[1] >= baseOBB.c[1] + baseOBB.h[1] - 0.005) continue;
+        const ov = satOverlap(baseOBB, satOBB, 0.004);
+        if (!ov || ov.pen < minPen) continue;
+        const pk = `${st.satGroup}|${b.o.name}`;
+        seenNow.add(pk);
+        const cur = open.get(pk);
+        if (!cur) open.set(pk, { sat: st.satGroup, base: b.o.name, from: t, to: t, peak: t, pen: ov.pen });
+        else {
+          cur.to = t;
+          if (ov.pen > cur.pen) Object.assign(cur, { pen: ov.pen, peak: t });
+        }
+      }
+    }
+    for (const [pk, cur] of open) if (!seenNow.has(pk)) { raw.push(cur); open.delete(pk); }
+  }
+  raw.push(...open.values());
+  return raw.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.pen - a.pen);
+}
+
+export function describePedestalSideClashes(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: ${m.sat} overlaps pedestal ${m.base} (${Math.round(m.pen * 1000)} mm deep at ${m.peak.toFixed(2)} s)`,
+  }));
 }
 
 export function describeEdgeOnCards(items) {

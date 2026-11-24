@@ -345,6 +345,13 @@ def baseline(r, texts, face, em=120):
         # on 3D bevels, which Vision scores lower (~0.3) despite identical normalised characters; measure both ceilings.
         if any(ord(c) >= 0x3400 for c in t) and re.search(r"(?<=[A-Za-z])I|I(?=[A-Za-z])", t):
             variants.append(re.sub(r"(?<=[A-Za-z])I|I(?=[A-Za-z])", "l", t))
+        # CJK headlines with middle dots/bullets ("喜欢您来 · 找夏林果") get read as "•" or "." at phone size, lowering
+        # Vision's sentence confidence (~0.3) even when every character reads cleanly; measure that baseline ceiling too.
+        if any(ord(c) >= 0x3400 for c in t) and re.search(r"[·・•]", t):
+            for sep in ("•", "."):
+                v = re.sub(r"\s*[·・•]\s*", sep, t)
+                if v not in variants:
+                    variants.append(v)
         paths[t] = []
         for j, v in enumerate(variants):
             w = round(f.getlength(v)) + em
