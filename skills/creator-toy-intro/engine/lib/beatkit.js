@@ -78,67 +78,81 @@ export function strideOut(o, g, g0, g1, fromSpot, toSpot, steps = 2) {
   o.armL = [-0.5 * cyc, 0, 0.3]; o.armR = [0.5 * cyc, 0, -0.3];
   return o;
 }
-// centred, flush-mounted 3D counter + label badge (avoids right-aligned readout overhang and >3 mm double shadows)
-export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056, labelEm = em * 0.78, gap = em * 0.36, padX = em * 1.1, padY = em * 0.45 } = {}) {
+// centred, flush-mounted 3D counter + label badge: outline-free solid letters rooted cleanly into a matte paper
+// backing plate (< 3 mm flush threshold: zero double shadow, zero grown-plate stroke shimmer) and level by default
+export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056, labelEm = em * 0.78, gap = em * 0.36, padX = em * 1.1, padY = em * 0.45, depth = 0.006 } = {}) {
   const num = readout({ fmt, from, to, em, adv: glyph.adv });
-  const ln = label ? makeLine(glyph, label, labelEm, { edge: 0.09, track: 0.08 }) : null;
+  const ln = label ? makeLine(glyph, label, labelEm, { edge: 0, track: 0.08 }) : null;
+  const letterDepth = Math.max(em * 0.11, 0.0038);
+  const letterBevel = Math.min(0.0005, em * 0.014);
   const numW = num.width(to), lblW = ln ? ln.W : 0;
   const textW = numW + (lblW > 0 ? gap + lblW : 0);
-  const plateSize = [textW + padX, Math.max(em, labelEm) + padY, 0.008];
+  const plateSize = [textW + padX, Math.max(em, labelEm) + padY, depth];
+  let hasOutline = false;
   return {
     num, ln, numW, lblW, gap, textW, plateSize, em,
-    declare(add, prefix = "badge", { plateColor = "#FF4500", numColor = "#FFFFFF", labelColor = "#FFD166", outline = "#0A162E" } = {}) {
+    declare(add, prefix = "badge", { plateColor = "#FF4500", numColor = "#FFFFFF", labelColor = "#FFD166", outline = false, withOutline = false } = {}) {
+      hasOutline = Boolean(withOutline && outline);
+      const inkFinish = { on: plateColor, side: null, rough: 0.42, coat: 0.12 };
       for (const n of num.names) {
-        add({ name: `${prefix}_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, em, em * 0.16, em * 0.018), mat: { type: "type", color: numColor, emit: 0.0 }, anim: true, step: true });
+        add({ name: `${prefix}_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, em, letterDepth, letterBevel), mat: { type: "type", color: numColor, emit: 0.0, ...inkFinish }, anim: true, step: true });
       }
-      if (ln) declLine(add, `${prefix}_lbl`, ln, { color: labelColor, outline, edge: 0.09 });
-      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "type", color: plateColor, emit: 0.04, sampled: false }, anim: true });
+      if (ln) declLine(add, `${prefix}_lbl`, ln, { color: labelColor, emit: 0.0, depth: letterDepth, bevel: letterBevel, outline: hasOutline ? outline : false, edge: 0.07, finish: inkFinish });
+      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: plateColor }, anim: true });
     },
-    put(put, prefix, val, centerWorld, eyeWorld, scale = 1, { level = false } = {}) {
+    put(put, prefix, val, centerWorld, eyeWorld, scale = 1, { level = true } = {}) {
       const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);
       if (scale <= 0.01) {
         put(`${prefix}_plate`, park);
         for (const n of num.names) put(`${prefix}_${n.name}`, park);
-        if (ln) placeLine(put, `${prefix}_lbl`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => 0, { outline: true });
+        if (ln) placeLine(put, `${prefix}_lbl`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => 0, { outline: hasOutline, depth: letterDepth });
         return;
       }
       const aimFrom = level ? [eyeWorld[0], centerWorld[1], centerWorld[2]] : centerWorld;
       const q = faceCam(eyeWorld, aimFrom);
-      // Front face of 8 mm plate sits 1.2 mm behind lettering z = 0 (< 3 mm flush threshold: zero double shadow)
-      put(`${prefix}_plate`, trs(apply(trs(centerWorld, q, 1), [0, em * 0.36, -0.0052]), q, scale));
+      const root = trs(centerWorld, q, 1);
+      // Plate front face sits at z = -1.3 mm (inside solid letter depth [-halfD, +halfD], behind any optional outline)
+      const frontBack = hasOutline ? letterDepth + 0.0014 : 0.0013;
+      put(`${prefix}_plate`, trs(apply(root, [0, em * 0.36, -(depth / 2 + frontBack)]), q, scale));
       const grp = trs(centerWorld, q, scale);
       for (const [k, tr] of Object.entries(num.centerAt(val, grp, { afterWidth: lblW, gap }))) put(`${prefix}_${k}`, tr);
       if (ln) {
-        const lp = apply(trs(centerWorld, q, 1), [textW / 2 - lblW / 2, em * 0.05, 0]);
-        placeLine(put, `${prefix}_lbl`, ln, (it) => apply(trs(lp, q, 1), [it.x, 0, 0]), q, () => scale, { outline: true });
+        const lp = apply(root, [textW / 2 - lblW / 2, em * 0.05, 0]);
+        placeLine(put, `${prefix}_lbl`, ln, (it) => apply(trs(lp, q, 1), [it.x, 0, 0]), q, () => scale, { outline: hasOutline, depth: letterDepth });
       }
     },
   };
 }
-// centred, flush-mounted 3D text banner plaque (< 3 mm gap: zero double shadow; `level: true` avoids inverted-V tilt on paired bottom bars)
+// centred, flush-mounted 3D text banner plaque: outline-free solid letters on a matte paper plate, level by default
+// so gentle camera azimuth drifts never shimmer CJK strokes or tilt paired bottom bars into an inverted V
 export function bannerLine(glyph, text, { em = 0.032, edge = 0.07, track = 0.08, padX = em * 1.15, padY = em * 0.52, depth = 0.006 } = {}) {
-  const ln = makeLine(glyph, text, em, { edge, track });
+  const ln = makeLine(glyph, text, em, { edge: 0, track });
+  const letterDepth = Math.max(em * 0.11, 0.0038);
+  const letterBevel = Math.min(0.0005, em * 0.014);
   const plateSize = [ln.W + padX, em + padY, depth];
+  let hasOutline = false;
   return {
     ln, em, plateSize,
-    declare(add, prefix = "ban", { plateColor = "#241232", color = "#FFFFFF", outline = "#12071A", emit = 0.06 } = {}) {
-      declLine(add, `${prefix}_ln_`, ln, { color, emit, outline, edge });
+    declare(add, prefix = "ban", { plateColor = "#241232", color = "#FFFFFF", outline = false, withOutline = false, emit = 0.0 } = {}) {
+      hasOutline = Boolean(withOutline && outline);
+      declLine(add, `${prefix}_ln_`, ln, { color, emit, depth: letterDepth, bevel: letterBevel, outline: hasOutline ? outline : false, edge, finish: { on: plateColor, side: null, rough: 0.42, coat: 0.12 } });
       add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: plateColor }, anim: true });
     },
-    put(put, prefix, centerWorld, eyeWorld, scale = 1, { level = false } = {}) {
+    put(put, prefix, centerWorld, eyeWorld, scale = 1, { level = true } = {}) {
       const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);
       if (scale <= 0.01) {
         put(`${prefix}_plate`, park);
-        placeLine(put, `${prefix}_ln_`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => HIDDEN, { outline: true });
+        placeLine(put, `${prefix}_ln_`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => HIDDEN, { outline: hasOutline, depth: letterDepth });
         return;
       }
       // Use eyeWorld[0] rather than world X=0 so custom beats on offset stages (x = 50, 100, 150 m) stay dead-level!
       const aimFrom = level ? [eyeWorld[0], centerWorld[1], centerWorld[2]] : centerWorld;
       const q = faceCam(eyeWorld, aimFrom);
       const root = trs(centerWorld, q, 1);
-      // Front face of `depth` plate sits 1.2 mm behind lettering z = 0 (< 3 mm flush threshold: zero double shadow)
-      put(`${prefix}_plate`, trs(apply(root, [0, ln.stand + em * 0.36, -(depth / 2 + 0.0012)]), q, scale));
-      placeLine(put, `${prefix}_ln_`, ln, (it) => apply(root, [it.x, ln.stand, 0]), q, () => scale, { outline: true });
+      // Plate front face sits at z = -1.3 mm (inside solid letter depth [-halfD, +halfD]: zero gap, zero stroke shimmer)
+      const frontBack = hasOutline ? letterDepth + 0.0014 : 0.0013;
+      put(`${prefix}_plate`, trs(apply(root, [0, ln.stand + em * 0.36, -(depth / 2 + frontBack)]), q, scale));
+      placeLine(put, `${prefix}_ln_`, ln, (it) => apply(root, [it.x, ln.stand, 0]), q, () => scale, { outline: hasOutline, depth: letterDepth });
     },
   };
 }
@@ -180,6 +194,35 @@ export function point(o, g, g0, g1, world, side = "R") {
   if (side === "R") { o.aimR = { world, k, len: 1.15 }; o.pointR = k; } else { o.aimL = { world, k, len: 1.15 }; o.pointL = k; }
   o.yaw = lerpAngle(o.yaw, yawTo(o.pos, world), 0.35 * k);
   o.head = [o.head[0] - 0.15 * k, o.head[1] + 0.25 * k * (side === "R" ? -1 : 1), o.head[2]];
+  return o;
+}
+// points one arm high into the sky at ~42° outward so even wide-headed chibi/sculpt toys clear their cheeks in full silhouette
+export function skyPoint(o, g, g0, g1, side = "R") {
+  const k = held(g, g0, g1, 0.2);
+  const sgn = side === "R" ? -1 : 1;
+  const world = [o.pos[0] + sgn * 0.122, o.pos[1] + 0.166, o.pos[2] + 0.042];
+  if (side === "R") {
+    o.aimR = { world, k, len: 1.48 };
+    o.pointR = k;
+    o.armL = [0.18 * k, 0, lerp(o.armL[2], 0.42, k)];
+  } else {
+    o.aimL = { world, k, len: 1.48 };
+    o.pointL = k;
+    o.armR = [0.18 * k, 0, lerp(o.armR[2], -0.42, k)];
+  }
+  o.pitch -= 0.08 * k;
+  o.head = [o.head[0] - 0.16 * k, o.head[1] + 0.12 * sgn * k, o.head[2]];
+  return o;
+}
+// raises both arms wide and high in a triumphant V that clears wide chibi heads/ear-cups without double-wrapping at(...)
+export function raiseArms(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.2);
+  o.aimR = { world: [o.pos[0] - 0.122, o.pos[1] + 0.164, o.pos[2] + 0.04], k, len: 1.46 };
+  o.aimL = { world: [o.pos[0] + 0.122, o.pos[1] + 0.164, o.pos[2] + 0.04], k, len: 1.46 };
+  o.pointR = k;
+  o.pointL = k;
+  o.pitch -= 0.06 * k;
+  o.head = [o.head[0] - 0.14 * k, o.head[1], o.head[2]];
   return o;
 }
 // turns to face a world point (yaw), looking up or down at it with the head

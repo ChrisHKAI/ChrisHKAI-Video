@@ -206,9 +206,14 @@ def film_colours(film):
                 ring &= opaque
                 b_hex = hexof(a[..., :3][ring].mean(axis=0)) if ring.any() else mean_hex
                 c_mean, c_border = round(contrast(mean_hex, STAGE), 2), round(contrast(b_hex, STAGE), 2)
+                lum_px = 0.2126 * a[..., 0][opaque] + 0.7152 * a[..., 1][opaque] + 0.0722 * a[..., 2][opaque]
+                white_share = round(float((lum_px >= 0.90).mean()), 3)
+                em_strength = float((o.get("mat") or {}).get("emission", 1.0))
                 card_rows.append({"name": name, "image": img_rel, "hex": mean_hex, "borderHex": b_hex,
                                   "contrast": c_mean, "borderContrast": c_border,
-                                  "melts": bool(c_mean < MELT and c_border < 2.2)})
+                                  "whiteShare": white_share, "emission": em_strength,
+                                  "melts": bool(c_mean < MELT and c_border < 2.2),
+                                  "glares": bool(white_share >= 0.55 and em_strength >= 0.92)})
             except Exception:
                 continue
     return {"stage": STAGE, "toy": toy_rows, "text": text_rows, "confetti": conf_rows, "cards": card_rows}

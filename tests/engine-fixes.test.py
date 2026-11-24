@@ -1037,5 +1037,104 @@ class V0813EngineImprovementTests(unittest.TestCase):
             self.assertGreater(widths["two-column"], widths["sweep"] + 0.2)
 
 
+class V0814EngineImprovementTests(unittest.TestCase):
+    def test_stagekit_antiglare_and_empty_avatar_socket_helpers(self):
+        import stagekit
+        from PIL import Image
+
+        stark = Image.new("RGBA", (200, 100), (255, 255, 255, 255))
+        warm = stagekit.antiglare(stark)
+        self.assertEqual(warm.size, (200, 100))
+        r, g, b, a = warm.getpixel((100, 50))
+        self.assertLessEqual(max(r, g, b), 220)
+        self.assertEqual(a, 255)
+
+        card = stagekit.empty_avatar_socket(stark, 50, 40, 18, fill="#171024", outline="#F4B626", outline_w=3)
+        self.assertEqual(card.getpixel((50, 40))[:3], (0x17, 0x10, 0x24))
+        self.assertEqual(card.getpixel((160, 80))[:3], (255, 255, 255))
+        lx, ly, dm = stagekit.card_socket_coords(card, 50, 40, 18, 0.20)
+        self.assertAlmostEqual(lx, -0.05, places=6)
+        self.assertAlmostEqual(ly, 0.01, places=6)
+        self.assertAlmostEqual(dm, 0.036, places=6)
+
+    def test_colors_flags_glaring_white_cards_and_reads_plated_dark_ink_on_plate_color(self):
+        import colors
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "assets").mkdir()
+            Image.new("RGB", (120, 80), (252, 252, 252)).save(fdir / "assets/white.png")
+            (fdir / "film.json").write_text(json.dumps({
+                "format": {"fps": 30, "duration": 1, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "pop": {"confetti": ["#F4B626"]},
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12,
+                "colors": {"body": "#E8D8F8"},
+                "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "size": [0.05, 0.06, 0.04], "mat": "body"}],
+            }))
+            char_geo = {"type": "curve", "rings": [[[0, 0], [0.02, 0], [0.02, 0.03], [0, 0.03]]], "depth": 0.004}
+            anim = {
+                "fps": 30, "sub": 1, "frames": 6, "samples": 6,
+                "objects": [
+                    {"name": "camera", "parent": "root", "camera": True, "tr": [0, 0.15, 0.9, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_raw_white", "parent": "root", "geo": {"type": "uiBox", "rect": [-100, -60, 200, 120], "thickness": 0.002},
+                     "mat": {"type": "ui", "image": "assets/white.png"}, "tr": [-0.15, 0.15, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_damped_white", "parent": "root", "geo": {"type": "uiBox", "rect": [-100, -60, 200, 120], "thickness": 0.002},
+                     "mat": {"type": "ui", "image": "assets/white.png", "emission": 0.78}, "tr": [0.15, 0.15, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_ban_ln_0", "parent": "root", "letter": "梭", "line": "beat1_ban_ln_", "letterIndex": 0, "geo": char_geo,
+                     "mat": {"type": "type", "color": "#18120B", "emit": 0, "on": "#F4B626"}, "tr": [0, 0.04, 0.1, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {"camera": [[0, 0, 0.15, 0.9, 0, 0, 0, 1, 1, 1, 1], [5, 0, 0.15, 0.9, 0, 0, 0, 1, 1, 1, 1]]},
+                "colors": {},
+                "scalars": {"fov": [35.0] * 6},
+            }
+            (fdir / "build/anim.json").write_text(json.dumps(anim))
+            fc = colors.film_colours(fdir)
+            by_name = {c["name"]: c for c in fc["cards"]}
+            self.assertTrue(by_name["beat1_raw_white"]["glares"])
+            self.assertFalse(by_name["beat1_damped_white"]["glares"])
+            # Plated dark ink (#18120B on #F4B626) reads at >9:1 with zero false stage-contrast errors!
+            self.assertEqual(colors.problems(fc), [])
+
+    def test_diff_anim_ignores_static_tr_on_tracked_objects_and_resolves_film_relative_args(self):
+        diff_mod = load_script("diff_anim_v0814", SCRIPTS / "diff-anim.py")
+        base_obj = {"name": "beat2_ban", "parent": "root", "geo": {"type": "roundBox", "size": [0.2, 0.04, 0.006]}, "mat": {"type": "paper", "color": "#F4B626"}}
+        old = {
+            "fps": 30, "sub": 1, "frames": 4, "samples": 4,
+            "objects": [{"name": "camera", "parent": "root", "tr": [0, 0, 1, 0, 0, 0, 1, 1, 1, 1]}, {**base_obj, "tr": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]}],
+            "tracks": {
+                "camera": [[0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1], [3, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]],
+                "beat2_ban": [[0, 0, 0.1, 0, 0, 0, 0, 1, 1, 1, 1], [3, 0, 0.1, 0, 0, 0, 0, 1, 1, 1, 1]],
+            },
+            "colors": {}, "scalars": {},
+        }
+        new = json.loads(json.dumps(old))
+        new["objects"][1]["tr"] = [0, -2, 0, 0, 0, 0, 1, 1e-4, 1e-4, 1e-4]
+        frames, changed = diff_mod.diff_frames(old, new)
+        self.assertEqual(frames, [])
+        self.assertEqual(changed, [])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "build/anim.prev.json").write_text(json.dumps(old))
+            (fdir / "build/anim.json").write_text(json.dumps(new))
+            r = subprocess.run(
+                [sys.executable, str(SCRIPTS / "diff-anim.py"), "build/anim.prev.json", "build/anim.json"],
+                cwd=str(ROOT),
+                env={**os.environ, "FILM": str(fdir)},
+                capture_output=True, text=True, check=True,
+            )
+            self.assertEqual(r.stdout.strip(), "none")
+
+    def test_run_mjs_aliases_score_and_audio_to_sound(self):
+        run_src = (SKILL / "engine/run.mjs").read_text()
+        self.assertIn('ALIASES = { score: "sound", audio: "sound" }', run_src)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -86,7 +86,17 @@ def diff_frames(old, new):
         return {k: v for k, v in m.items() if k != "movieSource"} if isinstance(m, dict) else m
 
     ob = lambda a: {  # noqa: E731
-        o["name"]: json.dumps({"parent": o.get("parent"), "geo": _clean_geo(o.get("geo")), "mat": _clean_mat(o.get("mat")), "tr": o.get("tr")}, sort_keys=True)
+        o["name"]: json.dumps(
+            {
+                "parent": o.get("parent"),
+                "geo": _clean_geo(o.get("geo")),
+                "mat": _clean_mat(o.get("mat")),
+                # Animated objects key every frame from `tracks`, so scene.py ignores static `tr`:
+                # exclude `tr` when `o["name"]` is in `tracks` so parked t=0 edits never trigger full-beat rebuilds.
+                "tr": None if o["name"] in a.get("tracks", {}) else o.get("tr"),
+            },
+            sort_keys=True,
+        )
         for o in a["objects"]
     }
     oo, no = ob(old), ob(new)
@@ -244,18 +254,26 @@ def main():
         i += 1
 
     film_dir = Path(os.environ["FILM"]) if os.environ.get("FILM") else Path.cwd()
+
+    def _open_anim(arg):
+        p = Path(arg)
+        if not p.is_absolute() and not p.exists() and (film_dir / p).exists():
+            p = film_dir / p
+        with open(p, encoding="utf-8") as fh:
+            return json.load(fh)
+
     frames_set, changed = set(), []
     if len(pos) >= 2:
-        old, new = (json.load(open(p)) for p in pos[:2])
+        old, new = (_open_anim(p) for p in pos[:2])
         frames, changed = diff_frames(old, new)
         if frames is None:
             sys.exit("all  (the film's length changed)")
         frames_set.update(frames)
         anim_cur = new
     elif len(pos) == 1 and (images or since):
-        anim_cur = json.load(open(pos[0]))
+        anim_cur = _open_anim(pos[0])
     elif len(pos) == 0 and (images or since) and (film_dir / "build/anim.json").exists():
-        anim_cur = json.load(open(film_dir / "build/anim.json"))
+        anim_cur = _open_anim(film_dir / "build/anim.json")
     else:
         sys.exit("usage: diff-anim.py <old anim.json> <new anim.json> [--images a.jpg,b.jpg] [--since <file|dir>]\n       diff-anim.py [<anim.json>] --images a.jpg,b.jpg | --since <file|dir>")
 

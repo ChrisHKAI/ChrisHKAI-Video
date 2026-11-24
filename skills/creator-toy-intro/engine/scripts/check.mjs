@@ -253,6 +253,7 @@ if (past("toy") && toy && film.profile) {
     if (existsSync(palPath) && statSync(palPath).mtimeMs >= statSync(animPath).mtimeMs) {
       for (const c of json("build/palette.json")?.film?.cards ?? []) {
         if (c.melts) say("warn", `dark picture card melts into stage: ${c.name} (${c.image}, ${c.contrast}:1 mean, ${c.borderContrast}:1 border)`, "wrap dark UI/terminal screenshots in a bright window frame and lift midtones so the card silhouette reads on the dark stage (references/beats.md)");
+        if (c.glares) say("warn", `white picture card glares under bloom: ${c.name} (${c.image}, ${Math.round((c.whiteShare ?? 0) * 100)}% stark white)`, "pass { antiglare: true } to kit.picture() or tone down white web screenshots with stagekit.antiglare() so body copy stays crisp (references/beats.md)");
       }
     }
   } else if (past("toy") && film.profile) say("warn", "the motion is older than film.json: whether the toy goes through anything is not checked", "run.mjs anim");
@@ -284,6 +285,7 @@ process.exit(out.bad ? 1 : 0);
 function hint(e) {
   const m = e.message;
   if (/no lettering|glyph/i.test(m)) return "run.mjs glyphs (it collects the characters from film.json); a character only the film's own code shows goes in film.json \"glyphs\"";
+  if (/aim\.world/i.test(m)) return "wrap stage-local aim targets in at(x, y, z) once, or offset directly from o.pos / use kit.skyPoint & kit.raiseArms";
   if (/segments|piece|beat/i.test(m)) return "film.json story.segments: references/beats.md lists the pieces and the beats";
   if (/Cannot read properties of undefined/.test(m)) return `something film.json or the toy should say is missing: the line is ${(e.stack ?? "").split("\n")[1]?.trim()}`;
   return (e.stack ?? "").split("\n")[1]?.trim();

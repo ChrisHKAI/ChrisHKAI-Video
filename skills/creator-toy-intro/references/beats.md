@@ -106,7 +106,7 @@ The beat is that answer as code.
 | `fov`, `aspect` | the lens (vertical degrees) and the frame's width / height |
 | `glyph` | `adv(key)`, `geo(key, em, depth, bevel)`, `has(key)`: the lettering from the glyph step (`heavy:<char>`: every word in the entry, the digits, `,.+%` and `月日` are cut in the end card's face, but not its `why` and `music`, which never show; `glyphs.py` also harvests `kit.line`, `*TEXT`/`*STR`, `reads` and `glyph.geo` string literals from workspace-local `.js` beat/prop modules, and anything computed dynamically goes in the beat's entry or film.json `"glyphs": { "latin": ",", "heavy": "官方认证" }` / `"glyphs": "20岁大四…"`) |
 | `accent`, `pop`, `page` | the theme's accent colour; the confetti's colours (film.json `pop`); the page (`image`, `w`, `h`, `panels` in UI px, `avatar` `{ c, d }`, `slab`) |
-| `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width)` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`), `cutout(file, width)` (or `picture(file, width, { cutout: true })`: an alpha-cutout RGBA PNG badge/icon with the same `.geo`, `.mat` and `.at(p, q, k)` interface so transparent outsides never render black), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`corridor`/`stack(n, …)` (where n cards go; `corridor`: two walls along a path the toy walks, facing in), `stagger(g, i, n, g0, g1)` (card i's arrival), `backToBack(front, back, p, q, k)` (two cards back to back, a badge's two sides: their two transforms; a card's body runs its thickness behind its face, so faces nearer than both thicknesses lie inside each other and render black); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `strideIn`, `strideOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; and for when things do not go its way, the same poses a story's frames use (`engine/lib/poses.json`): `startle` (thrown back, arms flung up), `duck` (head down, arms over it), `slump` (head hanging), `shrug`, `lookUp`, `push` (leaning into a weight, legs working), `kick(…, side)` (its foot furthest at the middle of the span: that is when what it kicks leaves), `holdUp` (a thing over its head); `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows, accepting a function `(v) => …`, unit string `"万"`, or `{ decimals, sep, unit, prefix }` in `fmt`, with `.centerAt(v, group, { afterWidth, gap })`), `readoutBadge(glyph, { from, to, fmt, label, em, labelEm })` (a centered number + unit readout mounted flush on a backing plate with no double-shadow gap; pass `{ level: true }` to `.put(...)` for side-by-side bottom badges), `bannerLine(glyph, text, { em, padX, padY })` (a centered 3D headline mounted flush on a backing plaque; pass `{ level: true }` to `.put(...)` for side-by-side bottom plaques without inverted-V corner tilt on any beat stage); `line`, `declareLine`, `putLine`, `facing`, `shade` (a line of lettering, edged, standing by its lowest point, facing the camera: "Lettering" below); `confetti(…)`; `HIDDEN` |
+| `kit` | `engine/lib/beatkit.js`: their pictures as cards, `picture(file, width, { antiglare })` (a card with the picture on its face, standing, facing the camera: its `geo`, `mat` and `at(position, turn, size)`; pass `antiglare: true` on stark-white web/article screenshots so stage emission never blooms out dark text), `cutout(file, width)` (or `picture(file, width, { cutout: true })`: an alpha-cutout RGBA PNG badge/icon with the same `.geo`, `.mat` and `.at(p, q, k)` interface so transparent outsides never render black), `pictureFiles(folder)`, `layout.grid`/`wall`/`arc`/`corridor`/`stack(n, …)` (where n cards go; `corridor`: two walls along a path the toy walks, facing in), `stagger(g, i, n, g0, g1)` (card i's arrival), `backToBack(front, back, p, q, k)` (two cards back to back, a badge's two sides: their two transforms; a card's body runs its thickness behind its face, so faces nearer than both thicknesses lie inside each other and render black); `stand(spot)`, `dropIn`, `cheer`, `leapOut`, `strideIn`, `strideOut`, `squash`, `landSquash`, `crouch`, `hop`, `CENTER`; everyday moves, each `(o, g, g0, g1, …)` eased in and out, on any toy (one with no arms plays them with its body): `wave(…, side)`, `nod(…, times)`, `point(…, world, side)`, `skyPoint(…, side)` (42°-outward overhead point clearing wide chibi heads), `raiseArms` (dual-arm high-V celebration clearing wide chibi ear-cups), `spin(…, turns)` (returns its squash), `bow`, `sit`, and `lookAt(o, world, k)`; and for when things do not go its way, the same poses a story's frames use (`engine/lib/poses.json`): `startle` (thrown back, arms flung up), `duck` (head down, arms over it), `slump` (head hanging), `shrug`, `lookUp`, `push` (leaning into a weight, legs working), `kick(…, side)` (its foot furthest at the middle of the span: that is when what it kicks leaves), `holdUp` (a thing over its head); `cameraFrom(keys, …)`; `formatCount(v, { decimals, sep, unit })`, `readout(…)` (text that changes as it counts, one object per character a place shows, accepting a function `(v) => …`, unit string `"万"`, or `{ decimals, sep, unit, prefix }` in `fmt`, with `.centerAt(v, group, { afterWidth, gap })`), `readoutBadge(glyph, { from, to, fmt, label, em, labelEm })` (a centered, outline-free number + unit readout rooted into a matte paper plate, level by default with zero stroke shimmer), `bannerLine(glyph, text, { em, padX, padY })` (a centered, outline-free 3D headline rooted into a matte paper plaque, level by default so gentle camera azimuth drifts never shimmer CJK strokes or tilt paired bottom plaques); `line`, `declareLine`, `putLine`, `facing`, `shade` (a line of lettering, edged, standing by its lowest point, facing the camera: "Lettering" below); `confetti(…)`; `HIDDEN` |
 | `signature` | the toy's own move (toy.json `signature`: any `at` target in toy mm uses IK, otherwise a chibi-safe wave) on a pose |
 | `math`, `quat`, `mulberry32`, `readFilmJSON` | the engine's helpers (`quat.qFlat(yaw)` lays an XY-plane `arc` ring or disc flat onto the XZ floor while spinning horizontally by `yaw`—never use `qEuler(-Math.PI / 2, yaw, 0)`, whose intrinsic X-first order tilts the ring vertically into the air) |
 
@@ -188,11 +188,18 @@ demo, their site's media library).
   count (`12 款工具`), stage a **two-step camera**: open close on 3–4 readable
   titled hero cards first, then pull wide to reveal all `N` cards so viewers
   both read real titles and see the promised count.
-- **Dark-mode screenshots on dark stages**: dark IDE, terminal or dashboard
+- **Dark-mode & stark-white screenshots on dark stages**: dark IDE, terminal or dashboard
   captures (`< 1.6:1` contrast against `#0B0C10` with a dark border) vanish into
-  the background as illegible black rectangles. Wrap them in a bright window
-  bezel and gently lift midtones before rendering (`palette` and `check` warn
-  when a beat's picture card melts into the stage).
+  the background as illegible black rectangles—wrap them in a bright window
+  bezel and gently lift midtones. Conversely, stark `#FFFFFF` web or article
+  screenshots blow out past `finish`'s `0.85` bloom threshold under full UI
+  emission—pass `{ antiglare: true }` to `kit.picture()` or map them onto warm
+  archival paper with `stagekit.antiglare()` (`palette` and `check` warn on both
+  dark cards that melt and white cards that glare). When a custom opening beat
+  crops `research/shots/profile.png` into a stage card, mask out its 2D avatar
+  circle with `stagekit.empty_avatar_socket()` (and align the 0–2 s 3D sticker
+  via `stagekit.card_socket_coords()`) so no flat 2D avatar duplicate remains on
+  the card once the 3D toy pops out.
 - **Obstacle-to-turn staging & varied beat entrances**: when a beat pivots from
   an obstacle (an error card, quota wall, heavy block) to the creator's answer,
   turn `o.yaw` so the toy physically faces the obstacle it pushes (`kit.push()`
@@ -357,14 +364,15 @@ the last segment's leap) and ends with `kit.leapOut`, so the joins read as
 one toy going from stage to stage. When adjacent beats share the same physical
 workbench or world, vary at least one join (e.g. a lateral pan, push-through,
 or workbench continuity) rather than repeating `leapOut` → `dropIn` onto an
-empty floor on every cut. Always wrap every beat-local toy or prop position in `at(x, y, z)` **once**—
+empty floor on every cut. always wrap every beat-local toy or prop position in `at(x, y, z)` **once**—
 writing bare `[x, y, z]` teleports an object to world origin, while calling
 `at(POS[0], POS[1], POS[2])` a second time on a point already returned by
-`at(...)` shifts it off-stage to `2 × stage` (`check` flags both as off-stage).
-On wide-headed chibi toys, raise celebratory arms in a forward-pitched high V
-(`o.armL/R = [-0.95, ±0.35, ±2.05]`) rather than `±1.4` rad horizontal (which
-reads as a stiff T-pose) or pure vertical `±2.4` rad with `x = 0` (which tucks
-short arms behind wide cheeks/hair).
+`at(...)` shifts it off-stage to `2 × stage` (`check` and `rig` flag off-stage
+positions and `aimR`/`aimL` targets).
+On wide-headed chibi toys, use `kit.skyPoint` or `kit.raiseArms` (or raise
+celebratory arms in a forward-pitched high V `o.armL/R = [-0.95, ±0.35, ±2.05]`)
+rather than `±1.4` rad horizontal (which reads as a stiff T-pose) or pure
+vertical `±2.4` rad with `x = 0` (which tucks short arms behind wide cheeks/hair).
 The first segment is the opening the
 story chose (the page floating, which ends on the pinned post, or standing up
 turning right or left, which ends with the toy out in front), the last the

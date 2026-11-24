@@ -1299,3 +1299,128 @@ test("isRemoteBlenderWrapper skips colab-blender in BLENDER env for local steps 
   assert.equal(retrySearchPrompt("find @alice", 0), "find @alice");
   assert.match(retrySearchPrompt("find @alice", 1), /IMPORTANT \(retry 1\): Call X search tools/);
 });
+
+test("v0.8.14: shimmer-free bannerLine/readoutBadge defaults, skyPoint/raiseArms, antiglare picture(), and off-stage aim.world guard", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-v0814-"));
+  try {
+    writeFileSync(join(dir, "film.json"), JSON.stringify({ format: { fps: 30, duration: 4, size: [1920, 1080] }, toy: "toy.json" }));
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({
+      height: 0.12,
+      center: [0, 0.05, 0],
+      colors: { body: "#F4B626" },
+      joints: {
+        body: { p: [0, 0.03, 0], parent: null },
+        head: { p: [0, 0.06, 0], parent: "body" },
+        armR: { p: [-0.015, 0.052, 0], parent: "body" },
+        armL: { p: [0.015, 0.052, 0], parent: "body" },
+      },
+      parts: [
+        { name: "head", group: "head", shape: "ellipsoid", pos: [0, 0.085, 0], r: [0.032, 0.034, 0.03] },
+        { name: "armR", group: "armR", shape: "roundBox", pos: [-0.018, 0.036, 0], size: [0.009, 0.026, 0.009], radius: 0.003 },
+        { name: "armL", group: "armL", shape: "roundBox", pos: [0.018, 0.036, 0], size: [0.009, 0.026, 0.009], radius: 0.003 },
+      ],
+    }));
+    // Minimal valid 2x2 PNG header + IDAT + IEND
+    const png1x1 = Buffer.from(
+      "89504e470d0a1a0a0000000d494844520000000400000002080200000090fd61250000000c49444154789c63f8ffff3f0005fe02fea73581840000000049454e44ae426082",
+      "hex",
+    );
+    writeFileSync(join(dir, "shot.png"), png1x1);
+    const kitUrl = new URL("../skills/creator-toy-intro/engine/lib/beatkit.js", import.meta.url).href;
+    const probe = `
+      import * as kit from ${JSON.stringify(kitUrl)};
+      const glyph = {
+        has: () => true,
+        adv: () => 0.92,
+        geo: (_k, em, depth, bevel) => ({ type: "curve", rings: [[[0, 0], [em * 0.8, 0], [em * 0.8, em * 0.85], [0, em * 0.85]]], depth, bevel }),
+      };
+      const ban = kit.bannerLine(glyph, "手搓实战库", { em: 0.032 });
+      const badge = kit.readoutBadge(glyph, { from: 18, to: 132, fmt: "万", label: "阅读", em: 0.036 });
+      const declared = [];
+      ban.declare((o) => declared.push(o), "beat1_ban", { plateColor: "#FAF4E6", color: "#18120B", outline: "#12071A" });
+      badge.declare((o) => declared.push(o), "beat1_bdg", { plateColor: "#F4B626", numColor: "#18120B", labelColor: "#18120B", outline: "#18120B" });
+
+      // Default put() without { level: true } still locks zero yaw across orbiting camera azimuths!
+      const pA = {}, pB = {};
+      ban.put((n, tr) => { pA[n] = tr; }, "beat1_ban", [50.14, 0.03, 0.12], [49.96, 0.18, 0.88], 1);
+      ban.put((n, tr) => { pB[n] = tr; }, "beat1_ban", [50.14, 0.03, 0.12], [50.04, 0.18, 0.88], 1);
+      badge.put((n, tr) => { pA[n] = tr; }, "beat1_bdg", 132, [49.86, 0.03, 0.12], [49.96, 0.18, 0.88], 1);
+
+      const picDefault = kit.picture("shot.png", 0.28);
+      const picAnti = kit.picture("shot.png", 0.28, { antiglare: true });
+
+      const spot = [50.02, 0.04, -0.02];
+      const oSky = kit.skyPoint(kit.stand(spot), 1.0, 0.2, 1.8, "R");
+      const skyBuilt = kit.toyFrom(oSky, spot);
+      const oRaise = kit.raiseArms(kit.stand(spot), 1.0, 0.2, 1.8);
+      const raiseBuilt = kit.toyFrom(oRaise, spot);
+
+      let doubleAtErr = "";
+      try {
+        const bad = kit.stand(spot);
+        bad.aimR = { world: [spot[0] + 50, 0.2, 0], k: 1, len: 1.2 };
+        kit.toyFrom(bad, spot);
+      } catch (e) {
+        doubleAtErr = e.message;
+      }
+
+      let missingAtErr = "";
+      try {
+        const bad2 = kit.stand(spot);
+        bad2.aimL = { world: [0.1, 0.2, 0], k: 1, len: 1.2 };
+        kit.toyFrom(bad2, spot);
+      } catch (e) {
+        missingAtErr = e.message;
+      }
+
+      console.log(JSON.stringify({
+        declared,
+        pA,
+        pB,
+        picDefaultMat: picDefault.mat,
+        picAntiMat: picAnti.mat,
+        skyAim: oSky.aimR,
+        raiseAimR: oRaise.aimR,
+        raiseAimL: oRaise.aimL,
+        skyParts: skyBuilt.parts.length,
+        raiseParts: raiseBuilt.parts.length,
+        doubleAtErr,
+        missingAtErr,
+      }));
+    `;
+    const sub = spawnSync("node", ["--input-type=module", "-e", probe], { env: { ...process.env, FILM: dir }, encoding: "utf8" });
+    assert.equal(sub.status, 0, sub.stderr);
+    const res = JSON.parse(sub.stdout.trim().split(/\r?\n/).pop());
+
+    // 1) Zero outline grown_plate meshes emitted by default on plated banners & badges
+    assert.ok(!res.declared.some((o) => o.mat?.outline), "expected zero outline meshes on plated bannerLine/readoutBadge");
+    const banPlate = res.declared.find((o) => o.name === "beat1_ban_plate");
+    const bdgPlate = res.declared.find((o) => o.name === "beat1_bdg_plate");
+    assert.equal(banPlate.mat.type, "paper");
+    assert.equal(bdgPlate.mat.type, "paper");
+    const banLetter = res.declared.find((o) => o.name === "beat1_ban_ln_0");
+    assert.equal(banLetter.mat.on, "#FAF4E6");
+    assert.equal(banLetter.mat.coat, 0.12);
+
+    // 2) Default level=true locks zero yaw across camera azimuth drift (zero horizontal stroke crawl!)
+    assert.ok(Math.abs(res.pA.beat1_ban_plate.q[1]) < 1e-9);
+    assert.ok(Math.abs(res.pB.beat1_ban_plate.q[1]) < 1e-9);
+    assert.deepEqual(res.pA.beat1_ban_plate.q, res.pB.beat1_ban_plate.q);
+
+    // 3) antiglare picture() damps white blowout while keeping default picture() untouched
+    assert.equal(res.picDefaultMat.emission, undefined);
+    assert.equal(res.picAntiMat.emission, 0.78);
+    assert.equal(res.picAntiMat.coat, 0.06);
+    assert.equal(res.picAntiMat.sampled, false);
+
+    // 4) skyPoint & raiseArms clear wide chibi heads directly in world space, and rig catches double/missing at()
+    assert.ok(res.skyAim.world[0] < 50.02 - 0.11 && res.skyAim.world[1] > 0.19);
+    assert.ok(res.raiseAimR.world[0] < 50.02 - 0.11 && res.raiseAimL.world[0] > 50.02 + 0.11);
+    assert.equal(res.skyParts, 3);
+    assert.equal(res.raiseParts, 3);
+    assert.match(res.doubleAtErr, /called at\(\.\.\.\) a second time/);
+    assert.match(res.missingAtErr, /missing at\(\.\.\.\)/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

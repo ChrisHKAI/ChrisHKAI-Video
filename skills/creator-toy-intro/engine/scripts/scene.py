@@ -181,7 +181,14 @@ def material(spec):
     L = nt.links
     result = [m]
     if kind == "ui":
-        p = principled(nt, "#030303", 0.3, 0.1, coat=0.3, coat_rough=0.1)
+        p = principled(
+            nt,
+            "#030303",
+            float(spec.get("rough", 0.3)),
+            0.1,
+            coat=float(spec.get("coat", 0.3)),
+            coat_rough=float(spec.get("coatRough", 0.1)),
+        )
         tex_path = spec.get("movie") or spec["image"]
         if spec.get("movie") and not (ROOT / tex_path).exists() and spec.get("movieSource") and (ROOT / spec["movieSource"]).exists():
             tex_path = spec["movieSource"]
@@ -193,7 +200,7 @@ def material(spec):
             t.image_user.use_cyclic = bool(spec.get("cyclic", True))
             t.image_user.use_auto_refresh = True
         L.new(t.outputs["Color"], p.inputs["Emission Color"])
-        p.inputs["Emission Strength"].default_value = 1.0
+        p.inputs["Emission Strength"].default_value = float(spec.get("emission", 1.0))
         L.new(p.outputs["BSDF"], out.inputs["Surface"])
         result = [m, edge_material()]
     elif kind == "sticker":
@@ -295,8 +302,15 @@ def material(spec):
             gp = principled(gnt, "#060607", 0.85, 0.1)
         gnt.links.new(gp.outputs["BSDF"], gout.inputs["Surface"])
         result = [g, m] if spec.get("sides") else [m, g]
-    elif kind == "type":  # 3D lettering and the 公众号 mark: glossy, lit a little from inside
-        p = principled(nt, spec["color"], 0.22, 0.5, coat=0.8, coat_rough=0.05)
+    elif kind == "type":  # 3D lettering and the 公众号 mark: glossy by default, satin when mounted on matte plaques
+        p = principled(
+            nt,
+            spec["color"],
+            float(spec.get("rough", 0.22)),
+            0.5,
+            coat=float(spec.get("coat", 0.8)),
+            coat_rough=float(spec.get("coatRough", 0.05)),
+        )
         p.inputs["Emission Color"].default_value = rgba(spec["color"])
         p.inputs["Emission Strength"].default_value = spec["emit"]
         if spec.get("glass") or spec.get("shine"):  # crystal lettering, as a logo's glassy facets: a hard shine (and light through it)

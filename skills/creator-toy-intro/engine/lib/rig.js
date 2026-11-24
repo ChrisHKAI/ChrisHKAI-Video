@@ -55,12 +55,28 @@ export function heroT(o, center) {
 }
 // arm lengths for reaching (toy.json "rig"; defaults are isnail's toy)
 const REACH = { shoulderGap: 0.004, armLength: 0.0205, maxReach: 1.25, handDrop: 0.0204 };
+function checkAimWorld(label, aim, hero) {
+  if (!Array.isArray(aim.world) || aim.world.length < 3 || !aim.world.slice(0, 3).every(Number.isFinite)) {
+    throw new Error(`${label} aim.world must be a finite [x, y, z] point`);
+  }
+  if ((aim.k ?? 1) > 0.01 && Math.min(...hero.s.map(Math.abs)) > 1e-3) {
+    const dist = v3.len(v3.sub(aim.world, hero.p));
+    if (dist > 15) {
+      const doubleAt = Math.abs(hero.p[0]) > 20 && Math.abs(aim.world[0]) > Math.abs(hero.p[0]) * 1.6;
+      const hint = doubleAt
+        ? "called at(...) a second time on a point already in world space (use [o.pos[0] ± dx, ...] or kit.skyPoint / kit.raiseArms)"
+        : "missing at(...) on stage-local coordinates";
+      throw new Error(`${label} aim.world is ${dist.toFixed(1)} m from the toy (${hint})`);
+    }
+  }
+}
 // aim an arm (hanging along -y) at a hero-local target; returns [q, reach]
 function aimArm(side, o, hero, aim, joints, R) {
   const sh = joints[side].p;
   let local;
   if (aim.target) local = aim.target.map((v) => v * MM);
   else {
+    checkAimWorld(side, aim, hero);
     // world → hero-local (undo the hero transform)
     const d = v3.sub(aim.world, hero.p);
     const r = qRot(qConj(hero.q), d);
@@ -90,6 +106,7 @@ function bodyMoves(o, hero, JOINTS) {
     let local;
     if (aim.target) local = aim.target.map((v) => v * MM);
     else {
+      checkAimWorld("body", aim, hero);
       const r = qRot(qConj(hero.q), v3.sub(aim.world, hero.p));
       local = [r[0] / hero.s[0], r[1] / hero.s[1], r[2] / hero.s[2]];
     }

@@ -69,7 +69,8 @@ const splitAt = dash >= 0 ? dash : firstFlag;
 const names = splitAt < 0 ? argv : argv.slice(0, splitAt);
 const extra = dash >= 0 ? argv.slice(dash + 1) : firstFlag >= 0 ? argv.slice(firstFlag) : [];
 const GROUPS = { data: ["recipes", "glyphs", "hero", "ui", "anim", "sound"] };
-const steps = names.flatMap((n) => GROUPS[n] ?? [n]);
+const ALIASES = { score: "sound", audio: "sound" };
+const steps = names.flatMap((n) => GROUPS[n] ?? [ALIASES[n] ?? n]);
 if (!steps.length) {
   console.log("usage: FILM=<film folder> node engine/run.mjs <step|group>... [-- args]");
   process.exit(1);

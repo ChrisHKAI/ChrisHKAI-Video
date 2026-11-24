@@ -47,14 +47,20 @@ export function cutout(file, w) {
 // centred at p (world), turned by q (qId() faces the camera's +z), k its size (0 hides it).
 // movie: a film (mp4) on the card instead, file its first frame (for the size): it plays its frames from the film's
 // frame start, round and round (or holds its final frame when cyclic is false). cutout: true delegates to cutout().
-export function picture(file, w, { thickness = 0.002, movie, frames, start = 1, cyclic = true, cutout: isCutout = false } = {}) {
+// antiglare: true damps white-background web/article screenshots below finish.py's 0.85 bloom ceiling so body copy stays crisp.
+export function picture(file, w, { thickness = 0.002, movie, frames, start = 1, cyclic = true, cutout: isCutout = false, antiglare = false, emission } = {}) {
   if (isCutout) return cutout(file, w);
   const [W, H] = imageSize(file);
   const s = w / (W * 0.001); // built at a millimetre a pixel, then scaled to w
+  const glareExtras = antiglare
+    ? { emission: emission ?? 0.78, coat: 0.06, rough: 0.62, sampled: false }
+    : (emission !== undefined ? { emission } : {});
   return {
     file, w, h: (w * H) / W, t: thickness,
     geo: { type: "uiBox", rect: [-W / 2, -H / 2, W, H], uvRect: [0, 0, W, H], img: { image: file, w: W, h: H }, thickness: thickness / s, unitScale: +s.toFixed(6) },
-    mat: movie ? { type: "ui", image: file, movie, frames, start, ...(cyclic === false ? { cyclic: false } : {}) } : { type: "ui", image: file },
+    mat: movie
+      ? { type: "ui", image: file, movie, frames, start, ...(cyclic === false ? { cyclic: false } : {}), ...glareExtras }
+      : { type: "ui", image: file, ...glareExtras },
     at: (p, q = qId(), k = 1) => trs(p, qMul(q, UPRIGHT), Math.max(1e-4, s * k)),
   };
 }

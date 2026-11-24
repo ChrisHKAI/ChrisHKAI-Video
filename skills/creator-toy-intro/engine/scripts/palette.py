@@ -140,5 +140,7 @@ for k, r in bad:
 for r in (fc or {}).get("cards", []):
     if r.get("melts"):
         print(f"  ! picture card {r['name']} ({r['image']}): {r['contrast']:.1f}:1 on the stage with a dark edge ({r['borderContrast']:.1f}:1) — wrap in a bright window frame or lift midtones so it does not vanish")
-if fc and not bad and not any(r.get("melts") for r in fc.get("cards", [])):
+    if r.get("glares"):
+        print(f"  ! picture card {r['name']} ({r['image']}): {r['whiteShare'] * 100:.0f}% stark white at emission {r['emission']:.2f} — pass {{ antiglare: true }} to kit.picture() or stagekit.antiglare() so web text does not bloom out")
+if fc and not bad and not any(r.get("melts") or r.get("glares") for r in fc.get("cards", [])):
     print("  ✓ the toy, the lettering, the picture cards and the confetti all read on the stage")

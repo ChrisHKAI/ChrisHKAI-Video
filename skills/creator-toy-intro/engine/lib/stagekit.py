@@ -226,6 +226,39 @@ def load(path, crop=None):
     return im
 
 
+def antiglare(im, peak_rgb=(218, 203, 174), gamma=1.35):
+    """Map stark-white web/article screenshots onto warm archival paper so stage emission never blooms out dark text."""
+    rgba_in = im.convert("RGBA")
+    arr = np.asarray(rgba_in, dtype=np.float32) / 255.0
+    curved = np.power(np.clip(arr[..., :3], 0.0, 1.0), float(gamma))
+    scale = np.asarray(peak_rgb[:3], dtype=np.float32) / 255.0
+    out_rgb = np.clip(curved * scale * 255.0, 0, 255).astype(np.uint8)
+    out_a = np.clip(arr[..., 3:4] * 255.0, 0, 255).astype(np.uint8)
+    return Image.fromarray(np.dstack([out_rgb, out_a]))
+
+
+def empty_avatar_socket(im, cx, cy, r, fill="#141824", outline=None, outline_w=4):
+    """Mask out the circular 2D avatar inside a cropped profile card so no flat duplicate stays behind once the 3D toy pops out."""
+    out = im.convert("RGBA").copy()
+    d = ImageDraw.Draw(out)
+    d.ellipse(
+        (float(cx) - float(r), float(cy) - float(r), float(cx) + float(r), float(cy) + float(r)),
+        fill=rgb(fill),
+        outline=rgb(outline) if outline else None,
+        width=max(1, int(outline_w)) if outline else 0,
+    )
+    return out
+
+
+def card_socket_coords(im_or_size, cx, cy, r, card_w_m):
+    """Convert pixel circle (cx, cy, r) on a card image into 3D card-local metres (lx, ly, diameter_m) for 0–2 s sticker placement."""
+    w_px, h_px = im_or_size.size if hasattr(im_or_size, "size") else im_or_size
+    m_per_px = float(card_w_m) / max(1.0, float(w_px))
+    lx = (float(cx) - float(w_px) * 0.5) * m_per_px
+    ly = (float(h_px) * 0.5 - float(cy)) * m_per_px
+    return (round(lx, 6), round(ly, 6), round(2.0 * float(r) * m_per_px, 6))
+
+
 def _coeffs(dst, src):
     A = []
     for (x, y), (u, v) in zip(dst, src):
