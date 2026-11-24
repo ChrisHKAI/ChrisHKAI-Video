@@ -368,7 +368,7 @@ for (const [i, step] of steps.entries()) {
       break;
     }
     case "finish":
-      run(...awake(PY, [fromSkill("engine/scripts/finish.py"), ...more]));
+      run(...awake(PY, [fromSkill("engine/scripts/finish.py"), ...(force ? ["--force"] : []), ...more]));
       // a side cut (the quick version: -- --in build/quick --out out/<id>-quick.mp4) gets no covers or qa
       if (!more.includes("--out")) {
         run(PY, [fromSkill("engine/scripts/covers.py")]);

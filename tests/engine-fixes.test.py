@@ -608,5 +608,129 @@ export function makeBeat({ opts, glyph, kit }) {
         self.assertIn('"--since", snapPath', run_src)
 
 
+class V0811EngineImprovementTests(unittest.TestCase):
+    def test_pacing_shrunk_warns_when_custom_beat_toy_under_22_percent_and_honors_wide(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.14}))
+            # Toy height = 0.14 m, pop scale = 1.0, camera at z = 1.40 m, fov = 30 deg -> tan(15°) ≈ 0.2679 -> screen share ≈ 0.14 / (2 * 1.40 * 0.2679) ≈ 18.7% (< 22%)
+            fps, frames = 30, 120
+            anim = {
+                "fps": fps,
+                "frames": frames,
+                "sub": 1,
+                "samples": frames,
+                "objects": [
+                    {"name": "camera", "parent": "root", "tr": [0, 0.10, 1.40, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "hero", "parent": "root", "tr": [0, 0.07, 0.0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {
+                    "camera": [[0, 0, 0.10, 1.40, 0, 0, 0, 1, 1, 1, 1], [frames - 1, 0, 0.10, 1.40, 0, 0, 0, 1, 1, 1, 1]],
+                    "hero": [[0, 0, 0.07, 0.0, 0, 0, 0, 1, 1, 1, 1], [frames - 1, 0, 0.07, 0.0, 0, 0, 0, 1, 1, 1, 1]],
+                },
+                "scalars": {"fov": [30.0] * frames},
+            }
+            (fdir / "build/anim.json").write_text(json.dumps(anim))
+            (fdir / "build/timeline.json").write_text(json.dumps({
+                "DURATION": 4.0,
+                "BAR": 2.0,
+                "SEGMENTS": [{"kind": "beat", "beat": "beats/far.js", "f0": 0.0, "f1": 4.0}],
+                "cues": [{"t": 0.5, "kind": "pop"}, {"t": 2.5, "kind": "lock"}],
+            }))
+            (fdir / "film.json").write_text(json.dumps({
+                "format": {"fps": 30, "duration": 4, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "story": {"segments": [{"beat": "beats/far.js", "bars": 2}]},
+            }))
+            res = pacing.check(fdir)
+            self.assertEqual(len(res["shrunk"]), 1)
+            self.assertAlmostEqual(res["shrunk"][0][2], 0.187, places=2)
+
+            # Explicit `"wide": true` suppresses the shrunk warning on intentional wide reveals
+            (fdir / "film.json").write_text(json.dumps({
+                "format": {"fps": 30, "duration": 4, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "story": {"segments": [{"beat": "beats/far.js", "bars": 2, "wide": True}]},
+            }))
+            self.assertEqual(pacing.check(fdir)["shrunk"], [])
+
+    def test_silent_icon_ghost_filters_blurred_ring_marks_and_keeps_real_words(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import silent
+        self.assertTrue(silent.icon_ghost("D0", 0.42))
+        self.assertTrue(silent.icon_ghost("OO", 0.55))
+        self.assertTrue(silent.icon_ghost("Il", 0.30))
+        self.assertFalse(silent.icon_ghost("D0", 0.92))
+        self.assertFalse(silent.icon_ghost("24h", 0.40))
+        self.assertFalse(silent.icon_ghost("AI", 0.40))
+        self.assertFalse(silent.icon_ghost("阅读", 0.35))
+
+    def test_real_instrument_and_single_hit_variant_error_suggestions(self):
+        import real
+        from unittest.mock import patch
+
+        with self.assertRaises(KeyError) as ctx1:
+            real.note("violins_sus", "G4", 1.0, 0.5)
+        self.assertIn("violins", str(ctx1.exception))
+        self.assertIn("violins_trem", str(ctx1.exception))
+
+        class DummySingleHit:
+            name = "crash"
+            kind = "hit"
+            vars = []
+
+        with patch.object(real.S, "hit", side_effect=KeyError("crash has no variant 'crash'")), \
+             patch.object(real.S, "load", return_value=DummySingleHit()):
+            with self.assertRaises(KeyError) as ctx2:
+                real.hit("cymbal", "crash", 0.5)
+            self.assertIn("single-hit instrument", str(ctx2.exception))
+            self.assertIn("None", str(ctx2.exception))
+
+    def test_finish_incremental_frame_cache_reuses_untouched_pngs(self):
+        if not shutil.which("ffmpeg"):
+            self.skipTest("ffmpeg not installed")
+        import wave
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build/render").mkdir(parents=True)
+            (fdir / "assets/audio").mkdir(parents=True)
+            (fdir / "out").mkdir(parents=True)
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "cache-test",
+                "theme": "x-desktop",
+                "output": "out/cache-test.mp4",
+                "format": {"fps": 30, "duration": 0.1, "size": [64, 36]},
+                "toy": "toy.json",
+            }))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12, "colors": {"body": "#F4F6FA"}}))
+            for idx in (1, 2, 3):
+                Image.new("RGB", (64, 36), (20 * idx, 40, 80)).save(fdir / f"build/render/{idx:04d}.png")
+            for wav_name in ("score.wav", "score-sfx.wav"):
+                with wave.open(str(fdir / "assets/audio" / wav_name), "wb") as wf:
+                    wf.setnchannels(2)
+                    wf.setsampwidth(2)
+                    wf.setframerate(48000)
+                    wf.writeframes(b"\x00\x00\x00\x00" * 4800)
+
+            env = {**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}
+            r1 = subprocess.run([sys.executable, str(SCRIPTS / "finish.py"), "--workers", "1"], env=env, capture_output=True, text=True, check=True)
+            self.assertIn("finished 3/3", r1.stdout)
+            self.assertTrue((fdir / "out/cache-test.mp4").is_file())
+
+            # Second run with `--sfx-cut`: reuses all 3 finished frames AND skips re-encoding main MP4!
+            r2 = subprocess.run([sys.executable, str(SCRIPTS / "finish.py"), "--sfx-cut", "--workers", "1"], env=env, capture_output=True, text=True, check=True)
+            self.assertIn("reused all 3 finished frame(s)", r2.stdout)
+            self.assertIn("up to date", r2.stdout)
+            self.assertTrue((fdir / "out/cache-test-sfx.mp4").is_file())
+
+            # Touch only frame 0002.png -> reuses 2/3 unchanged frames and finishes 1!
+            Image.new("RGB", (64, 36), (220, 120, 40)).save(fdir / "build/render/0002.png")
+            r3 = subprocess.run([sys.executable, str(SCRIPTS / "finish.py"), "--workers", "1"], env=env, capture_output=True, text=True, check=True)
+            self.assertIn("reusing 2/3 unchanged finished frame(s); finishing 1", r3.stdout)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

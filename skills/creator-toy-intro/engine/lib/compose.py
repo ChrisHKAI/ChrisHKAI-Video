@@ -55,8 +55,7 @@ class Real:
         return self.real.hit(inst, var, vel)
 
     def chord(self, inst, pitches, dur, vel=0.8, strum=0.0, **kw):
-        self.USED.add(inst)
-        return self.S.chord(inst, pitches, dur, vel=vel, strum=strum, **kw)
+        return self.real.chord(inst, pitches, dur, vel=vel, strum=strum, **kw)
 
     def room(self, x, size=0.5, mix=0.2):
         return self.S.room(x, size=size, mix=mix)

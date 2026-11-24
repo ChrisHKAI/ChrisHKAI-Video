@@ -29,6 +29,8 @@ for a, z, n in p["alone"]:
     print(f"  ! {a}–{z} s: only the toy hopping ({n} hops), nothing else new: does it need them?")
 for a, z, k in p["small"]:
     print(f"  ! {a}–{z} s: the toy is a speck, {k * 100:.0f}% of the frame's height ({pacing.SMALL * 100:.0f}% at least): bring the camera in, or the toy forward")
+for a, z, k in p.get("shrunk", []):
+    print(f"  ! {a}–{z} s: the toy averages only {k * 100:.0f}% of the frame's height (paper frames aim for 30–45%): pull camera dist closer, or set \"wide\": true if the wall is the hero")
 for u in p.get("unread", []):
     print(f"  ! {u['at'][0]:g}–{u['at'][1]:g} s: lettering on screen ({', '.join(u['names'])}), but its beat's reads say {u['said']:g} s of it: say how long it really stays")
 for a, z in p["off"]:

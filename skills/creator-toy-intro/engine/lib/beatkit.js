@@ -7,8 +7,10 @@ import { TOY, CENTER, JOINTS, COLORS } from "./toy.js";
 import { armLiftLimit } from "./clearance.js";
 import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "./rig.js";
 import { makeCamera } from "./camera.js";
-import { clamp01, seg, smooth, easeInOut, lerp, lerpAngle, yawTo, TAU, v3 } from "./math.js";
-import { trs, qId, qEuler, mulT } from "./quat.js";
+import { readout, formatCount } from "./counter.js";
+import { line as makeLine, declareLine as declLine, putLine as placeLine, facing as faceCam } from "./lettering.js";
+import { clamp01, seg, smooth, easeIn, easeOut, easeInOut, lerp, lerpAngle, yawTo, TAU, v3 } from "./math.js";
+import { trs, qId, qEuler, mulT, apply } from "./quat.js";
 
 // Wide-headed chibi/sculpt toys tuck short arms behind the cheeks past ~1.7 rad; slender toys keep the full 2.5 rad.
 const ARM_MAX = armLiftLimit(TOY, fromFilm, 2.5);
@@ -50,6 +52,67 @@ export function leapOut(o, g, g0, g1, spot) {
   o.armR = [0, 0, -a]; o.armL = [0, 0, a];
   o.legR = [0.5 * s, 0, 0]; o.legL = [0.5 * s, 0, 0];
   return o;
+}
+// stage-level run-in from `fromSpot` onto `toSpot` over g0–g1 (keeps top banners & 3D readouts clear of sky-drops)
+export function strideIn(o, g, g0, g1, fromSpot, toSpot, steps = 2) {
+  const u = easeOut(seg(g, g0, g1));
+  o.pos = v3.lerp(fromSpot, toSpot, u);
+  o.pos[1] += 0.025 * Math.abs(Math.sin(u * Math.PI * steps));
+  o.ground = lerp(fromSpot[1], toSpot[1], smooth(u));
+  o.yaw = lerp(yawTo(fromSpot, toSpot), o.yaw ?? 0, smooth(seg(u, 0.65, 1)));
+  const cyc = Math.sin(u * Math.PI * steps * 2) * (1 - smooth(seg(u, 0.8, 1)));
+  o.legL = [0.6 * cyc, 0, 0]; o.legR = [-0.6 * cyc, 0, 0];
+  o.armL = [-0.45 * cyc, 0, 0.25]; o.armR = [0.45 * cyc, 0, -0.25];
+  return o;
+}
+// stage-level run-out from `fromSpot` to `toSpot` over g0–g1 (never slices the toy off at the top frame edge)
+export function strideOut(o, g, g0, g1, fromSpot, toSpot, steps = 2) {
+  const u = easeIn(seg(g, g0, g1));
+  o.pos = v3.lerp(fromSpot, toSpot, u);
+  o.pos[1] += 0.025 * Math.abs(Math.sin(u * Math.PI * steps));
+  o.ground = lerp(fromSpot[1], toSpot[1], smooth(u));
+  o.yaw = lerpAngle(o.yaw ?? 0, yawTo(fromSpot, toSpot), smooth(seg(u, 0, 0.35)));
+  o.pitch = -0.12 * u;
+  const cyc = Math.sin(u * Math.PI * steps * 2);
+  o.legL = [0.65 * cyc, 0, 0]; o.legR = [-0.65 * cyc, 0, 0];
+  o.armL = [-0.5 * cyc, 0, 0.3]; o.armR = [0.5 * cyc, 0, -0.3];
+  return o;
+}
+// centred, flush-mounted 3D counter + label badge (avoids right-aligned readout overhang and >3 mm double shadows)
+export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056, labelEm = em * 0.78, gap = em * 0.36, padX = em * 1.1, padY = em * 0.45 } = {}) {
+  const num = readout({ fmt, from, to, em, adv: glyph.adv });
+  const ln = label ? makeLine(glyph, label, labelEm, { edge: 0.09, track: 0.08 }) : null;
+  const numW = num.width(to), lblW = ln ? ln.W : 0;
+  const textW = numW + (lblW > 0 ? gap + lblW : 0);
+  const plateSize = [textW + padX, Math.max(em, labelEm) + padY, 0.008];
+  return {
+    num, ln, numW, lblW, gap, textW, plateSize, em,
+    declare(add, prefix = "badge", { plateColor = "#FF4500", numColor = "#FFFFFF", labelColor = "#FFD166", outline = "#0A162E" } = {}) {
+      for (const n of num.names) {
+        add({ name: `${prefix}_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, em, em * 0.16, em * 0.018), mat: { type: "type", color: numColor, emit: 0.0 }, anim: true, step: true });
+      }
+      if (ln) declLine(add, `${prefix}_lbl`, ln, { color: labelColor, outline, edge: 0.09 });
+      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "type", color: plateColor, emit: 0.04, sampled: false }, anim: true });
+    },
+    put(put, prefix, val, centerWorld, eyeWorld, scale = 1) {
+      const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);
+      if (scale <= 0.01) {
+        put(`${prefix}_plate`, park);
+        for (const n of num.names) put(`${prefix}_${n.name}`, park);
+        if (ln) placeLine(put, `${prefix}_lbl`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => 0, { outline: true });
+        return;
+      }
+      const q = faceCam(eyeWorld, centerWorld);
+      // Front face of 8 mm plate sits 1.2 mm behind lettering z = 0 (< 3 mm flush threshold: zero double shadow)
+      put(`${prefix}_plate`, trs(apply(trs(centerWorld, q, 1), [0, em * 0.36, -0.0052]), q, scale));
+      const grp = trs(centerWorld, q, scale);
+      for (const [k, tr] of Object.entries(num.centerAt(val, grp, { afterWidth: lblW, gap }))) put(`${prefix}_${k}`, tr);
+      if (ln) {
+        const lp = apply(trs(centerWorld, q, 1), [textW / 2 - lblW / 2, em * 0.05, 0]);
+        placeLine(put, `${prefix}_lbl`, ln, (it) => apply(trs(lp, q, 1), [it.x, 0, 0]), q, () => scale, { outline: true });
+      }
+    },
+  };
 }
 // a jump for joy over g0–g1; returns the squash to add (crouch before, landing after)
 export function cheer(o, g, g0, g1) {

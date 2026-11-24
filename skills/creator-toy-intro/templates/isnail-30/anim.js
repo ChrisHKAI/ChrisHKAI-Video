@@ -658,7 +658,7 @@ const cta = (x, y, z) => [T.CTA[0] + x, T.CTA[1] + y, T.CTA[2] + z];
 // gold crown) and @isnail are slapped up in the empty space above at 28 s.
 // label: text, em (m), paper, centre (m from CTA), tilt, when it lands, letter times
 // film.json type.track: em between the labels' letters, for the face the film chose (labels.js TRACK by script)
-const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt) => makeLabel({ id, text, em, paper, c: [cx, cy, cz], tilt, at, letterAt, adv, track: film.type?.track });
+const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt, ink = null) => makeLabel({ id, text, em, paper, ink, c: [cx, cy, cz], tilt, at, letterAt, adv, track: film.type?.track });
 export const SLOGAN_LETTER = (i) => E.letters + i * T.LETTER_STEP;
 // the slogan's labels run on from one another, a letter per 8th note; the name
 // and the handle are slapped up together at E.name
@@ -671,7 +671,7 @@ const sloganPlaces = (scale = 1, xs = null) => {
     sloganAt += [...p.text].length;
     const d = T.CTA_LAYOUT.slogan[k] ?? { ...T.CTA_LAYOUT.slogan.at(-1), at: T.CTA_LAYOUT.slogan.at(-1).at.map((v, j) => v + T.CTA_LAYOUT.sloganStep[j] * (k - T.CTA_LAYOUT.slogan.length + 1)) };
     const at = p.at ?? (xs ? [xs[k], d.at[1], d.at[2]] : d.at);
-    const L = label(`slogan${k}`, p.text, p.em ?? d.em, p.paper, ...at, p.tilt ?? d.tilt, SLOGAN_LETTER(first) - (STEADY_CTA ? 0.02 : 0.06), (i) => SLOGAN_LETTER(first + i));
+    const L = label(`slogan${k}`, p.text, p.em ?? d.em, p.paper, ...at, p.tilt ?? d.tilt, SLOGAN_LETTER(first) - (STEADY_CTA ? 0.02 : 0.06), (i) => SLOGAN_LETTER(first + i), p.ink ?? null);
     if (scale !== 1) L.fit = scale; // the whole label set smaller (labels.js labelT), its lettering cut at full size
     return L;
   });
@@ -703,9 +703,9 @@ const sloganLabels = fitSlogan();
 const N = { ...T.CTA_LAYOUT.name, ...CTA_TEXT.name }, HD = { ...T.CTA_LAYOUT.handle, ...CTA_TEXT.handle };
 export const LABELS = [
   ...sloganLabels,
-  label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + (STEADY_CTA ? 0.01 + 0.04 * i : 0.05 + 0.05 * i)),
+  label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + (STEADY_CTA ? 0.01 + 0.04 * i : 0.05 + 0.05 * i), N.ink ?? null),
   // no handle (none, or the ending leaves it off: film.json cta.handle.text ""): the name alone
-  ...(HD.text ? [label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + (STEADY_CTA ? 0.20 : 0.18), (i) => E.name + (STEADY_CTA ? 0.21 : 0.22) + 0.025 * i)] : []),
+  ...(HD.text ? [label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + (STEADY_CTA ? 0.20 : 0.18), (i) => E.name + (STEADY_CTA ? 0.21 : 0.22) + 0.025 * i, HD.ink ?? null)] : []),
 ];
 LABELS.forEach(tear);
 const labelAt = (L, t) => labelT(L, t, cta);

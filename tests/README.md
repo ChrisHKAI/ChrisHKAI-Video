@@ -163,12 +163,19 @@ cards, deep prop-into-prop embedding, settled end-card torn-paper label
 overlaps, colliding 3D headline lines (`lineOverlaps`), camera-frustum
 edge-crop warnings (including custom-beat props and 3D headlines), 2D
 camera-space picture-card occlusions (`cardScreenOverlaps`), foreground props
-crossing in front of `hero_head` (`heroFaceOcclusions`), dense confetti bursts
+crossing in front of `hero_head` (`heroFaceOcclusions`), foreground `uiBox`
+plaques cutting across the toy's standing body (`propCoversToyBody`), airborne
+sky-drops/leaps streaking across active 3D headlines or readouts
+(`heroStreaksOverText`), dense confetti bursts
 lingering over 3D readouts (`confettiOverText`), custom-beat 3D headlines
 projecting over the toy or showcase cards in 2D camera space
 (`lineBackdropClashes`), zero-false-positive guards for
-compound parts, `declareLine` / `fastReveal` line-name separation (`slo1` vs
-`slo2`), `floatingSmallLetters` double-shadow detection, `armLiftLimit`
+compound parts and flat floor `route`/`lane`/`carpet`/`runway` strips,
+`declareLine` / `fastReveal` line-name separation (`slo1` vs
+`slo2`), `floatingSmallLetters` double-shadow detection, `readout.centerAt` /
+`readoutBadge` symmetric flush-mounted counter badges, `strideIn` / `strideOut`
+floor-level beat transitions, `paperOf` saturated orange/crimson/cobalt cream-ink
+contrast & explicit `ink` overrides, `armLiftLimit`
 wide-headed chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()`
 and double-`at()` detection, `oversizedUiBoxes` raw-`trs()` picture-card
 detection, `movieWraps` cyclic video wrap warnings, `qFlat` horizontal
@@ -179,11 +186,15 @@ floor-ring quaternions, `cutout()` / `picture({ cyclic: false })` helpers, the
 `tim-line/figure.js` `roundBox` mm→m conversion.
 
 Engine reliability fixes (`pacing.slanted` hidden-letter filtering,
-`pacing.unread_lettering` staggered-typing ramp handling, `diff-anim.py`
+`pacing.unread_lettering` staggered-typing ramp handling, `pacing.check`
+`shrunk` `<22%` custom-beat framing warnings, `diff-anim.py`
 hidden-track, `unitScale`-metadata & texture-asset `--images`/`--since`
 filtering, `glyphs.harvest_js_glyphs` custom `.js` beat/prop character
 collection, `fonts.chosen` `"Family:Style"` string shorthand, `reading.match` /
-`reading.confidence` split-line & background-duplicate handling,
+`reading.confidence` split-line & background-duplicate handling, `silent.py`
+geometric-ring OCR ghost filtering, `real.py` unknown-instrument & single-hit
+variant suggestions, `finish.py` `.finish-meta.json` incremental frame & encode
+caching,
 `timeline.js` two-column long-slogan typing cadence, `compare.py --frames`,
 `score.py` groove fallback, `run.mjs` `clearance`/`diff` & incremental
 `previs` / `animatic -- --frames` steps,

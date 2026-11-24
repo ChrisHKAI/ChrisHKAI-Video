@@ -41,8 +41,12 @@ plays its effects alone, and `next` and `check` say so.
 - `hits`: the film's big moments, in film seconds; `cues`: every effect;
 - `dur`, `bpm`, `beat`, `bar`, `sr`, `n`, `film` (film.json);
 - `real`: the sampled instruments, when the libraries are on this computer
-  (`note`, `hit`, `chord`, `room`: piano, strings, kalimba, marimba,
-  glockenspiel, ukulele, guzheng, erhu, harp, drums and more); else `None`;
+  (`note`, `hit`, `chord`, `room`: `piano`, `violins`, `violins_pizz`,
+  `violins_spic`, `violins_trem`, `violas`, `cellos`, `kalimba`, `marimba`,
+  `glockenspiel`, `guitar_nylon`, `electric_guitar`, `electric_bass`,
+  `jazz_bass`, `ukulele`, `dan_tranh`/`guzheng`, `erhu`, `harp`, `drum_kit`,
+  single-hit `crash`/`gong`/`tambourine` with `var=None`, and more; an unknown
+  name prints the closest matches); else `None`;
 - `synth`: the synth kit, always there; `add(buf, x, t, gain, pan)`;
   `midi("G3")`.
 

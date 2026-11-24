@@ -5,11 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
+import { readout, formatCount } from "../skills/creator-toy-intro/engine/lib/counter.js";
 import { unexpectedTools, isPlaceholderAnswer } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
-import { makeLabel, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
+import { makeLabel, paperOf, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
 import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
 import { places } from "../skills/creator-toy-intro/templates/isnail-30/places.js";
 import { buildFigure } from "../skills/creator-toy-intro/characters/tim-line/figure.js";
@@ -923,4 +924,147 @@ test("lineBackdropClashes detects foreground 3D beat headlines projecting across
 
   // 3) Headline lowered onto clean dark floor in front (y = -0.06) clears both hero_shoes and beat1_card
   assert.deepEqual(lineBackdropClashes(mkScene(-0.06), { aspect: 16 / 9 }), []);
+});
+
+test("paperOf picks cream ink on saturated orange/crimson/cobalt papers, dark ink on bright yellow, and honors explicit ink", () => {
+  assert.deepEqual(paperOf("#FF4500"), ["#FF4500", "#FBF3E6"]);
+  assert.deepEqual(paperOf("#E11D48"), ["#E11D48", "#FBF3E6"]);
+  assert.deepEqual(paperOf("#0E62BE"), ["#0E62BE", "#FBF3E6"]);
+  assert.deepEqual(paperOf("#FFD166"), ["#FFD166", "#161514"]);
+  assert.deepEqual(paperOf("#FF4500", "#FFFFFF"), ["#FF4500", "#FFFFFF"]);
+  assert.deepEqual(paperOf("cream", "#2F5D9E"), ["#EFE6D4", "#2F5D9E"]);
+  const lbl = makeLabel({ id: "name", text: "左海", em: 0.04, paper: "#FF4500", ink: "#FFFDF8", c: [0, 0, 0], tilt: 0, at: 1, letterAt: () => 1.1, adv: () => 1 });
+  assert.equal(lbl.ink, "#FFFDF8");
+});
+
+test("floor route/lane/carpet/runway props never trigger false clashes, edge crops, or face occlusions", () => {
+  const objects = [
+    { name: "camera", parent: "root", camera: true, tr: pack([0, 0.16, 1.0]) },
+    { name: "hero", parent: "root", tr: pack([0, 0.01, 0]) },
+    { name: "hero_head", parent: "hero", tr: pack([0, 0.12, 0]) },
+    { name: "hero_face", parent: "hero_head", geo: { type: "ellipsoid", r: [0.045, 0.042, 0.04] }, tr: pack([0, 0, 0]) },
+    { name: "beat0_route_dash_0", parent: "root", geo: { type: "box", size: [1.8, 0.004, 0.12] }, tr: pack([0, 0.01, 0.1]) },
+    { name: "beat0_runway_strip", parent: "root", geo: { type: "roundBox", size: [0.4, 0.08, 0.02], radius: 0.003 }, tr: pack([0, 0.13, 0.25]) },
+  ];
+  const anim = { ...makeAnim(objects, {}, { frames: 24 }), scalars: { fov: Array(24).fill(30) } };
+  assert.deepEqual(solidClashes(anim), []);
+  assert.deepEqual(edgeCrops(anim, { aspect: 16 / 9 }), []);
+  assert.deepEqual(heroFaceOcclusions(anim, { aspect: 16 / 9 }), []);
+});
+
+test("propCoversToyBody flags a waist-high foreground plaque cutting across the toy and clears a low ankle lip", () => {
+  const plaqueGeo = { type: "uiBox", rect: [-160, -55, 320, 110], uvRect: [0, 0, 320, 110], thickness: 0.004, unitScale: 0.5 };
+  const mkScene = (plaqueY) => ({
+    ...makeAnim(
+      [
+        { name: "camera", parent: "root", camera: true, tr: pack([0, 0.16, 1.0]) },
+        { name: "hero", parent: "root", tr: pack([0, 0, 0]) },
+        { name: "hero_legs", parent: "hero", geo: { type: "box", size: [0.08, 0.08, 0.06] }, tr: pack([0, 0.04, 0]) },
+        { name: "hero_torso", parent: "hero", geo: { type: "box", size: [0.09, 0.08, 0.06] }, tr: pack([0, 0.12, 0]) },
+        { name: "hero_head_mesh", parent: "hero", geo: { type: "ellipsoid", r: [0.05, 0.05, 0.05] }, tr: pack([0, 0.20, 0]) },
+        { name: "beat1_plaque24", parent: "root", geo: plaqueGeo, mat: { type: "ui" }, tr: pack([0, plaqueY, 0.22], UPRIGHT, [0.5, 0.5, 0.5]) },
+      ],
+      {},
+      { frames: 24 },
+    ),
+    scalars: { fov: Array(24).fill(30) },
+  });
+
+  const hits = propCoversToyBody(mkScene(0.06), { aspect: 16 / 9 });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].card, "beat1_plaque24");
+  assert.ok(hits[0].share >= 0.25);
+  assert.match(describePropCoversToyBody(hits)[0].text, /cuts across \d+% of the toy's standing body/);
+
+  // Lowered cleanly below the toy's feet
+  assert.deepEqual(propCoversToyBody(mkScene(-0.08), { aspect: 16 / 9 }), []);
+});
+
+test("heroStreaksOverText flags vertical sky-drops across top readouts and clears stationary podiums or floor strides", () => {
+  const glyphSq = { type: "curve", rings: [[[0, 0], [0.045, 0], [0.045, 0.065], [0, 0.065]]], depth: 0.004 };
+  const baseObjs = [
+    { name: "camera", parent: "root", camera: true, tr: pack([0, 0.20, 1.1]) },
+    { name: "hero", parent: "root", tr: pack([0, 0.04, 0.10]) },
+    { name: "hero_body", parent: "hero", geo: { type: "box", size: [0.10, 0.16, 0.08] }, tr: pack([0, 0.08, 0]) },
+    { name: "beat2_r0", letter: "1", step: true, geo: glyphSq, tr: pack([-0.05, 0.30, -0.05]) },
+    { name: "beat2_r1", letter: "8", step: true, geo: glyphSq, tr: pack([0.00, 0.30, -0.05]) },
+    { name: "beat2_r2", letter: "万", step: true, geo: glyphSq, tr: pack([0.05, 0.30, -0.05]) },
+  ];
+
+  // 1) Fast vertical sky-drop from y=0.52 down to y=0.04 across readout at y=0.30 -> flagged!
+  const dropHeroTrack = Array.from({ length: 15 }, (_, f) => {
+    const u = f / 14;
+    return [f, ...pack([0, 0.04 + 0.50 * (1 - u) * (1 - u), 0.10])];
+  });
+  const dropAnim = { ...makeAnim(baseObjs, { hero: dropHeroTrack }, { frames: 15 }), scalars: { fov: Array(15).fill(30) } };
+  const dropHits = heroStreaksOverText(dropAnim, { aspect: 16 / 9 });
+  assert.equal(dropHits.length, 1);
+  assert.equal(dropHits[0].line, "beat2_readout");
+  assert.match(describeHeroStreaksOverText(dropHits)[0].text, /airborne toy streaks in front of 3D lettering "18万"/);
+
+  // 2) Stationary toy standing on a high podium (y=0.26, vy=0) -> NOT flagged as an airborne streak
+  const podiumTrack = Array.from({ length: 15 }, (_, f) => [f, ...pack([0, 0.26, 0.10])]);
+  const podiumAnim = { ...makeAnim(baseObjs, { hero: podiumTrack }, { frames: 15 }), scalars: { fov: Array(15).fill(30) } };
+  assert.deepEqual(heroStreaksOverText(podiumAnim, { aspect: 16 / 9 }), []);
+
+  // 3) Floor-level lateral strideIn (y stays near 0.04..0.065) -> completely clear of top readout!
+  const strideTrack = Array.from({ length: 15 }, (_, f) => [f, ...pack([-0.35 + (0.35 * f) / 14, 0.05, 0.10])]);
+  const strideAnim = { ...makeAnim(baseObjs, { hero: strideTrack }, { frames: 15 }), scalars: { fov: Array(15).fill(30) } };
+  assert.deepEqual(heroStreaksOverText(strideAnim, { aspect: 16 / 9 }), []);
+});
+
+test("readout.centerAt, readoutBadge, strideIn, and strideOut keep badges symmetric/flush and entrances floor-level", async () => {
+  const fmt = (v) => formatCount(v, { decimals: 0, unit: "万" });
+  const r = readout({ fmt, from: 1, to: 18, em: 0.06, adv: (k) => (k.endsWith("万") ? 1.0 : 0.6) });
+  const centered = r.centerAt(18, { p: [0, 0, 0], q: QID, s: [1, 1, 1] }, { afterWidth: 0.09, gap: 0.02 });
+  // Total width = r.width(18) + 0.02 + 0.09: left edge of '1' sits at -totalW / 2
+  const totalW = r.width(18) + 0.02 + 0.09;
+  const shownPositions = Object.entries(centered).filter(([, tr]) => tr.s[0] > 0.5).map(([, tr]) => tr.p[0]).sort((a, b) => a - b);
+  assert.equal(shownPositions.length, 3); // '1', '8', '万'
+  assert.ok(Math.abs(shownPositions[0] - (-totalW / 2)) < 1e-6);
+
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-kit-"));
+  try {
+    writeFileSync(join(dir, "film.json"), JSON.stringify({ format: { fps: 30, duration: 6, size: [1920, 1080] }, toy: "toy.json" }));
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({
+      height: 0.14,
+      colors: { body: "#2F61EB" },
+      joints: { head: { p: [0, 0.10, 0] }, armL: { p: [0.03, 0.08, 0] }, armR: { p: [-0.03, 0.08, 0] }, legL: { p: [0.015, 0.03, 0] }, legR: { p: [-0.015, 0.03, 0] } },
+      parts: [{ name: "torso", group: "body", shape: "roundBox", size: [0.06, 0.08, 0.05], mat: "body" }],
+    }));
+    const kitUrl = new URL("../skills/creator-toy-intro/engine/lib/beatkit.js", import.meta.url).href;
+    const probe = `
+      import * as kit from ${JSON.stringify(kitUrl)};
+      const fmt = (v) => kit.formatCount(v, { decimals: 0, unit: "万" });
+      const glyph = {
+        has: () => true,
+        adv: (k) => (k.split(":")[1].codePointAt(0) >= 0x2e80 ? 1.0 : 0.62),
+        geo: (_k, em, depth, bevel) => ({ type: "curve", rings: [[[0, 0], [em * 0.6, 0], [em * 0.6, em * 0.8], [0, em * 0.8]]], depth, bevel }),
+      };
+      const badge = kit.readoutBadge(glyph, { from: 1, to: 18, fmt, label: "阅读", em: 0.04 });
+      const declared = [];
+      badge.declare((o) => declared.push(o), "beat1_b");
+      const placed = {};
+      badge.put((name, tr) => { placed[name] = tr; }, "beat1_b", 18, [0, 0.32, 0], [0, 0.20, 1.0], 1);
+      const ys = [];
+      for (let k = 0; k <= 10; k++) {
+        const g = k * 0.05;
+        ys.push(kit.strideIn(kit.stand([0, 0, 0]), g, 0, 0.5, [-0.4, 0, 0], [0, 0, 0]).pos[1]);
+        ys.push(kit.strideOut(kit.stand([0, 0, 0]), g, 0, 0.5, [0, 0, 0], [0.4, 0, 0]).pos[1]);
+      }
+      console.log(JSON.stringify({ declared, placed, ys }));
+    `;
+    const sub = spawnSync("node", ["--input-type=module", "-e", probe], { env: { ...process.env, FILM: dir }, encoding: "utf8" });
+    assert.equal(sub.status, 0, sub.stderr);
+    const { declared, placed, ys } = JSON.parse(sub.stdout.trim().split(/\r?\n/).pop());
+    const animObjs = declared.map((o) => {
+      const t = placed[o.name];
+      return { ...o, parent: "root", tr: pack(t.p, t.q, t.s) };
+    });
+    // Flush plate mounting (< 3 mm gap) triggers zero floatingSmallLetters double-shadow warnings!
+    assert.deepEqual(floatingSmallLetters(makeAnim(animObjs, {}, { frames: 18 })), []);
+    for (const y of ys) assert.ok(y >= 0 && y <= 0.03);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

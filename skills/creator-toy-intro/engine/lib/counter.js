@@ -66,7 +66,7 @@ export function readout({ fmt, from, to, em, adv, key = (c) => `heavy:${c}`, ste
     // the objects to declare: { name, key (the glyph), c }
     names: places.flatMap((set, k) => [...set].map((c) => ({ name: id(k, c), key: key(c), c }))),
     width: (v) => [...fmt(v)].reduce((w, c) => w + adv(key(c)) * em, 0),
-    // every object's transform for v, in the group's frame
+    // every object's transform for v, in the group's frame (right-aligned on x = 0)
     at(v, group) {
       const out = {};
       places.forEach((set, k) => set.forEach((c) => (out[id(k, c)] = mulT(group, trs([0, 0, 0], qId(), HIDDEN)))));
@@ -76,6 +76,12 @@ export function readout({ fmt, from, to, em, adv, key = (c) => `heavy:${c}`, ste
         if (out[id(k, c)]) out[id(k, c)] = mulT(group, trs([x, 0, 0]));
       });
       return out;
+    },
+    // centred on x = 0 of group (or paired with a trailing label of `afterWidth` after `gap` so both centre together)
+    centerAt(v, group, { afterWidth = 0, gap = 0 } = {}) {
+      const maxW = [...fmt(to)].reduce((w, c) => w + adv(key(c)) * em, 0);
+      const totalW = maxW + (afterWidth > 0 ? gap + afterWidth : 0);
+      return this.at(v, mulT(group, trs([-totalW / 2 + maxW, 0, 0])));
     },
   };
 }

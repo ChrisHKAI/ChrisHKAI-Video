@@ -142,7 +142,9 @@ does, in one go:
 - the look: bloom on the brightest light only (over 0.85 of white, at 0.3:
   a white page or white lettering on the dark stage stays sharp; `-- --bloom-from
   0.7 --bloom 0.4` for more glow), a soft vignette, fine grain, on every
-  core; then the film, H.264 with the score as AAC (`out/<name>.mp4`);
+  core (`build/final/.finish-meta.json` caches unchanged frames across partial
+  re-renders, sound re-mixes, and `-- --sfx-cut`; pass `-- --force` to rebuild
+  every frame); then the film, H.264 with the score as AAC (`out/<name>.mp4`);
 - the cut with the sound effects alone, where a publish platform asks for
   it (抖音: creators there lay the platform's own music under a film):
   `out/<name>-sfx.mp4`;

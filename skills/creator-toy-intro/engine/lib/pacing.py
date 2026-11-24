@@ -73,6 +73,7 @@ def rotate_inv(q, v):
 
 
 SMALL = 0.08  # the toy under this share of the frame's height reads as a speck
+SHRUNK = 0.22  # custom beat median toy height under this looks shrunk beside the paper storyboard frames (~30–45%)
 LONG = 1.5  # s: a stretch that long counts
 
 
@@ -417,15 +418,24 @@ def check(film):
     unread = unread_lettering(anim, tl.get("SEGMENTS"), reads)
     # the toy as a speck, or out of the frame while it is meant to be in it; not in a segment where the work is the
     # hero and the toy stands small on purpose (film.json story.segments[i].wide: a wall of their 66 pictures)
-    small, off = [], []
+    small, shrunk, off = [], [], []
     seen = toy_on_screen(film, anim)
     if seen is not None:
         share, on, shown = seen
         rate = anim["fps"] * anim["sub"]
+        f_segs = ((json.loads((Path(film) / "film.json").read_text()).get("story") or {}).get("segments")) or []
         wide = np.zeros(len(share), bool)
-        for s in tl.get("SEGMENTS") or []:
-            if s.get("wide"):
+        for idx, s in enumerate(tl.get("SEGMENTS") or []):
+            is_wide = bool(s.get("wide") or (idx < len(f_segs) and isinstance(f_segs[idx], dict) and f_segs[idx].get("wide")))
+            if is_wide:
                 wide[int(s["f0"] * rate):int(s["f1"] * rate)] = True
+            elif s.get("kind") == "beat":
+                lo, hi = int(s["f0"] * rate), min(len(share), int(s["f1"] * rate))
+                on_seg = on[lo:hi]
+                if on_seg.sum() >= int(LONG * rate):
+                    med = float(np.median(share[lo:hi][on_seg]))
+                    if SMALL <= med < SHRUNK:
+                        shrunk.append((round(float(s["f0"]), 2), round(float(s["f1"]), 2), round(med, 3)))
         small = [(a, z, round(float(np.median(share[int(a * rate):int(z * rate)])), 3)) for a, z in stretches(on & (share < SMALL) & ~wide, rate)]
         off = stretches(shown & ~on, rate, 2 * LONG)
     # sound-effect dead air: stretches > 2.25 bars (or 4.5 s) with zero SFX cues in timeline.json
@@ -434,5 +444,5 @@ def check(film):
     cue_gaps = [(round(a, 2), round(z, 2)) for a, z in zip(cue_ts, cue_ts[1:]) if z - a > max_cue_gap + 1e-6]
 
     return {"duration": dur, "bar": bar, "dead": dead, "cueGaps": cue_gaps, "alone": alone, "hook": hits[0] if hits else None,
-            "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "off": off,
+            "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "shrunk": shrunk, "off": off,
             "slant": slanted(anim, tl.get("SEGMENTS"))}

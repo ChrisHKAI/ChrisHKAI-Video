@@ -9,6 +9,7 @@ keeps the balance it was mixed with. What is played is remembered, for the credi
 """
 import math
 import sys
+from difflib import get_close_matches
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +23,18 @@ S.seed(2026)  # the same film sounds the same every time
 USED = set()
 
 
+def _check_inst(inst):
+    if isinstance(inst, S.Inst) or inst in S.REG or inst in S.ALIASES:
+        return
+    known = sorted(set(S.REG) | set(S.ALIASES))
+    stem = str(inst).split("_")[0].lower()
+    pref = [k for k in known if k.startswith(stem)] if stem else []
+    close = get_close_matches(str(inst), known, n=5, cutoff=0.45)
+    picks = list(dict.fromkeys([*pref, *close]))[:6]
+    hint = f"; did you mean: {', '.join(picks)}?" if picks else f"; known instruments include: {', '.join(sorted(S.REG)[:12])}…"
+    raise KeyError(f"unknown instrument {inst!r}{hint}")
+
+
 def need(*libs):
     missing = [lib for lib in libs if not (Path(S.ROOT) / lib).is_dir()]
     if missing:
@@ -33,13 +46,29 @@ def midi(f):
 
 
 def note(inst, pitch, dur, vel, **kw):
+    _check_inst(inst)
     USED.add(inst)
     return S.note(inst, pitch, dur, vel=vel, **kw)
 
 
-def hit(inst, var, vel):
+def hit(inst, var=None, vel=0.8):
+    _check_inst(inst)
     USED.add(inst)
-    return S.hit(inst, var, vel)
+    try:
+        return S.hit(inst, var, vel)
+    except KeyError:
+        canon = S.ALIASES.get(inst, inst) if isinstance(inst, str) else getattr(inst, "name", str(inst))
+        I = inst if isinstance(inst, S.Inst) else S.load(canon)
+        if not I.vars:
+            raise KeyError(f"{canon!r} is a single-hit instrument with no variants (got var={var!r}); pass None: hit({inst!r}, None, {vel})") from None
+        picks = get_close_matches(str(var), I.vars, n=5, cutoff=0.35) or I.vars[:8]
+        raise KeyError(f"{canon!r} has no variant {var!r}; try: {', '.join(picks)} (available: {', '.join(I.vars)})") from None
+
+
+def chord(inst, pitches, dur, vel=0.8, strum=0.0, **kw):
+    _check_inst(inst)
+    USED.add(inst)
+    return S.chord(inst, pitches, dur, vel=vel, strum=strum, **kw)
 
 
 def section(m):

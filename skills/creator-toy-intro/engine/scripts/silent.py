@@ -16,6 +16,7 @@ With no text recognition on this computer (engine/lib/reading.py: Vision on a Ma
 made and "reader" is null: the reading is then done from the pictures as they are, and says so.
 """
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -34,6 +35,13 @@ def twin(src):
     return t if t.is_file() and t.stat().st_mtime >= src.stat().st_mtime - 60 else None
 
 
+def icon_ghost(text, conf=None):
+    """A circular icon, chain link, toggle pill or divider bar whose blurred outline still resembles 1–2 ring/stroke
+    characters (e.g. 'OO' or 'D0' at low confidence) after all real lettering has been blurred out."""
+    s = "".join(ch for ch in (text or "").strip() if not ch.isspace())
+    return bool(s) and len(s) <= 2 and bool(re.fullmatch(r"[0OoQDCIl1|/\-_+=.:()]+", s)) and (conf is None or conf < 0.85)
+
+
 def silence(r, src, dst):
     """One picture without its words → dst. Returns (what was taken off, what can still be read)."""
     took, left = [], []
@@ -42,17 +50,17 @@ def silence(r, src, dst):
         cur = Path(tmp) / "cur.png"
         img.save(cur)
         for n in range(ROUNDS):
-            found = [(t, b) for t, _, b in reading.boxes_closer(r, cur) if reading.wordy(t)]
-            if not found:
+            rows = [(t, c, b) for t, c, b in reading.boxes_closer(r, cur) if reading.wordy(t)]
+            if not rows:
                 left = []
                 break
             if n == 0:
-                took = [t for t, _ in found]
-            left = [t for t, _ in found]
-            img = reading.without_words(img, [b for _, b in found], strength=1.0 + 0.8 * n)
+                took = [t for t, _, _ in rows]
+            left = [t for t, c, _ in rows if not icon_ghost(t, c)]
+            img = reading.without_words(img, [b for _, _, b in rows], strength=1.0 + 0.8 * n)
             img.save(cur)
         else:
-            left = [t for t, _, b in reading.boxes_closer(r, cur) if reading.wordy(t)]
+            left = [t for t, c, _ in reading.boxes_closer(r, cur) if reading.wordy(t) and not icon_ghost(t, c)]
     dst.parent.mkdir(parents=True, exist_ok=True)
     img.save(dst, quality=92)
     return took, left

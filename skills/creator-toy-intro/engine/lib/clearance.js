@@ -12,9 +12,9 @@ import { readFileSync } from "node:fs";
 import { inflateRawSync } from "node:zlib";
 
 const MM = 0.001;
-// what is not a solid: particles, flat pictures, the floor, the camera
+// what is not a solid: particles, flat pictures, floor strips/lanes/carpets, the floor, the camera
 // (a beat's objects carry its prefix, beat<k>_: its sparks and glows are no more solid than the story's)
-const SKIP_NAME = /^(beat\d+_)?(flake|spark|bit|glow|confetti|burst|strip|floor|cta_floor|fx|camera)/;
+const SKIP_NAME = /^(beat\d+_)?(flake|spark|bit|glow|confetti|burst|strip|route|lane|carpet|runway|floor|cta_floor|fx|camera)/;
 const SKIP_GEO = new Set(["plane", "octa", "arc"]);
 
 export function clearance(anim, { toy = "hero", tol = null, every = 1, file = (p) => p } = {}) {
@@ -711,8 +711,8 @@ export function edgeCrops(anim, { aspect = 16 / 9, toy = "hero", margin = 0.025,
     : [];
 
   // Custom beat prop groups (e.g. beat1_clap), showcase picture cards (1–5 uiBox cards on a beat), and 3D headline
-  // lines (e.g. beat0_rl1): exclude wide backdrops, floor rails/pools, full-bleed walls, and profile-page slabs.
-  const SKIP_BEAT_CROP = /^beat\d+_(p_|back$|avatar$|cyc|bg|rail|pool|floor|desk_platform|desk_trim|rostrum|wall|bleed)/;
+  // lines (e.g. beat0_rl1): exclude wide backdrops, floor rails/routes/pools, full-bleed walls, and profile-page slabs.
+  const SKIP_BEAT_CROP = /^beat\d+_(p_|back$|avatar$|cyc|bg|rail|route|lane|carpet|runway|strip|pool|floor|desk_platform|desk_trim|rostrum|wall|bleed)/;
   const peakScale = (o) => {
     const rows = anim.tracks?.[o.name];
     if (!rows?.length) return Math.max(...unpack(o.tr).s.map(Math.abs));
@@ -1852,6 +1852,237 @@ export function describeLineBackdropClashes(items) {
     kind: "warn",
     ...m,
     text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: 3D lettering "${m.text}" (${m.line}) crosses over ${m.backdrop} on camera (${Math.round(m.share * 100)}% of letter height at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect foreground custom-beat picture cards or plaques (`uiBox`) placed between the camera and the standing toy
+ * that slice off >= 25% of the toy's visible body/legs for >= 0.40 s (which `heroFaceOcclusions` misses when the
+ * card stays below the chin). Mount plaques lower on the pedestal step so the full vinyl figure reads cleanly.
+ */
+export function propCoversToyBody(anim, { aspect = 16 / 9, toy = "hero", minHeightShare = 0.25, minWidthShare = 0.40, minSecs = 0.40, every = 2, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !objects.has(toy) || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+
+  const heroProbes = anim.objects
+    .filter((o) => o.geo && o.name !== toy && under(o, toy))
+    .map((o) => ({ o, pts: probesOf(o.geo, file) }))
+    .filter((p) => p.pts.length);
+  if (!heroProbes.length) return [];
+
+  const SKIP_FG = /^beat\d+_(p_|back$|avatar$|cyc|bg|floor|wall|bleed)/;
+  const fgCards = anim.objects
+    .filter((o) => /^beat\d+_/.test(o.name) && !SKIP_FG.test(o.name) && !SKIP_NAME.test(o.name) && o.geo?.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4)
+    .map((o) => ({ o, spec: boxSpec(o) }))
+    .filter((x) => x.spec);
+  if (!fgCards.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+
+    let hx0 = Infinity, hx1 = -Infinity, hy0 = Infinity, hy1 = -Infinity, hDepth = 0, hn = 0;
+    for (const { o, pts } of heroProbes) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      for (const [lp0] of pts) {
+        const lp = toLocal(camW, apply(w, lp0));
+        if (lp[2] >= -0.05 || -lp[2] > 6) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < hx0) hx0 = nx; if (nx > hx1) hx1 = nx;
+        if (ny < hy0) hy0 = ny; if (ny > hy1) hy1 = ny;
+        hDepth += -lp[2]; hn++;
+      }
+    }
+    if (!hn || hx1 <= hx0 || hy1 <= hy0 || hx1 < -1 || hx0 > 1 || hy1 < -1 || hy0 > 1) {
+      for (const [k, c] of open) { out.push(c); open.delete(k); }
+      continue;
+    }
+    const meanHDepth = hDepth / hn;
+    const hW = Math.max(1e-5, hx1 - hx0), hH = Math.max(1e-5, hy1 - hy0);
+
+    const seenNow = new Set();
+    for (const { o, spec } of fgCards) {
+      const w = worldOf(o.name, s, memo);
+      const unit = o.geo.unitScale ?? 1;
+      if (Math.min(...w.s.map(Math.abs)) < 0.05 * unit) continue;
+      let cx0 = Infinity, cx1 = -Infinity, cy0 = Infinity, cy1 = -Infinity, cDepth = 0, cn = 0;
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+        const lp = toLocal(camW, apply(w, [spec.c[0] + sx * spec.h[0], spec.c[1] + sy * spec.h[1], spec.c[2] + sz * spec.h[2]]));
+        if (lp[2] >= -0.05 || -lp[2] > 6) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < cx0) cx0 = nx; if (nx > cx1) cx1 = nx;
+        if (ny < cy0) cy0 = ny; if (ny > cy1) cy1 = ny;
+        cDepth += -lp[2]; cn++;
+      }
+      if (!cn || cDepth / cn >= meanHDepth - 0.025) continue;
+      const ovX = Math.min(hx1, cx1) - Math.max(hx0, cx0);
+      const ovY = Math.min(hy1, cy1) - Math.max(hy0, cy0);
+      if (ovX <= 0 || ovY <= 0) continue;
+      const wShare = ovX / hW, hShare = ovY / hH;
+      if (wShare < minWidthShare || hShare < minHeightShare) continue;
+      seenNow.add(o.name);
+      const cur = open.get(o.name);
+      if (!cur) open.set(o.name, { card: o.name, from: t, to: t, peak: t, share: hShare });
+      else {
+        cur.to = t;
+        if (hShare > cur.share) Object.assign(cur, { share: hShare, peak: t });
+      }
+    }
+    for (const [k, c] of open) if (!seenNow.has(k)) { out.push(c); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+}
+
+export function describePropCoversToyBody(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: foreground card ${m.card} cuts across ${Math.round(m.share * 100)}% of the toy's standing body (worst at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect fast vertical sky-drops/leaps (`kit.dropIn` / `kit.leapOut`, >= 0.08 s) where the airborne toy streaks in
+ * front of an active custom-beat 3D headline or numeric readout (too brief for `lineBackdropClashes` 0.40 s window,
+ * yet visibly smears falling limbs over top banners). Prefer floor-level `kit.strideIn` / `kit.strideOut`.
+ */
+export function heroStreaksOverText(anim, { aspect = 16 / 9, toy = "hero", minShare = 0.35, minSecs = 0.06, every = 1, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !objects.has(toy) || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+
+  const heroProbes = anim.objects
+    .filter((o) => o.geo && o.name !== toy && under(o, toy))
+    .map((o) => ({ o, pts: probesOf(o.geo, file) }))
+    .filter((p) => p.pts.length);
+  if (!heroProbes.length) return [];
+
+  const lineGroups = new Map();
+  for (const o of anim.objects) {
+    if (!/^beat\d+_/.test(o.name) || !o.letter || o.pop || o.mat?.outline || o.geo?.type !== "curve" || !o.geo.rings?.length) continue;
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const corners = [
+      [Math.min(...xs), Math.min(...ys), 0],
+      [Math.max(...xs), Math.min(...ys), 0],
+      [Math.min(...xs), Math.max(...ys), 0],
+      [Math.max(...xs), Math.max(...ys), 0],
+    ];
+    const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+    const key = o.step ? `${beat}readout` : (o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, ""));
+    if (!lineGroups.has(key)) lineGroups.set(key, []);
+    lineGroups.get(key).push({ o, corners });
+  }
+  if (!lineGroups.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const idxOf = (o) => o.letterIndex ?? +(o.name.match(/(\d+)$/)?.[1] ?? 0);
+  const open = new Map(), out = [];
+
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const heroW = worldOf(toy, s, memo);
+    const fAdj = f + 1 < anim.frames ? f + 1 : Math.max(0, f - 1);
+    const adjW = fAdj !== f ? worldOf(toy, fAdj * SUB, new Map()) : heroW;
+    const sameStage = Math.abs(adjW.p[0] - heroW.p[0]) < 2 && Math.min(...adjW.s.map(Math.abs)) >= 1e-3;
+    const vy = sameStage && fAdj !== f ? Math.abs(adjW.p[1] - heroW.p[1]) * anim.fps : 0;
+    if (Math.min(...heroW.s.map(Math.abs)) < 1e-3 || heroW.p[1] < 0.14 || vy < 0.45) {
+      for (const [k, c] of open) { out.push(c); open.delete(k); }
+      continue;
+    }
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+
+    let hx0 = Infinity, hx1 = -Infinity, hy0 = Infinity, hy1 = -Infinity, hDepth = 0, hn = 0;
+    for (const { o, pts } of heroProbes) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      for (const [lp0] of pts) {
+        const lp = toLocal(camW, apply(w, lp0));
+        if (lp[2] >= -0.05 || -lp[2] > 6) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < hx0) hx0 = nx; if (nx > hx1) hx1 = nx;
+        if (ny < hy0) hy0 = ny; if (ny > hy1) hy1 = ny;
+        hDepth += -lp[2]; hn++;
+      }
+    }
+    if (!hn || hx1 < -1 || hx0 > 1 || hy1 < -1 || hy0 > 1) {
+      for (const [k, c] of open) { out.push(c); open.delete(k); }
+      continue;
+    }
+    const meanHDepth = hDepth / hn;
+
+    const seenNow = new Set();
+    for (const [key, ls] of lineGroups) {
+      let lx0 = Infinity, lx1 = -Infinity, ly0 = Infinity, ly1 = -Infinity, ld = 0, ln = 0;
+      const shownChars = [];
+      for (const { o, corners } of ls) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.35) continue;
+        let ok = 0;
+        for (const c of corners) {
+          const lp = toLocal(camW, apply(w, c));
+          if (lp[2] >= -0.05 || -lp[2] > 6) continue;
+          const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+          if (nx < lx0) lx0 = nx; if (nx > lx1) lx1 = nx;
+          if (ny < ly0) ly0 = ny; if (ny > ly1) ly1 = ny;
+          ld += -lp[2]; ln++; ok++;
+        }
+        if (ok === 4) shownChars.push(o);
+      }
+      if (!ln || ld / ln < meanHDepth - 0.02) continue;
+      const ovX = Math.min(hx1, lx1) - Math.max(hx0, lx0);
+      const ovY = Math.min(hy1, ly1) - Math.max(hy0, ly0);
+      if (ovX <= 0 || ovY <= 0) continue;
+      const hFrac = ovY / Math.max(1e-5, ly1 - ly0);
+      if (hFrac < minShare) continue;
+      const text = shownChars.sort((a, b) => idxOf(a) - idxOf(b)).map((x) => x.letter).join("");
+      seenNow.add(key);
+      const cur = open.get(key);
+      if (!cur) open.set(key, { line: key, text, from: t, to: t, peak: t, share: hFrac });
+      else {
+        cur.to = t;
+        if (hFrac > cur.share) Object.assign(cur, { share: hFrac, peak: t, text });
+      }
+    }
+    for (const [k, c] of open) if (!seenNow.has(k)) { out.push(c); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+}
+
+export function describeHeroStreaksOverText(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(2)}–${m.to.toFixed(2)} s: airborne toy streaks in front of 3D lettering "${m.text}" (${m.line}, ${Math.round(m.share * 100)}% covered at ${m.peak.toFixed(2)} s)`,
   }));
 }
 

@@ -15,10 +15,17 @@ const lum = (hex) => {
   return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
 };
 const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
-export function paperOf(paper) {
-  if (PAPER[paper]) return PAPER[paper];
+export function paperOf(paper, ink = null) {
+  const customInk = typeof ink === "string" && /^#[0-9a-f]{6}$/i.test(ink) ? ink.toUpperCase() : null;
+  if (PAPER[paper]) return [PAPER[paper][0], customInk ?? PAPER[paper][1]];
   if (/^#[0-9a-f]{6}$/i.test(paper ?? "")) {
     const hex = paper.toUpperCase();
+    if (customInk) return [hex, customInk];
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    // Saturated vermilion/orange-red, crimson, cobalt, and violet papers (#FF4500, #E11D48, #0E62BE) sit near the
+    // WCAG 0.18–0.25 luminance crossover where dark #161514 ink looks muddy under vignette; keep cream ink unless
+    // the paper is genuinely bright or yellow/amber/lime (high green channel).
+    if (lum(hex) < 0.26 && g < 0.42) return [hex, "#FBF3E6"];
     return [hex, ratio(hex, "#161514") >= ratio(hex, "#FBF3E6") ? "#161514" : "#FBF3E6"];
   }
   throw new Error(`a label's paper is ${JSON.stringify(paper)}: one of ${Object.keys(PAPER).join(", ")}, or a colour "#RRGGBB"`);
@@ -27,7 +34,7 @@ export function paperOf(paper) {
 // layout: text set in em (m) with glyph advances adv(key) and a little air between the letters (track, em: by
 // script, a CJK face's letters fill their whole em); centre c, tilt, the time it lands and each letter's time letterAt(i)
 export const TRACK = { cjk: 0.06, latin: 0.02 };
-export function makeLabel({ id, text, em, paper, c, tilt, at, letterAt, adv, font = "heavy", track }) {
+export function makeLabel({ id, text, em, paper, ink = null, c, tilt, at, letterAt, adv, font = "heavy", track }) {
   const chars = [...text];
   const keys = chars.map((ch) => `${font}:${ch}`);
   const gap = (ch) => track ?? (ch.codePointAt(0) >= 0x2e80 ? TRACK.cjk : TRACK.latin);
@@ -37,7 +44,7 @@ export function makeLabel({ id, text, em, paper, c, tilt, at, letterAt, adv, fon
   const W = w + 2 * padX, H = 0.93 * em + 2 * padY;
   let x = -w / 2;
   const letters = keys.map((k, i) => { const o = { key: k, x, y: -0.36 * em, at: letterAt(i) }; x += step(i); return o; });
-  return { id, text, em, paper, c, tilt, at, W, H, letters };
+  return { id, text, em, paper, ...(ink ? { ink } : {}), c, tilt, at, W, H, letters };
 }
 
 // a torn outline round a w x h sheet: little bites on the long edges, ragged ends
