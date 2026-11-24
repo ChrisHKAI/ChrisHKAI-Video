@@ -532,12 +532,59 @@ function ctaPose(o, t) {
     return o;
   }
   o.pos = top;
-  o.yaw = 0.45;
+  o.yaw = STEADY_CTA ? (T.PORTRAIT ? 0.14 : 0.28) : 0.45;
   let q = landSquash(t, E.ride, 0.3);
   const g = seg(t, E.push2[0], E.push2[0] + 0.2) * (1 - seg(t, E.push2[1] - 0.15, E.push2[1]));
   signature(o, t, E.push2[0], g);
   o.head = [-0.1 * g, -0.1 * g, -0.08 * g];
   o.glint = Math.exp(-Math.pow((t - E.glint2) / 0.09, 2)) + Math.exp(-Math.pow((t - (E.final + 0.15)) / 0.1, 2));
+  if (STEADY_CTA) {
+    // Stationary desk/pedestal ("two-column" / "still"): skip the snail-riding balance twitch; instead gesture
+    // smoothly toward the appearing torn-paper labels, wave warmly with the outer right arm, then settle into the camera point.
+    const pIn = smooth(seg(t, E.push2[1], E.push2[1] + 0.25)) * (1 - smooth(seg(t, E.final - 0.32, E.final - 0.05)));
+    if (pIn > 0.001) {
+      const sweep = smooth(seg(t, E.push2[1] + 0.15, Math.max(E.push2[1] + 0.6, E.final - 0.45)));
+      const slo0 = CTA_TEXT.slogan[0]?.at ?? T.CTA_LAYOUT.slogan[0]?.at ?? [0.22, 0.188, -0.04];
+      const aimTarget = T.PORTRAIT
+        ? [top[0] + 0.11, top[1] + lerp(0.17, 0.13, sweep), top[2] + 0.03]
+        : cta(Math.max(0.03, slo0[0] - 0.10), lerp(Math.max(0.16, slo0[1]), 0.108, sweep), 0.01);
+      o.yaw = lerp(o.yaw, T.PORTRAIT ? 0.18 : 0.38, pIn);
+      o.armR = [lerp(o.armR[0], -0.05, pIn), 0, lerp(o.armR[2], -0.15, pIn)];
+      o.aimL = { world: aimTarget, k: pIn, len: 1.08 };
+      o.pointL = pIn;
+      const nodT0 = Math.min(E.name, E.final - 0.9);
+      const nod = Math.sin(seg(t, nodT0, nodT0 + 0.72) * TAU * 2) * (t > nodT0 && t < nodT0 + 0.72 ? 1 : 0);
+      o.head = [lerp(o.head[0], 0.12 * nod, pIn), lerp(o.head[1], -0.08, pIn), o.head[2] * (1 - pIn)];
+    }
+    const k = smooth(seg(t, E.final - 0.2, E.final + 0.15));
+    if (k > 0) {
+      o.yaw = lerp(o.yaw, 0.08, k);
+      const holdLeft = Math.max(0, T.STORY_DURATION - E.final);
+      const waveSpan = holdLeft >= 1.5 ? Math.min(1.30, Math.max(0.55, holdLeft * 0.34)) : 0;
+      const wEnv = waveSpan > 0
+        ? smooth(seg(t, E.final - 0.05, E.final + 0.20)) * (1 - smooth(seg(t, E.final + waveSpan - 0.10, E.final + waveSpan + 0.25)))
+        : 0;
+      if (wEnv > 0.01) {
+        const w = 0.22 * Math.sin((t - E.final) * TAU * 2.2);
+        o.armR = [-0.28 * wEnv, 0, lerp(-0.15, -(1.65 + w), wEnv)];
+        o.armL = [0.04, 0, 0.15];
+      }
+      const ptK = waveSpan > 0 ? smooth(seg(t, E.final + waveSpan - 0.10, E.final + waveSpan + 0.30)) : k;
+      const breathe = smooth(seg(t, E.final + 0.25, E.final + 0.65)) * Math.sin((t - E.final) * TAU * 0.8);
+      if (ptK > 0) {
+        o.aimR = { world: CTA_CAM, k: ptK, len: 1.15 };
+        o.pointR = ptK;
+        o.legR = [-0.16 * ptK, 0, 0];
+      }
+      o.head = [lerp(o.head[0], 0.04 + 0.04 * breathe, k), lerp(o.head[1], -0.10 + 0.055 * breathe, k), lerp(o.head[2], 0.04 * breathe, k)];
+      o.pos = v3.add(o.pos, [0, 0.002 * k * Math.abs(breathe), 0]);
+      o.body = [0.02 * k * breathe, -0.03 * k * breathe, 0.015 * k * breathe];
+      if (wEnv <= 0.01) o.armL = [0.05 * k * breathe, 0, lerp(o.armL[2], 0.16 + 0.05 * breathe, k)];
+    }
+    q += crouch(t, E.final - 0.05, 0.1) + landSquash(t, E.final, 0.15);
+    squash(o, q);
+    return o;
+  }
   if (t > E.glide[0] && t < E.glide[1]) {
     o.pos = v3.add(o.pos, [0, 0.004 * Math.abs(Math.sin((t - E.glide[0]) * TAU * 3)), 0]);
     o.armR = [0, 0, -0.5]; o.armL = [0, 0, 0.5];
@@ -756,18 +803,21 @@ export const SPARKS = 22;
 export function sparkAt(i, t) {
   const stk = () => onWall(t, STICKER.cx / MM, STICKER.cy / MM, 40);
   const finalBurst = STEADY_CTA
-    ? [E.final, () => v3.add(heroCentre(t), [0, 0.10, -0.14]), "#FFE6A3"]
+    ? [E.final, () => v3.add(heroCentre(t), [-0.01, 0.16, -0.18]), "#FFE6A3"]
     : [E.final, () => heroCentre(t), "#FFFFFF"];
   const bursts = [[E.lock, () => statCentre(t), "#FFFFFF"], [E.peak, () => onWall(t, ...PEAK_AT), "#FFD25A"], ...(T.EXIT === "sticker" ? [[E.flat[0], stk, "#FFF4E0"], [E.repop, stk, "#FFF4E0"]] : []), finalBurst];
   for (const [t0, at, color] of bursts) {
     const dt = t - t0;
-    if (dt < 0 || dt > 0.7) continue;
+    const life = STEADY_CTA && t0 === E.final ? 0.55 : 0.7;
+    if (dt < 0 || dt > life) continue;
     const r = mulberry32(300 + i + Math.round(t0 * 10));
     const a = r() * TAU, b = (r() - 0.3) * 1.2;
-    const v = [Math.cos(a) * Math.cos(b), Math.sin(b) + 0.4, Math.sin(a) * Math.cos(b)].map((x) => x * (0.3 + r() * 0.4));
+    const v = STEADY_CTA && t0 === E.final
+      ? [((i % 2 === 0 ? -1 : 1) * (0.14 + r() * 0.18)) - 0.04, 0.36 + r() * 0.34, -(0.08 + r() * 0.18)]
+      : [Math.cos(a) * Math.cos(b), Math.sin(b) + 0.4, Math.sin(a) * Math.cos(b)].map((x) => x * (0.3 + r() * 0.4));
     const c = at();
     const p = ballistic(c, v, dt);
-    return { tr: trs(p, qEuler(dt * 9, dt * 7, 0), (1 - dt / 0.7) * (0.8 + r() * 0.6)), color };
+    return { tr: trs(p, qEuler(dt * 9, dt * 7, 0), (1 - dt / life) * (0.8 + r() * 0.6)), color };
   }
   return { tr: hidden(statCentre(E.lock)), color: "#FFFFFF" };
 }

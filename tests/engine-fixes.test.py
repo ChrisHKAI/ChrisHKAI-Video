@@ -1341,6 +1341,133 @@ class V0815EngineImprovementTests(unittest.TestCase):
         self.assertIn("isRemoteBlenderWrapper(blender)", run_src)
         self.assertIn("falling back to local Blender", run_src)
 
+    def test_v0816_steady_cta_natural_pose_and_smart_resume_invalidation(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "assets").mkdir()
+            Image.new("RGB", (64, 64), (40, 50, 70)).save(fdir / "assets/avatar.jpg")
+            chars = "0123456789.万查看测试梦老湿DreamAI@jackzhang123vip开源漫剧模板"
+            g_stub = {"advance": 0.9, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in set(chars)
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.11,
+                "center": [0, 0.05, 0],
+                "colors": {"coat": "#1A2234", "skin": "#F5D0B8"},
+                "joints": {
+                    "body": {"p": [0, 0.03, 0], "parent": None},
+                    "head": {"p": [0, 0.055, 0], "parent": "body"},
+                    "armR": {"p": [-0.013, 0.05, 0], "parent": "body"},
+                    "armL": {"p": [0.013, 0.05, 0], "parent": "body"},
+                    "legR": {"p": [-0.008, 0.02, 0], "parent": "body"},
+                    "legL": {"p": [0.008, 0.02, 0], "parent": "body"},
+                },
+                "parts": [
+                    {"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.038, 0], "size": [0.03, 0.03, 0.02], "mat": "coat"},
+                    {"name": "head", "group": "head", "shape": "ellipsoid", "pos": [0, 0.075, 0], "r": [0.032, 0.03, 0.03], "mat": "skin"},
+                    {"name": "sleeveR", "group": "armR", "shape": "roundBox", "pos": [-0.016, 0.04, 0], "size": [0.008, 0.02, 0.008], "mat": "coat"},
+                    {"name": "sleeveL", "group": "armL", "shape": "roundBox", "pos": [0.016, 0.04, 0], "size": [0.008, 0.02, 0.008], "mat": "coat"},
+                ],
+            }))
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "steady-v0816",
+                "template": "isnail-30",
+                "theme": "x-desktop",
+                "step": "story",
+                "format": {"fps": 30, "bpm": 120, "duration": 8, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "type": {"heavy": [{"family": "Lantinghei SC", "style": "Demibold"}], "why": "test"},
+                "profile": {"name": "梦老湿", "handle": "jackzhang123vip", "avatar": "assets/avatar.jpg", "bio": ["AI"]},
+                "posts": {"pinned": {"count": "1万", "cover": "assets/avatar.jpg"}, "retro": {"count": "1万"}},
+                "counter": {"value": 1, "unit": "万", "label": "查看", "display": "1万"},
+                "story": {
+                    "duration": 32,
+                    "profilePage": False,
+                    "exit": "jump",
+                    "segments": [{"story": [24, "end"]}],
+                    "events": {"ride": 24.28, "push2": [24.34, 24.80], "glide": [24.85, 27.60], "letters": 24.45, "name": 26.55, "final": 27.80},
+                },
+                "cta": {
+                    "layout": "two-column",
+                    "slogan": [{"text": "开源漫剧模板", "paper": "cream"}, {"text": "找梦老湿", "paper": "cream"}],
+                    "name": {"text": "梦老湿", "paper": "cream"},
+                    "handle": {"text": "@jackzhang123vip", "paper": "blue"},
+                    "prop": {"kind": "plinth"},
+                },
+            }))
+            anim_url = (SKILL / "templates/isnail-30/anim.js").as_uri()
+            probe = (
+                f"import * as A from {json.dumps(anim_url)};"
+                "const mid = A.mascotAt(26.0).o;"
+                "const wav = A.mascotAt(28.2).o;"
+                "const end = A.mascotAt(31.8).o;"
+                "const hc = A.heroCentre(28.0);"
+                "const maxSparkZ = Math.max(...Array.from({ length: A.SPARKS }, (_, i) => A.sparkAt(i, 28.0).tr.p[2]));"
+                "console.log(JSON.stringify({ hasPresentAim: Boolean(mid.aimL && mid.aimL.k > 0.9), midArmRZ: mid.armR[2], waveArmRZ: wav.armR[2], endPointR: end.pointR, sparkBehindFace: hc[2] - maxSparkZ }));"
+            )
+            r_probe = subprocess.run(
+                ["node", "--input-type=module", "-e", probe],
+                cwd=str(SKILL),
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)},
+                check=True, capture_output=True, text=True,
+            )
+            pdata = json.loads(r_probe.stdout.strip().splitlines()[-1])
+            self.assertTrue(pdata["hasPresentAim"])
+            self.assertGreater(pdata["midArmRZ"], -0.3)  # no stiff -0.5 snail A-pose
+            self.assertLess(pdata["waveArmRZ"], -1.3)    # outward greeting wave after E.final
+            self.assertGreater(pdata["endPointR"], 0.99) # settled camera point by end frame
+            self.assertGreater(pdata["sparkBehindFace"], 0.15)  # all sparks stay >15 cm behind face
+
+            # Verify smart --resume invalidation via .anim-snapshot.json in run.mjs
+            rdir = fdir / "build/render"
+            rdir.mkdir(parents=True)
+            snap_anim = {
+                "fps": 30, "sub": 1, "frames": 6, "samples": 6,
+                "objects": [
+                    {"name": "camera", "parent": "root", "tr": [0, 0, 1, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "box", "parent": "root", "geo": {"type": "box", "size": [0.1, 0.1, 0.1]}, "tr": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {"box": [[0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1], [5, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1]]},
+                "colors": {},
+                "scalars": {"fov": [30] * 6},
+            }
+            (rdir / ".anim-snapshot.json").write_text(json.dumps(snap_anim))
+            for k in range(1, 7):
+                p = rdir / f"{k:04d}.png"
+                p.write_bytes(b"old")
+                os.utime(p, (1000.0, 1000.0))
+
+            # Modify ONLY frames 1-2 (indices 0-1) in new build/anim.json; frames 4-6 stay identical!
+            new_anim = json.loads(json.dumps(snap_anim))
+            new_anim["tracks"]["box"] = [
+                [0, 0.2, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+                [1, 0.2, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+                [2, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+                [5, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            ]
+            (fdir / "build/anim.json").write_text(json.dumps(new_anim))
+            film_j = json.loads((fdir / "film.json").read_text())
+            film_j["format"]["duration"] = 0.2  # 6 frames at 30 fps
+            (fdir / "film.json").write_text(json.dumps(film_j))
+
+            mock_blender = fdir / "mock-blender.sh"
+            mock_blender.write_text("#!/bin/sh\nexit 0\n")
+            mock_blender.chmod(0o755)
+            r_res = subprocess.run(
+                ["node", str(SKILL / "engine/run.mjs"), "render", "--", "--samples", "48", "--scale", "100", "--resume", "--force"],
+                cwd=str(ROOT),
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL), "BLENDER": str(mock_blender)},
+                capture_output=True, text=True,
+            )
+            self.assertEqual(r_res.returncode, 0, r_res.stdout + r_res.stderr)
+            self.assertIn("invalidated", r_res.stdout)
+            self.assertFalse((rdir / "0001.png").exists())
+            self.assertTrue((rdir / "0006.png").exists())
+            self.assertGreater((rdir / "0006.png").stat().st_mtime, 1500.0)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

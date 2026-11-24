@@ -56,7 +56,7 @@
 //                    template → <film>/template/ (film.json "template": "./template"),
 //                    scene.py → <film>/engine/scene.py (render, estimate and animatic use it)
 import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { film, FILM, fromFilm, fromSkill, fromTemplate, importTemplate, OWN_TEMPLATE } from "./lib/film.js";
 import { HOME, findBlender, findLocalBlender, findPython, isRemoteBlenderWrapper, toolEnv } from "./lib/tools.js";
@@ -100,6 +100,38 @@ function parseFrameSet(spec, total) {
     } else if (Number.isInteger(+t)) s.add(+t);
   }
   return s;
+}
+
+function purgeStaleResumeFrames(outDir, moreArgs, totalFrames) {
+  const animPath = fromFilm("build/anim.json");
+  if (!moreArgs.includes("--resume") || !existsSync(outDir) || !existsSync(animPath)) return { purged: 0, kept: 0 };
+  const opt = (flag) => (moreArgs.includes(flag) ? moreArgs[moreArgs.indexOf(flag) + 1] : null);
+  const want = parseFrameSet(opt("--frames"), totalFrames);
+  const animAt = statSync(animPath).mtimeMs;
+  const snapPath = join(outDir, ".anim-snapshot.json");
+  let changed = null;
+  if (existsSync(snapPath)) {
+    const dr = spawnSync(PY, [fromSkill("engine/scripts/diff-anim.py"), snapPath, animPath, "--since", snapPath], { cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), encoding: "utf8" });
+    if (dr.status === 0) {
+      const firstLine = (dr.stdout ?? "").trim().split(/\r?\n/)[0]?.trim() ?? "";
+      changed = firstLine === "none" ? new Set() : parseFrameSet(firstLine, totalFrames);
+    }
+  }
+  let purged = 0, kept = 0;
+  const now = new Date();
+  for (const f of readdirSync(outDir)) {
+    const m = f.match(/^(\d{4,})\.png$/);
+    if (!m || !want.has(+m[1])) continue;
+    const idx = +m[1], p = join(outDir, f);
+    if (changed) {
+      if (changed.has(idx)) { rmSync(p, { force: true }); purged++; }
+      else if (statSync(p).mtimeMs < animAt) { utimesSync(p, now, now); kept++; }
+    } else if (statSync(p).mtimeMs < animAt - 50) {
+      rmSync(p, { force: true });
+      purged++;
+    }
+  }
+  return { purged, kept };
 }
 
 function seedResumeFrames(outDir, moreArgs, totalFrames) {
@@ -333,6 +365,8 @@ for (const [i, step] of steps.entries()) {
       const all = more.includes("--frames") ? [] : ["--frames", `1-${totalFrames}`];
       const outIdx = more.indexOf("--out");
       const outDir = fromFilm(outIdx >= 0 && more[outIdx + 1] ? more[outIdx + 1] : "build/render");
+      const { purged, kept } = purgeStaleResumeFrames(outDir, more, totalFrames);
+      if (purged > 0) console.log(`(invalidated ${purged} stale frame(s) in ${outDir === fromFilm("build/render") ? "build/render" : outDir}${kept > 0 ? `; kept ${kept} unchanged` : ""})`);
       const seeded = seedResumeFrames(outDir, more, totalFrames);
       if (seeded > 0) console.log(`(reused ${seeded} fresh pre-rendered frame(s) from build/sample or build/estimate)`);
       console.log(`\n${SLEEP_NOTE}`);
@@ -342,6 +376,9 @@ for (const [i, step] of steps.entries()) {
       const fbArgs = bArgs.includes("--resume") ? bArgs : [...bArgs, "--resume"];
       const fallback = remoteFallback ? (() => { const [fc, fa] = awake(remoteFallback, fbArgs); return { bin: remoteFallback, cmd: fc, args: fa }; })() : null;
       await runRender(cmd, args, outDir, { fallback });
+      if (existsSync(fromFilm("build/anim.json")) && pngCount(outDir) >= totalFrames) {
+        cpSync(fromFilm("build/anim.json"), join(outDir, ".anim-snapshot.json"));
+      }
       break;
     }
     case "estimate": {

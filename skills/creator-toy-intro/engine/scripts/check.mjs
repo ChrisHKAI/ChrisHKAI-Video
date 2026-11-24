@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace } from "../lib/clearance.js";
 
 const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
 const filmSceneHash = (f) => { const { step: _step, ...rest } = f ?? {}; return createHash("sha256").update(JSON.stringify(canonical(rest))).digest("hex"); };
@@ -261,6 +261,12 @@ if (past("toy") && toy && film.profile) {
     for (const m of edgeOn) say("warn", `plaque or card stands edge-on to camera: ${m.text}`, "face plaques and showcase cards toward cam.tr.p (pass eyeWorld = cam.tr.p to bannerLine/readoutBadge) so they do not turn sideways");
     const pedClashes = describePedestalSideClashes(pedestalSideClashes(motion));
     for (const m of pedClashes) say("warn", `side prop intersects pedestal: ${m.text}`, "offset side-standing sub-props cleanly outside the main pedestal rim (references/props.md)");
+    const bezelMis = describeCardBezelMismatches(cardBezelMismatches(motion, { aspect: fw / fh }));
+    for (const m of bezelMis) say("warn", `picture card overflows bezel or floor: ${m.text}`, "use kit.framedPicture(file, width) (with .standY(stageY)) so the 4-sided bezel matches the image's exact aspect ratio and sits above the plinth");
+    const frameSlices = describeFrameSlicesCard(frameSlicesCard(motion, { aspect: fw / fh }));
+    for (const m of frameSlices) say("warn", `foreground frame slices picture card: ${m.text}`, "do not float hollow viewfinder bars or icon glyphs in front of a picture card—let kit.framedPicture() border the card cleanly");
+    const faceSparks = describeSparksOverHeroFace(sparksOverHeroFace(motion, { aspect: fw / fh, file: (p) => fromFilm(p) }));
+    for (const m of faceSparks) say("warn", `particles cross toy's face: ${m.text}`, "spawn end-card/celebration sparks higher and behind the toy (vz < 0) so streaks never cross the character's eyes");
     const palPath = fromFilm("build/palette.json");
     if (existsSync(palPath) && statSync(palPath).mtimeMs >= statSync(animPath).mtimeMs) {
       for (const c of json("build/palette.json")?.film?.cards ?? []) {

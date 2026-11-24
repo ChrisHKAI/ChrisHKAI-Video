@@ -181,7 +181,7 @@ wide-headed chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()
 and double-`at()` detection, `oversizedUiBoxes` raw-`trs()` picture-card
 detection, `movieWraps` cyclic video wrap warnings, `qFlat` horizontal
 floor-ring quaternions, `cutout()` / `picture({ cyclic: false, antiglare: true })` helpers, the
-`clearance.mjs` CLI exit codes / `build/clearance.json` output, `pedestalSideClashes` side-prop-vs-pedestal overlaps, `plate`/`arc`/`card2d` clearance bounds & `0.10 s` fast face-flyover occlusion checks, `eyePoint` camera-eye unwrapping, text-only X pinned/featured post rendering (`themes/x-desktop` & `themes/x-mobile`), `ui.js`
+`clearance.mjs` CLI exit codes / `build/clearance.json` output, `pedestalSideClashes` side-prop-vs-pedestal overlaps, `cardBezelMismatches` portrait-past-bezel & card-below-floor checks, `frameSlicesCard` foreground viewfinder-bar/glyph slice checks, `sparksOverHeroFace` eye-level spark-streak warnings, `framedPicture` auto-aspect 4-sided bezel helper, anti-glare light-paper plate clamping (`readoutBadge` / `bannerLine`), `plate`/`arc`/`card2d` clearance bounds & `0.10 s` fast face-flyover occlusion checks, `eyePoint` camera-eye unwrapping, text-only X pinned/featured post rendering (`themes/x-desktop` & `themes/x-mobile`), `ui.js`
 `pageless()` opt-in/opt-out and `page.image`/`page.panels` auto-detection,
 `places.js` `two-column` non-overlapping default end-card layout, and
 `tim-line/figure.js` `roundBox` mm→m conversion.
@@ -200,7 +200,7 @@ caching/auto-refresh, `pictures.ensureCloudSafeMovie` `.mp4`/`.mov` → `.mkv` l
 `timeline.js` two-column `28.0 s` downbeat point, wider torn-paper margins, dense `<75 ms` chime thinning, long-slogan typing cadence & active `glide`/post-`final`
 breathing motion, `reading.baseline` mixed-script `I`/`l` look-alike ceiling,
 `review.py` stale `review-blind.txt` warning when older than the reviewed video,
-`scene.py` translucent `bubble` shader & `--resume` stale-frame invalidation, `compare.py --frames`,
+`scene.py` translucent `bubble` shader & `--resume` stale-frame invalidation, `run.mjs` `.anim-snapshot.json` smart `--resume` surgical invalidation for cloud & local workers, `isnail-30/anim.js` natural `STEADY_CTA` presenting/waving motion & rear-elevated final sparks, `compare.py --frames`,
 `score.py` groove fallback, `run.mjs` `clearance`/`diff` & incremental
 `previs` / `animatic -- --frames` steps,
 `safezone.py` dynamic `EV.final` hold threshold, `check.mjs` active-`act2`

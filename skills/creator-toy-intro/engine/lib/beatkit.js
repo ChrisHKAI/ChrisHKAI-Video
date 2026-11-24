@@ -18,7 +18,7 @@ const lift = (a) => Math.min(a, ARM_MAX);
 const cheerForward = ARM_MAX < 2.2 ? -0.22 : 0;
 
 // the creator's own pictures as cards, and layouts for many at once (pictures.js)
-export { picture, cutout, pictureFiles, layout, stagger, imageSize, backToBack } from "./pictures.js";
+export { picture, framedPicture, cutout, pictureFiles, layout, stagger, imageSize, backToBack } from "./pictures.js";
 // a line of 3D lettering: laid out, edged, standing by its lowest point, facing the camera (lettering.js)
 export { line, declareLine, putLine, facing, eyePoint, shade } from "./lettering.js";
 
@@ -78,6 +78,23 @@ export function strideOut(o, g, g0, g1, fromSpot, toSpot, steps = 2) {
   o.armL = [-0.5 * cyc, 0, 0.3]; o.armR = [0.5 * cyc, 0, -0.3];
   return o;
 }
+// Tone stark-white/cream paper plates (`#FFFFFF`, `#F5EFE6`) just below finish.py's 0.85 bloom knee when paired with dark ink
+// so post-bloom halation never blurs thin CJK or decimal strokes at 360p phone feed size.
+function antiGlarePlate(plateHex, inkHex, raw = false) {
+  if (raw || typeof plateHex !== "string" || !/^#[0-9a-fA-F]{6}$/.test(plateHex)) return plateHex;
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [pr, pg, pb] = rgb(plateHex);
+  const maxC = Math.max(pr, pg, pb);
+  if (maxC <= 234) return plateHex;
+  if (typeof inkHex === "string" && /^#[0-9a-fA-F]{6}$/.test(inkHex)) {
+    const [ir, ig, ib] = rgb(inkHex);
+    const inkLuma = (0.2126 * ir + 0.7152 * ig + 0.0722 * ib) / 255;
+    if (inkLuma > 0.35) return plateHex;
+  }
+  const k = 234 / maxC;
+  return "#" + [pr, pg, pb].map((c) => Math.round(c * k).toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+
 // centred, flush-mounted 3D counter + label badge: outline-free solid letters rooted cleanly into a matte paper
 // backing plate (< 3 mm flush threshold: zero double shadow, zero grown-plate stroke shimmer) and level by default
 export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056, labelEm = em * 0.78, gap = em * 0.36, padX = em * 1.1, padY = em * 0.45, depth = 0.006 } = {}) {
@@ -91,14 +108,15 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
   let hasOutline = false;
   return {
     num, ln, numW, lblW, gap, textW, plateSize, em,
-    declare(add, prefix = "badge", { plateColor = "#FF4500", numColor = "#FFFFFF", labelColor = "#FFD166", outline = false, withOutline = false } = {}) {
+    declare(add, prefix = "badge", { plateColor = "#FF4500", numColor = "#FFFFFF", labelColor = "#FFD166", outline = false, withOutline = false, rawPlate = false } = {}) {
       hasOutline = Boolean(withOutline && outline);
+      const safePlate = antiGlarePlate(plateColor, numColor, rawPlate);
       const inkFinish = { on: plateColor, side: null, rough: 0.42, coat: 0.12 };
       for (const n of num.names) {
         add({ name: `${prefix}_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, em, letterDepth, letterBevel), mat: { type: "type", color: numColor, emit: 0.0, ...inkFinish }, anim: true, step: true });
       }
       if (ln) declLine(add, `${prefix}_lbl`, ln, { color: labelColor, emit: 0.0, depth: letterDepth, bevel: letterBevel, outline: hasOutline ? outline : false, edge: 0.07, finish: inkFinish });
-      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: plateColor }, anim: true });
+      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: safePlate }, anim: true });
     },
     put(put, prefix, val, centerWorld, eyeWorld, scale = 1, { level = true } = {}) {
       const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);
@@ -134,10 +152,11 @@ export function bannerLine(glyph, text, { em = 0.032, edge = 0.07, track = 0.08,
   let hasOutline = false;
   return {
     ln, em, plateSize,
-    declare(add, prefix = "ban", { plateColor = "#241232", color = "#FFFFFF", outline = false, withOutline = false, emit = 0.0 } = {}) {
+    declare(add, prefix = "ban", { plateColor = "#241232", color = "#FFFFFF", outline = false, withOutline = false, emit = 0.0, rawPlate = false } = {}) {
       hasOutline = Boolean(withOutline && outline);
+      const safePlate = antiGlarePlate(plateColor, color, rawPlate);
       declLine(add, `${prefix}_ln_`, ln, { color, emit, depth: letterDepth, bevel: letterBevel, outline: hasOutline ? outline : false, edge, finish: { on: plateColor, side: null, rough: 0.42, coat: 0.12 } });
-      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: plateColor }, anim: true });
+      add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: safePlate }, anim: true });
     },
     put(put, prefix, centerWorld, eyeWorld, scale = 1, { level = true } = {}) {
       const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);

@@ -2435,6 +2435,352 @@ export function describeEdgeOnCards(items) {
   }));
 }
 
+function obbExtrema(obb) {
+  const [hx, hy, hz] = obb.h, [ax, ay, az] = obb.axes;
+  const rx = Math.abs(ax[0]) * hx + Math.abs(ay[0]) * hy + Math.abs(az[0]) * hz;
+  const ry = Math.abs(ax[1]) * hx + Math.abs(ay[1]) * hy + Math.abs(az[1]) * hz;
+  const rz = Math.abs(ax[2]) * hx + Math.abs(ay[2]) * hy + Math.abs(az[2]) * hz;
+  return {
+    lo: [obb.c[0] - rx, obb.c[1] - ry, obb.c[2] - rz],
+    hi: [obb.c[0] + rx, obb.c[1] + ry, obb.c[2] + rz],
+  };
+}
+
+function obbCornersWorld(obb) {
+  const out = [];
+  const [hx, hy, hz] = obb.h, [ax, ay, az] = obb.axes;
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+    out.push([
+      obb.c[0] + sx * ax[0] * hx + sy * ay[0] * hy + sz * az[0] * hz,
+      obb.c[1] + sx * ax[1] * hx + sy * ay[1] * hy + sz * az[1] * hz,
+      obb.c[2] + sx * ax[2] * hx + sy * ay[2] * hy + sz * az[2] * hz,
+    ]);
+  }
+  return out;
+}
+
+/**
+ * Detect upright `uiBox` picture cards that either:
+ * 1) protrude past their paired backing bezel/chassis box (`kind: "bezel"`, e.g. a 9:16 portrait placed on a 4:3 frame), or
+ * 2) poke down through the stage floor (`kind: "floor"`, bottom Y < -3 mm while settled upright on screen).
+ */
+export function cardBezelMismatches(anim, { aspect = 16 / 9, tol = 0.004, minSecs = 0.25, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const BUILTIN_CARD = /^(panel_|wall|piece|sticker2d$|beat\d+_(p_(?:nav|header|banner|info|tabs|pinned|retro|side)$|back$|avatar$|cyc|bg|bleed))/;
+  const SKIP_BEZEL = /(?:_plate$|(?:^|_)(?:floor|base|trim|plinth|pedestal|pad|desk_base|desk_top|track|scrub|rail|stand)$)/;
+
+  const cards = [];
+  const bezels = [];
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, "hero") || o.letter || o.mat?.outline || SKIP_NAME.test(o.name)) continue;
+    if (o.geo.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4 && !BUILTIN_CARD.test(o.name)) {
+      const spec = boxSpec(o);
+      if (spec) cards.push({ o, spec, unit: o.geo.unitScale ?? 1 });
+    } else if ((o.geo.type === "roundBox" || o.geo.type === "box" || o.geo.type === "plate") && !SKIP_BEZEL.test(o.name) && !/^panel_/.test(o.name)) {
+      const spec = propBoundsSpec(o);
+      if (spec) bezels.push({ o, spec });
+    }
+  }
+  if (!cards.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const prevPos = new Map();
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const seenNow = new Set();
+
+    const activeBezels = [];
+    for (const bz of bezels) {
+      const w = worldOf(bz.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 5) continue;
+      const obb = worldOBB(bz.spec, w);
+      activeBezels.push({ o: bz.o, obb, ext: obbExtrema(obb) });
+    }
+
+    for (const c of cards) {
+      const w = worldOf(c.o.name, s, memo);
+      const pp = prevPos.get(c.o.name);
+      prevPos.set(c.o.name, w.p);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05 * c.unit) continue;
+      if (pp && Math.hypot(w.p[0] - pp[0], w.p[1] - pp[1], w.p[2] - pp[2]) > 0.005) continue; // moving entrance/exit
+      const obb = worldOBB(c.spec, w);
+      const ext = obbExtrema(obb);
+      const cW = ext.hi[0] - ext.lo[0], cH = ext.hi[1] - ext.lo[1];
+      if (Math.max(cW, cH) > 0.65 || Math.min(cW, cH) < 0.035) continue;
+
+      const minAx = obb.h[0] <= obb.h[1] && obb.h[0] <= obb.h[2] ? 0 : obb.h[1] <= obb.h[2] ? 1 : 2;
+      const nAx = obb.axes[minAx], nLen = Math.hypot(...nAx) || 1;
+      if (Math.abs(nAx[1] / nLen) >= 0.45) continue; // flat lying card
+
+      const lp = toLocal(camW, obb.c);
+      if (lp[2] >= -0.08 || -lp[2] > 5) continue;
+      const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+      if (Math.abs(nx) > 0.96 || Math.abs(ny) > 0.96) continue;
+
+      for (const bz of activeBezels) {
+        if (Math.abs(bz.obb.c[0] - obb.c[0]) > 0.032 || Math.abs(bz.obb.c[1] - obb.c[1]) > 0.042) continue;
+        const dz = obb.c[2] - bz.obb.c[2];
+        if (dz < 0.0005 || dz > 0.030) continue;
+        const bW = bz.ext.hi[0] - bz.ext.lo[0], bH = bz.ext.hi[1] - bz.ext.lo[1];
+        if (bW < 0.55 * cW || bH < 0.55 * cH) continue;
+        const over = Math.max(ext.hi[1] - bz.ext.hi[1], bz.ext.lo[1] - ext.lo[1], ext.hi[0] - bz.ext.hi[0], bz.ext.lo[0] - ext.lo[0]);
+        if (over <= tol) continue;
+        const key = `bezel:${c.o.name}:${bz.o.name}`;
+        seenNow.add(key);
+        const cur = open.get(key);
+        if (!cur) open.set(key, { kind: "bezel", card: c.o.name, bezel: bz.o.name, from: t, to: t, peak: t, over });
+        else { cur.to = t; if (over > cur.over) Object.assign(cur, { over, peak: t }); }
+      }
+
+      if (ext.lo[1] < -0.003 && obb.c[1] > 0.025) {
+        const over = -ext.lo[1];
+        const key = `floor:${c.o.name}`;
+        seenNow.add(key);
+        const cur = open.get(key);
+        if (!cur) open.set(key, { kind: "floor", card: c.o.name, bezel: "floor", from: t, to: t, peak: t, over });
+        else { cur.to = t; if (over > cur.over) Object.assign(cur, { over, peak: t }); }
+      }
+    }
+    for (const [k, v] of open) if (!seenNow.has(k)) { out.push(v); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((m) => m.to - m.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.over - a.over);
+}
+
+export function describeCardBezelMismatches(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: m.kind === "floor"
+      ? `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: picture card ${m.card} pokes ${Math.round(m.over * 1000)} mm below the stage floor (worst at ${m.peak.toFixed(2)} s)`
+      : `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: picture card ${m.card} protrudes ${Math.round(m.over * 1000)} mm past its backing frame ${m.bezel} (worst at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect foreground prop bars or ornamental glyphs (e.g. hollow viewfinder frames `*_vf_*`) placed in front of a
+ * `uiBox` picture card whose bars/glyphs slice across the inner 76% core of the picture on camera.
+ */
+export function frameSlicesCard(anim, { aspect = 16 / 9, minSecs = 0.25, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const BUILTIN_CARD = /^(panel_|wall|piece|sticker2d$|beat\d+_(p_(?:nav|header|banner|info|tabs|pinned|retro|side)$|back$|avatar$|cyc|bg|bleed))/;
+  const BUILTIN_OBJ = /^(panel_|strip_|glow_|stat_|wall|piece|sticker2d$|flake_|spark_|bit_|label\d+_|crown$|cta_floor$|floor$|blob$|plinth_|snail_|logo$)/;
+  const SKIP_PART = /(?:_plate$|_bot_|(?:^|_)(?:floor|base|trim|plinth|pedestal|pad|desk_base|desk_top|track|scrub|rail|chassis|frame|stand)$)/;
+
+  const cards = [];
+  const fgParts = [];
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, "hero") || o.letter || o.mat?.outline || SKIP_NAME.test(o.name)) continue;
+    if (o.geo.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4 && !BUILTIN_CARD.test(o.name)) {
+      const spec = boxSpec(o);
+      if (spec) cards.push({ o, spec, unit: o.geo.unitScale ?? 1 });
+    } else if (!BUILTIN_OBJ.test(o.name) && !SKIP_PART.test(o.name) && (o.geo.type === "roundBox" || o.geo.type === "box" || o.geo.type === "curve")) {
+      const spec = propBoundsSpec(o);
+      if (spec) fgParts.push({ o, spec, group: groupOf(o.name) });
+    }
+  }
+  if (!cards.length || !fgParts.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const projBox = (obb, camW, tanX, tanY) => {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, dSum = 0, n = 0;
+    for (const p of obbCornersWorld(obb)) {
+      const lp = toLocal(camW, p);
+      if (lp[2] >= -0.05 || -lp[2] > 5.5) continue;
+      const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+      if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+      if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+      dSum += -lp[2]; n++;
+    }
+    return n >= 4 ? { x0, x1, y0, y1, depth: dSum / n } : null;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const seenNow = new Set();
+
+    const projFg = [];
+    for (const fp of fgParts) {
+      const w = worldOf(fp.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      const obb = worldOBB(fp.spec, w);
+      const pr = projBox(obb, camW, tanX, tanY);
+      if (pr && pr.x1 > -1 && pr.x0 < 1 && pr.y1 > -1 && pr.y0 < 1) projFg.push({ ...fp, pr });
+    }
+    if (!projFg.length) {
+      for (const [k, v] of open) { out.push(v); open.delete(k); }
+      continue;
+    }
+
+    for (const c of cards) {
+      const w = worldOf(c.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05 * c.unit) continue;
+      const obb = worldOBB(c.spec, w);
+      const ext = obbExtrema(obb);
+      if (Math.max(ext.hi[0] - ext.lo[0], ext.hi[1] - ext.lo[1]) > 0.65) continue;
+      const cp = projBox(obb, camW, tanX, tanY);
+      if (!cp || cp.x1 <= cp.x0 || cp.y1 <= cp.y0) continue;
+      const cw = cp.x1 - cp.x0, ch = cp.y1 - cp.y0;
+      const ix0 = cp.x0 + 0.12 * cw, ix1 = cp.x1 - 0.12 * cw;
+      const iy0 = cp.y0 + 0.12 * ch, iy1 = cp.y1 - 0.12 * ch;
+
+      for (const fp of projFg) {
+        const dz = cp.depth - fp.pr.depth;
+        if (dz < 0.0015 || dz > 0.18) continue;
+        const ovX = Math.min(ix1, fp.pr.x1) - Math.max(ix0, fp.pr.x0);
+        const ovY = Math.min(iy1, fp.pr.y1) - Math.max(iy0, fp.pr.y0);
+        if (ovX <= 0 || ovY <= 0) continue;
+        const bw = Math.max(1e-5, fp.pr.x1 - fp.pr.x0), bh = Math.max(1e-5, fp.pr.y1 - fp.pr.y0);
+        const isBarSlice = Math.max(bw, bh) / Math.min(bw, bh) >= 2.4 && (ovX / cw >= 0.30 || ovY / ch >= 0.30);
+        const isCoreGlyph = fp.o.geo.type === "curve" && fp.pr.x0 >= cp.x0 && fp.pr.x1 <= cp.x1 && fp.pr.y0 >= cp.y0 && fp.pr.y1 <= cp.y1;
+        if (!isBarSlice && !isCoreGlyph) continue;
+        const span = Math.max(ovX / cw, ovY / ch);
+        const key = `${fp.group}->${c.o.name}`;
+        seenNow.add(key);
+        const cur = open.get(key);
+        if (!cur) open.set(key, { prop: fp.group, part: fp.o.name, card: c.o.name, from: t, to: t, peak: t, span });
+        else { cur.to = t; if (span > cur.span) Object.assign(cur, { span, peak: t, part: fp.o.name }); }
+      }
+    }
+    for (const [k, v] of open) if (!seenNow.has(k)) { out.push(v); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((m) => m.to - m.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.span - a.span);
+}
+
+export function describeFrameSlicesCard(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: foreground prop ${m.prop} (${m.part}) slices across picture card ${m.card} on camera (${Math.round(m.span * 100)}% span at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect `spark*` / beat `confetti*` particles passing directly in front of the settled toy's face/eyes on camera.
+ */
+export function sparksOverHeroFace(anim, { aspect = 16 / 9, toy = "hero", minFrames = 2, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !objects.has(toy) || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+
+  let headParts = anim.objects.filter((o) => o.geo && o.name !== toy && under(o, toy) && /head|face|eye|brow|nose|cheek/i.test(o.name));
+  if (!headParts.length) headParts = anim.objects.filter((o) => o.geo && o.name !== toy && under(o, toy));
+  const headProbes = headParts.map((o) => ({ o, pts: probesOf(o.geo, file) })).filter((p) => p.pts.length);
+  const sparks = anim.objects.filter((o) => /^(?:beat\d+_)?(spark|confetti)/.test(o.name));
+  if (!headProbes.length || !sparks.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  let prevHeadY = null, runStart = null, runEnd = null, runPeak = null, worstSpark = null, runCount = 0;
+  const out = [];
+  const flush = () => {
+    if (runCount >= minFrames && runStart !== null) out.push({ spark: worstSpark, from: runStart, to: runEnd, peak: runPeak, frames: runCount });
+    runStart = runEnd = runPeak = worstSpark = null; runCount = 0;
+  };
+
+  for (let f = 0; f < anim.frames; f++) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+
+    let hx0 = Infinity, hx1 = -Infinity, hy0 = Infinity, hy1 = -Infinity, hDepth = 0, hn = 0, worldY = 0;
+    for (const { o, pts } of headProbes) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      for (const [lp0] of pts) {
+        const wp = apply(w, lp0);
+        const lp = toLocal(camW, wp);
+        if (lp[2] >= -0.05 || -lp[2] > 6) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < hx0) hx0 = nx; if (nx > hx1) hx1 = nx;
+        if (ny < hy0) hy0 = ny; if (ny > hy1) hy1 = ny;
+        hDepth += -lp[2]; worldY += wp[1]; hn++;
+      }
+    }
+    if (!hn || hx1 <= hx0 || hy1 <= hy0) { prevHeadY = null; flush(); continue; }
+    const meanWorldY = worldY / hn;
+    const settled = prevHeadY === null || Math.abs(meanWorldY - prevHeadY) * anim.fps < 0.25;
+    prevHeadY = meanWorldY;
+    if (!settled) { flush(); continue; }
+
+    const meanDepth = hDepth / hn;
+    const hw = hx1 - hx0, hh = hy1 - hy0;
+    const fx0 = hx0 + 0.15 * hw, fx1 = hx1 - 0.15 * hw;
+    const fy0 = hy0 + 0.12 * hh, fy1 = hy1 - 0.18 * hh;
+
+    let hitName = null;
+    for (const sp of sparks) {
+      const w = worldOf(sp.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      const lp = toLocal(camW, w.p);
+      if (lp[2] >= -0.05) continue;
+      const pDepth = -lp[2];
+      if (meanDepth - pDepth < 0.005 || meanDepth - pDepth > 0.65) continue;
+      const nx = lp[0] / (pDepth * tanX), ny = lp[1] / (pDepth * tanY);
+      if (nx >= fx0 && nx <= fx1 && ny >= fy0 && ny <= fy1) { hitName = sp.name; break; }
+    }
+    if (hitName) {
+      if (runStart === null) { runStart = t; runPeak = t; worstSpark = hitName; }
+      runEnd = t;
+      runCount++;
+    } else flush();
+  }
+  flush();
+  return out;
+}
+
+export function describeSparksOverHeroFace(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(2)}–${m.to.toFixed(2)} s: particle ${m.spark} streaks across the toy's face/eyes on camera (${m.frames} frames around ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
 /**
  * Maximum outward Z arm-lift angle (radians) that keeps a toy's hands visible outside its head silhouette.
  * Slender-headed toys keep the full target angle (e.g. 2.5 rad); wide-headed chibi/sculpt toys clamp

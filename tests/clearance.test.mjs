@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
@@ -1522,4 +1522,130 @@ test("v0.8.15: plate/arc/card2d bounds, fast face-flyover occlusions, pedestalSi
   assert.match(htmlM, /class="txt"[^>]*>纯文字置顶帖测试/);
   assert.ok(xDesktop.profilePage({ film: textFilm, L: xDesktopLayout, asset, pinned: null }).includes("<!doctype html>"));
   assert.ok(xMobile.profilePage({ film: textFilm, L: xMobileLayout, asset, pinned: null }).includes("<!doctype html>"));
+});
+
+test("v0.8.16: cardBezelMismatches, frameSlicesCard, sparksOverHeroFace, framedPicture, and anti-glare light plates", () => {
+  // 1) cardBezelMismatches catches 9:16 portrait (0.124 x 0.220 m) protruding past 0.136 x 0.170 m bezel AND poking below y=0
+  const sPort = 0.124 / 0.676;
+  const badBezelAnim = makeAnim(
+    [
+      { name: "camera", parent: "root", tr: pack([50, 0.11, 0.62]) },
+      { name: "beat1_p_frame", parent: "root", geo: { type: "roundBox", size: [0.136, 0.170, 0.005], radius: 0.004 }, mat: { type: "type", color: "#586E94" }, tr: pack([49.964, 0.100, -0.053]) },
+      { name: "beat1_p_port", parent: "root", geo: { type: "uiBox", rect: [-338, -600, 676, 1200], thickness: 0.002 / sPort, unitScale: +sPort.toFixed(6) }, mat: { type: "ui", image: "assets/p.jpg" }, tr: pack([49.964, 0.100, -0.048], UPRIGHT, [sPort, sPort, sPort]) },
+    ],
+    { camera: [[0, ...pack([50, 0.11, 0.62])], [29, ...pack([50, 0.11, 0.62])]] },
+    { frames: 30, fps: 30, sub: 1 },
+  );
+  badBezelAnim.scalars = { fov: Array(30).fill(32) };
+  const bzHits = cardBezelMismatches(badBezelAnim, { aspect: 16 / 9 });
+  assert.equal(bzHits.length, 2);
+  assert.ok(bzHits.some((h) => h.kind === "bezel" && h.card === "beat1_p_port" && h.bezel === "beat1_p_frame" && h.over > 0.02));
+  assert.ok(bzHits.some((h) => h.kind === "floor" && h.card === "beat1_p_port" && h.over > 0.008));
+  assert.match(describeCardBezelMismatches(bzHits)[0].text, /protrudes|pokes/);
+
+  // Properly sized 4-sided bezel seated above stageY reports 0 mismatches
+  const sGood = 0.106 / 0.676;
+  const goodBezelAnim = makeAnim(
+    [
+      { name: "camera", parent: "root", tr: pack([50, 0.11, 0.62]) },
+      { name: "beat1_p_frame", parent: "root", geo: { type: "roundBox", size: [0.118, 0.200, 0.006], radius: 0.005 }, mat: { type: "type", color: "#586E94" }, tr: pack([49.968, 0.120, -0.052]) },
+      { name: "beat1_p_port", parent: "root", geo: { type: "uiBox", rect: [-338, -600, 676, 1200], thickness: 0.002 / sGood, unitScale: +sGood.toFixed(6) }, mat: { type: "ui", image: "assets/p.jpg" }, tr: pack([49.968, 0.120, -0.047], UPRIGHT, [sGood, sGood, sGood]) },
+    ],
+    { camera: [[0, ...pack([50, 0.11, 0.62])], [29, ...pack([50, 0.11, 0.62])]] },
+    { frames: 30, fps: 30, sub: 1 },
+  );
+  goodBezelAnim.scalars = { fov: Array(30).fill(32) };
+  assert.equal(cardBezelMismatches(goodBezelAnim, { aspect: 16 / 9 }).length, 0);
+
+  // 2) frameSlicesCard catches a hollow viewfinder top bar slicing across desk_art while ignoring clean bottom scrubbers
+  const sArt = 0.165 / 1.636;
+  const sliceAnim = makeAnim(
+    [
+      { name: "camera", parent: "root", tr: pack([250, 0.12, 0.70]) },
+      { name: "desk_art", parent: "root", geo: { type: "uiBox", rect: [-818, -318, 1636, 636], thickness: 0.002 / sArt, unitScale: +sArt.toFixed(6) }, mat: { type: "ui", image: "assets/b.png" }, tr: pack([249.83, 0.186, -0.086], UPRIGHT, [sArt, sArt, sArt]) },
+      { name: "cta_vf_top", parent: "root", geo: { type: "roundBox", size: [0.118, 0.006, 0.006], radius: 0.002 }, mat: { type: "type", color: "#F5A623" }, tr: pack([249.81, 0.179, -0.028]) },
+      { name: "desk_scrub", parent: "root", geo: { type: "roundBox", size: [0.15, 0.005, 0.005], radius: 0.002 }, mat: { type: "glow", color: "#F5A623" }, tr: pack([249.83, 0.155, -0.078]) },
+    ],
+    { camera: [[0, ...pack([250, 0.12, 0.70])], [29, ...pack([250, 0.12, 0.70])]] },
+    { frames: 30, fps: 30, sub: 1 },
+  );
+  sliceAnim.scalars = { fov: Array(30).fill(32) };
+  const sliceHits = frameSlicesCard(sliceAnim, { aspect: 16 / 9 });
+  assert.equal(sliceHits.length, 1);
+  assert.equal(sliceHits[0].part, "cta_vf_top");
+  assert.equal(sliceHits[0].card, "desk_art");
+  assert.match(describeFrameSlicesCard(sliceHits)[0].text, /slices across picture card desk_art/);
+
+  // 3) sparksOverHeroFace catches front spark streaks over hero_head eyes while ignoring sparks behind the head (vz < 0)
+  const makeSparkAnim = (sparkZ) => {
+    const a = makeAnim(
+      [
+        { name: "camera", parent: "root", tr: pack([250, 0.11, 0.68]) },
+        { name: "hero", parent: "root", tr: pack([249.88, 0.045, 0.026]) },
+        { name: "hero_head", parent: "hero", geo: { type: "ellipsoid", r: [0.038, 0.036, 0.036] }, tr: pack([0, 0.068, 0]) },
+        { name: "spark_0", parent: "root", geo: { type: "plane", w: 0.01, h: 0.01 }, mat: { type: "flake" }, tr: pack([249.88, 0.113, sparkZ]) },
+      ],
+      {
+        camera: [[0, ...pack([250, 0.11, 0.68])], [10, ...pack([250, 0.11, 0.68])]],
+        spark_0: [[0, ...pack([249.88, 0.116, sparkZ])], [4, ...pack([249.88, 0.110, sparkZ])], [5, ...pack([249.88, 0.110, sparkZ], QID, [1e-4, 1e-4, 1e-4])], [10, ...pack([249.88, 0.110, sparkZ], QID, [1e-4, 1e-4, 1e-4])]],
+      },
+      { frames: 11, fps: 30, sub: 1 },
+    );
+    a.scalars = { fov: Array(11).fill(32) };
+    return a;
+  };
+  const frontSparks = sparksOverHeroFace(makeSparkAnim(0.10), { aspect: 16 / 9 });
+  assert.equal(frontSparks.length, 1);
+  assert.equal(frontSparks[0].spark, "spark_0");
+  assert.match(describeSparksOverHeroFace(frontSparks)[0].text, /streaks across the toy's face\/eyes/);
+  assert.equal(sparksOverHeroFace(makeSparkAnim(-0.16), { aspect: 16 / 9 }).length, 0);
+
+  // 4) Subprocess check for framedPicture() + anti-glare light-plate clamping in beatkit.js
+  const tmp = mkdtempSync(join(tmpdir(), "fpic-"));
+  try {
+    writeFileSync(join(tmp, "film.json"), JSON.stringify({ id: "t", toy: "toy.json", format: { fps: 30, duration: 4, size: [1920, 1080] } }));
+    writeFileSync(join(tmp, "toy.json"), JSON.stringify({ height: 0.1, center: [0, 0.05, 0], colors: {}, joints: { body: { p: [0, 0.03, 0] } }, parts: [] }));
+    // Minimal valid 24-byte PNG header reporting 676x1200
+    const pngHdr = Buffer.alloc(32);
+    pngHdr.writeUInt32BE(0x89504e47, 0);
+    pngHdr.writeUInt32BE(0x0d0a1a0a, 4);
+    pngHdr.writeUInt32BE(13, 8);
+    pngHdr.write("IHDR", 12);
+    pngHdr.writeUInt32BE(676, 16);
+    pngHdr.writeUInt32BE(1200, 20);
+    writeFileSync(join(tmp, "p.png"), pngHdr);
+    const probe = spawnSync(
+      process.execPath,
+      [
+        "-e",
+        `import(${JSON.stringify(join(root, "skills/creator-toy-intro/engine/lib/beatkit.js"))}).then((kit) => {
+          const fp = kit.framedPicture("p.png", 0.106, { border: 0.006 });
+          const stubGlyph = { adv: () => 0.6, has: () => true, geo: () => ({ type: "curve", rings: [[[0,0],[1,0],[1,1]]], depth: 0.004, bevel: 0 }) };
+          const added = [];
+          const bv = kit.readoutBadge(stubGlyph, { from: 0, to: 23.1, fmt: (v) => v.toFixed(1), label: "查看" });
+          bv.declare((o) => added.push(o), "bv", { plateColor: "#F5EFE6", numColor: "#111827", labelColor: "#111827" });
+          const darkBan = kit.bannerLine(stubGlyph, "测试");
+          darkBan.declare((o) => added.push(o), "db", { plateColor: "#241232", color: "#FFFFFF" });
+          console.log(JSON.stringify({
+            frameSize: fp.frameSize,
+            standY: fp.standY(0.014),
+            bvPlate: added.find((o) => o.name === "bv_plate").mat.color,
+            dbPlate: added.find((o) => o.name === "db_plate").mat.color,
+          }));
+        });`,
+      ],
+      { env: { ...process.env, FILM: tmp }, encoding: "utf8" },
+    );
+    assert.equal(probe.status, 0, probe.stderr);
+    const res = JSON.parse(probe.stdout.trim());
+    assert.ok(Math.abs(res.frameSize[0] - 0.118) < 1e-6);
+    assert.ok(Math.abs(res.frameSize[1] - (0.106 * 1200 / 676 + 0.012)) < 1e-5);
+    assert.ok(res.standY - res.frameSize[1] / 2 >= 0.0169);
+    // #F5EFE6 (max channel 245) clamped to max channel 234 (#EAE4DB) when paired with dark ink; dark #241232 untouched
+    const maxCh = Math.max(...[1, 3, 5].map((i) => parseInt(res.bvPlate.slice(i, i + 2), 16)));
+    assert.equal(maxCh, 234);
+    assert.equal(res.dbPlate, "#241232");
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });

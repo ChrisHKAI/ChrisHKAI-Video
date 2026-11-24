@@ -92,9 +92,11 @@ asking again; a new request of theirs wins over it.
    - only when doctor found Grok Build and the creator is active on X (posts
      there and has followers; a company's X page with a post or two and no
      followers is not, so do not ask, use the browser): whether to
-     use it to search X for their best posts and milestones (yes, the
-     recommended answer: it reaches X's own search and each post's thread),
-     or the browser alone.
+     use Grok Build CLI (`grok-search.mjs`) to search X for their best posts
+     and milestones, or use the logged-in browser (`x.com/i/grok` + X search,
+     which costs zero API credits). If the user asks for free Grok / free X
+     search, use `https://x.com/i/grok` + X dated search in their logged-in
+     browser directly (`"grok": false` in `film.json`) and never call paid X APIs.
    Not asked: the length (it follows what the film says, 30 s by default:
    `references/beats.md`), the folder, colours, music.
 5. Open the workspace: `node <skill>/engine/scripts/new-film.mjs

@@ -111,7 +111,11 @@ When fixing a prop or card clash:
   toy or custom beat/CTA prop that never comes within range of the active
   camera—catching both missing `at(x, y, z)` (`x ≈ 0`) and accidental double
   `at(POS[0], POS[1], POS[2])` calls (`x ≈ 2 × stage`).
-- **Unscaled picture cards & cyclic video wraps (`oversizedUiBoxes`,
-  `movieWraps`)**: flags `kit.picture()` cards placed with raw `trs(...)`
-  instead of `pic.at(...)`, and warns when a cyclic video card runs out of
-  frames and wraps back to frame 1 while still visible on screen.
+- **Unscaled picture cards, bezel overflows & frame-bar slices (`oversizedUiBoxes`,
+  `movieWraps`, `cardBezelMismatches`, `frameSlicesCard`, `sparksOverHeroFace`)**:
+  flags `kit.picture()` cards placed with raw `trs(...)` instead of `pic.at(...)`,
+  warns when a cyclic video card wraps while visible, warns when a picture card
+  protrudes past its backing bezel or below the stage floor (use
+  `kit.framedPicture()` + `.standY()`), warns when hollow foreground viewfinder
+  bars/glyphs slice across a picture card, and warns when celebration sparks
+  streak in front of the settled toy's eyes.

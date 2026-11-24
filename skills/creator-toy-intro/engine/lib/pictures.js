@@ -65,6 +65,36 @@ export function picture(file, w, { thickness = 0.002, movie, frames, start = 1, 
   };
 }
 
+// a picture card paired with an auto-sized 4-sided 3D bezel matching the image's exact aspect ratio (never crops top/bottom
+// or leaves side rails too short, and exposes standY(stageY) so its bottom bezel sits cleanly above the plinth/floor)
+export function framedPicture(file, w, { border = 0.006, frameDepth = 0.006, radius = 0.005, frameColor = "#586E94", frameEmit = 0.16, frameRough = 0.28, frameMat = null, ...picOpts } = {}) {
+  const pic = picture(file, w, picOpts);
+  const frameSize = [+(pic.w + border * 2).toFixed(6), +(pic.h + border * 2).toFixed(6), frameDepth];
+  const backDist = +(frameDepth / 2 + pic.t / 2 + 0.0006).toFixed(6);
+  const mat = frameMat ?? { type: "type", color: frameColor, emit: frameEmit, rough: frameRough };
+  return {
+    file, w: pic.w, h: pic.h, border, frameSize, pic,
+    frameGeo: { type: "roundBox", size: frameSize, radius },
+    frameMat: mat,
+    standY: (stageY = 0, gap = 0.003) => +(stageY + gap + frameSize[1] / 2).toFixed(6),
+    declare(add, prefix = "fpic") {
+      add({ name: `${prefix}_frame`, geo: { type: "roundBox", size: frameSize, radius }, mat, anim: true });
+      add({ name: `${prefix}_pic`, geo: pic.geo, mat: pic.mat, anim: true });
+    },
+    put(put, prefix, p, q = qId(), k = 1) {
+      if (k <= 0.01) {
+        const park = trs([p[0], p[1], p[2]], qId(), 1e-4);
+        put(`${prefix}_frame`, park);
+        put(`${prefix}_pic`, pic.at(p, qId(), 1e-4));
+        return;
+      }
+      const back = apply(trs([0, 0, 0], q, 1), [0, 0, -backDist * k]);
+      put(`${prefix}_frame`, trs([p[0] + back[0], p[1] + back[1], p[2] + back[2]], q, k));
+      put(`${prefix}_pic`, pic.at(p, q, k));
+    },
+  };
+}
+
 // two cards back to back (a badge's front and back): [front's transform, back's], the back turned round. A card's
 // body runs its thickness behind its face, so two cards whose faces are nearer than both thicknesses lie inside
 // each other and both render black: each face stands its own thickness (and a hair) out from p, along q's +z

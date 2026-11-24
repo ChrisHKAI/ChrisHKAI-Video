@@ -36,21 +36,34 @@ Read only, always: never like, follow, comment or message.
   too), and today's count of it in `extra` with its source and date. A shop
   that opened with 12 products and sells 80 today says 80 on screen; the 12 is
   a milestone with its date.
-- Grok Build, when the user said yes to it in step 1 (film.json `grok`:
-  true): run it first, before the browser, every time:
-  `node <skill>/engine/scripts/grok-search.mjs <film>`. Run it in the
-  background where the agent can, and read the page meanwhile. Where the
-  agent cannot run things in the background, run it and wait: it takes a
-  few minutes. Grok's X search reaches what a browser hardly can: X's own
-  post search with its operators, each post's thread and numbers. When it
-  fails (the agent's sandbox has no network, Grok is not signed in), tell
-  the user in a line what it needs (allow the network for it; `grok login`
-  in their Terminal) instead of quietly going on without it. Say what it
-  found, never what it cost. It runs Grok with only its searches; afterwards
-  it reads back from Grok's own record which tools ran (`tools` in grok.json),
-  and if anything else did, it says so: tell the user. With `grok` false, or no Grok Build on this
-  computer, the browser alone, without asking. It writes
-  `research/grok.json` with:
+- **Never call paid X API endpoints** (`api.x.com` / `api.twitter.com`). For
+  Grok-assisted X research there are two distinct paths—pick the right one:
+  1. **Free built-in X Web Grok (`https://x.com/i/grok`) + X dated search in
+     the user's logged-in browser (`ego-browser` / Chrome)**: zero API cost.
+     Whenever the user asks for free Grok / free X search, asks not to spend
+     API credits, or when the local `grok` CLI has no quota / is not signed in,
+     query `https://x.com/i/grok` inside their logged-in X session together
+     with dated `from:<handle> since:YYYY-MM-DD until:YYYY-MM-DD` searches in
+     X's search bar, and either set `"grok": false` in `film.json` or write the
+     collected leads to `research/grok.json`.
+  2. **Grok Build CLI (`grok-search.mjs`)**, when installed, signed in, and the
+     user chose it in step 1 without asking for the free web-only route
+     (film.json `grok`: true): run it first, before the browser, every time:
+     `node <skill>/engine/scripts/grok-search.mjs <film>`. Run it in the
+     background where the agent can, and read the page meanwhile. Where the
+     agent cannot run things in the background, run it and wait: it takes a
+     few minutes (note: `grok-search.mjs` invokes the local `grok` CLI's X
+     Search tool, which consumes Grok Build credits on paid accounts). Grok's
+     X search reaches X's own post search with its operators and each post's
+     thread and numbers. When it fails (the agent's sandbox has no network,
+     Grok is not signed in, or credits are exhausted), tell the user in a line
+     or switch cleanly to `https://x.com/i/grok` in their logged-in browser if
+     they asked for free research. Say what it found, never what it cost. It
+     runs Grok with only its searches; afterwards it reads back from Grok's own
+     record which tools ran (`tools` in grok.json), and if anything else did,
+     it says so: tell the user. With `grok` false, or no Grok Build on this
+     computer, use the browser (and `x.com/i/grok` if logged in), without
+     asking. `grok-search.mjs` writes `research/grok.json` with:
   - the pinned post;
   - the posts with the most views or engagement;
   - the milestones they posted about, with dates and numbers;

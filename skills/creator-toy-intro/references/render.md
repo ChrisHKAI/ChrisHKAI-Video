@@ -66,10 +66,15 @@ GPU recovery errors such as macOS Metal command-buffer resets, once frames
 are writing). While it runs, look at a few finished frames now and
 then (`build/render/`): stop early if something is wrong rather than an
 hour later. After a late change, render only the frames `diff-anim.py`
-lists (`references/storyboard.md`); if `finish` has already populated
-`build/final/` (~1.8 GB of full-HD PNGs), run small surgical re-renders
-locally (`COLAB_LOCAL=1`) or clear stale `build/final/*.png` first so remote
-render wrappers do not bundle `build/final/`.
+lists (`references/storyboard.md`), or run `run.mjs render -- --samples 48 --scale 100 --resume`,
+which diffs `build/render/.anim-snapshot.json` against `build/anim.json` and
+unlinks only the stale changed frames before launching Blender. When a remote
+multi-GPU Blender wrapper (such as `colab-blender`) is installed, **always keep
+using it by default for `render` and `sample`—never set `COLAB_LOCAL=1` unless
+the user explicitly asks to render locally** (`colab-blender` already skips
+`build/final/`, `build/render/`, and `build/sample/`; if a custom remote
+wrapper bundles `build/`, remove `build/final/` beforehand rather than forcing
+`COLAB_LOCAL=1`).
 
 ### The light
 
