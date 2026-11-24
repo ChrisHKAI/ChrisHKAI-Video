@@ -90,7 +90,7 @@ const userEv = film.story?.events ?? {};
 const defaultLettersStart = maxLastLetter < EV0.ride + 0.8
   ? Math.max(+(EV0.cut + 0.10).toFixed(4), +(maxLastLetter - Math.max(0.65, [...SLOGAN].length * 0.055)).toFixed(4))
   : +(EV0.ride + 0.35).toFixed(4);
-const twoColFinal = userEv.final ?? +(EV0.ride + 1.45).toFixed(4);
+const twoColFinal = userEv.final ?? EV0.final;
 const twoColEv = (CTA_MODE === "two-column" || CTA_MODE === "still") ? {
   ...(!("glide" in userEv) ? { glide: [+(EV0.ride + 0.62).toFixed(4), +(Math.max(EV0.ride + 0.68, twoColFinal - 0.16)).toFixed(4)] } : {}),
   ...(!("letters" in userEv) ? { letters: defaultLettersStart } : {}),

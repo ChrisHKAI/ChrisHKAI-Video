@@ -94,7 +94,7 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
       if (ln) declLine(add, `${prefix}_lbl`, ln, { color: labelColor, outline, edge: 0.09 });
       add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "type", color: plateColor, emit: 0.04, sampled: false }, anim: true });
     },
-    put(put, prefix, val, centerWorld, eyeWorld, scale = 1) {
+    put(put, prefix, val, centerWorld, eyeWorld, scale = 1, { level = false } = {}) {
       const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);
       if (scale <= 0.01) {
         put(`${prefix}_plate`, park);
@@ -102,7 +102,8 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
         if (ln) placeLine(put, `${prefix}_lbl`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => 0, { outline: true });
         return;
       }
-      const q = faceCam(eyeWorld, centerWorld);
+      const aimFrom = level ? [eyeWorld[0], centerWorld[1], centerWorld[2]] : centerWorld;
+      const q = faceCam(eyeWorld, aimFrom);
       // Front face of 8 mm plate sits 1.2 mm behind lettering z = 0 (< 3 mm flush threshold: zero double shadow)
       put(`${prefix}_plate`, trs(apply(trs(centerWorld, q, 1), [0, em * 0.36, -0.0052]), q, scale));
       const grp = trs(centerWorld, q, scale);
@@ -131,7 +132,8 @@ export function bannerLine(glyph, text, { em = 0.032, edge = 0.07, track = 0.08,
         placeLine(put, `${prefix}_ln_`, ln, () => [centerWorld[0], -2, centerWorld[2]], qId(), () => HIDDEN, { outline: true });
         return;
       }
-      const aimFrom = level ? [0, centerWorld[1], centerWorld[2]] : centerWorld;
+      // Use eyeWorld[0] rather than world X=0 so custom beats on offset stages (x = 50, 100, 150 m) stay dead-level!
+      const aimFrom = level ? [eyeWorld[0], centerWorld[1], centerWorld[2]] : centerWorld;
       const q = faceCam(eyeWorld, aimFrom);
       const root = trs(centerWorld, q, 1);
       // Front face of `depth` plate sits 1.2 mm behind lettering z = 0 (< 3 mm flush threshold: zero double shadow)

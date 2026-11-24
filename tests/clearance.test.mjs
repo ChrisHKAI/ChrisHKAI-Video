@@ -5,16 +5,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import { readout, formatCount } from "../skills/creator-toy-intro/engine/lib/counter.js";
-import { unexpectedTools, isPlaceholderAnswer } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
+import { unexpectedTools, isPlaceholderAnswer, retrySearchPrompt } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
 import { makeLabel, paperOf, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
 import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
 import { places } from "../skills/creator-toy-intro/templates/isnail-30/places.js";
 import { buildFigure } from "../skills/creator-toy-intro/characters/tim-line/figure.js";
-import { blenderCandidates } from "../skills/creator-toy-intro/engine/lib/tools.js";
+import { blenderCandidates, isRemoteBlenderWrapper } from "../skills/creator-toy-intro/engine/lib/tools.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const clearanceCli = join(root, "skills/creator-toy-intro/engine/scripts/clearance.mjs");
@@ -1165,4 +1165,137 @@ test("lineBackdropClashes flags a 0.20 s grounded hop covering a 3D headline, an
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("bannerLine and readoutBadge { level: true } stay horizontal on X-offset custom beat stages, and readout accepts object/string fmt", async () => {
+  const adv = (k) => (k.endsWith("万") ? 1.0 : 0.6);
+  const rObj = readout({ fmt: { decimals: 1, unit: "万" }, from: 0, to: 9.4, em: 0.05, adv });
+  assert.ok(Math.abs(rObj.width(9.4) - 0.14) < 1e-9);
+  const rStr = readout({ fmt: "万", from: 1, to: 12, em: 0.05, adv });
+  assert.ok(rStr.width(12) > 0.10);
+  const rDef = readout({ from: 0, to: 27, em: 0.05, adv });
+  assert.ok(rDef.width(27) > 0.05);
+
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-offstage-lvl-"));
+  try {
+    writeFileSync(join(dir, "film.json"), JSON.stringify({ format: { fps: 30, duration: 4, size: [1920, 1080] }, toy: "toy.json" }));
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({ height: 0.12, colors: { body: "#2F61EB" }, joints: {}, parts: [] }));
+    const kitUrl = new URL("../skills/creator-toy-intro/engine/lib/beatkit.js", import.meta.url).href;
+    const probe = `
+      import * as kit from ${JSON.stringify(kitUrl)};
+      const glyph = {
+        has: () => true,
+        adv: () => 0.9,
+        geo: (_k, em, depth, bevel) => ({ type: "curve", rings: [[[0, 0], [em * 0.8, 0], [em * 0.8, em * 0.85], [0, em * 0.85]]], depth, bevel }),
+      };
+      const ban = kit.bannerLine(glyph, "一镜出片", { em: 0.03 });
+      const badge = kit.readoutBadge(glyph, { from: 0, to: 9.4, fmt: { decimals: 1, unit: "万" }, label: "查看", em: 0.04 });
+      const placed = {};
+      // Stage offset at X = 50 m (as in beat 1): level: true must aim from eyeWorld[0] = 50, NOT world X = 0!
+      ban.put((n, tr) => { placed[n] = tr; }, "beat1_ban", [49.82, 0.04, 0.14], [50.0, 0.20, 0.88], 1, { level: true });
+      badge.put((n, tr) => { placed[n] = tr; }, "beat1_bdg", 9.4, [50.18, 0.05, 0.14], [50.0, 0.20, 0.88], 1, { level: true });
+      console.log(JSON.stringify(placed));
+    `;
+    const sub = spawnSync("node", ["--input-type=module", "-e", probe], { env: { ...process.env, FILM: dir }, encoding: "utf8" });
+    assert.equal(sub.status, 0, sub.stderr);
+    const placed = JSON.parse(sub.stdout.trim().split(/\r?\n/).pop());
+    assert.ok(Math.abs(placed.beat1_ban_plate.q[1]) < 1e-9, `expected zero yaw on beat1_ban_plate, got q=${JSON.stringify(placed.beat1_ban_plate.q)}`);
+    assert.ok(Math.abs(placed.beat1_ban_plate.q[2]) < 1e-9);
+    assert.ok(Math.abs(placed.beat1_bdg_plate.q[1]) < 1e-9, `expected zero yaw on beat1_bdg_plate, got q=${JSON.stringify(placed.beat1_bdg_plate.q)}`);
+    assert.ok(Math.abs(placed.beat1_bdg_plate.q[2]) < 1e-9);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("edgeOnCards flags sideways plaques and showcase cards while clearing desk mats, spins, and 6+ card corridors", () => {
+  const plaqueGeo = { type: "roundBox", size: [0.24, 0.045, 0.006], radius: 0.005 };
+  const cardGeo = { type: "uiBox", rect: [-200, -120, 400, 240], uvRect: [0, 0, 400, 240], thickness: 0.004, unitScale: 0.6 };
+  const sidewaysPlaqueQ = qAxis([0, 1, 0], Math.PI * 0.46); // ~83° sideways
+  const sidewaysCardQ = qMul(qAxis([0, 1, 0], Math.PI * 0.45), UPRIGHT); // ~81° sideways
+  const wingCardQ = qMul(qAxis([0, 1, 0], -0.45), UPRIGHT); // ~26° wing card (clean)
+  const flatDeskMatQ = QID; // uiBox without UPRIGHT lies flat on desk (normal = +Y, skipped)
+
+  const spinTrack = Array.from({ length: 24 }, (_, f) => [f, ...pack([50.25, 0.22, 0], qMul(qAxis([0, 1, 0], f * 0.12), UPRIGHT), [0.6, 0.6, 0.6])]);
+  const anim = {
+    ...makeAnim(
+      [
+        { name: "camera", parent: "root", camera: true, tr: pack([50, 0.20, 1.1]) },
+        { name: "beat1_bad_plate", parent: "root", geo: plaqueGeo, mat: { type: "paper" }, tr: pack([49.85, 0.06, 0.10], sidewaysPlaqueQ) },
+        { name: "beat1_ok_plate", parent: "root", geo: plaqueGeo, mat: { type: "paper" }, tr: pack([50.15, 0.06, 0.10], QID) },
+        { name: "beat1_bad_card", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([49.80, 0.24, 0], sidewaysCardQ, [0.6, 0.6, 0.6]) },
+        { name: "beat1_wing_card", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([50.10, 0.24, 0], wingCardQ, [0.6, 0.6, 0.6]) },
+        { name: "beat1_desk_mat", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([50.0, 0.01, 0.10], flatDeskMatQ, [0.6, 0.6, 0.6]) },
+        { name: "beat1_spin_card", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([50.25, 0.22, 0], sidewaysCardQ, [0.6, 0.6, 0.6]) },
+      ],
+      { beat1_spin_card: spinTrack },
+      { frames: 24 },
+    ),
+    scalars: { fov: Array(24).fill(30) },
+  };
+  const hits = edgeOnCards(anim, { aspect: 16 / 9 });
+  assert.deepEqual(hits.map((h) => h.name).sort(), ["beat1_bad_card", "beat1_bad_plate"]);
+  assert.match(describeEdgeOnCards(hits)[0].text, /edge-on to the camera/);
+
+  // 6+ active cards on one beat (layout.corridor) skip showcase card edge-on warnings
+  const corridorObjs = [
+    { name: "camera", parent: "root", camera: true, tr: pack([0, 0.2, 1.2]) },
+    ...Array.from({ length: 6 }, (_, i) => ({
+      name: `beat2_cor_${i}`,
+      parent: "root",
+      geo: cardGeo,
+      mat: { type: "ui" },
+      tr: pack([i % 2 ? 0.22 : -0.22, 0.22, -0.1 * i], sidewaysCardQ, [0.6, 0.6, 0.6]),
+    })),
+  ];
+  assert.deepEqual(edgeOnCards({ ...makeAnim(corridorObjs, {}, { frames: 24 }), scalars: { fov: Array(24).fill(30) } }), []);
+});
+
+test("propCoversToyBody also catches custom end-card prop towers occluding the toy while skipping built-in snail/plinth", () => {
+  const mkEndCard = (propName, towerY) => ({
+    ...makeAnim(
+      [
+        { name: "camera", parent: "root", camera: true, tr: pack([120.02, 0.30, 1.26]) },
+        { name: "hero", parent: "root", tr: pack([119.66, 0.06, 0.07]) },
+        { name: "hero_legs", parent: "hero", geo: { type: "box", size: [0.08, 0.08, 0.06] }, tr: pack([0, 0.04, 0]) },
+        { name: "hero_torso", parent: "hero", geo: { type: "box", size: [0.09, 0.09, 0.06] }, tr: pack([0, 0.12, 0]) },
+        { name: propName, parent: "root", geo: { type: "roundBox", size: [0.11, 0.14, 0.06], radius: 0.004 }, mat: { type: "toy" }, tr: pack([119.67, towerY, 0.22]) },
+      ],
+      {},
+      { frames: 24 },
+    ),
+    scalars: { fov: Array(24).fill(30) },
+  });
+
+  // Custom end-card prop block standing in front of toy on CTA stage -> caught!
+  const hits = propCoversToyBody(mkEndCard("studiokit_towerL", 0.13), { aspect: 16 / 9 });
+  assert.equal(hits.length, 1);
+  assert.equal(hits[0].card, "studiokit");
+
+  // Built-in snail/plinth names are never flagged
+  assert.deepEqual(propCoversToyBody(mkEndCard("snail_body", 0.13), { aspect: 16 / 9 }), []);
+  assert.deepEqual(propCoversToyBody(mkEndCard("plinth_body", 0.13), { aspect: 16 / 9 }), []);
+});
+
+test("isRemoteBlenderWrapper skips colab-blender in BLENDER env for local steps and retrySearchPrompt strengthens retries", () => {
+  assert.equal(isRemoteBlenderWrapper("/Users/alice/.local/bin/colab-blender"), true);
+  assert.equal(isRemoteBlenderWrapper("/Applications/Blender.app/Contents/MacOS/Blender"), false);
+
+  const prevBlender = process.env.BLENDER;
+  const prevLocal = process.env.COLAB_LOCAL;
+  const prevAll = process.env.COLAB_ALL;
+  try {
+    process.env.BLENDER = "/Users/alice/.local/bin/colab-blender";
+    delete process.env.COLAB_LOCAL;
+    delete process.env.COLAB_ALL;
+    assert.equal(blenderCandidates({ local: false })[0], "/Users/alice/.local/bin/colab-blender");
+    assert.ok(!blenderCandidates({ local: true }).some((p) => p.includes("colab-blender")));
+  } finally {
+    if (prevBlender === undefined) delete process.env.BLENDER; else process.env.BLENDER = prevBlender;
+    if (prevLocal === undefined) delete process.env.COLAB_LOCAL; else process.env.COLAB_LOCAL = prevLocal;
+    if (prevAll === undefined) delete process.env.COLAB_ALL; else process.env.COLAB_ALL = prevAll;
+  }
+
+  assert.equal(retrySearchPrompt("find @alice", 0), "find @alice");
+  assert.match(retrySearchPrompt("find @alice", 1), /IMPORTANT \(retry 1\): Call X search tools/);
 });

@@ -182,7 +182,10 @@ def material(spec):
     result = [m]
     if kind == "ui":
         p = principled(nt, "#030303", 0.3, 0.1, coat=0.3, coat_rough=0.1)
-        t = tex_node(nt, image(spec.get("movie") or spec["image"]), "EXTEND")
+        tex_path = spec.get("movie") or spec["image"]
+        if spec.get("movie") and not (ROOT / tex_path).exists() and spec.get("movieSource") and (ROOT / spec["movieSource"]).exists():
+            tex_path = spec["movieSource"]
+        t = tex_node(nt, image(tex_path), "EXTEND")
         if spec.get("movie"):  # a film on the panel: it plays from frame "start", round and round (or holds last frame when cyclic is false)
             t.image.source = "MOVIE"
             t.image_user.frame_duration = spec["frames"]

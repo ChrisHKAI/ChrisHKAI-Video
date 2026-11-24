@@ -68,8 +68,13 @@ def look(job):
     return i
 
 
-def sfx_cut_wanted():
-    if "--sfx-cut" in argv:
+def sfx_cut_wanted(cut=None, fx=None):
+    if "--no-sfx-cut" in argv:
+        return False
+    if "--sfx-cut" in argv or FILM_JSON.get("sfxCut"):
+        return True
+    # Refresh an already-exported -sfx.mp4 after partial re-renders so it never lags behind the main MP4.
+    if cut is not None and fx is not None and cut.is_file() and fx.is_file():
         return True
     from publish import PLATFORMS, platforms  # noqa: E402
     return any(PLATFORMS[p].get("sfxCut") for p in platforms([]))
@@ -153,19 +158,29 @@ def main():
         cached_outs[out_key] = [len(frames), first, fps, fin_latest, score_st.st_mtime_ns, score_st.st_size]
         print("wrote", OUT)
 
-    meta_path.write_text(json.dumps({"settings": settings, "frames": next_frames, "outs": cached_outs}))
     fx = ROOT / "assets/audio/score-sfx.wav"
-    if sfx_cut_wanted():
+    cut = OUT.with_name(OUT.stem + "-sfx" + OUT.suffix)
+    if sfx_cut_wanted(cut, fx):
         if not fx.exists():
             sys.exit(f"no {fx.relative_to(ROOT)}: run the sound step again")
-        cut = OUT.with_name(OUT.stem + "-sfx" + OUT.suffix)
-        subprocess.run([
-            "ffmpeg", "-v", "error", "-y", "-i", str(OUT), "-i", str(fx),
-            "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-af", "volume=-0.3dB", "-c:a", "aac", "-b:a", "320k", "-shortest", "-movflags", "+faststart",
-            str(cut),
-        ], check=True)
-        hold_peak(cut)
-        print("wrote", cut, "(sound effects only)")
+        out_st = OUT.stat()
+        fx_st = fx.stat()
+        cut_key = str(cut.resolve())
+        cut_sig = [len(frames), first, fps, out_st.st_mtime_ns, out_st.st_size, fx_st.st_mtime_ns, fx_st.st_size]
+        if not force and cut.is_file() and cut.stat().st_size > 0 and cached_outs.get(cut_key) == cut_sig:
+            print("up to date", cut, "(sound effects only)")
+        else:
+            subprocess.run([
+                "ffmpeg", "-v", "error", "-y", "-i", str(OUT), "-i", str(fx),
+                "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-af", "volume=-0.3dB", "-c:a", "aac", "-b:a", "320k", "-shortest", "-movflags", "+faststart",
+                str(cut),
+            ], check=True)
+            hold_peak(cut)
+            out_st = OUT.stat()
+            cached_outs[cut_key] = [len(frames), first, fps, out_st.st_mtime_ns, out_st.st_size, fx_st.st_mtime_ns, fx_st.st_size]
+            print("wrote", cut, "(sound effects only)")
+
+    meta_path.write_text(json.dumps({"settings": settings, "frames": next_frames, "outs": cached_outs}))
 
 
 def true_peak(path):

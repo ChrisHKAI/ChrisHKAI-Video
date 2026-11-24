@@ -3,7 +3,9 @@
 // the camera, as wide as asked; layouts place many at once (a grid, a wall past the frame, an arc round the toy,
 // a deck), and stagger spreads their arrivals over the beat. The pictures light themselves, like the page's
 // panels: the light stays on the toy.
-import { readFileSync, readdirSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { dirname } from "node:path";
 import { fromFilm } from "./film.js";
 import { seg } from "./math.js";
 import { trs, qId, qMul, qAxis, apply } from "./quat.js";
@@ -108,3 +110,30 @@ export const stagger = (g, i, n, g0, g1, each = 0.25) => {
   const t0 = g0 + ((g1 - g0 - each) * i) / Math.max(1, n - 1);
   return seg(g, t0, t0 + each);
 };
+
+// Remote multi-GPU render wrappers (e.g. colab-blender) skip .mp4/.mov files when bundling workspaces so raw reference
+// reels and rendered exports are not uploaded. Losslessly stream-copy embedded .mp4/.mov card textures into
+// build/movies/*.mkv (mtime-cached, zero re-encode) so local and cloud Cycles workers both load them cleanly.
+const _movieRemuxCache = new Map();
+export function ensureCloudSafeMovie(srcRel, resolveFile = fromFilm) {
+  if (typeof srcRel !== "string" || !/\.(mp4|mov)$/i.test(srcRel)) return null;
+  const srcAbs = resolveFile(srcRel);
+  const cacheKey = srcAbs;
+  if (_movieRemuxCache.has(cacheKey)) return _movieRemuxCache.get(cacheKey);
+  if (!existsSync(srcAbs)) return null;
+  const slug = srcRel.replace(/^[./\\]+/, "").replace(/[^A-Za-z0-9._-]+/g, "_").replace(/\.(mp4|mov)$/i, "");
+  const dstRel = `build/movies/${slug}.mkv`;
+  const dstAbs = resolveFile(dstRel);
+  const srcSt = statSync(srcAbs);
+  if (!existsSync(dstAbs) || statSync(dstAbs).mtimeMs < srcSt.mtimeMs || statSync(dstAbs).size === 0) {
+    mkdirSync(dirname(dstAbs), { recursive: true });
+    const r = spawnSync("ffmpeg", ["-v", "error", "-y", "-i", srcAbs, "-map", "0:v:0", "-c:v", "copy", "-an", dstAbs], { encoding: "utf8" });
+    if (r.status !== 0) {
+      rmSync(dstAbs, { force: true });
+      _movieRemuxCache.set(cacheKey, null);
+      return null;
+    }
+  }
+  _movieRemuxCache.set(cacheKey, dstRel);
+  return dstRel;
+}

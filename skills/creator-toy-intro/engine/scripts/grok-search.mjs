@@ -53,6 +53,11 @@ export function isPlaceholderAnswer(found, numTurns = null) {
   return hasStub || (numTurns ?? 1) <= 1;
 }
 
+export function retrySearchPrompt(basePrompt, attempt) {
+  if (attempt <= 0) return basePrompt;
+  return `${basePrompt}\n\nIMPORTANT (retry ${attempt}): Call X search tools (x_user_search, x_keyword_search, x_thread_fetch) BEFORE emitting the final JSON. Do NOT output empty arrays or placeholder strings like "pending" or "searching".`;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   main();
 }
@@ -60,7 +65,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 function main() {
 const argv = process.argv.slice(2);
 const arg = (k, d) => (argv.includes(k) ? argv[argv.indexOf(k) + 1] : d);
-const dir = resolve(argv.find((a, i) => !a.startsWith("--") && !["--handle", "--max-turns"].includes(argv[i - 1])) ?? process.env.FILM ?? ".");
+const dir = resolve(argv.find((a, i) => !a.startsWith("--") && !["--handle", "--max-turns", "--retries"].includes(argv[i - 1])) ?? process.env.FILM ?? ".");
 const film = existsSync(join(dir, "film.json")) ? JSON.parse(readFileSync(join(dir, "film.json"), "utf8")) : {};
 const handle = (arg("--handle") ?? film.source?.handle ?? film.profile?.handle ?? "").replace(/^@/, "");
 if (!handle) { console.error("no handle: pass --handle <name> (the X account, without @)"); process.exit(1); }
@@ -124,36 +129,40 @@ function toolsUsed(sessionId) {
 
 mkdirSync(join(dir, "research"), { recursive: true });
 const t0 = Date.now();
-let raw;
-if (argv.includes("--from-raw")) raw = readFileSync(join(dir, `research/${stem}-raw.json`), "utf8"); // no paid search
-else {
-  console.log(`grok: searching X for @${handle} (about ten minutes)…`);
-  // every tool but the X tools and web search (which --tools cannot name): checked by asking Grok for its tools.
-  // Grok ignores a name it does not know, so a renamed tool slips through: grok 1.0.73 calls the shell run_terminal_command
-  const DENY = ["run_terminal_cmd", "run_terminal_command", "search_replace", "write", "read_file", "list_dir", "grep", "todo_write", "task", "web_fetch", "use_tool", "search_tool",
-    "image_gen", "image_edit", "image_to_video", "reference_to_video", "workflow", "scheduler_create", "scheduler_delete", "scheduler_list", "monitor",
-    "send_feedback", "ask_user_question", "spawn_subagent", "kill_command_or_subagent", "get_command_or_subagent_output", "enter_plan_mode", "exit_plan_mode"];
-  const r = spawnSync(grok, ["-p", prompt, "--disallowed-tools", DENY.join(","), "--output-format", "json", "--json-schema", JSON.stringify(schema), "--max-turns", arg("--max-turns", "20")],
-    { cwd: join(dir, "research"), encoding: "utf8", maxBuffer: 1 << 28 });
-  raw = r.stdout ?? "";
-  writeFileSync(join(dir, `research/${stem}-raw.json`), raw);
-  if (r.status !== 0) { console.error((r.stderr || raw).slice(-2000)); process.exit(r.status || 1); }
-}
-let out, found;
-try {
-  out = JSON.parse(raw);
-  const answer = out.text ?? out.result;
-  found = typeof answer === "string" ? answerOf(answer) : answer;
-  if (!found) throw new Error("no JSON object in the answer");
-} catch (e) {
-  console.error(`grok answered, but not in the shape asked for: see research/${stem}-raw.json (${e.message})`);
-  process.exit(1);
-}
-// with a schema Grok sometimes answers on its first turn, before any search, or emits a placeholder stub
-// like { pinned: { url: "pending", first_line: "searching" } }: reject so the caller retries cleanly
-if (isPlaceholderAnswer(found, out.num_turns)) {
-  console.error(`grok answered before searching (placeholder or empty result, turns: ${out.num_turns ?? "?"}): run it again; see research/${stem}-raw.json`);
-  process.exit(1);
+const DENY = ["run_terminal_cmd", "run_terminal_command", "search_replace", "write", "read_file", "list_dir", "grep", "todo_write", "task", "web_fetch", "use_tool", "search_tool",
+  "image_gen", "image_edit", "image_to_video", "reference_to_video", "workflow", "scheduler_create", "scheduler_delete", "scheduler_list", "monitor",
+  "send_feedback", "ask_user_question", "spawn_subagent", "kill_command_or_subagent", "get_command_or_subagent_output", "enter_plan_mode", "exit_plan_mode"];
+const maxRetries = argv.includes("--from-raw") ? 0 : Math.max(0, Number.parseInt(arg("--retries", "2"), 10) || 0);
+let raw, out, found;
+for (let attempt = 0; attempt <= maxRetries; attempt++) {
+  if (argv.includes("--from-raw")) raw = readFileSync(join(dir, `research/${stem}-raw.json`), "utf8"); // no paid search
+  else {
+    if (attempt === 0) console.log(`grok: searching X for @${handle} (about ten minutes)…`);
+    else console.error(`grok answered before searching on attempt ${attempt} (turns: ${out?.num_turns ?? "?"}); retrying (${attempt + 1}/${maxRetries + 1})…`);
+    // every tool but the X tools and web search (which --tools cannot name): checked by asking Grok for its tools.
+    // Grok ignores a name it does not know, so a renamed tool slips through: grok 1.0.73 calls the shell run_terminal_command
+    const r = spawnSync(grok, ["-p", retrySearchPrompt(prompt, attempt), "--disallowed-tools", DENY.join(","), "--output-format", "json", "--json-schema", JSON.stringify(schema), "--max-turns", arg("--max-turns", "20")],
+      { cwd: join(dir, "research"), encoding: "utf8", maxBuffer: 1 << 28 });
+    raw = r.stdout ?? "";
+    writeFileSync(join(dir, `research/${stem}-raw.json`), raw);
+    if (r.status !== 0) { console.error((r.stderr || raw).slice(-2000)); process.exit(r.status || 1); }
+  }
+  try {
+    out = JSON.parse(raw);
+    const answer = out.text ?? out.result;
+    found = typeof answer === "string" ? answerOf(answer) : answer;
+    if (!found) throw new Error("no JSON object in the answer");
+  } catch (e) {
+    console.error(`grok answered, but not in the shape asked for: see research/${stem}-raw.json (${e.message})`);
+    process.exit(1);
+  }
+  // with a schema Grok sometimes answers on its first turn, before any search, or emits a placeholder stub
+  // like { pinned: { url: "pending", first_line: "searching" } }: auto-retry up to maxRetries before failing
+  if (!isPlaceholderAnswer(found, out.num_turns)) break;
+  if (attempt === maxRetries) {
+    console.error(`grok answered before searching (placeholder or empty result, turns: ${out.num_turns ?? "?"}): run it again; see research/${stem}-raw.json`);
+    process.exit(1);
+  }
 }
 const tools = toolsUsed(out.sessionId);
 const lead = { handle, searched: new Date().toISOString().slice(0, 10), minutes: argv.includes("--from-raw") ? null : +((Date.now() - t0) / 60000).toFixed(1), costUSD: out.total_cost_usd ?? null, ...(tools ? { tools } : {}), ...found };

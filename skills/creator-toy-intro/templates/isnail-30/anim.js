@@ -549,9 +549,14 @@ function ctaPose(o, t) {
     o.yaw = lerp(0.45, 0.1, k);
     o.aimR = { world: CTA_CAM, k, len: 1.15 };
     o.pointR = k;
-    const idle = (T.CTA_MODE === "two-column" || T.CTA_MODE === "still") ? smooth(seg(t, E.final + 0.35, E.final + 0.75)) : 0;
-    const breathe = idle * Math.sin((t - E.final) * TAU * 0.75);
-    o.head = [0.05 * k + 0.025 * breathe, -0.15 * k + 0.04 * breathe, 0.035 * breathe];
+    const idle = (T.CTA_MODE === "two-column" || T.CTA_MODE === "still") ? smooth(seg(t, E.final + 0.25, E.final + 0.65)) : 0;
+    const breathe = idle * Math.sin((t - E.final) * TAU * 0.8);
+    o.head = [0.05 * k + 0.04 * breathe, -0.15 * k + 0.065 * breathe, 0.045 * breathe];
+    if (idle > 0) {
+      o.pos = v3.add(o.pos, [0, 0.0025 * Math.abs(breathe), 0]);
+      o.body = [0.025 * breathe, -0.04 * breathe, 0.02 * breathe];
+      o.armL = [0.08 * breathe, 0, 0.28 + 0.09 * breathe];
+    }
     o.legR = [-0.2 * k, 0, 0];
   }
   q += crouch(t, E.final - 0.05, 0.1) + landSquash(t, E.final, 0.15);
@@ -660,12 +665,10 @@ const cta = (x, y, z) => [T.CTA[0] + x, T.CTA[1] + y, T.CTA[2] + z];
 // gold crown) and @isnail are slapped up in the empty space above at 28 s.
 // label: text, em (m), paper, centre (m from CTA), tilt, when it lands, letter times
 // film.json type.track: em between the labels' letters, for the face the film chose (labels.js TRACK by script)
-const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt, ink = null) => makeLabel({ id, text, em, paper, ink, c: [cx, cy, cz], tilt, at, letterAt, adv, track: film.type?.track });
-export const SLOGAN_LETTER = (i) => E.letters + i * T.LETTER_STEP;
-// the slogan's labels run on from one another, a letter per 8th note; the name
-// and the handle are slapped up together at E.name
 const CTA_TEXT = film.cta;
 const STEADY_CTA = T.CTA_MODE === "two-column" || T.CTA_MODE === "still";
+const label = (id, text, em, paper, cx, cy, cz, tilt, at, letterAt, ink = null) => makeLabel({ id, text, em, paper, ink, c: [cx, cy, cz], tilt, at, letterAt, adv, track: film.type?.track, padX: STEADY_CTA ? 0.34 : 0.2 });
+export const SLOGAN_LETTER = (i) => E.letters + i * T.LETTER_STEP;
 const sloganPlaces = (scale = 1, xs = null) => {
   let sloganAt = 0;
   return CTA_TEXT.slogan.map((p, k) => {

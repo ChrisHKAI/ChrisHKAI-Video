@@ -888,5 +888,154 @@ class V0812EngineImprovementTests(unittest.TestCase):
             self.assertEqual(Image.open(p2).getpixel((0, 0)), (0, 255, 0))
 
 
+class V0813EngineImprovementTests(unittest.TestCase):
+    def test_stagekit_paper_accepts_paper_and_fill_keyword_aliases(self):
+        import stagekit
+        im_pos = stagekit.paper("麦麦提", 48, "#F8FAFC", "#0F172A", seed=3)
+        im_kw_paper = stagekit.paper("麦麦提", 48, paper="#F8FAFC", ink="#0F172A", seed=3)
+        im_kw_fill = stagekit.paper("麦麦提", 48, fill="#F8FAFC", ink="#0F172A", seed=3)
+        self.assertEqual(im_pos.size, im_kw_paper.size)
+        self.assertEqual(im_pos.tobytes(), im_kw_paper.tobytes())
+        self.assertEqual(im_pos.tobytes(), im_kw_fill.tobytes())
+
+    def test_ensure_cloud_safe_movie_remuxes_mp4_and_diff_anim_tracks_movie_source(self):
+        if not shutil.which("ffmpeg"):
+            self.skipTest("ffmpeg not installed")
+        diff_mod = load_script("diff_anim_v0813", SCRIPTS / "diff-anim.py")
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "assets/work").mkdir(parents=True)
+            (fdir / "film.json").write_text(json.dumps({"format": {"fps": 30, "duration": 1, "size": [64, 36]}}))
+            mp4 = fdir / "assets/work/clip-wipe.mp4"
+            subprocess.run([
+                "ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=navy:s=64x36:r=30:d=0.1",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", str(mp4),
+            ], check=True)
+            pic_url = (SKILL / "engine/lib/pictures.js").as_uri()
+            probe = f'import {{ ensureCloudSafeMovie }} from {json.dumps(pic_url)}; console.log(JSON.stringify(ensureCloudSafeMovie("assets/work/clip-wipe.mp4")));'
+            r = subprocess.run(["node", "--input-type=module", "-e", probe], env={**os.environ, "FILM": str(fdir)}, capture_output=True, text=True, check=True)
+            mkv_rel = json.loads(r.stdout.strip().splitlines()[-1])
+            self.assertEqual(mkv_rel, "build/movies/assets_work_clip-wipe.mkv")
+            self.assertTrue((fdir / mkv_rel).is_file())
+            self.assertGreater((fdir / mkv_rel).stat().st_size, 0)
+
+            anim = {
+                "fps": 30, "sub": 1, "frames": 4, "samples": 4,
+                "objects": [
+                    {"name": "camera", "parent": "root", "tr": [0, 0, 1, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_vid", "parent": "root", "geo": {"type": "uiBox", "rect": [-100, -56, 200, 112], "thickness": 0.002},
+                     "mat": {"type": "ui", "image": "assets/work/poster.png", "movie": mkv_rel, "movieSource": "assets/work/clip-wipe.mp4"},
+                     "tr": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {"camera": [[0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1], [3, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]]},
+                "colors": {}, "scalars": {},
+            }
+            frames_hit, objs_hit = diff_mod.image_frames(anim, ["assets/work/clip-wipe.mp4"])
+            self.assertEqual(objs_hit, ["beat1_vid"])
+            self.assertEqual(frames_hit, [1, 2, 3, 4])
+
+    def test_finish_caches_and_auto_refreshes_existing_sfx_cut(self):
+        if not shutil.which("ffmpeg"):
+            self.skipTest("ffmpeg not installed")
+        import wave
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build/render").mkdir(parents=True)
+            (fdir / "assets/audio").mkdir(parents=True)
+            (fdir / "out").mkdir(parents=True)
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "sfx-cache",
+                "theme": "x-desktop",
+                "output": "out/sfx-cache.mp4",
+                "format": {"fps": 30, "duration": 0.1, "size": [64, 36]},
+                "toy": "toy.json",
+            }))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12, "colors": {"body": "#F4F6FA"}}))
+            for idx in (1, 2, 3):
+                Image.new("RGB", (64, 36), (30 * idx, 50, 90)).save(fdir / f"build/render/{idx:04d}.png")
+            for wav_name in ("score.wav", "score-sfx.wav"):
+                with wave.open(str(fdir / "assets/audio" / wav_name), "wb") as wf:
+                    wf.setnchannels(2)
+                    wf.setsampwidth(2)
+                    wf.setframerate(48000)
+                    wf.writeframes(b"\x00\x00\x00\x00" * 4800)
+
+            env = {**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}
+            r1 = subprocess.run([sys.executable, str(SCRIPTS / "finish.py"), "--sfx-cut", "--workers", "1"], env=env, capture_output=True, text=True, check=True)
+            self.assertIn("wrote", r1.stdout)
+            sfx_path = fdir / "out/sfx-cache-sfx.mp4"
+            self.assertTrue(sfx_path.is_file())
+            mtime1 = sfx_path.stat().st_mtime_ns
+
+            # Unchanged second run reports both main and sfx cuts up to date
+            r2 = subprocess.run([sys.executable, str(SCRIPTS / "finish.py"), "--sfx-cut", "--workers", "1"], env=env, capture_output=True, text=True, check=True)
+            self.assertIn("up to date", r2.stdout)
+            self.assertIn("(sound effects only)", r2.stdout)
+            self.assertEqual(sfx_path.stat().st_mtime_ns, mtime1)
+
+            # Surgical frame update WITHOUT passing --sfx-cut still refreshes existing -sfx.mp4!
+            import time
+            time.sleep(0.02)
+            Image.new("RGB", (64, 36), (240, 100, 30)).save(fdir / "build/render/0002.png")
+            r3 = subprocess.run([sys.executable, str(SCRIPTS / "finish.py"), "--workers", "1"], env=env, capture_output=True, text=True, check=True)
+            self.assertIn("wrote", r3.stdout)
+            self.assertIn("(sound effects only)", r3.stdout)
+            self.assertGreater(sfx_path.stat().st_mtime_ns, mtime1)
+
+    def test_two_column_end_card_defaults_final_to_28s_and_widens_label_pad(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            g_stub = {"advance": 1.0, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            chars = "0123456789.万查看麦麦提@shengtang省算力找测试"
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in chars
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12,
+                "center": [0, 0.06, 0],
+                "colors": {"body": "#1E3A8A", "plinth": "#F8FAFC", "plinthTop": "#F59E0B"},
+                "joints": {"body": {"p": [0, 0.04, 0]}, "head": {"p": [0, 0.08, 0], "parent": "body"}, "armL": {"p": [0.03, 0.06, 0], "parent": "body"}, "armR": {"p": [-0.03, 0.06, 0], "parent": "body"}, "legL": {"p": [0.015, 0.02, 0], "parent": "body"}, "legR": {"p": [-0.015, 0.02, 0], "parent": "body"}},
+                "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.05, 0], "size": [0.05, 0.06, 0.04], "mat": "body"}],
+            }))
+            widths = {}
+            for mode in ("two-column", "sweep"):
+                (fdir / "film.json").write_text(json.dumps({
+                    "id": "cta-28",
+                    "template": "isnail-30",
+                    "theme": "x-desktop",
+                    "format": {"fps": 30, "bpm": 120, "duration": 30, "size": [1920, 1080]},
+                    "toy": "toy.json",
+                    "profile": {"name": "麦麦提", "handle": "@shengtang", "bio": ["AI"]},
+                    "posts": {"pinned": {"count": "9.4万"}, "retro": {"count": "2.4万"}},
+                    "counter": {"value": 9.4, "unit": "万", "label": "查看", "display": "9.4万"},
+                    "story": {"exit": "jump", "segments": [{"beat": "phrase", "bars": 12, "text": "测试"}, {"story": [24, "end"]}]},
+                    "cta": {
+                        "layout": mode,
+                        "slogan": [{"text": "省算力"}, {"text": "找麦麦提"}],
+                        "name": {"text": "麦麦提"},
+                        "handle": {"text": "@shengtang"},
+                        "prop": {"kind": "plinth"},
+                    },
+                }))
+                tl_url = (SKILL / "templates/isnail-30/timeline.js").as_uri()
+                anim_url = (SKILL / "templates/isnail-30/anim.js").as_uri()
+                probe = (
+                    f"import * as T from {json.dumps(tl_url)};"
+                    f"import * as A from {json.dumps(anim_url)};"
+                    "const o1 = A.mascotAt(28.6).o, o2 = A.mascotAt(29.2).o;"
+                    "console.log(JSON.stringify({ final: T.EV.final, slo0Ratio: A.LABELS[0].W / A.LABELS[0].em, bodyMoved: Math.hypot(...o1.body.map((v,i)=>v-o2.body[i])) > 1e-4 }));"
+                )
+                r = subprocess.run(["node", "--input-type=module", "-e", probe], cwd=str(SKILL), env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}, capture_output=True, text=True, check=True)
+                data = json.loads(r.stdout.strip().splitlines()[-1])
+                self.assertEqual(data["final"], 28.0)
+                widths[mode] = data["slo0Ratio"]
+                if mode == "two-column":
+                    self.assertTrue(data["bodyMoved"])
+            self.assertGreater(widths["two-column"], widths["sweep"] + 0.2)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

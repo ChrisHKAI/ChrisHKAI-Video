@@ -65,12 +65,12 @@ function landscape(frame, { spots, K, A, P, R, cx, cb }) {
   // full and uncropped on the left and stacked name / handle / slogan on the right (no mid-pan edge cropping).
   const twoCol = frame.ctaLayout === "two-column" || frame.ctaLayout === "still";
   const camera2 = twoCol ? [
-    K(24.3833, [0.02, 0.17, 0.02], 1.38, 8, 0, 10),
-    K(25.2, [0.02, 0.17, 0.02], 1.34, 8, 0, 10),
-    K(26.8, [0.02, 0.17, 0.02], 1.32, 8, 0, 10),
-    K(28.0, [0.02, 0.17, 0.02], 1.30, 8, 0, 10),
-    K(29.0, [0.02, 0.17, 0.02], 1.30, 8, 0, 10),
-    K(30.0, [0.02, 0.17, 0.02], 1.30, 8, 0, 10),
+    K(24.3833, [0.02, 0.165, 0.02], 1.32, 8, 0, 10),
+    K(25.2, [0.02, 0.165, 0.02], 1.28, 8, 0, 10),
+    K(26.8, [0.02, 0.165, 0.02], 1.26, 8, 0, 10),
+    K(28.0, [0.02, 0.165, 0.02], 1.24, 8, 0, 10),
+    K(29.0, [0.02, 0.165, 0.02], 1.24, 8, 0, 10),
+    K(30.0, [0.02, 0.165, 0.02], 1.24, 8, 0, 10),
   ] : [
     K(24.3833, [-0.4, 0.16, 0], 1.05, 9, 8, 9),
     K(25.2, [-0.4, 0.21, 0], 0.78, 8, 12, 7),
@@ -84,12 +84,12 @@ function landscape(frame, { spots, K, A, P, R, cx, cb }) {
   // name and handle above; the toy points at the camera's last place
   const cta = twoCol ? {
     path: [-0.34, -0.34],
-    pointAt: [0.02, 0.17 + 1.30 * Math.sin(0.14), 1.30 * Math.cos(0.14)],
-    slogan: [{ em: 0.062, at: [0.22, 0.160, -0.055], tilt: -0.010 }, { em: 0.062, at: [0.22, 0.052, -0.055], tilt: 0.012 }],
-    sloganStep: [0, -0.108, 0],
+    pointAt: [0.02, 0.165 + 1.24 * Math.sin(0.14), 1.24 * Math.cos(0.14)],
+    slogan: [{ em: 0.058, at: [0.22, 0.148, -0.055], tilt: -0.010 }, { em: 0.058, at: [0.22, 0.044, -0.055], tilt: 0.012 }],
+    sloganStep: [0, -0.104, 0],
     sloganWidth: 0.62,
-    name: { em: 0.082, at: [0.22, 0.382, -0.08], tilt: -0.015 },
-    handle: { em: 0.050, at: [0.22, 0.268, -0.075], tilt: 0.012 },
+    name: { em: 0.078, at: [0.22, 0.354, -0.08], tilt: -0.015 },
+    handle: { em: 0.048, at: [0.22, 0.248, -0.075], tilt: 0.012 },
   } : {
     path: [-0.4, 0.47],
     pointAt: [0.03, 0.15 + 1.5 * Math.sin(0.157), 1.5 * Math.cos(0.157)],

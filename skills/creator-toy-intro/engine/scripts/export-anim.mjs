@@ -14,6 +14,7 @@ import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { film, FILM, fromFilm, importTemplate } from "../lib/film.js";
+import { ensureCloudSafeMovie } from "../lib/pictures.js";
 import { trs } from "../lib/quat.js";
 
 const T = await importTemplate("timeline.js");
@@ -38,6 +39,11 @@ function pack(t) {
 }
 
 W.declare({ add, pack, objects });
+for (const o of objects) {
+  const mv = o.mat?.movie;
+  const mkv = ensureCloudSafeMovie(mv, fromFilm);
+  if (mkv) o.mat = { ...o.mat, movie: mkv, movieSource: mv };
+}
 
 function hex(h) { return [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255); }
 

@@ -82,8 +82,11 @@ def diff_frames(old, new):
     def _clean_geo(g):
         return {k: v for k, v in g.items() if k != "unitScale"} if isinstance(g, dict) else g
 
+    def _clean_mat(m):
+        return {k: v for k, v in m.items() if k != "movieSource"} if isinstance(m, dict) else m
+
     ob = lambda a: {  # noqa: E731
-        o["name"]: json.dumps({"parent": o.get("parent"), "geo": _clean_geo(o.get("geo")), "mat": o.get("mat"), "tr": o.get("tr")}, sort_keys=True)
+        o["name"]: json.dumps({"parent": o.get("parent"), "geo": _clean_geo(o.get("geo")), "mat": _clean_mat(o.get("mat")), "tr": o.get("tr")}, sort_keys=True)
         for o in a["objects"]
     }
     oo, no = ob(old), ob(new)
@@ -131,11 +134,11 @@ def diff_frames(old, new):
 
 
 def _object_media(obj):
-    """Media file paths referenced by an anim.json object (textures or movie clips)."""
+    """Media file paths referenced by an anim.json object (textures or movie clips, including pre-remux movieSource)."""
     paths = []
     mat = obj.get("mat") or {}
     geo = obj.get("geo") or {}
-    for p in (mat.get("image"), mat.get("movie"), (geo.get("img") or {}).get("image")):
+    for p in (mat.get("image"), mat.get("movie"), mat.get("movieSource"), (geo.get("img") or {}).get("image")):
         if isinstance(p, str) and p:
             paths.append(p.replace("\\", "/"))
     return paths

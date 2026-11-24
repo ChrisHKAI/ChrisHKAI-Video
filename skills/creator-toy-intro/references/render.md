@@ -145,9 +145,10 @@ does, in one go:
   core (`build/final/.finish-meta.json` caches unchanged frames across partial
   re-renders, sound re-mixes, and `-- --sfx-cut`; pass `-- --force` to rebuild
   every frame); then the film, H.264 with the score as AAC (`out/<name>.mp4`);
-- the cut with the sound effects alone, where a publish platform asks for
-  it (抖音: creators there lay the platform's own music under a film):
-  `out/<name>-sfx.mp4`;
+- the cut with the sound effects alone (`out/<name>-sfx.mp4`, written
+  automatically by `run.mjs finish` whenever `assets/audio/score-sfx.wav` is
+  present, cached alongside the main MP4 in `.finish-meta.json`; pass
+  `-- --no-sfx-cut` to skip);
 - each platform's covers from the held last frame (`out/covers/`, and
   `build/covers-check.jpg`);
 - the last look (`qa`): duration, size, frame rate, loudness (aim about -13

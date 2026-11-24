@@ -156,8 +156,9 @@ def text(s, size, fill="#111111", face="bold", stroke=0, stroke_fill="#ffffff", 
     return hush(im, size) if SILENT and _wordy(s) else im
 
 
-def paper(s, size, paper_="#F3EAD7", ink="#141414", face="bold", pad=0.32, seed=1, tear=0.07):
-    """A torn-paper label with lettering on it."""
+def paper(s, size, paper_="#F3EAD7", ink="#141414", face="bold", pad=0.32, seed=1, tear=0.07, *, paper=None, fill=None):
+    """A torn-paper label with lettering on it (accepts paper= or fill= aliases alongside positional paper_)."""
+    bg = paper if paper is not None else (fill if fill is not None else paper_)
     t = text(s, size, ink, face)
     px, py = int(size * pad * 1.25), int(size * pad)
     w, h = t.width + 2 * px, t.height + 2 * py
@@ -174,7 +175,7 @@ def paper(s, size, paper_="#F3EAD7", ink="#141414", face="bold", pad=0.32, seed=
     for i in range(3, 0, -1):
         pts.append((rnd.uniform(0, j), i * h / 4))
     im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    ImageDraw.Draw(im).polygon(pts, fill=rgb(paper_))
+    ImageDraw.Draw(im).polygon(pts, fill=rgb(bg))
     im.alpha_composite(t, (px, py))
     return im
 

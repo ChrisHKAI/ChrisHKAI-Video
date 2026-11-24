@@ -13,7 +13,7 @@ const folder = process.argv.slice(2).find((a, i, all) => !a.startsWith("--") && 
 if (folder) process.env.FILM = resolve(folder);
 if (!process.env.FILM) { console.error("usage: node engine/scripts/clearance.mjs <film folder> [--json] [--tol <mm>]"); process.exit(1); }
 const { film, fromFilm } = await import("../lib/film.js");
-const { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText } = await import("../lib/clearance.js");
+const { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards } = await import("../lib/clearance.js");
 
 const arg = (k) => { const i = process.argv.indexOf(k); return i > 0 ? process.argv[i + 1] : null; };
 const path = fromFilm("build/anim.json");
@@ -39,9 +39,10 @@ const confettiText = describeConfettiOverText(confettiOverText(anim, { aspect: f
 const lineBackdrops = describeLineBackdropClashes(lineBackdropClashes(anim, { aspect: fw / fh, file: (p) => fromFilm(p) }));
 const bodyOcclusions = describePropCoversToyBody(propCoversToyBody(anim, { aspect: fw / fh, file: (p) => fromFilm(p) }));
 const textStreaks = describeHeroStreaksOverText(heroStreaksOverText(anim, { aspect: fw / fh, file: (p) => fromFilm(p) }));
-writeFileSync(fromFilm("build/clearance.json"), JSON.stringify({ tol: limit, moments, contacts, clashes, rawClashes, labels, lines, crops, floating, offStage, oversized, wraps, cardOverlaps, faceOcclusions, confettiText, lineBackdrops, bodyOcclusions, textStreaks }, null, 1));
-if (process.argv.includes("--json")) console.log(JSON.stringify({ moments, clashes, labels, lines, crops, floating, offStage, oversized, wraps, cardOverlaps, faceOcclusions, confettiText, lineBackdrops, bodyOcclusions, textStreaks }, null, 1));
-else if (!moments.length && !clashes.length && !labels.length && !lines.length && !crops.length && !floating.length && !offStage.length && !oversized.length && !wraps.length && !cardOverlaps.length && !faceOcclusions.length && !confettiText.length && !lineBackdrops.length && !bodyOcclusions.length && !textStreaks.length) console.log(`✓ the toy and props go through nothing (deeper than ${(limit * 1000).toFixed(1)} mm)`);
+const edgeOn = describeEdgeOnCards(edgeOnCards(anim, { aspect: fw / fh }));
+writeFileSync(fromFilm("build/clearance.json"), JSON.stringify({ tol: limit, moments, contacts, clashes, rawClashes, labels, lines, crops, floating, offStage, oversized, wraps, cardOverlaps, faceOcclusions, confettiText, lineBackdrops, bodyOcclusions, textStreaks, edgeOn }, null, 1));
+if (process.argv.includes("--json")) console.log(JSON.stringify({ moments, clashes, labels, lines, crops, floating, offStage, oversized, wraps, cardOverlaps, faceOcclusions, confettiText, lineBackdrops, bodyOcclusions, textStreaks, edgeOn }, null, 1));
+else if (!moments.length && !clashes.length && !labels.length && !lines.length && !crops.length && !floating.length && !offStage.length && !oversized.length && !wraps.length && !cardOverlaps.length && !faceOcclusions.length && !confettiText.length && !lineBackdrops.length && !bodyOcclusions.length && !textStreaks.length && !edgeOn.length) console.log(`✓ the toy and props go through nothing (deeper than ${(limit * 1000).toFixed(1)} mm)`);
 else {
   for (const m of moments) console.log(`${m.kind === "into" ? "✗" : "!"} ${m.text}`);
   for (const m of clashes) console.log(`✗ ${m.text}`);
@@ -58,5 +59,6 @@ else {
   for (const m of lineBackdrops) console.log(`! ${m.text}`);
   for (const m of bodyOcclusions) console.log(`! ${m.text}`);
   for (const m of textStreaks) console.log(`! ${m.text}`);
+  for (const m of edgeOn) console.log(`! ${m.text}`);
 }
 process.exit(moments.some((m) => m.kind === "into") || clashes.length || labels.length || lines.length || offStage.length || oversized.length ? 1 : 0);

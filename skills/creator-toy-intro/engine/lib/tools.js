@@ -5,7 +5,7 @@
 // (~/.chrishkai-video, or CHRISHKAI_VIDEO_HOME), as are the Python modules'
 // venv and the fallback faces.
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -22,9 +22,20 @@ export const PY_MODULES = ["numpy", "scipy", "PIL", "fontTools", "contourpy", "s
 const runs = (cmd, args = ["--version"]) => spawnSync(cmd, args, { encoding: "utf8", timeout: 60000 }).status === 0;
 export const onPath = (cmd) => runs(WIN ? "where" : "which", [cmd]);
 
+// whether a path points to a remote Colab render wrapper (directly or via symlink)
+export function isRemoteBlenderWrapper(p, exe = WIN ? "blender.exe" : "blender") {
+  if (typeof p !== "string" || !p) return false;
+  const check = (x) =>
+    /(?:^|[\\/])colab[-_]?blender(?:\.(?:py|sh|exe))?$/i.test(x) ||
+    x === join(BIN, exe) ||
+    x === join(homedir(), ".local/bin", exe);
+  if (check(p)) return true;
+  try { return check(realpathSync(p)); } catch { return false; }
+}
+
 // BLENDER first (a Blender kept anywhere else), then the usual places: newest version first.
-// Remote multi-GPU wrappers (BIN/blender, ~/.local/bin/blender) are skipped when `local: true` or `COLAB_LOCAL=1`
-// (unless `COLAB_ALL=1`), so non-sequence steps (lookdev, poses, estimate, previs, animatic) run on the local GPU.
+// Remote multi-GPU wrappers (BIN/blender, ~/.local/bin/blender, colab-blender) are skipped when `local: true` or
+// `COLAB_LOCAL=1` (unless `COLAB_ALL=1`), so non-sequence steps (lookdev, poses, estimate, previs, animatic) run on the local GPU.
 export function blenderCandidates({ local = false } = {}) {
   const exe = WIN ? "blender.exe" : "blender";
   // in each folder, its versions' own folders ("Blender 5.2", "blender-5.2.3-windows-x64")
@@ -35,7 +46,13 @@ export function blenderCandidates({ local = false } = {}) {
     "/Applications/Blender.app/Contents/MacOS/Blender",
     join(homedir(), "Applications/Blender.app/Contents/MacOS/Blender"),
   ]);
-  const explicitBlender = env.BLENDER && !skipWrappers && defaultMacBins.has(env.BLENDER) ? null : env.BLENDER;
+  const explicitBlender = !env.BLENDER
+    ? null
+    : skipWrappers && isRemoteBlenderWrapper(env.BLENDER, exe)
+      ? null
+      : !skipWrappers && defaultMacBins.has(env.BLENDER)
+        ? null
+        : env.BLENDER;
   return [
     explicitBlender,
     ...(WIN || skipWrappers ? [] : [join(BIN, exe), join(homedir(), ".local/bin", exe)]),
@@ -56,7 +73,7 @@ export function findBlender({ local = false } = {}) {
   if (found) return found;
   const exe = WIN ? "blender.exe" : "blender";
   const skipWrappers = (local || process.env.COLAB_LOCAL === "1") && process.env.COLAB_ALL !== "1";
-  if (skipWrappers && [join(BIN, exe), join(homedir(), ".local/bin", exe)].some((p) => existsSync(p))) return null;
+  if (skipWrappers && ([join(BIN, exe), join(homedir(), ".local/bin", exe)].some((p) => existsSync(p)) || isRemoteBlenderWrapper(process.env.BLENDER, exe))) return null;
   return onPath("blender") ? "blender" : null;
 }
 export const findLocalBlender = () => findBlender({ local: true });

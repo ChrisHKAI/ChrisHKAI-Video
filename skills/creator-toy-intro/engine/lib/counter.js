@@ -50,28 +50,41 @@ export function formatCount(v, { decimals = 0, sep = ",", unit = "" } = {}) {
   return (v < 0 ? "-" : "") + (sep ? i.replace(/\B(?=(\d{3})+(?!\d))/g, sep) : i) + (d ? `.${d}` : "") + unit;
 }
 
+export function resolveReadoutFmt(fmt, from = 0, to = 0) {
+  if (typeof fmt === "function") return fmt;
+  const defDecimals = Number.isInteger(from) && Number.isInteger(to) ? 0 : 1;
+  if (typeof fmt === "string") return (v) => formatCount(v, { decimals: defDecimals, sep: "", unit: fmt });
+  if (fmt && typeof fmt === "object") {
+    const { prefix = "", sep = "", decimals = defDecimals, unit = "" } = fmt;
+    return (v) => prefix + formatCount(v, { decimals, sep, unit });
+  }
+  return (v) => formatCount(v, { decimals: defDecimals, sep: "" });
+}
+
 // text that changes as something counts, as 3D lettering: every place from the
 // right holds one object per character it shows on the way (only one shows at a
-// time, so a change never smears). fmt(v) is the text for v; it is sampled
-// `steps` times from `from` to `to` to learn each place's characters. Right-
-// aligned on x = 0 of the group it is put in; em its size (m).
+// time, so a change never smears). fmt may be a function (v) => string, a unit
+// string ("万"), or a formatCount options object ({ decimals, sep, unit, prefix });
+// it is sampled `steps` times from `from` to `to` to learn each place's characters.
+// Right-aligned on x = 0 of the group it is put in; em its size (m).
 export function readout({ fmt, from, to, em, adv, key = (c) => `heavy:${c}`, steps = 400 }) {
+  const format = resolveReadoutFmt(fmt, from, to);
   const places = [];
-  for (let i = 0; i <= steps; i++) [...fmt(from + ((to - from) * i) / steps)].reverse().forEach((c, k) => (places[k] ??= new Set()).add(c));
-  [...fmt(to)].reverse().forEach((c, k) => (places[k] ??= new Set()).add(c));
+  for (let i = 0; i <= steps; i++) [...format(from + ((to - from) * i) / steps)].reverse().forEach((c, k) => (places[k] ??= new Set()).add(c));
+  [...format(to)].reverse().forEach((c, k) => (places[k] ??= new Set()).add(c));
   // a place that shows a digit may show any of them on the way
   for (const set of places) if ([...set].some((c) => /\d/.test(c))) for (const d of "0123456789") set.add(d);
   const id = (k, c) => `n${k}_${c.codePointAt(0)}`;
   return {
     // the objects to declare: { name, key (the glyph), c }
     names: places.flatMap((set, k) => [...set].map((c) => ({ name: id(k, c), key: key(c), c }))),
-    width: (v) => [...fmt(v)].reduce((w, c) => w + adv(key(c)) * em, 0),
+    width: (v) => [...format(v)].reduce((w, c) => w + adv(key(c)) * em, 0),
     // every object's transform for v, in the group's frame (right-aligned on x = 0)
     at(v, group) {
       const out = {};
       places.forEach((set, k) => set.forEach((c) => (out[id(k, c)] = mulT(group, trs([0, 0, 0], qId(), HIDDEN)))));
       let x = 0;
-      [...fmt(v)].reverse().forEach((c, k) => {
+      [...format(v)].reverse().forEach((c, k) => {
         x -= adv(key(c)) * em;
         if (out[id(k, c)]) out[id(k, c)] = mulT(group, trs([x, 0, 0]));
       });
@@ -79,7 +92,7 @@ export function readout({ fmt, from, to, em, adv, key = (c) => `heavy:${c}`, ste
     },
     // centred on x = 0 of group (or paired with a trailing label of `afterWidth` after `gap` so both centre together)
     centerAt(v, group, { afterWidth = 0, gap = 0 } = {}) {
-      const maxW = [...fmt(to)].reduce((w, c) => w + adv(key(c)) * em, 0);
+      const maxW = [...format(to)].reduce((w, c) => w + adv(key(c)) * em, 0);
       const totalW = maxW + (afterWidth > 0 ? gap + afterWidth : 0);
       return this.at(v, mulT(group, trs([-totalW / 2 + maxW, 0, 0])));
     },

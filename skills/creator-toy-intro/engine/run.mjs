@@ -367,14 +367,16 @@ for (const [i, step] of steps.entries()) {
       run(...awake(PY, [fromSkill("engine/scripts/finish.py"), "--in", "build/sample", "--out", (film.output ?? "out/film.mp4").replace(/(\.mp4)?$/, "-sample.mp4")]));
       break;
     }
-    case "finish":
-      run(...awake(PY, [fromSkill("engine/scripts/finish.py"), ...(force ? ["--force"] : []), ...more]));
+    case "finish": {
+      const autoSfx = !more.includes("--out") && !more.includes("--sfx-cut") && !more.includes("--no-sfx-cut") && existsSync(fromFilm("assets/audio/score-sfx.wav"));
+      run(...awake(PY, [fromSkill("engine/scripts/finish.py"), ...(force ? ["--force"] : []), ...(autoSfx ? ["--sfx-cut"] : []), ...more]));
       // a side cut (the quick version: -- --in build/quick --out out/<id>-quick.mp4) gets no covers or qa
       if (!more.includes("--out")) {
         run(PY, [fromSkill("engine/scripts/covers.py")]);
         run(PY, [fromSkill("engine/scripts/qa.py")]);
       }
       break;
+    }
     case "qa": run(PY, [fromSkill("engine/scripts/qa.py"), ...more]); break;
     case "covers": run(PY, [fromSkill("engine/scripts/covers.py"), ...more]); break;
     case "safezone": run(PY, [fromSkill("engine/scripts/safezone.py"), ...more]); break;

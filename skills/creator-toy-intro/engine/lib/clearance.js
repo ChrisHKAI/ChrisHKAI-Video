@@ -1910,15 +1910,17 @@ export function propCoversToyBody(anim, { aspect = 16 / 9, toy = "hero", minHeig
     .filter((p) => p.pts.length);
   if (!heroProbes.length) return [];
 
-  const SKIP_FG = /^beat\d+_(p_|back$|avatar$|cyc|bg|floor|desk|pad|stage|rostrum|plinth|wall|bleed)/;
+  const SKIP_FG = /^(?:beat\d+_)?(p_|back$|avatar$|cyc|bg|floor|desk|pad|stage|rostrum|plinth|wall|bleed)/;
+  const BUILTIN_SCENE_OBJ = /^(panel_|strip_|glow_|stat_|wall|piece|sticker2d$|flake_|spark_|bit_|label\d+_|crown$|cta_floor$|floor$|blob$|plinth_|snail_|logo$)/;
+  const isFgCandidate = (name) => !BUILTIN_SCENE_OBJ.test(name) && !SKIP_FG.test(name) && !SKIP_NAME.test(name);
   const fgCards = anim.objects
-    .filter((o) => /^beat\d+_/.test(o.name) && !SKIP_FG.test(o.name) && !SKIP_NAME.test(o.name) && o.geo?.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4)
+    .filter((o) => isFgCandidate(o.name) && o.geo?.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4)
     .map((o) => ({ o, spec: boxSpec(o) }))
     .filter((x) => x.spec);
 
   const fgPropGroups = new Map();
   for (const o of anim.objects) {
-    if (!/^beat\d+_/.test(o.name) || SKIP_FG.test(o.name) || SKIP_NAME.test(o.name)) continue;
+    if (!isFgCandidate(o.name)) continue;
     if (!o.geo || o.geo.type === "uiBox" || under(o, toy) || o.letter || o.mat?.outline) continue;
     const spec = propBoundsSpec(o);
     if (!spec || Math.max(...spec.h) * 2 > 0.55) continue;
@@ -2204,6 +2206,116 @@ export function describeHeroStreaksOverText(items) {
     kind: "warn",
     ...m,
     text: `${m.from.toFixed(2)}–${m.to.toFixed(2)} s: airborne toy streaks in front of 3D lettering "${m.text}" (${m.line}, ${Math.round(m.share * 100)}% covered at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect settled custom-beat banner/badge plaques (`*_plate`) and showcase `uiBox` cards (1–5 active cards on a beat)
+ * whose face normal stays turned > `maxAngleDeg` away from the camera ray (nearly edge-on like a thin blade), e.g. from
+ * aiming at world X = 0 instead of the beat's stage X or omitting UPRIGHT / camera yaw. Skips horizontal desk/floor
+ * mats, actively spinning/flipping transitions, and 6+ card corridor/wall montages.
+ */
+export function edgeOnCards(anim, { aspect = 16 / 9, maxAngleDeg = 68, minSecs = 0.45, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const SKIP_FG = /^beat\d+_(p_|back$|avatar$|cyc|bg|floor|desk|pad|stage|rostrum|plinth|wall|bleed)/;
+
+  const plaques = [];
+  const cardsByBeat = new Map();
+  for (const o of anim.objects) {
+    if (!/^beat\d+_/.test(o.name) || SKIP_FG.test(o.name) || SKIP_NAME.test(o.name) || !o.geo) continue;
+    if (/_plate$/.test(o.name) && (o.geo.type === "roundBox" || o.geo.type === "box") && Array.isArray(o.geo.size)) {
+      const [sx, sy, sz] = o.geo.size;
+      if (Math.min(sx, sy, sz) < 0.025 && Math.max(sx, sy, sz) >= 0.08) {
+        plaques.push({ o, spec: boxSpec(o), unit: 1 });
+      }
+    } else if (o.geo.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4) {
+      const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+      if (!cardsByBeat.has(beat)) cardsByBeat.set(beat, []);
+      cardsByBeat.get(beat).push({ o, spec: boxSpec(o), unit: o.geo.unitScale ?? 1 });
+    }
+  }
+  if (!plaques.length && !cardsByBeat.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const prevQuat = new Map();
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const seenNow = new Set();
+
+    const evalTarget = (item) => {
+      const w = worldOf(item.o.name, s, memo);
+      const pq = prevQuat.get(item.o.name);
+      prevQuat.set(item.o.name, w.q);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05 * item.unit) return;
+      if (pq) {
+        const qdot = Math.abs(w.q[0] * pq[0] + w.q[1] * pq[1] + w.q[2] * pq[2] + w.q[3] * pq[3]);
+        if (1 - qdot > 6e-4) return; // actively rotating/flipping transition
+      }
+      const obb = worldOBB(item.spec, w);
+      const maxSpan = Math.max(obb.h[0] * 2, obb.h[1] * 2, obb.h[2] * 2);
+      if (maxSpan > 0.95) return;
+      const lp = toLocal(camW, obb.c);
+      if (lp[2] >= -0.08 || -lp[2] > 5) return;
+      const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+      if (Math.abs(nx) > 0.95 || Math.abs(ny) > 0.95) return;
+
+      const minAx = obb.h[0] <= obb.h[1] && obb.h[0] <= obb.h[2] ? 0 : obb.h[1] <= obb.h[2] ? 1 : 2;
+      const ax = obb.axes[minAx];
+      const nLen = Math.hypot(...ax) || 1;
+      const nW = [ax[0] / nLen, ax[1] / nLen, ax[2] / nLen];
+      if (Math.abs(nW[1]) >= 0.70) return; // horizontal desk/floor mat
+
+      const vx = camW.p[0] - obb.c[0], vy = camW.p[1] - obb.c[1], vz = camW.p[2] - obb.c[2];
+      const vLen = Math.hypot(vx, vy, vz) || 1;
+      const cosAng = Math.min(1, Math.abs((nW[0] * vx + nW[1] * vy + nW[2] * vz) / vLen));
+      const angDeg = (Math.acos(cosAng) * 180) / Math.PI;
+      if (angDeg <= maxAngleDeg) return;
+
+      seenNow.add(item.o.name);
+      const cur = open.get(item.o.name);
+      if (!cur) open.set(item.o.name, { name: item.o.name, from: t, to: t, peak: t, angle: +angDeg.toFixed(1) });
+      else {
+        cur.to = t;
+        if (angDeg > cur.angle) Object.assign(cur, { angle: +angDeg.toFixed(1), peak: t });
+      }
+    };
+
+    for (const item of plaques) evalTarget(item);
+    for (const [, cards] of cardsByBeat) {
+      const active = cards.filter((item) => {
+        const w = worldOf(item.o.name, s, memo);
+        return Math.min(...w.s.map(Math.abs)) >= 0.05 * item.unit && Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) <= 5;
+      });
+      if (active.length > 5) continue; // 6+ card corridor/wall montage
+      for (const item of active) evalTarget(item);
+    }
+
+    for (const [k, c] of open) if (!seenNow.has(k)) { out.push(c); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.angle - a.angle);
+}
+
+export function describeEdgeOnCards(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: ${m.name} stands ${m.angle.toFixed(0)}° edge-on to the camera (worst at ${m.peak.toFixed(2)} s)`,
   }));
 }
 

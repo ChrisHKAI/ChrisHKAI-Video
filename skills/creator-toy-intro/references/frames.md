@@ -119,7 +119,7 @@ The pieces (each is in the module's own notes):
   `height=`).
 - `Stage.screen` straight on the frame: a label, a mark; `Stage.lines`,
   `burst`, `confetti` for a move and a hit.
-- `text`, `paper` (a torn label), `board` (a sign, a bubble;
+- `text`, `paper` (a torn label; accepts `paper="#…"` or `fill="#…"`), `board` (a sign, a bubble;
   `marks={"不": "#D8382D"}` paints one character), `stamp`, `arrow_sign`.
 
 What a film needs that is not here (a black ball with eyes, a paper plane, a
