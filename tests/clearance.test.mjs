@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import { unexpectedTools, isPlaceholderAnswer } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
@@ -854,9 +854,73 @@ test("blenderCandidates({ local: true }) skips ~/.local/bin/blender remote wrapp
 
     process.env.BLENDER = "/custom/blender-bin";
     assert.equal(blenderCandidates({ local: true })[0], "/custom/blender-bin");
+
+    // Default macOS app path in BLENDER does not preempt remote wrappers unless local/COLAB_LOCAL is set
+    process.env.BLENDER = "/Applications/Blender.app/Contents/MacOS/Blender";
+    const remoteFirst = blenderCandidates({ local: false });
+    assert.ok(remoteFirst[0].endsWith("/bin/blender") || remoteFirst[0].includes(".local/bin/blender"));
+    assert.ok(remoteFirst.includes("/Applications/Blender.app/Contents/MacOS/Blender"));
   } finally {
     if (prevBlender === undefined) delete process.env.BLENDER; else process.env.BLENDER = prevBlender;
     if (prevLocal === undefined) delete process.env.COLAB_LOCAL; else process.env.COLAB_LOCAL = prevLocal;
     if (prevAll === undefined) delete process.env.COLAB_ALL; else process.env.COLAB_ALL = prevAll;
   }
+});
+
+test("lineBackdropClashes detects foreground 3D beat headlines projecting across hero sandals or showcase cards, and passes over clean floor", () => {
+  const glyphGeo = {
+    type: "curve",
+    rings: [[[0, 0], [0.04, 0], [0.04, 0.045], [0, 0.045]]],
+    depth: 0.004,
+  };
+  const hiResCard = {
+    type: "uiBox",
+    rect: [-720, -450, 1440, 900],
+    uvRect: [0, 0, 1440, 900],
+    thickness: 0.008,
+    unitScale: 0.22,
+  };
+  const mkHeadline = (yPos) =>
+    [..."专治痛点"].map((ch, i) => ({
+      name: `beat1_title${i}`,
+      parent: "root",
+      letter: ch,
+      letterIndex: i,
+      line: "title",
+      geo: glyphGeo,
+      mat: { type: "type", color: "#FFFDF8" },
+      tr: pack([-0.09 + i * 0.05, yPos, 0.25]),
+    }));
+
+  const mkScene = (yPos) => ({
+    ...makeAnim(
+      [
+        { name: "camera", parent: "root", camera: true, tr: pack([0, 0.16, 1.2]) },
+        { name: "hero", parent: "root", tr: pack([0, 0.04, -0.10]) },
+        { name: "hero_shoes", parent: "hero", geo: { type: "box", size: [0.18, 0.06, 0.12] }, tr: pack([0, 0.03, 0]) },
+        { name: "beat1_card", parent: "root", geo: hiResCard, mat: { type: "ui" }, tr: pack([0, 0.30, -0.20], UPRIGHT, [0.22, 0.22, 0.22]) },
+        ...mkHeadline(yPos),
+      ],
+      {},
+      { frames: 24 },
+    ),
+    scalars: { fov: Array(24).fill(30) },
+  });
+
+  // 1) Headline at y = 0.08 in front (z = 0.25) projects right over hero_shoes (z = -0.10)
+  const overHero = lineBackdropClashes(mkScene(0.08), { aspect: 16 / 9 });
+  assert.equal(overHero.length, 1);
+  assert.equal(overHero[0].backdrop, "hero");
+  const descHero = describeLineBackdropClashes(overHero);
+  assert.equal(descHero.length, 1);
+  assert.ok(descHero[0].text.includes("专治痛点"));
+  assert.ok(descHero[0].text.includes("hero"));
+
+  // 2) Headline raised to y = 0.25 in front projects right over beat1_card (z = -0.20)
+  const overCard = lineBackdropClashes(mkScene(0.25), { aspect: 16 / 9 });
+  assert.equal(overCard.length, 1);
+  assert.equal(overCard[0].backdrop, "beat1_card");
+
+  // 3) Headline lowered onto clean dark floor in front (y = -0.06) clears both hero_shoes and beat1_card
+  assert.deepEqual(lineBackdropClashes(mkScene(-0.06), { aspect: 16 / 9 }), []);
 });

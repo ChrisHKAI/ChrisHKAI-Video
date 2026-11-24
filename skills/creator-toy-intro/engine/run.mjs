@@ -231,10 +231,16 @@ for (const [i, step] of steps.entries()) {
     case "hero": run("node", [fromSkill("engine/scripts/dump-hero.mjs")]); break;
     case "ui": run("node", [fromSkill("engine/scripts/build-ui.mjs"), ...more]); break;
     case "anim": {
-      // the lettering follows film.json: a changed slogan, label or beat word needs its glyphs first
+      // the lettering follows film.json and any workspace-local custom beat / prop .js modules
       const g = fromFilm("build/glyphs.json");
-      if (!steps.slice(0, i).includes("glyphs") && (!existsSync(g) || statSync(g).mtimeMs < statSync(fromFilm("film.json")).mtimeMs)) {
-        console.log("(film.json changed since the lettering was made: glyphs first)");
+      const glyphSources = [
+        fromFilm("film.json"),
+        ...((film.story?.segments ?? []).map((s) => s?.beat).filter((b) => typeof b === "string" && b.endsWith(".js")).map((b) => fromFilm(b))),
+        ...(typeof film.cta?.prop?.module === "string" ? [fromFilm(film.cta.prop.module)] : []),
+      ].filter((p) => existsSync(p));
+      const newestSrc = Math.max(0, ...glyphSources.map((p) => statSync(p).mtimeMs));
+      if (!steps.slice(0, i).includes("glyphs") && (!existsSync(g) || statSync(g).mtimeMs < newestSrc)) {
+        console.log("(film.json or beat/prop lettering changed since glyphs were made: glyphs first)");
         run(PY, [fromSkill("engine/scripts/glyphs.py")]);
       }
       run("node", [fromSkill("engine/scripts/export-anim.mjs")]);
@@ -269,7 +275,7 @@ for (const [i, step] of steps.entries()) {
       run(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", fromSkill("engine/scripts/lookdev.py"), "--", "--poses", ...more]);
       break;
     case "previs": {
-      // Collect the union of storyboard preview frames and compare reference moments, then render them in one pass
+      // Collect the union of storyboard preview frames and compare reference moments, then render only missing/changed ones
       const askFrames = (script) => {
         const r = spawnSync(PY, [fromSkill("engine/scripts", script), "--frames"], { cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), encoding: "utf8" });
         if (r.status !== 0) return [];
@@ -278,17 +284,40 @@ for (const [i, step] of steps.entries()) {
       };
       const union = [...new Set([...askFrames("storyboard.py"), ...askFrames("compare.py")])].sort((a, b) => a - b);
       if (!union.length) { console.error("no preview frames found: run anim first so build/timeline.json exists"); process.exit(1); }
+      const outIdx = more.indexOf("--out");
+      const outDir = fromFilm(outIdx >= 0 && more[outIdx + 1] ? more[outIdx + 1] : "build/previs");
+      const snapPath = join(outDir, ".anim-snapshot.json");
+      const animPath = fromFilm("build/anim.json");
+      const pad4 = (n) => String(n).padStart(4, "0");
+      let targetFrames = union;
+      const canIncremental = !force && !more.includes("--frames") && !more.includes("--samples") && !more.includes("--scale") && existsSync(snapPath) && existsSync(animPath);
+      if (canIncremental) {
+        const dr = spawnSync(PY, [fromSkill("engine/scripts/diff-anim.py"), snapPath, animPath, "--since", snapPath], { cwd: FILM, env: toolEnv({ FILM, SKILL: fromSkill() }), encoding: "utf8" });
+        if (dr.status === 0) {
+          const firstLine = (dr.stdout ?? "").trim().split(/\r?\n/)[0]?.trim() ?? "";
+          const changed = firstLine === "none" ? new Set() : parseFrameSet(firstLine, film.format.duration * film.format.fps);
+          targetFrames = union.filter((f) => !existsSync(join(outDir, `${pad4(f)}.png`)) || changed.has(f));
+        }
+      }
+      if (!targetFrames.length) {
+        console.log(`previs: all ${union.length} frame(s) up to date (${union.join(",")})`);
+        break;
+      }
+      for (const f of targetFrames) rmSync(join(outDir, `${pad4(f)}.png`), { force: true });
       const defaults = [
-        ...(more.includes("--frames") ? [] : ["--frames", union.join(",")]),
+        ...(more.includes("--frames") ? [] : ["--frames", targetFrames.join(",")]),
         ...(more.includes("--samples") ? [] : ["--samples", "24"]),
         ...(more.includes("--scale") ? [] : ["--scale", "50"]),
         ...(more.includes("--out") ? [] : ["--out", "build/previs"]),
       ];
-      const outIdx = more.indexOf("--out");
-      const outDir = fromFilm(outIdx >= 0 && more[outIdx + 1] ? more[outIdx + 1] : "build/previs");
-      console.log(`previs: ${union.length} frame(s) (storyboard + compare) → ${union.join(",")}`);
+      const reused = union.length - targetFrames.length;
+      console.log(`previs: ${targetFrames.length} frame(s)${reused > 0 ? ` (reused ${reused} unchanged)` : " (storyboard + compare)"} → ${targetFrames.join(",")}`);
       const [cmd, args] = awake(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]);
       await runRender(cmd, args, outDir);
+      if (existsSync(animPath) && !more.includes("--frames")) {
+        mkdirSync(outDir, { recursive: true });
+        cpSync(animPath, snapPath);
+      }
       break;
     }
     case "render": {

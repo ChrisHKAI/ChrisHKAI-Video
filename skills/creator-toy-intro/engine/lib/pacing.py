@@ -234,6 +234,80 @@ def lettering_shown(anim, segments):
     return out
 
 
+def _merge_spans(spans):
+    """Merge overlapping [t0, t1] spans so two concurrent reads lines never double-count coverage."""
+    pts = sorted((float(a), float(b)) for a, b in spans if b > a)
+    if not pts:
+        return []
+    merged = [list(pts[0])]
+    for a, b in pts[1:]:
+        if a <= merged[-1][1] + 1e-6:
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, b])
+    return merged
+
+
+def unread_lettering(anim, segments, reads):
+    """Lettering a beat shows that its reads do not cover. Groups letters per line (`kit.declareLine` / `kit.readout`)
+    and, when a `reads` interval overlaps a staggered typing line (whose `reads` start at `LOCK` once its last letter
+    lands, per `beats/phrase.js`), measures coverage against the settled window where all letters of the line are up."""
+    import re
+    rate = anim["fps"] * anim["sub"]
+    beats = [s for s in segments or [] if s["kind"] == "beat"]
+    out = []
+    for k, seg in enumerate(beats):
+        objs = [o for o in letters(anim, f"beat{k}_") if o["name"] in anim["tracks"]]
+        if not objs:
+            continue
+        groups = {}
+        for o in objs:
+            key = f"beat{k}_readout" if o.get("step") else (f"beat{k}_{o['line']}" if o.get("line") else re.sub(r"\d+$", "", o["name"]))
+            groups.setdefault(key, []).append(o)
+        lo_seg, hi_seg = int(seg["f0"] * rate), int(seg["f1"] * rate)
+        seen_spans = {}
+        for grp in groups.values():
+            names = [o["name"] for o in grp]
+            per_letter = [np.min(np.abs(track(anim, n)[:, 7:10]), axis=1) for n in names]
+            any_sz = np.max(per_letter, axis=0)
+            on = np.zeros(len(any_sz), bool)
+            peak = max(float(any_sz[lo_seg:hi_seg].max(initial=0)), 1e-6)
+            on[lo_seg:hi_seg] = any_sz[lo_seg:hi_seg] > 0.5 * peak
+            is_step = any(o.get("step") for o in grp)
+            all_on = None
+            if not is_step and len(per_letter) > 1:
+                all_on = np.ones(len(any_sz), bool)
+                for s_arr in per_letter:
+                    l_peak = max(float(s_arr[lo_seg:hi_seg].max(initial=0)), 1e-6)
+                    all_on &= s_arr > 0.5 * l_peak
+            for a, z in stretches(on, rate, 0.5):
+                raw_cover = _merge_spans([(max(a, r["at"][0]), min(z, r["at"][1])) for r in reads or [] if r["at"][1] > a and r["at"][0] < z])
+                if not raw_cover:
+                    key_span = (a, z)
+                    entry = seen_spans.setdefault(key_span, {"beat": k, "at": [a, z], "said": 0.0, "names": []})
+                    for n in names:
+                        if len(entry["names"]) < 3 and n not in entry["names"]:
+                            entry["names"].append(n)
+                    continue
+                sa, sz = a, z
+                if all_on is not None:
+                    i0, i1 = int(a * rate), min(int(z * rate), len(all_on))
+                    sub = all_on[i0:i1]
+                    if int(sub.sum()) >= max(1, int(0.4 * rate)):
+                        sa = round((i0 + int(np.argmax(sub))) / rate, 2)
+                        sz = round((i0 + len(sub) - int(np.argmax(sub[::-1]))) / rate, 2)
+                settled_cover = _merge_spans([(max(sa, r["at"][0]), min(sz, r["at"][1])) for r in reads or [] if r["at"][1] > sa and r["at"][0] < sz])
+                said = sum(t1 - t0 for t0, t1 in settled_cover)
+                if sz - sa - said > 0.5:
+                    key_span = (sa, sz)
+                    entry = seen_spans.setdefault(key_span, {"beat": k, "at": [sa, sz], "said": round(said, 2), "names": []})
+                    for n in names:
+                        if len(entry["names"]) < 3 and n not in entry["names"]:
+                            entry["names"].append(n)
+        out.extend(seen_spans.values())
+    return out
+
+
 SLANT = 15  # degrees: a line read turned further than this from the camera shows the tops or sides of its letters
 
 
@@ -340,12 +414,7 @@ def check(film):
             lines.append({"text": r["text"], "at": [t0, t1], "shown": round(t1 - t0, 2), "need": round(n, 2),
                           "ok": t1 - t0 >= n - 0.05, "toEnd": t1 >= dur - 0.05})
     # lettering a beat shows that its reads do not cover: the reading time is checked only on what a beat says it shows
-    unread = []
-    for k, a, z, names in lettering_shown(anim, tl.get("SEGMENTS")):
-        cover = [r["at"] for r in reads or [] if r["at"][1] > a and r["at"][0] < z]
-        said = sum(min(z, t1) - max(a, t0) for t0, t1 in cover)
-        if z - a - said > 0.5:
-            unread.append({"beat": k, "at": [a, z], "said": round(said, 2), "names": names[:3]})
+    unread = unread_lettering(anim, tl.get("SEGMENTS"), reads)
     # the toy as a speck, or out of the frame while it is meant to be in it; not in a segment where the work is the
     # hero and the toy stands small on purpose (film.json story.segments[i].wide: a wall of their 66 pictures)
     small, off = [], []

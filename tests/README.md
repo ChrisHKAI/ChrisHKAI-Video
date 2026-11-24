@@ -164,7 +164,9 @@ overlaps, colliding 3D headline lines (`lineOverlaps`), camera-frustum
 edge-crop warnings (including custom-beat props and 3D headlines), 2D
 camera-space picture-card occlusions (`cardScreenOverlaps`), foreground props
 crossing in front of `hero_head` (`heroFaceOcclusions`), dense confetti bursts
-lingering over 3D readouts (`confettiOverText`), zero-false-positive guards for
+lingering over 3D readouts (`confettiOverText`), custom-beat 3D headlines
+projecting over the toy or showcase cards in 2D camera space
+(`lineBackdropClashes`), zero-false-positive guards for
 compound parts, `declareLine` / `fastReveal` line-name separation (`slo1` vs
 `slo2`), `floatingSmallLetters` double-shadow detection, `armLiftLimit`
 wide-headed chibi arm clamping, `offStageHero` / `offStageObjects` missing-`at()`
@@ -176,11 +178,15 @@ floor-ring quaternions, `cutout()` / `picture({ cyclic: false })` helpers, the
 `places.js` `two-column` non-overlapping default end-card layout, and
 `tim-line/figure.js` `roundBox` mm→m conversion.
 
-Engine reliability fixes (`pacing.slanted` hidden-letter filtering, `diff-anim.py`
+Engine reliability fixes (`pacing.slanted` hidden-letter filtering,
+`pacing.unread_lettering` staggered-typing ramp handling, `diff-anim.py`
 hidden-track, `unitScale`-metadata & texture-asset `--images`/`--since`
-filtering, `fonts.chosen` `"Family:Style"` string shorthand, `reading.match`
-split-line cover, `compare.py --frames`, `score.py` groove fallback,
-`run.mjs` `clearance`/`diff` & incremental `animatic -- --frames` steps,
+filtering, `glyphs.harvest_js_glyphs` custom `.js` beat/prop character
+collection, `fonts.chosen` `"Family:Style"` string shorthand, `reading.match` /
+`reading.confidence` split-line & background-duplicate handling,
+`timeline.js` two-column long-slogan typing cadence, `compare.py --frames`,
+`score.py` groove fallback, `run.mjs` `clearance`/`diff` & incremental
+`previs` / `animatic -- --frames` steps,
 `safezone.py` dynamic `EV.final` hold threshold, `check.mjs` active-`act2`
 counter & blank-`ui.png` gating, and Blender 2D curve bevel miter-spike
 flattening):

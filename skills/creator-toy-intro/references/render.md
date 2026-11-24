@@ -66,7 +66,10 @@ GPU recovery errors such as macOS Metal command-buffer resets, once frames
 are writing). While it runs, look at a few finished frames now and
 then (`build/render/`): stop early if something is wrong rather than an
 hour later. After a late change, render only the frames `diff-anim.py`
-lists (`references/storyboard.md`).
+lists (`references/storyboard.md`); if `finish` has already populated
+`build/final/` (~1.8 GB of full-HD PNGs), run small surgical re-renders
+locally (`COLAB_LOCAL=1`) or clear stale `build/final/*.png` first so remote
+render wrappers do not bundle `build/final/`.
 
 ### The light
 

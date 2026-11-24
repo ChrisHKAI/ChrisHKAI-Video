@@ -31,8 +31,13 @@ export function blenderCandidates({ local = false } = {}) {
   const inside = (dir) => newestFirst(readdirSafe(dir)).map((d) => join(dir, d, exe));
   const env = process.env;
   const skipWrappers = (local || env.COLAB_LOCAL === "1") && env.COLAB_ALL !== "1";
+  const defaultMacBins = new Set([
+    "/Applications/Blender.app/Contents/MacOS/Blender",
+    join(homedir(), "Applications/Blender.app/Contents/MacOS/Blender"),
+  ]);
+  const explicitBlender = env.BLENDER && !skipWrappers && defaultMacBins.has(env.BLENDER) ? null : env.BLENDER;
   return [
-    env.BLENDER,
+    explicitBlender,
     ...(WIN || skipWrappers ? [] : [join(BIN, exe), join(homedir(), ".local/bin", exe)]),
     "/Applications/Blender.app/Contents/MacOS/Blender",
     join(homedir(), "Applications/Blender.app/Contents/MacOS/Blender"),

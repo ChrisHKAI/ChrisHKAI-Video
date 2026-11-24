@@ -380,12 +380,9 @@ class V089EngineImprovementTests(unittest.TestCase):
             self.assertEqual(picked, ["PingFang SC Semibold"])
 
     def test_glyphs_merge_extra_accepts_string_and_dict(self):
-        src = (SCRIPTS / "glyphs.py").read_text()
-        ns = {}
-        start = src.index("def merge_extra_glyphs")
-        end = src.index("\nmerge_extra_glyphs(")
-        exec(src[start:end], ns)
-        merge_extra_glyphs = ns["merge_extra_glyphs"]
+        sys.path.insert(0, str(SCRIPTS))
+        import glyphs
+        merge_extra_glyphs = glyphs.merge_extra_glyphs
 
         chars = {"latin": "0123456789", "cjk": "万", "heavy": "", "display": ""}
         merge_extra_glyphs(chars, "20岁+AI")
@@ -472,6 +469,143 @@ class V089EngineImprovementTests(unittest.TestCase):
         buf = compose.example(c)
         self.assertEqual(buf.shape, (c.n, 2))
         self.assertGreater(float(np.abs(buf).max()), 0.05)
+
+
+class V0810EngineImprovementTests(unittest.TestCase):
+    def test_glyphs_harvest_js_extracts_3d_copy_and_ignores_comments_and_storyboard(self):
+        sys.path.insert(0, str(SCRIPTS))
+        import glyphs
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "beats").mkdir()
+            (fdir / "beats/b1.js").write_text(
+                """// 廢話行註解
+/* 區塊註解 測試 */
+export function makeBeat({ opts, glyph, kit }) {
+  const HOOK_TEXT = opts.text ?? "专治痛点";
+  const ln = kit.line(glyph, "57.7万 查看", 0.05);
+  const chars = [..."工具箱"];
+  const g = glyph.geo("display:龙海", 0.06, 0.005, 0.001);
+  return {
+    reads: [{ text: "把经验变成工具", at: [1.5, 5.5] }],
+    storyboard: {
+      part: { label: { "zh-Hant": "繁體分鏡說明唔應該入字表" } },
+    },
+  };
+}
+""",
+                encoding="utf-8",
+            )
+            found = glyphs.harvest_js_glyphs(
+                fdir,
+                {"story": {"segments": [{"beat": "beats/b1.js"}]}, "cta": {}},
+            )
+            for ch in ("专", "查", "箱", "把"):
+                self.assertIn(ch, found["heavy"])
+                self.assertIn(ch, found["cjk"])
+            self.assertIn("龙", found["display"])
+            self.assertIn("海", found["display"])
+            self.assertIn("5", found["latin"])
+            self.assertIn(".", found["latin"])
+            for ignored in ("廢", "註", "繁", "唔"):
+                self.assertNotIn(ignored, found["heavy"])
+                self.assertNotIn(ignored, found["cjk"])
+
+    def test_pacing_unread_accepts_staggered_typing_ramp_and_flags_unlisted_line(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "film.json").write_text(json.dumps({"format": {"fps": 30, "duration": 6, "size": [1920, 1080]}, "toy": "toy.json"}))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12}))
+            fps, frames = 30, 180
+            letters_str = "专治痛点吧"
+            objs, tracks = [], {}
+            for idx, ch in enumerate(letters_str):
+                name = f"beat0_ln{idx}"
+                t_on = 0.40 + idx * 0.25  # 0.40s .. 1.40s (1.0s typing ramp > 0.5s!)
+                f_on, f_off = int(round(t_on * fps)), int(round(5.60 * fps))
+                objs.append({"name": name, "letter": ch, "line": "ln", "tr": [0, 0, 0, 0, 0, 0, 1, 1e-4, 1e-4, 1e-4]})
+                tracks[name] = [
+                    [s, 0, 0, 0, 0, 0, 1, *( [1.0, 1.0, 1.0] if f_on <= s < f_off else [1e-4, 1e-4, 1e-4] )]
+                    for s in range(frames)
+                ]
+            (fdir / "build/anim.json").write_text(json.dumps({"fps": fps, "frames": frames, "sub": 1, "samples": frames, "objects": objs, "tracks": tracks, "scalars": {}}))
+            (fdir / "build/timeline.json").write_text(json.dumps({
+                "DURATION": 6.0, "BAR": 2.0,
+                "SEGMENTS": [{"kind": "beat", "f0": 0.0, "f1": 6.0}],
+                "cues": [{"t": 0.4, "kind": "pop"}, {"t": 3.0, "kind": "lock"}],
+            }))
+            # 1) `reads` starts at LOCK (1.40s) when the last letter lands, per `beats/phrase.js`: zero false warnings!
+            (fdir / "build/reads.json").write_text(json.dumps([{"text": letters_str, "at": [1.4, 5.6]}]))
+            self.assertEqual(pacing.check(fdir)["unread"], [])
+
+            # 2) Missing `reads` entry still gets flagged cleanly
+            (fdir / "build/reads.json").write_text(json.dumps([]))
+            unread_none = pacing.check(fdir)["unread"]
+            self.assertEqual(len(unread_none), 1)
+            self.assertEqual(unread_none[0]["beat"], 0)
+
+            # 3) `reads` ending 1.6s before the settled line leaves still gets flagged cleanly
+            (fdir / "build/reads.json").write_text(json.dumps([{"text": letters_str, "at": [1.4, 4.0]}]))
+            unread_short = pacing.check(fdir)["unread"]
+            self.assertEqual(len(unread_short), 1)
+            self.assertAlmostEqual(unread_short[0]["said"], 2.6, places=1)
+
+    def test_reading_confidence_ignores_low_conf_background_duplicate(self):
+        import reading
+        self.assertAlmostEqual(
+            reading.confidence("AI 生活家", [("AI 生活家", 1.0), ("AI 生活家 · 独立开发", 0.30)]),
+            1.0,
+            places=3,
+        )
+        self.assertAlmostEqual(
+            reading.confidence("AI 生活家", [("AI 生活家", 0.30)]),
+            0.30,
+            places=3,
+        )
+
+    def test_two_column_long_slogan_avoids_machine_gun_letter_step(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "build/glyphs.json").write_text("{}")
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "two-col-step",
+                "template": "isnail-30",
+                "theme": "x-desktop",
+                "format": {"fps": 30, "bpm": 120, "duration": 30, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "profile": {"name": "龙海", "handle": "@longhaiqwe123", "bio": ["AI 生活家"]},
+                "posts": [
+                    {"date": "2026-03-01", "title": "A", "counts": {"views": "1万"}, "cover": "assets/a.jpg"},
+                    {"date": "2026-03-02", "title": "B", "counts": {"views": "1万"}, "cover": "assets/b.jpg"},
+                ],
+                "counter": {"value": 57.7, "unit": "万", "label": "查看", "display": "57.7万"},
+                "cta": {
+                    "layout": "two-column",
+                    "slogan": [{"text": "把生活经验"}, {"text": "变成人人能用的AI工具"}],
+                    "name": {"text": "龙海"},
+                    "handle": {"text": "@longhaiqwe123"},
+                    "prop": {"kind": "plinth"},
+                },
+                "story": {"exit": "jump", "segments": [{"beat": "phrase", "bars": 12, "text": "测试"}, {"story": "endCard"}]},
+            }))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12, "colors": {"body": "#2F61EB"}}))
+            tl_url = (SKILL / "templates/isnail-30/timeline.js").as_uri()
+            code = f'import {{ EV, LETTER_STEP, SLOGAN, reads }} from {json.dumps(tl_url)}; console.log(JSON.stringify({{ EV, LETTER_STEP, SLOGAN, reads: reads() }}));'
+            r = subprocess.run(["node", "--input-type=module", "-e", code], cwd=str(SKILL), env={**os.environ, "FILM": str(fdir)}, capture_output=True, text=True, check=True)
+            data = json.loads(r.stdout.strip().splitlines()[-1])
+            self.assertGreaterEqual(data["LETTER_STEP"], 0.048)
+            self.assertGreaterEqual(data["EV"]["letters"], data["EV"]["cut"] + 0.09)
+            slo_read = next(x for x in data["reads"] if x["text"] == data["SLOGAN"])
+            self.assertGreaterEqual(slo_read["at"][1] - slo_read["at"][0], pacing.need(data["SLOGAN"]) - 0.05)
+
+    def test_run_mjs_tracks_js_glyph_sources_and_incremental_previs_snapshot(self):
+        run_src = (SKILL / "engine/run.mjs").read_text()
+        self.assertIn('b.endsWith(".js")', run_src)
+        self.assertIn("film.cta?.prop?.module", run_src)
+        self.assertIn(".anim-snapshot.json", run_src)
+        self.assertIn('"--since", snapPath', run_src)
 
 
 if __name__ == "__main__":

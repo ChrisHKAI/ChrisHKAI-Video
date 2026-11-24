@@ -88,7 +88,7 @@ const maxLastLetter = +(STORY_DURATION - sloganReadSecs(SLOGAN) - 0.04).toFixed(
 // the camera point (events.lettersEnd overrides the typing window directly when needed).
 const userEv = film.story?.events ?? {};
 const defaultLettersStart = maxLastLetter < EV0.ride + 0.8
-  ? Math.max(+(EV0.cut + 0.06).toFixed(4), +(maxLastLetter - Math.max(0.45, [...SLOGAN].length * 0.025)).toFixed(4))
+  ? Math.max(+(EV0.cut + 0.10).toFixed(4), +(maxLastLetter - Math.max(0.65, [...SLOGAN].length * 0.055)).toFixed(4))
   : +(EV0.ride + 0.35).toFixed(4);
 const twoColEv = (CTA_MODE === "two-column" || CTA_MODE === "still") ? {
   ...(!("glide" in userEv) ? { glide: [+(EV0.ride + 0.25).toFixed(4), +(EV0.ride + 0.26).toFixed(4)] } : {}),
@@ -100,8 +100,9 @@ const twoColEv = (CTA_MODE === "two-column" || CTA_MODE === "still") ? {
 export const EV = { ...EV0, ...twoColEv };
 // the slogan's letters land a half beat apart; a long one closes up (16th notes, say) so its last letter is
 // down before lettersEnd (or final), and the line holds to the end without forcing an early camera point
+const minSteadySpan = ([...SLOGAN].length - 1) * 0.05;
 const lettersWindowEnd = EV.lettersEnd ?? ((CTA_MODE === "two-column" || CTA_MODE === "still")
-  ? Math.min(EV.final, Math.max(EV.letters + BEAT / 2 + 0.2, +(maxLastLetter + BEAT / 2).toFixed(4)))
+  ? Math.min(EV.final, Math.max(EV.letters + BEAT / 2 + Math.max(0.2, minSteadySpan), +(maxLastLetter + BEAT / 2).toFixed(4)))
   : EV.final);
 export const LETTER_STEP = Math.min(BEAT / 2, (lettersWindowEnd - EV.letters - BEAT / 2) / Math.max(1, [...SLOGAN].length - 1));
 export const SLOGAN_RED = film.cta.slogan[0].text.length; // the second label's letters are red
@@ -152,10 +153,15 @@ export function reads() {
   const E = EV, END = STORY_DURATION;
   const n = (s) => [...(s ?? "")].length;
   const nameIn = Math.max(E.name + 0.05 * n(film.cta.name.text), film.cta.handle?.text ? E.name + 0.22 + 0.025 * n(film.cta.handle.text) : 0);
+  const lastSlo = E.letters + LETTER_STEP * Math.max(0, n(SLOGAN) - 1);
+  const firstSloLine = E.letters + LETTER_STEP * Math.max(0, n(film.cta.slogan[0]?.text) - 1);
+  const splitSloRead = (CTA_MODE === "two-column" || CTA_MODE === "still") && film.cta.slogan.length > 1 && END - lastSlo < sloganReadSecs(SLOGAN) - 0.04;
   return [
     { text: film.profile.name, at: [0, E.hops[0][0]] }, // the page, before he hops onto it
     { text: `${film.counter.display ?? `${VIEWS_COUNT}${film.counter.unit}`} ${film.counter.label}`, at: [E.count[0], E.leap[0]], whole: E.count[1] },
-    { text: SLOGAN, at: [E.letters + LETTER_STEP * Math.max(0, n(SLOGAN) - 1), END] },
+    splitSloRead
+      ? { text: SLOGAN, at: [+firstSloLine.toFixed(4), END], whole: +(lastSlo + 0.12).toFixed(4) }
+      : { text: SLOGAN, at: [lastSlo, END] },
     { text: `${film.cta.name.text} ${film.cta.handle?.text ?? ""}`.trim(), at: [nameIn, END] },
   ];
 }

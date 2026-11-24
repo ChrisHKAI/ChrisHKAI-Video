@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes } from "../lib/clearance.js";
 
 const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
 const filmSceneHash = (f) => { const { step: _step, ...rest } = f ?? {}; return createHash("sha256").update(JSON.stringify(canonical(rest))).digest("hex"); };
@@ -241,6 +241,8 @@ if (past("toy") && toy && film.profile) {
     for (const m of faceOcc) say("warn", `prop blocks the toy's face: ${m.text}`, "arc hand-held props outward around the head or lower them outside key poses so the character's eyes stay clear");
     const confText = describeConfettiOverText(confettiOverText(motion, { aspect: fw / fh }));
     for (const m of confText) say("warn", `confetti over 3D lettering: ${m.text}`, "spawn confetti lower or to the sides so flakes do not shoot across headlines or readouts");
+    const lineBg = describeLineBackdropClashes(lineBackdropClashes(motion, { aspect: fw / fh, file: (p) => fromFilm(p) }));
+    for (const m of lineBg) say("warn", `3D lettering over toy or card: ${m.text}`, "set foreground 3D headlines over clean stage floor or step the toy/cards slightly back/up so strokes do not fuse with shoes or card edges at phone size (references/beats.md)");
     const palPath = fromFilm("build/palette.json");
     if (existsSync(palPath) && statSync(palPath).mtimeMs >= statSync(animPath).mtimeMs) {
       for (const c of json("build/palette.json")?.film?.cards ?? []) {

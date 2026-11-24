@@ -173,7 +173,10 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
   in their place, and the act is chosen so the picture carries it.
 - **The background does not tell the ending, or leak the operator's browser.**
   Their page in the first frame shows them before the story: a bio that already
-  says "official ambassador" was read first and gave the turn away. And when
+  says "official ambassador" was read first and gave the turn away. Standing
+  desktop profile boards need enough headroom (~`0.35×` scale at a lower `y`)
+  that the creator's top banner and display name are never guillotined by the
+  top border. And when
   using a live browser screenshot of a profile or post, crop strictly to the
   creator's centre column—never leave the logged-in operator's sidebar handle,
   account switcher or "Who to follow" rail in the frame, where a blind reader

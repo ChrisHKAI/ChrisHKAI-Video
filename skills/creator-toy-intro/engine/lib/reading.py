@@ -252,9 +252,31 @@ def _mostly(t, want):
 
 
 def confidence(expected, lines):
-    """The reader's lowest confidence on the recognised lines that are this line (None: no confidence, or not there)."""
+    """The reader's confidence on the recognised lines that are this line (None: no confidence, or not there).
+    Matches match(): a full-line foreground match is not dragged down by a tiny low-confidence background UI duplicate."""
     want = norm(expected)
-    confs = [c for t, c in ((norm(t), c) for t, c in lines) if t and c is not None and _mostly(t, want)]
+    if not want:
+        return None
+    texts = [(norm(t), c) for t, c in lines if norm(t)]
+    full = [c for t, c in texts if c is not None and _mostly(t, want)
+            and sum(b.size for b in SequenceMatcher(None, want, t, autojunk=False).get_matching_blocks()) >= len(want)]
+    if full:
+        return max(full)
+    own = [(t, c) for t, c in texts if _mostly(t, want)]
+    if len(own) > 1:
+        covered, picked = set(), []
+        for t, c in sorted(own, key=lambda x: (-(x[1] if x[1] is not None else -1.0), -len(x[0]))):
+            pos = {i for b in SequenceMatcher(None, want, t, autojunk=False).get_matching_blocks() for i in range(b.a, b.a + b.size)}
+            fresh = pos - covered
+            if fresh:
+                covered |= fresh
+                if c is not None:
+                    picked.append((len(fresh), c))
+            if len(covered) >= len(want):
+                break
+        if picked and len(covered) >= len(want):
+            return sum(w * c for w, c in picked) / sum(w for w, _ in picked)
+    confs = [c for _, c in own if c is not None]
     return min(confs) if confs else None
 
 

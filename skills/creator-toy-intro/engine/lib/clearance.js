@@ -262,7 +262,7 @@ function probesOf(g, file) {
   };
   const r3 = (r) => (Array.isArray(r) ? r : [r, r, r]);
   switch (g.type) {
-    case "roundBox": return box(g.size.map((v) => v / 2), 0.8);
+    case "box": case "roundBox": return box(g.size.map((v) => v / 2), 0.8);
     case "ellipsoid": case "blob": return box(r3(g.r), 0.5);
     case "tube": case "loop": return g.pts.map((p, i) => [p, (g.radii[i] ?? g.radii.at(-1)) * 0.9]);
     case "prism": return [[[0, 0, 0], 0.9 * Math.min(g.r, g.depth / 2)]];
@@ -1695,6 +1695,163 @@ export function describeConfettiOverText(items) {
     kind: "warn",
     ...m,
     text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: confetti crosses 3D lettering "${m.text}" (${m.line}, ${m.flakes} flakes over text at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect custom-beat 3D lettering lines (`kit.declareLine` / `kit.readout`) that project in 2D camera space
+ * directly across the visible hero toy (e.g. bright sandals/legs) or a custom-beat showcase picture card behind
+ * them, which fuses character strokes with background edges and drops phone-size OCR confidence.
+ */
+export function lineBackdropClashes(anim, { aspect = 16 / 9, toy = "hero", minShare = 0.30, minSecs = 0.40, every = 2, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+
+  const lineGroups = new Map();
+  for (const o of anim.objects) {
+    if (!/^beat\d+_/.test(o.name) || !o.letter || o.pop || o.mat?.outline || o.geo?.type !== "curve" || !o.geo.rings?.length) continue;
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);
+    const corners = [
+      [Math.min(...xs), Math.min(...ys), 0],
+      [Math.max(...xs), Math.min(...ys), 0],
+      [Math.min(...xs), Math.max(...ys), 0],
+      [Math.max(...xs), Math.max(...ys), 0],
+    ];
+    const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
+    const key = o.step ? `${beat}readout` : (o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, ""));
+    if (!lineGroups.has(key)) lineGroups.set(key, []);
+    lineGroups.get(key).push({ o, corners });
+  }
+  if (!lineGroups.size) return [];
+
+  const heroProbes = objects.has(toy)
+    ? anim.objects.filter((o) => o.geo && o.name !== toy && under(o, toy)).map((o) => ({ o, pts: probesOf(o.geo, file) })).filter((p) => p.pts.length)
+    : [];
+  const SKIP_CARD = /^beat\d+_(p_|back$|avatar$|cyc|bg|floor)/;
+  const cardTargets = anim.objects
+    .filter((o) => /^beat\d+_/.test(o.name) && !SKIP_CARD.test(o.name) && o.geo?.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4)
+    .map((o) => ({ o, spec: boxSpec(o) }))
+    .filter((x) => x.spec);
+  if (!heroProbes.length && !cardTargets.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const idxOf = (o) => o.letterIndex ?? +(o.name.match(/(\d+)$/)?.[1] ?? 0);
+  const open = new Map(), out = [];
+
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+
+    const backdrops = [];
+    if (heroProbes.length) {
+      let hx0 = Infinity, hx1 = -Infinity, hy0 = Infinity, hy1 = -Infinity, hDepth = 0, hn = 0;
+      for (const { o, pts } of heroProbes) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+        for (const [lp0] of pts) {
+          const lp = toLocal(camW, apply(w, lp0));
+          if (lp[2] >= -0.05 || -lp[2] > 8) continue;
+          const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+          if (nx < hx0) hx0 = nx; if (nx > hx1) hx1 = nx;
+          if (ny < hy0) hy0 = ny; if (ny > hy1) hy1 = ny;
+          hDepth += -lp[2]; hn++;
+        }
+      }
+      if (hn && hx1 > -1 && hx0 < 1 && hy1 > -1 && hy0 < 1) backdrops.push({ name: toy, x0: hx0, x1: hx1, y0: hy0, y1: hy1, depth: hDepth / hn });
+    }
+    for (const { o, spec } of cardTargets) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      let cx0 = Infinity, cx1 = -Infinity, cy0 = Infinity, cy1 = -Infinity, cDepth = 0, cn = 0;
+      for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+        const lp = toLocal(camW, apply(w, [spec.c[0] + sx * spec.h[0], spec.c[1] + sy * spec.h[1], spec.c[2] + sz * spec.h[2]]));
+        if (lp[2] >= -0.05 || -lp[2] > 8) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < cx0) cx0 = nx; if (nx > cx1) cx1 = nx;
+        if (ny < cy0) cy0 = ny; if (ny > cy1) cy1 = ny;
+        cDepth += -lp[2]; cn++;
+      }
+      if (cn && cx1 > -1 && cx0 < 1 && cy1 > -1 && cy0 < 1) backdrops.push({ name: o.name, x0: cx0, x1: cx1, y0: cy0, y1: cy1, depth: cDepth / cn });
+    }
+    if (!backdrops.length) {
+      for (const [k, c] of open) { out.push(c); open.delete(k); }
+      continue;
+    }
+
+    const seenNow = new Set();
+    for (const [key, ls] of lineGroups) {
+      const charBoxes = [];
+      let dSum = 0;
+      for (const { o, corners } of ls) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.35) continue;
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, cd = 0, cn = 0;
+        for (const c of corners) {
+          const lp = toLocal(camW, apply(w, c));
+          if (lp[2] >= -0.05 || -lp[2] > 8) continue;
+          const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+          if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+          if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+          cd += -lp[2]; cn++;
+        }
+        if (cn === 4 && x1 > x0 && y1 > y0) {
+          charBoxes.push({ o, x0, x1, y0, y1 });
+          dSum += cd / cn;
+        }
+      }
+      if (!charBoxes.length) continue;
+      const lineDepth = dSum / charBoxes.length;
+      const text = charBoxes.slice().sort((a, b) => idxOf(a.o) - idxOf(b.o)).map((x) => x.o.letter).join("");
+
+      for (const bd of backdrops) {
+        if (lineDepth > bd.depth + 0.04) continue;
+        let worstShare = 0, hitChars = 0;
+        for (const cb of charBoxes) {
+          const ovX = Math.min(cb.x1, bd.x1) - Math.max(cb.x0, bd.x0);
+          const ovY = Math.min(cb.y1, bd.y1) - Math.max(cb.y0, bd.y0);
+          if (ovX <= 0 || ovY <= 0) continue;
+          const wFrac = ovX / Math.max(1e-5, cb.x1 - cb.x0);
+          const hFrac = ovY / Math.max(1e-5, cb.y1 - cb.y0);
+          if (wFrac >= 0.45 && hFrac >= minShare) {
+            hitChars++;
+            if (hFrac > worstShare) worstShare = hFrac;
+          }
+        }
+        if (!hitChars) continue;
+        const pk = `${key}|${bd.name}`;
+        seenNow.add(pk);
+        const cur = open.get(pk);
+        if (!cur) open.set(pk, { line: key, text, backdrop: bd.name, from: t, to: t, peak: t, share: worstShare, chars: hitChars });
+        else {
+          cur.to = t;
+          if (worstShare > cur.share) Object.assign(cur, { share: worstShare, peak: t, text, chars: hitChars });
+        }
+      }
+    }
+    for (const [pk, c] of open) if (!seenNow.has(pk)) { out.push(c); open.delete(pk); }
+  }
+  out.push(...open.values());
+  return out.filter((c) => c.to - c.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+}
+
+export function describeLineBackdropClashes(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: 3D lettering "${m.text}" (${m.line}) crosses over ${m.backdrop} on camera (${Math.round(m.share * 100)}% of letter height at ${m.peak.toFixed(2)} s)`,
   }));
 }
 
