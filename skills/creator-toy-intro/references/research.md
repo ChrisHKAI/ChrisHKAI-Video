@@ -133,7 +133,12 @@ for a page that is not a profile.
 ## What to keep
 
 - The profile picture first, full size, as `assets/avatar.<ext>`. On X, drop
-  the `_normal` / `_400x400` size from the image URL for the original. A
+  the `_normal` / `_400x400` size from the image URL for the original. In a
+  logged-in browser (`ego-browser` / Chrome), scope DOM avatar queries strictly
+  to the profile header (`[data-testid="primaryColumn"] a[href$="/photo"] img`
+  or `a[href="/<handle>/photo"] img`) and cross-check against
+  `api.fxtwitter.com/<handle>`'s `avatar_url`—a broad `[data-testid^="UserAvatar"] img`
+  selector matches the logged-in operator's own sidebar account avatar first! A
   company's logo, as large as its site or its brand kit has it (an SVG or a
   transparent PNG).
 - Then, before anything is built from it, show it and ask which picture the

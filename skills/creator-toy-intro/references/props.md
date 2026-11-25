@@ -57,11 +57,19 @@ A prop is a module in the film's workspace, set in film.json
 - `sample(put, t)`: every object's transform at film time t,
   `put(name, trs(position, quaternion, scale))`, in the end card's stage
   (`ctx.cta(x, y, z)` turns stage metres into the world). Hidden before it
-  arrives: scale `ctx.lib.HIDDEN`.
+  arrives: scale `ctx.lib.HIDDEN`. Note that `prism` extrudes its `depth` along
+  local `Z` with circular/polygonal faces in `XY`: wrap horizontal round
+  pedestals in `ctx.lib.qFlat(yaw)` (which turns local `+Z` to world `+Y`, and
+  scale local `Z` for vertical landing squash) so the cylinder lies flat under
+  the toy's feet instead of standing upright like a vertical coin (`clearance`
+  tests `prism` solids and stops when an upright cylinder swallows the toy's legs).
 - `topAt(t)`: where the toy's feet stand on it (world, metres).
 - `cues(add)`: its sounds, `add(time, kind, options)`, with the synth's
   kinds (`whooshDown`, `land`, `squelch`, `boing`, `glide`, `pop`,
   `slide`, `ding` (its pitch in `note`, `"E6"` by default), `coins`, `glint`…).
+  The template already fires `"pomf"` at `E.ride` and `"glint"` at `E.glint2`
+  (and deduplicates identical cues within 12 ms), so `prop.cues` only needs the
+  prop's own entrance and transformation sounds.
 
 `ctx` gives `film`, the story's events `E`, `cta`, the floor `path` ([x0,
 x1] in stage metres, where the line appears), `readFilmJSON`, `glyph`

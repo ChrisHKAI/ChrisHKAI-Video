@@ -47,8 +47,10 @@ plays its effects alone, and `next` and `check` say so.
   `jazz_bass`, `ukulele`, `dan_tranh`/`guzheng`, `erhu`, `harp`, `drum_kit`,
   single-hit `crash`/`gong`/`tambourine` with `var=None`, and more; an unknown
   name prints the closest matches); else `None`;
-- `synth`: the synth kit, always there; `add(buf, x, t, gain, pan)`;
-  `midi("G3")`.
+- `synth`: the synth kit, always there (`kick(big=False)`, `snare()`,
+  `hat(open_=False)` for drums; `sub(freq, dur)`, `pad(freqs, dur)`,
+  `pluck(freq, dur)`, `brass(freqs, dur)`, `bell(freq, dur)` for pitched layers);
+  `add(buf, x, t, gain, pan)`; `midi("G3")`.
 
 `compose.example(ctx)` is a worked score that plays every part and hit: a
 bass, a piano on each bar's chord, a four-note motif, light drums, a chord

@@ -113,7 +113,7 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
       const safePlate = antiGlarePlate(plateColor, numColor, rawPlate);
       const inkFinish = { on: plateColor, side: null, rough: 0.42, coat: 0.12 };
       for (const n of num.names) {
-        add({ name: `${prefix}_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, em, letterDepth, letterBevel), mat: { type: "type", color: numColor, emit: 0.0, ...inkFinish }, anim: true, step: true });
+        add({ name: `${prefix}_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, em, letterDepth, letterBevel), mat: { type: "type", color: numColor, emit: 0.0, ...inkFinish }, anim: true, step: true, pop: true });
       }
       if (ln) declLine(add, `${prefix}_lbl`, ln, { color: labelColor, emit: 0.0, depth: letterDepth, bevel: letterBevel, outline: hasOutline ? outline : false, edge: 0.07, finish: inkFinish });
       add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: safePlate }, anim: true });

@@ -106,7 +106,7 @@ export function fastReveal(anim, { each = 0.05 } = {}) {
   const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
   const sizeOf = (name, s) => Math.min(...(sampleAt(name, s) ?? unpack(objects.get(name).tr)).s.map(Math.abs));
   const lines = new Map();
-  for (const o of anim.objects) if (o.letter && o.anim && !o.pop && !/^label\d+_l\d+$/.test(o.name)) {
+  for (const o of anim.objects) if (o.letter && o.anim && !o.pop && !o.step && !/^label\d+_l\d+$/.test(o.name)) {
     // Prefer explicit `line` tag from kit.declareLine (scoped by beat prefix) so lines like slo1 / slo2 stay separate.
     const beat = o.name.match(/^(beat\d+_)/)?.[1] ?? "";
     const key = o.line ? `${beat}${o.line}` : o.name.replace(/\d+$/, "");
@@ -348,6 +348,18 @@ function solid(o) {
       return { o, radius: Math.max(...r), depth: (p, s) => { const a = r.map((v, i) => v * Math.abs(s[i])); const q = Math.hypot(...p.map((v, i) => v / a[i])); return (1 - q) * Math.min(...a); } };
     }
     case "drum": return { o, radius: Math.hypot(g.r, g.w / 2), depth: (p, s) => Math.min(g.r * Math.abs(s[1]) - Math.hypot(p[1], p[2]), (g.w / 2) * Math.abs(s[0]) - Math.abs(p[0])) };
+    case "prism": {
+      const bev = g.bevel ?? 0, r = Math.abs(g.r ?? 0.02) + bev, hz = Math.abs(g.depth ?? 0.01) / 2 + bev;
+      return {
+        o,
+        radius: Math.hypot(r, hz),
+        depth: (p, s) => {
+          const rx = r * Math.abs(s[0]), ry = r * Math.abs(s[1]);
+          const radial = (1 - Math.hypot(p[0] / Math.max(rx, 1e-6), p[1] / Math.max(ry, 1e-6))) * Math.min(rx, ry);
+          return Math.min(radial, hz * Math.abs(s[2]) - Math.abs(p[2]));
+        },
+      };
+    }
     case "tube": case "loop": {
       const pts = g.pts, radii = g.radii;
       const radius = Math.max(...pts.map((q) => Math.hypot(...q))) + Math.max(...radii);
@@ -424,6 +436,10 @@ function propBoundsSpec(o) {
   if (g.type === "arc" && g.radius != null) {
     const tube = Math.abs(g.tube ?? 0.003), r = Math.abs(g.radius) + tube;
     return { c: [0, 0, 0], h: [r, r, tube], card: false };
+  }
+  if (g.type === "prism" && g.r != null) {
+    const bev = Math.abs(g.bevel ?? 0), r = Math.abs(g.r) + bev, hz = Math.abs(g.depth ?? 0.01) / 2 + bev;
+    return { c: [0, 0, 0], h: [r, r, hz], card: false };
   }
   if (g.type === "plane" && (o.mat?.type === "card2d" || o.mat?.type === "sticker") && g.w && g.h) {
     return g.flat
@@ -1434,17 +1450,27 @@ export function describeMovieWraps(items) {
 }
 
 /**
- * Detect when one visible uiBox picture card occludes >= minShare of another picture card in 2D camera screen space
- * for >= minSecs, even when separated in Z depth so 3D solidClashes reports zero physical intersection.
+ * Detect when a visible picture card (`uiBox`), RGBA cutout (`plane` with `sticker`/`card2d`), or readout/banner
+ * backing plate (`beat*_*_plate`) occludes >= minShare of another card/cutout in 2D camera screen space for >= minSecs,
+ * even when separated in Z depth so 3D solidClashes reports zero physical intersection (e.g. a crescent cutout tucked
+ * 35% behind a monitor corner, or a counter badge covering a proof screenshot).
  */
-export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.45, minSecs = 0.6, every = 2 } = {}) {
+export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.25, minSecs = 0.6, every = 2 } = {}) {
   const objects = new Map(anim.objects.map((o) => [o.name, o]));
   const fovs = anim.scalars?.fov;
   if (!objects.has("camera") || !fovs?.length) return [];
-  const SKIP_CARD_SCREEN = /^(beat\d+_)?(p_|back$|cyc|bg|floor)/;
+  const SKIP_CARD_SCREEN = /^(beat\d+_)?(p_|back$|avatar$|cyc|bg|floor|strip_|panel_)/;
+  const isCardOrBadge = (o) => {
+    if (!o.geo || SKIP_CARD_SCREEN.test(o.name) || SKIP_NAME.test(o.name)) return false;
+    if (o.geo.type === "uiBox") return Boolean(boxSpec(o));
+    if (o.geo.type === "plane" && (o.mat?.type === "sticker" || o.mat?.type === "card2d") && o.geo.w && o.geo.h) return true;
+    if (/^beat\d+_.+_plate$/.test(o.name) && (o.geo.type === "roundBox" || o.geo.type === "box")) return Boolean(boxSpec(o));
+    return false;
+  };
   const cards = anim.objects
-    .filter((o) => o.geo?.type === "uiBox" && !SKIP_CARD_SCREEN.test(o.name) && !SKIP_NAME.test(o.name) && boxSpec(o))
-    .map((o) => ({ o, spec: boxSpec(o), group: groupOf(o.name) }));
+    .filter(isCardOrBadge)
+    .map((o) => ({ o, spec: propBoundsSpec(o), group: groupOf(o.name) }))
+    .filter((x) => x.spec);
   if (cards.length < 2) return [];
 
   const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
@@ -1489,23 +1515,26 @@ export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.45, min
       proj.push({ c, x0, x1, y0, y1, area, depth: depthSum / 8 });
     }
     const seenNow = new Set();
-    for (let i = 0; i < proj.length; i++) {
-      for (let j = i + 1; j < proj.length; j++) {
-        const A = proj[i], B = proj[j];
-        if (A.c.group === B.c.group) continue;
-        const ix = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0);
-        const iy = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
-        if (ix <= 0 || iy <= 0) continue;
-        const share = (ix * iy) / Math.min(A.area, B.area);
-        if (share < minShare) continue;
-        const [front, back] = A.depth <= B.depth ? [A, B] : [B, A];
-        const pk = [A.c.o.name, B.c.o.name].sort().join("|");
-        seenNow.add(pk);
-        const cur = open.get(pk);
-        if (!cur) open.set(pk, { front: front.c.o.name, back: back.c.o.name, from: t, to: t, peak: t, share });
-        else {
-          cur.to = t;
-          if (share > cur.share) Object.assign(cur, { front: front.c.o.name, back: back.c.o.name, share, peak: t });
+    // Skip 6+ card montage walls/corridors; on showcase beats (2–6 items), flag >= minShare partial corner/card occlusions
+    if (proj.length <= 6) {
+      for (let i = 0; i < proj.length; i++) {
+        for (let j = i + 1; j < proj.length; j++) {
+          const A = proj[i], B = proj[j];
+          if (A.c.group === B.c.group) continue;
+          const ix = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0);
+          const iy = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
+          if (ix <= 0 || iy <= 0) continue;
+          const share = (ix * iy) / Math.min(A.area, B.area);
+          if (share < minShare) continue;
+          const [front, back] = A.depth <= B.depth ? [A, B] : [B, A];
+          const pk = [A.c.o.name, B.c.o.name].sort().join("|");
+          seenNow.add(pk);
+          const cur = open.get(pk);
+          if (!cur) open.set(pk, { front: front.c.o.name, back: back.c.o.name, from: t, to: t, peak: t, share });
+          else {
+            cur.to = t;
+            if (share > cur.share) Object.assign(cur, { front: front.c.o.name, back: back.c.o.name, share, peak: t });
+          }
         }
       }
     }
@@ -2778,6 +2807,155 @@ export function describeSparksOverHeroFace(items) {
     kind: "warn",
     ...m,
     text: `${m.from.toFixed(2)}–${m.to.toFixed(2)} s: particle ${m.spark} streaks across the toy's face/eyes on camera (${m.frames} frames around ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect settled custom-beat bottom plaques (`beat*_*_plate`) or 3D headline lines dipping into the platform video
+ * player's bottom scrub-bar / caption zone (bottom 7.5% in 16:9 landscape -> ny < -0.85; bottom 20% in 9:16 portrait ->
+ * ny < -0.60), even when they stay inside the raw 100% frame edge so `edgeCrops` passes.
+ */
+export function plaqueInControlsZone(anim, { aspect = 16 / 9, minSecs = 0.45, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const safeMinY = aspect >= 1 ? -0.86 : -0.60;
+
+  const plates = anim.objects
+    .filter((o) => /^beat\d+_.+_plate$/.test(o.name) && (o.geo?.type === "roundBox" || o.geo?.type === "box") && boxSpec(o))
+    .map((o) => ({ name: o.name, o, spec: boxSpec(o) }));
+  if (!plates.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const dt = every / anim.fps;
+  const prevY = new Map(), open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const seenNow = new Set();
+
+    for (const p of plates) {
+      const w = worldOf(p.o.name, s, memo);
+      const py = prevY.get(p.name);
+      prevY.set(p.name, w.p[1]);
+      if (Math.min(...w.s.map(Math.abs)) < 0.25) continue;
+      if (py !== undefined && Math.abs(w.p[1] - py) / dt > 0.18) continue; // sliding in/out
+      const obb = worldOBB(p.spec, w);
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, ok = true;
+      for (const wp of obbCornersWorld(obb)) {
+        const lp = toLocal(camW, wp);
+        if (lp[2] >= -0.05 || -lp[2] > 6) { ok = false; break; }
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx < minX) minX = nx; if (nx > maxX) maxX = nx;
+        if (ny < minY) minY = ny; if (ny > maxY) maxY = ny;
+      }
+      if (!ok || maxX < -1 || minX > 1 || maxY < -1 || minY > 0) continue;
+      // Only flag plaques resting near the bottom strip (not full off-screen crops already reported by edgeCrops)
+      if (minY >= safeMinY - 0.015 || minY < -1.04) continue;
+      const dip = safeMinY - minY;
+      seenNow.add(p.name);
+      const cur = open.get(p.name);
+      if (!cur) open.set(p.name, { target: p.name, from: t, to: t, peak: t, dip });
+      else { cur.to = t; if (dip > cur.dip) Object.assign(cur, { dip, peak: t }); }
+    }
+    for (const [k, v] of open) if (!seenNow.has(k)) { out.push(v); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((m) => m.to - m.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.dip - a.dip);
+}
+
+export function describePlaqueInControlsZone(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: bottom plaque ${m.target} dips into the platform player controls zone (${Math.round(m.dip * 50)}% into scrub-bar strip at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect premature beat exits (`leapOut` / `strideOut` starting too early) that leave the stage completely empty of the
+ * hero toy for >= minGapSecs right before a hard stage cut (where camera X jumps > 5 m to the next beat or CTA stage).
+ */
+export function preCutHeroGap(anim, { aspect = 16 / 9, toy = "hero", minGapSecs = 0.40, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !objects.has(toy) || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const heroProbes = anim.objects
+    .filter((o) => o.geo && o.name !== toy && under(o, toy))
+    .map((o) => ({ o, pts: probesOf(o.geo, file) }))
+    .filter((p) => p.pts.length);
+  if (!heroProbes.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const heroOnScreenAt = (f) => {
+    const s = f * SUB, memo = new Map();
+    const hw = worldOf(toy, s, memo);
+    if (Math.min(...hw.s.map(Math.abs)) < 1e-3) return false;
+    const camW = worldOf("camera", s, memo);
+    if (Math.hypot(hw.p[0] - camW.p[0], hw.p[1] - camW.p[1], hw.p[2] - camW.p[2]) > 6) return false;
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    for (const { o, pts } of heroProbes) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      for (const [lp0] of pts) {
+        const lp = toLocal(camW, apply(w, lp0));
+        if (lp[2] >= -0.05) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (nx >= -1 && nx <= 1 && ny >= -1 && ny <= 1) return true;
+      }
+    }
+    return false;
+  };
+
+  const out = [];
+  let segStart = 0;
+  for (let f = 1; f < anim.frames; f++) {
+    const cPrev = worldOf("camera", (f - 1) * SUB, new Map());
+    const cNow = worldOf("camera", f * SUB, new Map());
+    if (Math.abs(cNow.p[0] - cPrev.p[0]) <= 5.0) continue;
+    // Found a hard stage cut at frame `f`: check if hero appeared in [segStart, f-1] and when it was last on screen
+    let everSeen = false, lastSeen = -1;
+    for (let k = segStart; k < f; k++) {
+      if (heroOnScreenAt(k)) { everSeen = true; lastSeen = k; }
+    }
+    if (everSeen && lastSeen >= segStart) {
+      const gapSecs = (f - 1 - lastSeen) / anim.fps;
+      if (gapSecs >= minGapSecs - 1e-6) {
+        out.push({ from: +((lastSeen + 1) / anim.fps).toFixed(2), cutAt: +(f / anim.fps).toFixed(2), gap: +gapSecs.toFixed(2) });
+      }
+    }
+    segStart = f;
+  }
+  return out;
+}
+
+export function describePreCutHeroGap(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(2)}–${m.cutAt.toFixed(2)} s: the toy leaves the frame ${m.gap.toFixed(2)} s early before the ${m.cutAt.toFixed(2)} s cut, leaving the stage empty`,
   }));
 }
 

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
@@ -1648,4 +1648,110 @@ test("v0.8.16: cardBezelMismatches, frameSlicesCard, sparksOverHeroFace, framedP
   } finally {
     rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+test("v0.8.17: prism pedestal 3D clearance, readoutBadge fastReveal immunity, cutout/badge overlaps, plaqueInControlsZone, and preCutHeroGap", () => {
+  // 1) fastReveal ignores rolling counter digit pools (`step: true`) while still catching fast typed words
+  const glyphSq = { type: "curve", rings: [[[0, 0], [0.03, 0], [0.03, 0.05], [0, 0.05]]], depth: 0.004 };
+  const counterObjs = Array.from({ length: 10 }, (_, d) => ({
+    name: `beat1_cnt_d0_${d}`,
+    letter: String(d),
+    step: true,
+    anim: true,
+    geo: glyphSq,
+    tr: pack([0, -2, 0], QID, [1e-4, 1e-4, 1e-4]),
+  }));
+  const counterTracks = Object.fromEntries(counterObjs.map((o, d) => [
+    o.name,
+    [
+      [0, ...pack([0, -2, 0], QID, [1e-4, 1e-4, 1e-4])],
+      [d + 1, ...pack([0, 0.2, 0], QID, [1, 1, 1])],
+      [25, ...pack([0, 0.2, 0], QID, [1, 1, 1])],
+    ],
+  ]));
+  assert.deepEqual(fastReveal({ fps: 30, frames: 26, sub: 1, objects: counterObjs, tracks: counterTracks }), []);
+
+  // 2) prism solid catches upright un-flattened cylinder swallowing hero legs, while clearing qFlat horizontal cylinder
+  const QFLAT = [-Math.SQRT1_2, 0, 0, Math.SQRT1_2];
+  const makePlinthAnim = (plinthQ, plinthY, heroY) => makeAnim(
+    [
+      { name: "hero", parent: "root", tr: pack([0, heroY, 0]) },
+      { name: "hero_legL", parent: "hero", geo: { type: "roundBox", size: [0.018, 0.04, 0.018] }, tr: pack([-0.012, 0.02, 0]) },
+      { name: "hero_torso", parent: "hero", geo: { type: "roundBox", size: [0.042, 0.045, 0.028] }, tr: pack([0, 0.058, 0]) },
+      { name: "hero_head", parent: "hero", geo: { type: "ellipsoid", r: [0.036, 0.034, 0.034] }, tr: pack([0, 0.095, 0]) },
+      { name: "plinth_base", parent: "root", geo: { type: "prism", sides: 36, r: 0.085, depth: 0.048, bevel: 0.004 }, tr: pack([0, plinthY, 0], plinthQ) },
+    ],
+    { hero: [[0, ...pack([0, heroY, 0])], [20, ...pack([0, heroY, 0])]] },
+    { frames: 21, fps: 30, sub: 1 },
+  );
+  const badPlinth = clearance(makePlinthAnim(QID, 0.024, 0.048));
+  assert.ok(describe(badPlinth.contacts, badPlinth.height).some((m) => m.kind === "into" && m.solids.includes("plinth_base")));
+  const goodPlinth = clearance(makePlinthAnim(QFLAT, 0.024, 0.054));
+  assert.equal(describe(goodPlinth.contacts, goodPlinth.height).filter((m) => m.kind === "into").length, 0);
+
+  // 3) cardScreenOverlaps catches RGBA cutout tucked ~35% behind monitor corner AND readoutBadge plate covering a card
+  const cardGeo = { type: "uiBox", rect: [-150, -85, 300, 170], uvRect: [0, 0, 300, 170], thickness: 0.004 };
+  const moonAnim = makeAnim(
+    [
+      { name: "camera", parent: "root", tr: pack([0, 0.14, 0.85]) },
+      { name: "beat2_webgl_card", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([-0.14, 0.15, -0.10], UPRIGHT, [1, 1, 1]) },
+      { name: "beat2_moon", parent: "root", geo: { type: "plane", w: 0.10, h: 0.10 }, mat: { type: "sticker", image: "assets/moon.png" }, tr: pack([-0.01, 0.21, -0.13]) },
+      { name: "beat2_cnt_plate", parent: "root", geo: { type: "roundBox", size: [0.16, 0.055, 0.006] }, mat: { type: "paper", color: "#F4D58D" }, tr: pack([-0.22, 0.21, 0.02]) },
+    ],
+    { camera: [[0, ...pack([0, 0.14, 0.85])], [24, ...pack([0, 0.14, 0.85])]] },
+    { frames: 25, fps: 30, sub: 1 },
+  );
+  moonAnim.scalars = { fov: Array(25).fill(32) };
+  const ovHits = cardScreenOverlaps(moonAnim, { aspect: 16 / 9 });
+  assert.equal(ovHits.length, 2);
+  assert.ok(ovHits.some((h) => h.front === "beat2_webgl_card" && h.back === "beat2_moon" && h.share >= 0.25));
+  assert.ok(ovHits.some((h) => h.front === "beat2_cnt_plate" && h.back === "beat2_webgl_card" && h.share >= 0.25));
+
+  // 4) plaqueInControlsZone catches a settled foreground plaque dipping into the bottom scrub-bar zone (ny < -0.86)
+  const makeCtrlAnim = (plateY, plateZ) => {
+    const a = makeAnim(
+      [
+        { name: "camera", parent: "root", tr: pack([0, 0.10, 0.68]) },
+        { name: "beat1_trn_plate", parent: "root", geo: { type: "roundBox", size: [0.34, 0.038, 0.006] }, mat: { type: "paper", color: "#1D2638" }, tr: pack([0, plateY, plateZ]) },
+      ],
+      { camera: [[0, ...pack([0, 0.10, 0.68])], [24, ...pack([0, 0.10, 0.68])]] },
+      { frames: 25, fps: 30, sub: 1 },
+    );
+    a.scalars = { fov: Array(25).fill(38) };
+    return a;
+  };
+  const dipHits = plaqueInControlsZone(makeCtrlAnim(-0.026, 0.24), { aspect: 16 / 9 });
+  assert.equal(dipHits.length, 1);
+  assert.equal(dipHits[0].target, "beat1_trn_plate");
+  assert.match(describePlaqueInControlsZone(dipHits)[0].text, /dips into the platform player controls zone/);
+  assert.equal(plaqueInControlsZone(makeCtrlAnim(0.032, 0.18), { aspect: 16 / 9 }).length, 0);
+
+  // 5) preCutHeroGap flags a 0.50 s premature hero disappearance before a stage cut while passing a crisp 0.23 s exit
+  const makeCutAnim = (hideFromFrame) => {
+    const heroTrack = [];
+    const camTrack = [];
+    for (let f = 0; f < 40; f++) {
+      const onCta = f >= 30;
+      camTrack.push([f, ...pack([onCta ? 250 : 100, 0.10, 0.70])]);
+      const hidden = !onCta && f >= hideFromFrame;
+      heroTrack.push([f, ...pack([onCta ? 250 : 100, 0, 0], QID, hidden ? [1e-4, 1e-4, 1e-4] : [1, 1, 1])]);
+    }
+    const a = makeAnim(
+      [
+        { name: "camera", parent: "root", tr: pack([100, 0.10, 0.70]) },
+        { name: "hero", parent: "root", tr: pack([100, 0, 0]) },
+        { name: "hero_head", parent: "hero", geo: { type: "ellipsoid", r: [0.035, 0.035, 0.035] }, tr: pack([0, 0.08, 0]) },
+      ],
+      { camera: camTrack, hero: heroTrack },
+      { frames: 40, fps: 30, sub: 1 },
+    );
+    a.scalars = { fov: Array(40).fill(35) };
+    return a;
+  };
+  const gapHits = preCutHeroGap(makeCutAnim(14), { aspect: 16 / 9 });
+  assert.equal(gapHits.length, 1);
+  assert.equal(gapHits[0].cutAt, 1.0);
+  assert.ok(gapHits[0].gap >= 0.50);
+  assert.match(describePreCutHeroGap(gapHits)[0].text, /leaves the frame .* early before the 1\.00 s cut/);
+  assert.equal(preCutHeroGap(makeCutAnim(23), { aspect: 16 / 9 }).length, 0);
 });

@@ -267,5 +267,6 @@ export function soundCues() {
     add(E.crown[1], "crown");
     add(E.crown[1] + 0.05, "sparkle");
   }
-  return cues.sort((a, b) => a.t - b.t);
+  cues.sort((a, b) => a.t - b.t);
+  return cues.filter((c, idx) => idx === 0 || c.kind !== cues[idx - 1].kind || Math.abs(c.t - cues[idx - 1].t) >= 0.012);
 }

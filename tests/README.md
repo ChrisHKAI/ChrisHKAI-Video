@@ -162,7 +162,9 @@ Checks hinged/moving door-through-card piercing, intersecting angled picture
 cards, deep prop-into-prop embedding, settled end-card torn-paper label
 overlaps, colliding 3D headline lines (`lineOverlaps`), camera-frustum
 edge-crop warnings (including custom-beat props and 3D headlines), 2D
-camera-space picture-card occlusions (`cardScreenOverlaps`), foreground props
+camera-space picture-card/cutout/badge occlusions (`cardScreenOverlaps`),
+bottom plaques dipping into player scrub-bar controls (`plaqueInControlsZone`),
+premature pre-cut toy exits (`preCutHeroGap`), `prism` pedestal 3D clearance, foreground props
 crossing in front of `hero_head` (`heroFaceOcclusions`), foreground `uiBox`
 plaques cutting across the toy's standing body (`propCoversToyBody` across custom beats and custom end-card props), airborne
 sky-drops/leaps streaking across active 3D headlines or readouts

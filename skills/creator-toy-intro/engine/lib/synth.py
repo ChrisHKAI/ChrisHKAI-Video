@@ -127,26 +127,29 @@ class Bus:
 
 # ── Instruments ─────────────────────────────────────────────────────────────
 def kick(big=False):
+    is_big = big is True or (isinstance(big, (int, float)) and not isinstance(big, bool) and big >= 0.5)
     t = t_axis(0.5)
-    f = 46 + (140 if big else 110) * np.exp(-t / 0.03)
-    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / (0.22 if big else 0.15))
+    f = 46 + (140 if is_big else 110) * np.exp(-t / 0.03)
+    body = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t / (0.22 if is_big else 0.15))
     click = signal.sosfilt(sos("highpass", 2500), noise(0.5)) * np.exp(-t / 0.004) * 0.3
     return np.tanh(1.8 * (body + click)) * 0.9
 
 
-def snare():
-    t = t_axis(0.3)
-    tone = np.sin(2 * np.pi * 200 * t) * np.exp(-t / 0.05) * 0.5
-    nz = signal.sosfilt(sos("bandpass", [1200, 8000]), noise(0.3)) * np.exp(-t / 0.1)
+def snare(dur=None):
+    d = float(dur) if isinstance(dur, (int, float)) and not isinstance(dur, bool) and 0.04 <= dur <= 1.0 else 0.3
+    t = t_axis(d)
+    tone = np.sin(2 * np.pi * 200 * t) * np.exp(-t / min(0.05, d * 0.4)) * 0.5
+    nz = signal.sosfilt(sos("bandpass", [1200, 8000]), noise(d)) * np.exp(-t / min(0.1, d * 0.5))
     return signal.sosfilt(sos("lowpass", 10000), tone + nz * 0.7) * 0.75
 
 
 def hat(open_=False):
-    d = 0.22 if open_ else 0.05
+    is_open = open_ is True or (isinstance(open_, (int, float)) and not isinstance(open_, bool) and open_ >= 0.12)
+    d = 0.22 if is_open else 0.05
     t = t_axis(d)
     metal = sum(np.sign(np.sin(2 * np.pi * f * t)) for f in (3180, 4730, 5810, 7270)) * 0.25
     s = signal.sosfilt(sos("highpass", 7000), noise(d) * 0.6 + metal * 0.4)
-    return s * np.exp(-t / (0.07 if open_ else 0.011)) * 0.32
+    return s * np.exp(-t / (0.07 if is_open else 0.011)) * 0.32
 
 
 def sub(freq, dur):

@@ -98,12 +98,17 @@ When fixing a prop or card clash:
   ignored). Pull the camera back, lock horizontal camera drift, or switch the
   end card to `cta.layout: "two-column"` so nothing clips an edge mid-pan.
 - **2D camera-space occlusions (`cardScreenOverlaps`, `heroFaceOcclusions`,
-  `confettiOverText`)**: even when objects are separated in Z depth so 3D SAT
-  reports zero physical collision, `clearance.mjs` and `check.mjs` warn when a
-  foreground picture card covers `>= 45%` of another visible picture card on
-  camera (`>= 0.6 s`), when a foreground prop crosses in front of the toy's
-  face (`>= 30%` of `hero_head` for `>= 0.2 s`), or when `>= 3` confetti flakes
-  shoot across an active 3D headline/readout (which breaks phone-size OCR).
+  `confettiOverText`, `plaqueInControlsZone`, `preCutHeroGap`)**: even when
+  objects are separated in Z depth so 3D SAT reports zero physical collision
+  (`prism` cylinders are also tested as 3D solids and bounds so upright un-flattened
+  pedestals cannot swallow the toy's legs), `clearance.mjs` and `check.mjs` warn
+  when a foreground picture card, RGBA cutout (`sticker`/`card2d`), or
+  `readoutBadge`/`bannerLine` plate covers `>= 25%` of another showcase card or
+  cutout on camera (`>= 0.6 s`), when a foreground prop crosses in front of the
+  toy's face (`>= 30%` of `hero_head` for `>= 0.2 s`), when `>= 3` confetti
+  flakes shoot across an active 3D headline/readout, when a bottom plaque dips
+  into the platform player's bottom scrub-bar / caption zone, or when an early
+  `strideOut` / `leapOut` leaves the stage empty for `>= 0.40 s` before a cut.
 - **3D headline overlaps (`lineOverlaps`)**: checks distinct 3D `letter` lines
   on the same stage and flags transitions where an outgoing headline has not
   finished hiding before the incoming headline appears on the same spot.

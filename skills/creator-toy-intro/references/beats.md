@@ -187,7 +187,15 @@ demo, their site's media library).
   showcase whose wing cards clip past a frame edge). When a beat claims a larger
   count (`12 款工具`), stage a **two-step camera**: open close on 3–4 readable
   titled hero cards first, then pull wide to reveal all `N` cards so viewers
-  both read real titles and see the promised count.
+  both read real titles and see the promised count. Conversely, when a beat
+  promises a small specific count of distinct tools or modules (e.g. `四款自研工具`),
+  never show one shrunken multi-card webpage screenshot whose tiny sub-labels
+  blur ("writes four, shows zero readable"): split them into *N* separate,
+  boldly labeled Chinese cards popping sequentially on the beat as the toy
+  points to each. And when turning dark banners (such as an eclipse) into an
+  RGBA `kit.cutout()`, carve an unmistakable silhouette (a true curved crescent
+  rather than a dark circular disc) so it never reads as a flat dark puck on a
+  mid-tone grey stage when words are covered.
 - **Dark-mode & stark-white screenshots on dark stages**: dark IDE, terminal or dashboard
   captures (`< 1.6:1` contrast against `#0B0C10` with a dark border) vanish into
   the background as illegible black rectangles—wrap them in a bright window
@@ -210,11 +218,14 @@ demo, their site's media library).
   and exits—prefer `kit.strideIn` / `kit.strideOut` lateral floor dashes over repeating vertical
   sky-drops or late top-edge `leapOut` jumps that leave severed shoes dangling
   at the top border or streak across top-band 3D readouts (`heroStreaksOverText`),
-  keep the camera close enough that the toy averages ~30–45% of frame height
+  and keep `strideOut` / `leapOut` tight to the last `0.25–0.32 s` of the beat so
+  the stage never sits empty for half a second before the cut (`preCutHeroGap`).
+  Keep the camera close enough that the toy averages ~30–45% of frame height
   (`pace` warns when a custom beat shrinks the toy under 22% without `"wide": true`),
-  keep foreground `uiBox` plaques below the toy's ankles or off to the side rather
-  than cutting across its legs (`propCoversToyBody`), and pair active moves with SFX cues so no beat sits in
-  >4.5 s of effect silence (`pace` warns on long cue gaps).
+  keep foreground plaques below the toy's ankles (`propCoversToyBody`) yet above
+  the platform player's bottom scrub-bar / caption strip (`plaqueInControlsZone`),
+  and pair active moves with SFX cues so no beat sits in >4.5 s of effect silence
+  (`pace` warns on long cue gaps).
 
 ### Choosing the faces
 

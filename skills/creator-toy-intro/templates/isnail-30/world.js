@@ -199,6 +199,7 @@ export function timeline() {
   const cues = T.SEG.cues(T.soundCues());
   for (const B of BEATS) B.b.cues?.((g, kind, extra = {}) => cues.push({ t: +(B.f0 + g).toFixed(4), kind, ...extra }));
   cues.sort((a, b) => a.t - b.t);
+  const deduped = cues.filter((c, idx) => idx === 0 || c.kind !== cues[idx - 1].kind || Math.abs(c.t - cues[idx - 1].t) >= 0.012);
   const r4 = (v) => +v.toFixed(4);
   const SEGMENTS = T.SEG.list.map((s) => {
     // why: what the viewer gets from it (the chosen direction's "means", carried by apply-research)
@@ -207,5 +208,5 @@ export function timeline() {
     const B = BEATS.find((x) => x.i === s.i);
     return { kind: "beat", beat: s.entry.beat, f0: r4(s.f0), f1: r4(s.f1), music: B.b.music ?? {}, storyboard: B.b.storyboard ?? {}, ...why };
   });
-  return { ...base, EV: T.SEG.events(T.EV), cues, STORY: { DURATION: T.STORY_DURATION, EV: T.EV }, SEGMENTS };
+  return { ...base, EV: T.SEG.events(T.EV), cues: deduped, STORY: { DURATION: T.STORY_DURATION, EV: T.EV }, SEGMENTS };
 }

@@ -1468,6 +1468,81 @@ class V0815EngineImprovementTests(unittest.TestCase):
             self.assertTrue((rdir / "0006.png").exists())
             self.assertGreater((rdir / "0006.png").stat().st_mtime, 1500.0)
 
+    def test_v0817_synth_drum_arg_safety_and_duplicate_cue_dedup(self):
+        sys.path.insert(0, str(SKILL / "engine/lib"))
+        import synth
+        synth.setup(2.0, 0.5)
+        # snare() works with zero args AND with an optional float duration without TypeError
+        s0 = synth.snare()
+        s1 = synth.snare(0.11)
+        self.assertEqual(s0.ndim, 1)
+        self.assertEqual(s1.ndim, 1)
+        self.assertLess(len(s1), len(s0))
+        # kick(0.16) and hat(0.05) treat small float durations safely as normal/closed rather than big=True/open_=True
+        k_norm = synth.kick(False)
+        k_float = synth.kick(0.16)
+        self.assertEqual(len(k_norm), len(k_float))
+        h_closed = synth.hat(False)
+        h_float = synth.hat(0.05)
+        self.assertEqual(len(h_closed), len(h_float))
+
+        # Verify timeline.js deduplicates identical stacked cues (e.g. prop.js + template both adding pomf at E.ride)
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "assets").mkdir()
+            (fdir / "recipes").mkdir()
+            Image.new("RGB", (64, 64), (40, 50, 70)).save(fdir / "assets/avatar.jpg")
+            g_stub = {"advance": 0.9, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in set("0123456789万查看兴雨@YxzRainy关注")
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.11, "center": [0, 0.05, 0], "colors": {"coat": "#1A2234"},
+                "joints": {"body": {"p": [0, 0.03, 0], "parent": None}},
+                "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.04, 0], "size": [0.03, 0.03, 0.02], "mat": "coat"}],
+            }))
+            (fdir / "recipes/prop.js").write_text(
+                "export function makeProp({ E, cta, lib }) {\n"
+                "  return {\n"
+                "    declare() {},\n"
+                "    sample() {},\n"
+                "    topAt: () => cta(-0.3, 0.05, 0),\n"
+                "    cues(add) { add(E.ride, 'pomf'); add(E.glint2, 'glint'); },\n"
+                "  };\n"
+                "}\n"
+            )
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "dedup-v0817", "template": "isnail-30", "theme": "x-desktop", "step": "story",
+                "format": {"fps": 30, "bpm": 120, "duration": 6, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "type": {"heavy": [{"family": "Lantinghei SC", "style": "Demibold"}], "why": "test"},
+                "profile": {"name": "兴雨", "handle": "YxzRainy", "avatar": "assets/avatar.jpg", "bio": ["AI"]},
+                "posts": {"pinned": {"count": "1万", "cover": "assets/avatar.jpg"}, "retro": {"count": "1万"}},
+                "counter": {"value": 1, "unit": "万", "label": "查看", "display": "1万"},
+                "story": {"duration": 30, "profilePage": False, "exit": "jump", "segments": [{"story": [24, "end"]}], "events": {"ride": 24.75, "glint2": 25.10}},
+                "cta": {
+                    "layout": "two-column",
+                    "slogan": [{"text": "关注兴雨", "paper": "cream"}, {"text": "关注", "paper": "cream"}],
+                    "name": {"text": "兴雨", "paper": "cream"},
+                    "handle": {"text": "@YxzRainy", "paper": "blue"},
+                    "prop": {"module": "recipes/prop.js"},
+                },
+            }))
+            world_url = (SKILL / "templates/isnail-30/world.js").as_uri()
+            r_tl = subprocess.run(
+                ["node", "--input-type=module", "-e", f"import * as W from {json.dumps(world_url)}; console.log(JSON.stringify(W.timeline().cues));"],
+                cwd=str(SKILL),
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)},
+                check=True, capture_output=True, text=True,
+            )
+            cues = json.loads(r_tl.stdout.strip().splitlines()[-1])
+            pomf_at_ride = [c for c in cues if c["kind"] == "pomf" and abs(c["t"] - 0.75) < 0.02]
+            glint_at_g2 = [c for c in cues if c["kind"] == "glint" and abs(c["t"] - 1.10) < 0.02]
+            self.assertEqual(len(pomf_at_ride), 1)
+            self.assertEqual(len(glint_at_g2), 1)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
