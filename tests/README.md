@@ -164,7 +164,9 @@ overlaps, colliding 3D headline lines (`lineOverlaps`), camera-frustum
 edge-crop warnings (including custom-beat props and 3D headlines), 2D
 camera-space picture-card/cutout/badge occlusions (`cardScreenOverlaps`),
 bottom plaques dipping into player scrub-bar controls (`plaqueInControlsZone`),
-premature pre-cut toy exits (`preCutHeroGap`), `prism` pedestal 3D clearance, foreground props
+premature pre-cut toy exits (`preCutHeroGap`), foreground desk props blocking
+plaques or picture cards (`propBlocksCard`), grounded CTA plinth bases lifting
+off the floor mid-hold (`floatingCtaBase`), `prism` pedestal 3D clearance, foreground props
 crossing in front of `hero_head` (`heroFaceOcclusions`), foreground `uiBox`
 plaques cutting across the toy's standing body (`propCoversToyBody` across custom beats and custom end-card props), airborne
 sky-drops/leaps streaking across active 3D headlines or readouts
@@ -198,7 +200,7 @@ collection, `fonts.chosen` `"Family:Style"` string shorthand, `reading.match` /
 geometric-ring OCR ghost filtering, `real.py` unknown-instrument & single-hit
 variant suggestions, `finish.py` `.finish-meta.json` incremental frame, main MP4 & `-sfx.mp4`
 caching/auto-refresh, `pictures.ensureCloudSafeMovie` `.mp4`/`.mov` → `.mkv` lossless remuxing for cloud GPU workers,
-`stagekit.paper` `paper=`/`fill=` keyword aliases, `stagekit.antiglare` & `empty_avatar_socket`/`card_socket_coords` helpers, `colors.film_colours` stark-white card glare & plated dark-ink contrast checks, `run.mjs` `score`/`audio` step aliases,
+`stagekit.paper` `paper=`/`fill=` keyword aliases, `stagekit.antiglare`, `stagekit.plaque` 2×-supersampled single-bevel metric plaques, `stagekit.save_if_changed` idempotent texture writes & `empty_avatar_socket`/`card_socket_coords` helpers, `colors.film_colours` / `colors.plaque_border_issues` stark-white card glare, plated dark-ink contrast, cramped side-margin & double-border plaque checks, `glyphs.harvest_js_glyphs` `${...}` template-literal unit collection, `typesheet.py` direction-fallback & empty-film guard, `.texture-hashes.json` SHA-256 content-aware `diff-anim.py --since` filtering, `run.mjs` `score`/`audio` step aliases,
 `timeline.js` two-column `28.0 s` downbeat point, wider torn-paper margins, dense `<75 ms` chime thinning, long-slogan typing cadence & active `glide`/post-`final`
 breathing motion, `reading.baseline` mixed-script `I`/`l` look-alike ceiling,
 `review.py` stale `review-blind.txt` warning when older than the reviewed video,

@@ -676,3 +676,114 @@ class Cut:
 def thing(image):
     """Any picture as a cut-out standing on its bottom edge, to give Stage.sprite with height= how tall it is."""
     return Cut(image, image.height, image.height, image.width / 2)
+
+
+def save_if_changed(image, path, **save_kw):
+    """Save `image` to `path` only when its encoded bytes actually differ, keeping `mtime` intact on unchanged re-runs
+    so `diff-anim.py --since` and `run.mjs render --resume` never invalidate unchanged frames."""
+    import io
+    dst = Path(path)
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    fmt = save_kw.pop("format", None) or (dst.suffix.lstrip(".").upper().replace("JPG", "JPEG") or "PNG")
+    buf = io.BytesIO()
+    image.save(buf, format=fmt, **save_kw)
+    data = buf.getvalue()
+    if dst.is_file() and dst.read_bytes() == data:
+        return False
+    dst.write_bytes(data)
+    return True
+
+
+def _plaque_star(draw, cx, cy, r_out, r_in, fill):
+    pts = []
+    for k in range(10):
+        ang = -math.pi / 2 + k * math.pi / 5
+        rr = r_out if k % 2 == 0 else r_in
+        pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
+    draw.polygon(pts, fill=fill)
+
+
+def plaque(
+    segments,
+    *,
+    h2x=336,
+    pad_x=152,
+    div_gap=56,
+    div_rgba=(251, 191, 36, 105),
+    top_rgb=(23, 35, 56),
+    bot_rgb=(13, 21, 36),
+    sheen_rgb=(253, 230, 138),
+):
+    """Render a 2x-supersampled, auto-width-sized, optically centered dark-glass metric/info plaque with generous side
+    margins and NO redundant 2D outer border (so `kit.framedPicture(..., { antiglare: true })` supplies one clean 3D
+    bevel without box-in-a-box clutter or text-to-border collisions).
+
+    `segments`: list of column groups; each column is a list of tokens:
+      - `(text, pil_font, (r, g, b)[, gap_px_at_2x])`
+      - `("star", outer_radius_px_at_2x, (r, g, b)[, gap_px_at_2x])`
+    """
+    probe = ImageDraw.Draw(Image.new("RGBA", (16, 16)))
+    seg_layouts = []
+    min_top, max_bot = 10**9, -10**9
+    for seg in segments:
+        items = []
+        seg_w = 0
+        for idx, token in enumerate(seg):
+            kind = token[0]
+            gap_before = token[3] if len(token) > 3 else (0 if idx == 0 else 16)
+            seg_w += gap_before
+            if kind == "star" and isinstance(token[1], (int, float)):
+                r_out = float(token[1])
+                w_tok = int(round(r_out * 2.05))
+                items.append(("star", r_out, token[2], gap_before, w_tok, None))
+                seg_w += w_tok
+            else:
+                txt, fnt, col = str(token[0]), token[1], token[2]
+                bb = probe.textbbox((0, 0), txt, font=fnt)
+                w_tok = bb[2] - bb[0]
+                min_top = min(min_top, bb[1])
+                max_bot = max(max_bot, bb[3])
+                items.append(("text", txt, fnt, col, gap_before, w_tok, bb))
+                seg_w += w_tok
+        seg_layouts.append((seg_w, items))
+
+    if min_top > max_bot:
+        min_top, max_bot = 0, int(h2x * 0.4)
+    div_w = 4
+    total_w = sum(sw for sw, _ in seg_layouts) + max(0, len(seg_layouts) - 1) * (2 * div_gap + div_w)
+    w2x = max(64, int(math.ceil((total_w + 2 * pad_x) / 4.0) * 4))
+
+    ys = np.linspace(0.0, 1.0, h2x, dtype=np.float32)[:, None]
+    grad = np.empty((h2x, w2x, 4), dtype=np.uint8)
+    for c in range(3):
+        col_band = np.round(top_rgb[c] * (1.0 - ys) + bot_rgb[c] * ys).astype(np.uint8)
+        grad[:, :, c] = col_band
+    grad[:, :, 3] = 255
+    im = Image.fromarray(grad)
+    d = ImageDraw.Draw(im)
+    if sheen_rgb is not None:
+        d.line((16, 6, w2x - 17, 6), fill=(*sheen_rgb[:3], 72), width=2)
+
+    text_h = max_bot - min_top
+    base_y = (h2x - text_h) / 2.0 - min_top
+    cy = h2x / 2.0
+    x = (w2x - total_w) / 2.0
+    for s_idx, (_, items) in enumerate(seg_layouts):
+        for item in items:
+            if item[0] == "star":
+                _, r_out, col, gap_before, w_tok, _ = item
+                x += gap_before
+                _plaque_star(d, x + w_tok / 2.0, cy - 2, r_out, r_out * 0.44, (*col[:3], 255))
+                x += w_tok
+            else:
+                _, txt, fnt, col, gap_before, w_tok, bb = item
+                x += gap_before
+                d.text((x - bb[0], base_y), txt, font=fnt, fill=(*col[:3], 255))
+                x += w_tok
+        if s_idx + 1 < len(seg_layouts):
+            x += div_gap
+            dh = int(h2x * 0.44)
+            d.rounded_rectangle((x, cy - dh / 2, x + div_w, cy + dh / 2), radius=2, fill=div_rgba)
+            x += div_w + div_gap
+
+    return im.resize((max(1, w2x // 2), max(1, h2x // 2)), Image.Resampling.LANCZOS).convert("RGB")

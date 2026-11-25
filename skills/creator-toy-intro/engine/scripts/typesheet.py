@@ -48,14 +48,40 @@ def words(v):
 
 
 cta = F.get("cta") or {}
+direction = ((F.get("story") or {}).get("direction")) or {}
 # what a segment says for people, never on screen: why it is there, its music
 UNSHOWN = {"beat", "why", "music"}
 BEATS = [s for s in (F.get("story") or {}).get("segments", []) if "beat" in s]
-CHARS = "".join(words({k: v for k, v in s.items() if k not in UNSHOWN}) for s in BEATS) + words([p.get("text", "") for p in cta.get("slogan", [])]) \
-    + words((cta.get("name") or {}).get("text", "")) + words((cta.get("prop") or {}).get("text", ""))
-LINES = [t.strip() for t in arg("--text", "").split(",") if t.strip()] or \
-    [s["text"] for s in BEATS if isinstance(s.get("text"), str)] + ["".join(p.get("text", "") for p in cta.get("slogan", []))]
+dir_frames_words = [w for fr in (direction.get("frames") or []) if isinstance(fr, dict) for w in (fr.get("words") or []) if isinstance(w, str)]
+dir_slogan = [s if isinstance(s, str) else s.get("text", "") for s in ((direction.get("cta") or {}).get("slogan") or []) if isinstance(s, (str, dict))]
+hook_text = ((direction.get("hook") or {}).get("text")) if isinstance(direction.get("hook"), dict) else ""
+js_harvest = ""
+try:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from glyphs import harvest_js_glyphs  # noqa: E402
+    js_harvest = "".join(harvest_js_glyphs(FILM, F).values())
+except Exception:
+    pass
+CHARS = (
+    "".join(words({k: v for k, v in s.items() if k not in UNSHOWN}) for s in BEATS)
+    + words([p.get("text", "") if isinstance(p, dict) else str(p) for p in cta.get("slogan", [])])
+    + words((cta.get("name") or {}).get("text", ""))
+    + words((cta.get("prop") or {}).get("text", ""))
+    + words(dir_frames_words)
+    + words(dir_slogan)
+    + words(hook_text)
+    + js_harvest
+)
+LINES = [t.strip() for t in arg("--text", "").split(",") if t.strip()] or (
+    [s["text"] for s in BEATS if isinstance(s.get("text"), str)]
+    + ["".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in cta.get("slogan", []))]
+)
 LINES = [l for l in dict.fromkeys(LINES) if l.strip()]
+if not LINES:
+    fallback_lines = [*dir_frames_words[:2], "".join(dir_slogan), str(hook_text or "")]
+    LINES = [l.strip() for l in dict.fromkeys(fallback_lines) if l and l.strip()][:3]
+if not LINES and "--list" not in argv:
+    raise SystemExit('no on-screen lines in film.json yet: run apply-research first, or pass --text "示例标题,副标题"')
 
 if "--list" in argv:
     have = fonts.covering(CHARS, EXTRA)

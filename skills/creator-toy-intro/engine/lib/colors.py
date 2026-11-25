@@ -181,6 +181,12 @@ def film_colours(film):
     if not stage_for(film)[1].get("light"):
         from PIL import Image
         seen_cards = set()
+        obj_names = {x["name"] for x in anim["objects"]}
+        frame_colors = {
+            x["name"]: (x.get("mat") or {}).get("color")
+            for x in anim["objects"]
+            if x["name"].endswith("_frame") and isinstance((x.get("mat") or {}).get("color"), str)
+        }
         for o in anim["objects"]:
             name = o["name"]
             if not name.startswith("beat") or re.match(r"^beat\d+_(p_|back$|avatar$|cyc|bg|rail|pool|floor)", name) or not shown(name):
@@ -192,7 +198,12 @@ def film_colours(film):
                 continue
             seen_cards.add((name, img_rel))
             try:
-                im = Image.open(film / img_rel).convert("RGBA")
+                im_full = Image.open(film / img_rel).convert("RGBA")
+                frame_name = (name[:-4] + "_frame") if name.endswith("_pic") else (name + "_frame")
+                has_frame = frame_name in obj_names
+                frame_hex = frame_colors.get(frame_name)
+                p_issues = plaque_border_issues(im_full, has_frame=has_frame) if img_rel.replace("\\", "/").lstrip("./").startswith("build/") else {"cramped": False, "doubleBorder": False}
+                im = im_full.copy()
                 im.thumbnail((160, 160))
                 a = np.asarray(im, dtype=float) / 255
                 opaque = a[..., 3] > 0.5
@@ -206,6 +217,9 @@ def film_colours(film):
                 ring &= opaque
                 b_hex = hexof(a[..., :3][ring].mean(axis=0)) if ring.any() else mean_hex
                 c_mean, c_border = round(contrast(mean_hex, STAGE), 2), round(contrast(b_hex, STAGE), 2)
+                if isinstance(frame_hex, str) and frame_hex.startswith("#") and len(frame_hex) == 7 and contrast(frame_hex, STAGE) > c_border:
+                    b_hex = frame_hex.upper()
+                    c_border = round(contrast(b_hex, STAGE), 2)
                 lum_px = 0.2126 * a[..., 0][opaque] + 0.7152 * a[..., 1][opaque] + 0.0722 * a[..., 2][opaque]
                 white_share = round(float((lum_px >= 0.90).mean()), 3)
                 em_strength = float((o.get("mat") or {}).get("emission", 1.0))
@@ -213,10 +227,63 @@ def film_colours(film):
                                   "contrast": c_mean, "borderContrast": c_border,
                                   "whiteShare": white_share, "emission": em_strength,
                                   "melts": bool(c_mean < MELT and c_border < 2.2),
-                                  "glares": bool(white_share >= 0.55 and em_strength >= 0.92)})
+                                  "glares": bool(white_share >= 0.55 and em_strength >= 0.92),
+                                  "cramped": p_issues["cramped"],
+                                  "doubleBorder": p_issues["doubleBorder"]})
             except Exception:
                 continue
     return {"stage": STAGE, "toy": toy_rows, "text": text_rows, "confetti": conf_rows, "cards": card_rows}
+
+
+def plaque_border_issues(im, has_frame=False):
+    """Inspect a wide generated 2D plaque texture (`w >= 3 * h`) for two common hand-drawn PIL layout defects:
+    - `doubleBorder`: a 4-sided high-contrast 2D border rectangle drawn inside a plaque already wrapped in a 3D bezel;
+    - `cramped`: glyph/icon ink in the central text band (`34%..66%` height) touching within `2.2%` of the left/right
+      edge or colliding directly with a drawn inner side border."""
+    w, h = im.size
+    if w < 180 or h < 36 or w < 3.0 * h:
+        return {"cramped": False, "doubleBorder": False}
+    arr = np.asarray(im.convert("RGBA"), dtype=np.float32) / 255.0
+    if float((arr[..., 3] > 0.5).mean()) < 0.75:
+        return {"cramped": False, "doubleBorder": False}
+    rgb_arr = arr[..., :3]
+    # Estimate interior background from upper/lower quiet strips (18%..28% and 72%..82% height, 10%..90% width)
+    y_q1, y_q2 = slice(max(1, int(h * 0.16)), max(2, int(h * 0.27))), slice(min(h - 2, int(h * 0.73)), min(h - 1, int(h * 0.84)))
+    x_in = slice(int(w * 0.08), int(w * 0.92))
+    quiet = np.concatenate([rgb_arr[y_q1, x_in].reshape(-1, 3), rgb_arr[y_q2, x_in].reshape(-1, 3)], axis=0)
+    bg = np.median(quiet, axis=0) if len(quiet) else np.median(rgb_arr.reshape(-1, 3), axis=0)
+    diff = np.linalg.norm(rgb_arr - bg, axis=-1)
+    fg = diff > 0.24
+
+    top_band = fg[:max(2, int(h * 0.13)), int(w * 0.12):int(w * 0.88)]
+    bot_band = fg[min(h - 2, int(h * 0.87)):, int(w * 0.12):int(w * 0.88)]
+    left_band = fg[int(h * 0.22):int(h * 0.78), :max(2, int(w * 0.035))]
+    right_band = fg[int(h * 0.22):int(h * 0.78), min(w - 2, int(w * 0.965)):]
+    has_top = bool(top_band.size and top_band.any(axis=0).mean() >= 0.78)
+    has_bot = bool(bot_band.size and bot_band.any(axis=0).mean() >= 0.78)
+    has_left = bool(left_band.size and left_band.any(axis=1).mean() >= 0.70)
+    has_right = bool(right_band.size and right_band.any(axis=1).mean() >= 0.70)
+    has_2d_box = has_top and has_bot and has_left and has_right
+    double_border = bool(has_frame and has_2d_box)
+
+    mid = fg[int(h * 0.34):int(h * 0.66), :]
+    if not mid.size:
+        return {"cramped": False, "doubleBorder": double_border}
+    col_ink = mid.mean(axis=0) >= 0.12
+    # Mask out a clean thin vertical border stroke (`<= 1.2%` wide) ONLY when separated from interior text by a dark gap
+    margin_px = max(4, int(round(w * 0.024)))
+    if has_2d_box:
+        # Find where the left/right border stroke ends and check if text touches right up against or across it
+        lx = int(w * 0.035)
+        rx = w - int(w * 0.035)
+        # In a cramped plaque (`stw ~ w`), ink bridges continuously across or sits within 6 px of the border stroke
+        left_gap_clear = not fg[int(h * 0.36):int(h * 0.64), lx:min(w, lx + max(6, int(w * 0.015)))].any()
+        right_gap_clear = not fg[int(h * 0.36):int(h * 0.64), max(0, rx - max(6, int(w * 0.015))):rx].any()
+        outer_bleed = bool(fg[int(h * 0.36):int(h * 0.64), :2].any() or fg[int(h * 0.36):int(h * 0.64), -2:].any())
+        cramped = bool(not left_gap_clear or not right_gap_clear or outer_bleed)
+    else:
+        cramped = bool(col_ink[:margin_px].any() or col_ink[-margin_px:].any())
+    return {"cramped": cramped, "doubleBorder": double_border}
 
 
 def from_oklab(lab):

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
@@ -1754,4 +1754,59 @@ test("v0.8.17: prism pedestal 3D clearance, readoutBadge fastReveal immunity, cu
   assert.ok(gapHits[0].gap >= 0.50);
   assert.match(describePreCutHeroGap(gapHits)[0].text, /leaves the frame .* early before the 1\.00 s cut/);
   assert.equal(preCutHeroGap(makeCutAnim(23), { aspect: 16 / 9 }).length, 0);
+});
+
+test("v0.8.18: propBlocksCard foreground mug-handle plaque occlusion and floatingCtaBase plinth levitation guard", () => {
+  const QFLAT = [-Math.SQRT1_2, 0, 0, Math.SQRT1_2];
+  // 1) propBlocksCard catches a foreground cylindrical mug + handle covering the left ~10% of a wide stat plaque,
+  //    ignores the plaque's own backing frame, and clears once the mug moves left of the plaque
+  const widePlaqueGeo = { type: "uiBox", rect: [-114, -16, 228, 32], uvRect: [0, 0, 960, 128], thickness: 0.004, unitScale: 1 };
+  const makeMugPlaqueAnim = (mugX, mugZ, plaqueX) => {
+    const a = makeAnim(
+      [
+        { name: "camera", parent: "root", tr: pack([100, 0.12, 0.62]) },
+        { name: "beat2_sgh_frame", parent: "root", geo: { type: "roundBox", size: [0.235, 0.039, 0.005] }, tr: pack([100 + plaqueX, 0.038, 0.040]) },
+        { name: "beat2_sgh_pic", parent: "root", geo: widePlaqueGeo, mat: { type: "ui", image: "build/cards/stat.png" }, tr: pack([100 + plaqueX, 0.038, 0.042], UPRIGHT, [1, 1, 1]) },
+        { name: "beat2_dprop_mug", parent: "root", geo: { type: "prism", sides: 32, r: 0.018, depth: 0.038, bevel: 0.003 }, tr: pack([100 + mugX, 0.037, mugZ], QFLAT) },
+        { name: "beat2_dprop_mhandle", parent: "root", geo: { type: "arc", radius: 0.011, tube: 0.0032, arc: Math.PI }, tr: pack([100 + mugX + 0.016, 0.037, mugZ]) },
+      ],
+      { camera: [[0, ...pack([100, 0.12, 0.62])], [24, ...pack([100, 0.12, 0.62])]] },
+      { frames: 25, fps: 30, sub: 1 },
+    );
+    a.scalars = { fov: Array(25).fill(38) };
+    return a;
+  };
+  const blocked = propBlocksCard(makeMugPlaqueAnim(0.008, 0.065, 0.118), { aspect: 16 / 9 });
+  assert.equal(blocked.length, 1);
+  assert.equal(blocked[0].prop, "beat2_dprop");
+  assert.equal(blocked[0].card, "beat2_sgh_pic");
+  assert.equal(blocked[0].wide, true);
+  assert.match(describePropBlocksCard(blocked)[0].text, /foreground prop beat2_dprop blocks \d+% of plaque beat2_sgh_pic/);
+  assert.equal(propBlocksCard(makeMugPlaqueAnim(-0.025, 0.012, 0.146), { aspect: 16 / 9 }).length, 0);
+
+  // 2) floatingCtaBase catches a grounded CTA plinth base lifting 22 mm mid-hold, while passing a planted plinth
+  const makeCtaHopAnim = (liftBase) => {
+    const tierTrack = [];
+    for (let f = 0; f < 90; f++) {
+      const t = f / 30;
+      let y = 0.016;
+      if (t < 0.25) y = 0.016 + 0.35 * (1 - t / 0.25); // initial drop-in spin
+      else if (liftBase && t >= 2.0 && t <= 2.5) y = 0.016 + 0.022 * Math.sin(((t - 2.0) / 0.5) * Math.PI);
+      tierTrack.push([f, ...pack([249.87, y, 0.068])]);
+    }
+    return makeAnim(
+      [
+        { name: "cta_floor", parent: "root", geo: { type: "plane", w: 12, h: 12 }, tr: pack([250, 0, 0]) },
+        { name: "prop_tier0", parent: "root", geo: { type: "roundBox", size: [0.216, 0.032, 0.146], radius: 0.012 }, tr: pack([249.87, 0.016, 0.068]) },
+      ],
+      { prop_tier0: tierTrack },
+      { frames: 90, fps: 30, sub: 1 },
+    );
+  };
+  const floatHits = floatingCtaBase(makeCtaHopAnim(true));
+  assert.equal(floatHits.length, 1);
+  assert.equal(floatHits[0].target, "prop_tier0");
+  assert.ok(floatHits[0].lift >= 0.020);
+  assert.match(describeFloatingCtaBase(floatHits)[0].text, /grounded end-card prop base prop_tier0 lifts 22 mm off the floor/);
+  assert.equal(floatingCtaBase(makeCtaHopAnim(false)).length, 0);
 });

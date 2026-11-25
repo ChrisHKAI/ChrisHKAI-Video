@@ -1543,6 +1543,117 @@ class V0815EngineImprovementTests(unittest.TestCase):
             self.assertEqual(len(pomf_at_ride), 1)
             self.assertEqual(len(glint_at_g2), 1)
 
+    def test_v0818_plaque_helper_border_check_template_glyphs_typesheet_and_hash_diff(self):
+        sys.path.insert(0, str(SKILL / "engine/lib"))
+        sys.path.insert(0, str(SKILL / "engine/scripts"))
+        import stagekit
+        import colors
+        import glyphs
+        from PIL import Image, ImageDraw, ImageFont
+
+        # 1) stagekit.plaque() renders a clean 2x-supersampled plaque with zero double-border / edge crowding,
+        #    while colors.plaque_border_issues() catches a cramped 960x128 double-bordered PIL plaque
+        f_default = ImageFont.load_default(size=88)
+        clean_plaque = stagekit.plaque([
+            [("51", f_default, (253, 216, 93), 0), ("Repos", f_default, (248, 250, 252), 12)],
+            [("star", 28, (251, 191, 36), 0), ("1,973", f_default, (253, 216, 93), 12), ("Stars", f_default, (248, 250, 252), 12)],
+            [("9,165", f_default, (253, 216, 93), 0), ("Followers", f_default, (248, 250, 252), 12)],
+        ])
+        self.assertGreaterEqual(clean_plaque.width, clean_plaque.height * 3)
+        self.assertEqual(colors.plaque_border_issues(clean_plaque, has_frame=True), {"cramped": False, "doubleBorder": False})
+
+        bad_plaque = Image.new("RGB", (960, 128), (20, 30, 48))
+        bd = ImageDraw.Draw(bad_plaque)
+        bd.rounded_rectangle((6, 6, 953, 121), radius=22, outline=(251, 191, 36), width=6)
+        # Simulate text spanning from x=2 to x=958 right into the inner border stroke
+        bd.rectangle((2, 46, 958, 82), fill=(255, 248, 235))
+        self.assertEqual(colors.plaque_border_issues(bad_plaque, has_frame=True), {"cramped": True, "doubleBorder": True})
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+            # 2) stagekit.save_if_changed() preserves mtime on identical bytes and updates when content changes
+            out_png = tdir / "cards/stat.png"
+            self.assertTrue(stagekit.save_if_changed(clean_plaque, out_png))
+            os.utime(out_png, (1234.0, 1234.0))
+            self.assertFalse(stagekit.save_if_changed(clean_plaque, out_png))
+            self.assertEqual(out_png.stat().st_mtime, 1234.0)
+            self.assertTrue(stagekit.save_if_changed(bad_plaque, out_png))
+            self.assertGreater(out_png.stat().st_mtime, 1234.0)
+
+            # 3) glyphs.harvest_js_glyphs() extracts static characters ("万", "亿") inside `${...}` template literals
+            bdir = tdir / "beats"
+            bdir.mkdir(parents=True)
+            (bdir / "custom.js").write_text(
+                'export function makeBeat({ glyph, kit }) {\n'
+                '  const b = kit.readoutBadge(glyph, { from: 1.2, to: 19.9, fmt: (v) => `${v.toFixed(1)}万`, unit: "亿" });\n'
+                '  return { reads: [{ text: `19.9万 阅读` }], storyboard: { part: { label: { en: "skip" } } } };\n'
+                '}\n',
+                encoding="utf-8",
+            )
+            harv = glyphs.harvest_js_glyphs(tdir, {"story": {"segments": [{"beat": "beats/custom.js", "bars": 3}]}})
+            for ch in ("万", "亿", "阅", "读"):
+                self.assertIn(ch, harv["heavy"])
+                self.assertIn(ch, harv["cjk"])
+
+            # 4) typesheet.py exits with a clean message (never ValueError: max() arg is an empty sequence) when empty,
+            #    and --list harvests characters from story.direction before apply-research populates cta
+            fdir = tdir / "empty-film"
+            fdir.mkdir()
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "ts-empty", "template": "isnail-30", "theme": "x-desktop",
+                "format": {"fps": 30, "bpm": 120, "duration": 26, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "story": {"segments": []},
+            }))
+            r_ts = subprocess.run(
+                [sys.executable, str(SKILL / "engine/scripts/typesheet.py"), "--faces", "Helvetica:Regular"],
+                env={**os.environ, "FILM": str(fdir)},
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(r_ts.returncode, 0)
+            self.assertIn("no on-screen lines in film.json yet", r_ts.stderr + r_ts.stdout)
+            self.assertNotIn("ValueError", r_ts.stderr + r_ts.stdout)
+
+            # 5) diff-anim.py --since ignores mtime-bumped textures whose SHA-256 matches .texture-hashes.json
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("diff_anim_mod", SKILL / "engine/scripts/diff-anim.py")
+            diff_mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(diff_mod)
+
+            ddir = tdir / "diff-film"
+            (ddir / "assets").mkdir(parents=True)
+            (ddir / "build/cards").mkdir(parents=True)
+            (ddir / "build/render").mkdir(parents=True)
+            av = ddir / "assets/avatar.png"
+            pl = ddir / "build/cards/stat.png"
+            av.write_bytes(b"same-avatar-bytes")
+            pl.write_bytes(b"old-plaque-bytes")
+            snap_file = ddir / "build/render/.anim-snapshot.json"
+            anim_doc = {
+                "fps": 30, "sub": 1, "frames": 10,
+                "objects": [
+                    {"name": "camera", "parent": "root", "tr": [0, 0, 1, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat0_avatar", "parent": "root", "geo": {"type": "plane", "w": 0.1, "h": 0.1}, "mat": {"type": "card2d", "image": "assets/avatar.png"}, "tr": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat2_sgh_pic", "parent": "root", "geo": {"type": "uiBox", "rect": [-1, -1, 2, 2]}, "mat": {"type": "ui", "image": "build/cards/stat.png"}, "tr": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {"camera": [[0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1], [9, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1]]},
+                "colors": {},
+                "scalars": {"fov": [30] * 10},
+            }
+            snap_file.write_text(json.dumps(anim_doc))
+            os.utime(snap_file, (1500.0, 1500.0))
+            import hashlib
+            (ddir / "build/render/.texture-hashes.json").write_text(json.dumps({
+                "assets/avatar.png": hashlib.sha256(b"same-avatar-bytes").hexdigest(),
+                "build/cards/stat.png": hashlib.sha256(b"old-plaque-bytes").hexdigest(),
+            }))
+            # Bump mtime of BOTH files past 1500.0, but change bytes ONLY on stat.png!
+            os.utime(av, (2000.0, 2000.0))
+            pl.write_bytes(b"new-upgraded-plaque-bytes")
+            os.utime(pl, (2000.0, 2000.0))
+            newer = diff_mod.newer_images(anim_doc, ddir, snap_file)
+            self.assertEqual(newer, ["build/cards/stat.png"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

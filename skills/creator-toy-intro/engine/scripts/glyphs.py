@@ -73,9 +73,35 @@ def harvest_js_glyphs(film_dir, film_json):
         re.compile(rf"""\b(?:const|let|var)\s+[A-Za-z0-9_]*(?:TEXT|STR|LINE|TITLE|SUB|HOOK|NAME|LABEL|SLOGAN|WORD|STAMP|BADGE|UNIT)[A-Za-z0-9_]*\s*=\s*(?:String\s*\([^?]*\?\?\s*)?{str_lit}""", re.I),
         re.compile(rf"""\bopts\.[A-Za-z0-9_]+\s*\?\?\s*{str_lit}"""),
         re.compile(rf"""\[\s*\.\.\.\s*{str_lit}\s*\]"""),
-        re.compile(rf"""\b(?:text|label)\s*:\s*{str_lit}"""),
+        re.compile(rf"""\b(?:text|label|unit|prefix|fmt)\s*:\s*{str_lit}"""),
     ]
+    # Also harvest static prefix/suffix chunks inside template literals with `${...}` interpolations
+    # (e.g. `fmt: (v) => \`${v.toFixed(1)}万\`` or `reads: [{ text: \`19.9万 ${COUNT_LABEL}\` }]`)
+    tmpl_pat = re.compile(r"`((?:\\.|[^`\\])*)`")
     geo_pat = re.compile(r"""\bglyph\s*\.\s*(?:geo|adv|has)\s*\(\s*["'`](heavy|display|cjk|latin):([^"'`$\\]+)["'`]""")
+
+    def _strip_js_interpolations(raw):
+        out, i, n = [], 0, len(raw)
+        while i < n:
+            if raw[i] == "\\" and i + 1 < n:
+                i += 2
+                continue
+            if raw[i:i + 2] == "${":
+                depth = 1
+                i += 2
+                while i < n and depth > 0:
+                    if raw[i] == "\\" and i + 1 < n:
+                        i += 2
+                        continue
+                    if raw[i] == "{":
+                        depth += 1
+                    elif raw[i] == "}":
+                        depth -= 1
+                    i += 1
+                continue
+            out.append(raw[i])
+            i += 1
+        return "".join(out)
 
     def add_char(ch, role_hint=None):
         if ch.isspace() or ord(ch) >= 0x1F000 or 0xFE00 <= ord(ch) <= 0xFE0F:
@@ -106,6 +132,11 @@ def harvest_js_glyphs(film_dir, film_json):
             for m in pat.finditer(src):
                 lit = next((g for g in m.groups() if g is not None), "")
                 for ch in lit:
+                    add_char(ch)
+        for m in tmpl_pat.finditer(src):
+            raw_t = m.group(1)
+            if "${" in raw_t:
+                for ch in _strip_js_interpolations(raw_t):
                     add_char(ch)
         for m in geo_pat.finditer(src):
             role_h, lit = m.group(1), m.group(2)
@@ -191,12 +222,14 @@ def main():
         "heavy": "".join(p["text"] for p in [*cta["slogan"], cta["name"], cta.get("handle") or {"text": ""}]),
     }
     ctr = f["counter"]
-    for ch in dict.fromkeys(str(ctr.get("display", "")) + ctr["label"]):
+    for ch in dict.fromkeys(str(ctr.get("display", "")) + str(ctr.get("unit", "")) + ctr["label"]):
         if ch.isspace():
             continue
         role = "latin" if ord(ch) < 0x2E80 else "cjk"
         if ch not in chars_by_role[role]:
             chars_by_role[role] += ch
+        if ch not in chars_by_role["heavy"]:
+            chars_by_role["heavy"] += ch
     beats = [s for s in f.get("story", {}).get("segments", []) if "beat" in s]
     chars_by_role["display"] = ""
     for s in beats:

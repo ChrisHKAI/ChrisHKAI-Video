@@ -174,11 +174,21 @@ demo, their site's media library).
   alpha stacks into milky haze in Cycles and dithered grey noise in EEVEE;
   always verify layered transparency on a Cycles preview frame rather than
   judging from the EEVEE animatic alone.
-- **Annotated stills & overlays (selection boxes, callouts, arrows)**: compute
+- **Annotated stills, metric plaques & overlays (selection boxes, callouts, arrows)**: compute
   box/callout coordinates programmatically from the target element's real
-  pixel bounding box (`getbbox()` on its source layer/crop) plus clean padding—
+  pixel bounding box (`getbbox()` / `textbbox()` on its source layer/crop) plus clean padding—
   never eyeball hardcoded pixel numbers—and visually inspect the generated
-  image standalone before placing it in the scene.
+  image standalone before placing it in the scene. For bottom multi-stat or
+  product-suite strips mounted in `kit.framedPicture(..., { antiglare: true })`,
+  render them with `stagekit.plaque(segments)` (and save recipe textures with
+  `stagekit.save_if_changed(img, path)` so unchanged recipe re-runs keep file
+  `mtime`s intact): `plaque()` supersamples at 2× (`LANCZOS`), auto-sizes width
+  from measured glyph bounds with generous side padding so characters never
+  collide with edges, draws crisp geometric `"star"` icons and subtle vertical
+  dividers, and omits any inner 2D border rectangle so the 3D `framedPicture`
+  bezel forms one clean frame (`palette` and `check` warn on `cramped` side
+  margins and `doubleBorder` box-in-a-box plaques, while `propBlocksCard` warns
+  if a tabletop mug or laptop handle sits in front of any plaque character).
 - **Multi-card showcases (4–5 works), `N`-item grids & frame-edge margins**: do not pull the
   camera far back just to cram five cards into one flat row where each card
   shrinks under ~20% of frame height and UI text turns unreadable. Stagger two

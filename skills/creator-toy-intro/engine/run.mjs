@@ -56,6 +56,7 @@
 //                    template → <film>/template/ (film.json "template": "./template"),
 //                    scene.py → <film>/engine/scene.py (render, estimate and animatic use it)
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { film, FILM, fromFilm, fromSkill, fromTemplate, importTemplate, OWN_TEMPLATE } from "./lib/film.js";
@@ -100,6 +101,27 @@ function parseFrameSet(spec, total) {
     } else if (Number.isInteger(+t)) s.add(+t);
   }
   return s;
+}
+
+function saveAnimSnapshot(animPath, outDir) {
+  if (!existsSync(animPath)) return;
+  mkdirSync(outDir, { recursive: true });
+  cpSync(animPath, join(outDir, ".anim-snapshot.json"));
+  try {
+    const anim = JSON.parse(readFileSync(animPath, "utf8"));
+    const hashes = {};
+    for (const o of anim.objects ?? []) {
+      const m = o.mat ?? {}, g = o.geo ?? {};
+      for (const rel of [m.image, m.movie, m.movieSource, g.img?.image]) {
+        if (typeof rel !== "string" || !rel) continue;
+        const norm = rel.replace(/\\/g, "/").replace(/^\.\//, "");
+        if (hashes[norm]) continue;
+        const fp = fromFilm(norm);
+        if (existsSync(fp)) hashes[norm] = createHash("sha256").update(readFileSync(fp)).digest("hex");
+      }
+    }
+    writeFileSync(join(outDir, ".texture-hashes.json"), JSON.stringify(hashes, null, 1));
+  } catch { /* ignore hash manifest errors */ }
 }
 
 function purgeStaleResumeFrames(outDir, moreArgs, totalFrames) {
@@ -354,8 +376,7 @@ for (const [i, step] of steps.entries()) {
       const [cmd, args] = awake(localBlender, ["-b", "--factory-startup", "--python-exit-code", "1", "-P", scene(), "--", ...defaults, ...more]);
       await runRender(cmd, args, outDir);
       if (existsSync(animPath) && !more.includes("--frames")) {
-        mkdirSync(outDir, { recursive: true });
-        cpSync(animPath, snapPath);
+        saveAnimSnapshot(animPath, outDir);
       }
       break;
     }
@@ -377,7 +398,7 @@ for (const [i, step] of steps.entries()) {
       const fallback = remoteFallback ? (() => { const [fc, fa] = awake(remoteFallback, fbArgs); return { bin: remoteFallback, cmd: fc, args: fa }; })() : null;
       await runRender(cmd, args, outDir, { fallback });
       if (existsSync(fromFilm("build/anim.json")) && pngCount(outDir) >= totalFrames) {
-        cpSync(fromFilm("build/anim.json"), join(outDir, ".anim-snapshot.json"));
+        saveAnimSnapshot(fromFilm("build/anim.json"), outDir);
       }
       break;
     }

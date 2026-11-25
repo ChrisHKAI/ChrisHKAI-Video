@@ -10,6 +10,7 @@ usage:
 prints e.g. 46-71,370-394: where anything moved differently, where an object that was added, removed
 or rebuilt shows, and where any changed texture/video asset is visible
 """
+import hashlib
 import json
 import os
 import sys
@@ -192,8 +193,18 @@ def image_frames(anim, images):
     return (np.flatnonzero(hit) + 1).tolist(), sorted(matched)
 
 
+def _file_sha256(fp):
+    h = hashlib.sha256()
+    with open(fp, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def newer_images(anim, film_dir, ref_path):
-    """Return film-relative media paths referenced in `anim` whose file on disk is newer than `ref_path`."""
+    """Return film-relative media paths referenced in `anim` whose file on disk is newer than `ref_path` AND whose
+    content hash actually differs from any `.texture-hashes.json` manifest saved alongside `ref_path` (so re-running
+    recipes that rewrite byte-identical assets never triggers false-positive full-film re-renders)."""
     ref = Path(ref_path)
     if not ref.is_absolute():
         ref = Path(film_dir) / ref
@@ -204,8 +215,16 @@ def newer_images(anim, film_dir, ref_path):
         if not pngs:
             return []
         cutoff = min(p.stat().st_mtime for p in pngs)
+        hash_file = ref / ".texture-hashes.json"
     else:
         cutoff = ref.stat().st_mtime
+        hash_file = ref.parent / ".texture-hashes.json"
+    saved_hashes = {}
+    if hash_file.is_file():
+        try:
+            saved_hashes = json.loads(hash_file.read_text(encoding="utf-8")) or {}
+        except Exception:
+            saved_hashes = {}
     found = []
     seen = set()
     for obj in anim.get("objects", []):
@@ -214,7 +233,15 @@ def newer_images(anim, film_dir, ref_path):
                 continue
             seen.add(rel)
             fp = Path(film_dir) / rel
-            if fp.exists() and fp.stat().st_mtime > cutoff:
+            if not fp.exists():
+                continue
+            norm_rel = rel.replace("\\", "/").lstrip("./")
+            prev_hash = saved_hashes.get(norm_rel) or saved_hashes.get(rel)
+            if fp.stat().st_mtime > cutoff:
+                if prev_hash and _file_sha256(fp) == prev_hash:
+                    continue
+                found.append(rel)
+            elif prev_hash and _file_sha256(fp) != prev_hash:
                 found.append(rel)
     return sorted(found)
 

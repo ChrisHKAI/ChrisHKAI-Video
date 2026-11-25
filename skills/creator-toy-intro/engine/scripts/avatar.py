@@ -43,5 +43,12 @@ mask = Image.new("L", (inner, inner), 0)
 ImageDraw.Draw(mask).ellipse((0, 0, inner - 1, inner - 1), fill=255)
 mask = Image.composite(pic.getchannel("A"), Image.new("L", (inner, inner), 0), mask)
 img.paste(pic, (band, band), mask)
-img.resize((N, N), Image.LANCZOS).save(FILM / "assets/avatar.png")
+out_im = img.resize((N, N), Image.LANCZOS)
+import io  # noqa: E402
+buf = io.BytesIO()
+out_im.save(buf, format="PNG")
+dst = FILM / "assets/avatar.png"
+dst.parent.mkdir(parents=True, exist_ok=True)
+if not dst.is_file() or dst.read_bytes() != buf.getvalue():
+    dst.write_bytes(buf.getvalue())
 print(f"assets/avatar.png  (from {src_path}{', ring ' + ring if ring else ''})")

@@ -63,7 +63,11 @@ A prop is a module in the film's workspace, set in film.json
   scale local `Z` for vertical landing squash) so the cylinder lies flat under
   the toy's feet instead of standing upright like a vertical coin (`clearance`
   tests `prism` solids and stops when an upright cylinder swallows the toy's legs).
-- `topAt(t)`: where the toy's feet stand on it (world, metres).
+- `topAt(t)`: where the toy's feet stand on it (world, metres). When adding a
+  celebratory bounce or hop at `E.final`, apply the vertical offset inside
+  `topAt(t)` rather than `baseRoot(t)` so only the toy hops while a grounded
+  plinth/stage base stays planted on the floor (`floatingCtaBase` warns if a
+  grounded base levitates mid-hold).
 - `cues(add)`: its sounds, `add(time, kind, options)`, with the synth's
   kinds (`whooshDown`, `land`, `squelch`, `boing`, `glide`, `pop`,
   `slide`, `ding` (its pitch in `note`, `"E6"` by default), `coins`, `glint`…).

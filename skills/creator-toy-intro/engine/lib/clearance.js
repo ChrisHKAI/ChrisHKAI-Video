@@ -2960,6 +2960,206 @@ export function describePreCutHeroGap(items) {
 }
 
 /**
+ * Detect foreground 3D desk/stage props (`prism` mugs, `arc` handles, `ellipsoid`, `tube`, `roundBox`, `box`) placed
+ * closer to the camera in front of a settled showcase `uiBox` card or wide bottom readout/stat plaque (`w / h >= 3.0`),
+ * which `solidClashes` misses when separated in Z and `frameSlicesCard` misses on non-elongated / rounded shapes (e.g.
+ * a mug handle clipping "51 个开源仓库" into "1 个开源仓库").
+ */
+export function propBlocksCard(anim, { aspect = 16 / 9, minSecs = 0.35, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const BUILTIN_CARD = /^(panel_|wall|piece|sticker2d$|beat\d+_(p_(?:nav|header|banner|info|tabs|pinned|retro|side)$|back$|avatar$|cyc|bg|bleed))/;
+  const BUILTIN_OBJ = /^(panel_|strip_|glow_|stat_|wall|piece|sticker2d$|flake_|spark_|bit_|label\d+_|crown$|cta_floor$|floor$|blob$|plinth_|snail_|logo$)/;
+  const SKIP_PART = /(?:_plate$|_bot_|_frame$|_stand$|_wood$|_mat$|_trim$|(?:^|_)(?:floor|base|plinth|pedestal|pad|desk_base|desk_top|track|scrub|rail|stage|rostrum)$)/;
+
+  const cards = [];
+  const fgGroups = new Map();
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, "hero") || o.letter || o.mat?.outline || SKIP_NAME.test(o.name)) continue;
+    if (o.geo.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4 && !BUILTIN_CARD.test(o.name)) {
+      const spec = boxSpec(o);
+      if (spec) cards.push({ o, spec, unit: o.geo.unitScale ?? 1, group: groupOf(o.name) });
+    } else if (!BUILTIN_OBJ.test(o.name) && !SKIP_PART.test(o.name) && o.geo.type !== "uiBox") {
+      const spec = propBoundsSpec(o);
+      if (!spec || Math.max(...spec.h) * 2 > 0.45) continue;
+      const grp = groupOf(o.name);
+      if (!fgGroups.has(grp)) fgGroups.set(grp, []);
+      fgGroups.get(grp).push({ o, spec });
+    }
+  }
+  if (!cards.length || !fgGroups.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const projBox = (obb, camW, tanX, tanY) => {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, dSum = 0, n = 0;
+    for (const p of obbCornersWorld(obb)) {
+      const lp = toLocal(camW, p);
+      if (lp[2] >= -0.05 || -lp[2] > 5.5) continue;
+      const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+      if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+      if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+      dSum += -lp[2]; n++;
+    }
+    return n >= 4 ? { x0, x1, y0, y1, depth: dSum / n } : null;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const seenNow = new Set();
+
+    const projGroups = [];
+    for (const [grp, parts] of fgGroups) {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, dMin = Infinity, any = false;
+      for (const { o, spec } of parts) {
+        const w = worldOf(o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+        const pr = projBox(worldOBB(spec, w), camW, tanX, tanY);
+        if (!pr) continue;
+        if (pr.x0 < x0) x0 = pr.x0; if (pr.x1 > x1) x1 = pr.x1;
+        if (pr.y0 < y0) y0 = pr.y0; if (pr.y1 > y1) y1 = pr.y1;
+        if (pr.depth < dMin) dMin = pr.depth;
+        any = true;
+      }
+      if (any && x1 > -1 && x0 < 1 && y1 > -1 && y0 < 1) projGroups.push({ group: grp, x0, x1, y0, y1, depth: dMin });
+    }
+    if (!projGroups.length) {
+      for (const [k, v] of open) { out.push(v); open.delete(k); }
+      continue;
+    }
+
+    for (const c of cards) {
+      const w = worldOf(c.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.25 * c.unit) continue;
+      const obb = worldOBB(c.spec, w);
+      const ext = obbExtrema(obb);
+      if (Math.max(ext.hi[0] - ext.lo[0], ext.hi[1] - ext.lo[1]) > 0.65) continue;
+      const cp = projBox(obb, camW, tanX, tanY);
+      if (!cp || cp.x1 <= cp.x0 || cp.y1 <= cp.y0) continue;
+      const cw = cp.x1 - cp.x0, ch = cp.y1 - cp.y0;
+      const isWidePlaque = (cw * aspect) / Math.max(1e-5, ch) >= 2.8;
+
+      for (const fg of projGroups) {
+        if (fg.group === c.group) continue;
+        const dz = cp.depth - fg.depth;
+        if (dz < 0.004 || dz > 0.38) continue;
+        const ovX = Math.min(cp.x1, fg.x1) - Math.max(cp.x0, fg.x0);
+        const ovY = Math.min(cp.y1, fg.y1) - Math.max(cp.y0, fg.y0);
+        if (ovX <= 0 || ovY <= 0) continue;
+        const wShare = ovX / cw, hShare = ovY / ch, areaShare = wShare * hShare;
+        const hit = isWidePlaque ? (wShare >= 0.05 && hShare >= 0.32) : (areaShare >= 0.14 && hShare >= 0.25);
+        if (!hit) continue;
+        const share = isWidePlaque ? wShare : areaShare;
+        const key = `${fg.group}->${c.o.name}`;
+        seenNow.add(key);
+        const cur = open.get(key);
+        if (!cur) open.set(key, { prop: fg.group, card: c.o.name, wide: isWidePlaque, from: t, to: t, peak: t, share });
+        else { cur.to = t; if (share > cur.share) Object.assign(cur, { share, peak: t }); }
+      }
+    }
+    for (const [k, v] of open) if (!seenNow.has(k)) { out.push(v); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((m) => m.to - m.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+}
+
+export function describePropBlocksCard(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: foreground prop ${m.prop} blocks ${Math.round(m.share * 100)}% of ${m.wide ? "plaque" : "picture card"} ${m.card} on camera (worst at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect when a grounded end-card prop base (`prop_*` on the CTA stage whose settled median bottom sits on the floor)
+ * temporarily levitates >= 10 mm off the floor during the hold—a common bug when adding a celebratory hop offset to
+ * `baseRoot(t)` instead of `topAt(t)` so the entire plinth bounces into the air with the toy.
+ */
+export function floatingCtaBase(anim, { minLift = 0.010, minRestSecs = 1.0, maxHopSecs = 1.5, every = 1 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const ctaFloor = objects.get("cta_floor");
+  if (!ctaFloor) return [];
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const floorW = worldOf("cta_floor", (anim.frames - 1) * SUB, new Map());
+  const floorY = floorW.p[1], floorX = floorW.p[0];
+
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const candidates = anim.objects
+    .filter((o) => o.geo && !under(o, "hero") && !o.letter && !o.mat?.outline && !SKIP_NAME.test(o.name)
+      && !/^(?:beat\d+_|panel_|wall|piece|stat_|label\d+_|crown$|blob$|plinth_|snail_|logo$)/.test(o.name)
+      && (o.geo.type === "roundBox" || o.geo.type === "box" || o.geo.type === "prism"))
+    .map((o) => ({ o, spec: propBoundsSpec(o) }))
+    .filter((x) => x.spec && Math.max(x.spec.h[0], x.spec.h[2]) * 2 >= 0.08);
+  if (!candidates.length) return [];
+
+  const out = [];
+  for (const { o, spec } of candidates) {
+    const samples = [];
+    for (let f = 0; f < anim.frames; f += every) {
+      const s = f * SUB, t = f / anim.fps;
+      const w = worldOf(o.name, s, new Map());
+      if (Math.min(...w.s.map(Math.abs)) < 0.25) continue;
+      if (Math.abs(w.p[0] - floorX) > 2.0) continue;
+      const ext = obbExtrema(worldOBB(spec, w));
+      samples.push({ f, t, x: w.p[0], minY: ext.lo[1] });
+    }
+    const grounded = samples.filter((x) => Math.abs(x.minY - floorY) <= 0.008);
+    if (grounded.length * (every / anim.fps) < minRestSecs) continue;
+    const firstRestT = grounded[0].t, lastRestT = grounded[grounded.length - 1].t;
+    const restYs = grounded.map((g) => g.minY).sort((a, b) => a - b);
+    const baseMinY = restYs[Math.floor(restYs.length / 2)];
+    const restXs = grounded.map((g) => g.x).sort((a, b) => a - b);
+    const medX = restXs[Math.floor(restXs.length / 2)];
+
+    // Inspect only samples AFTER the prop has first landed on the floor (ignoring initial drop-in spin)
+    let cur = null;
+    for (const smp of samples) {
+      if (smp.t <= firstRestT + 0.08 || smp.t > lastRestT + 0.05) continue;
+      const lift = smp.minY - baseMinY;
+      if (lift >= minLift && Math.abs(smp.x - medX) <= 0.05) {
+        if (!cur) cur = { target: o.name, from: smp.t, to: smp.t, peak: smp.t, lift };
+        else { cur.to = smp.t; if (lift > cur.lift) Object.assign(cur, { lift, peak: smp.t }); }
+      } else if (cur) {
+        if (cur.to - cur.from >= 0.08 && cur.to - cur.from <= maxHopSecs) out.push(cur);
+        cur = null;
+      }
+    }
+    if (cur && cur.to - cur.from >= 0.08 && cur.to - cur.from <= maxHopSecs) out.push(cur);
+  }
+  return out.sort((a, b) => a.from - b.from || b.lift - a.lift);
+}
+
+export function describeFloatingCtaBase(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(2)}–${m.to.toFixed(2)} s: grounded end-card prop base ${m.target} lifts ${Math.round(m.lift * 1000)} mm off the floor mid-hold (peak at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
  * Maximum outward Z arm-lift angle (radians) that keeps a toy's hands visible outside its head silhouette.
  * Slender-headed toys keep the full target angle (e.g. 2.5 rad); wide-headed chibi/sculpt toys clamp
  * toward an outward Victory-V (~1.6–1.8 rad) so short arms do not disappear behind the cheeks.
