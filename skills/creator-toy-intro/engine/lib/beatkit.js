@@ -18,7 +18,7 @@ const lift = (a) => Math.min(a, ARM_MAX);
 const cheerForward = ARM_MAX < 2.2 ? -0.22 : 0;
 
 // the creator's own pictures as cards, and layouts for many at once (pictures.js)
-export { picture, framedPicture, cutout, pictureFiles, layout, stagger, imageSize, backToBack } from "./pictures.js";
+export { picture, framedPicture, wipePicture, cutout, pictureFiles, layout, stagger, imageSize, backToBack } from "./pictures.js";
 // a line of 3D lettering: laid out, edged, standing by its lowest point, facing the camera (lettering.js)
 export { line, declareLine, putLine, facing, eyePoint, shade } from "./lettering.js";
 

@@ -1654,6 +1654,69 @@ class V0815EngineImprovementTests(unittest.TestCase):
             newer = diff_mod.newer_images(anim_doc, ddir, snap_file)
             self.assertEqual(newer, ["build/cards/stat.png"])
 
+    def test_v0819_readout_glyph_harvest_and_pacing_visual_holds(self):
+        sys.path.insert(0, str(SKILL / "engine/scripts"))
+        import glyphs
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+            # 1) glyphs.harvest_js_glyphs() auto-harvests digits and ",.+%" into heavy, display & latin when readoutBadge / readout is called
+            bdir = tdir / "beats"
+            bdir.mkdir(parents=True)
+            (bdir / "counter_only.js").write_text(
+                'export function makeBeat({ glyph, kit }) {\n'
+                '  const badge = kit.readoutBadge(glyph, { from: 0, to: 84714, fmt: { sep: true } });\n'
+                '  return { storyboard: {} };\n'
+                '}\n',
+                encoding="utf-8",
+            )
+            harv = glyphs.harvest_js_glyphs(tdir, {"story": {"segments": [{"beat": "beats/counter_only.js", "bars": 3}]}})
+            for ch in "0123456789,.+%":
+                self.assertIn(ch, harv["heavy"])
+                self.assertIn(ch, harv["latin"])
+
+            # 2) pacing.check()["staticHolds"] warns when a custom showcase beat settles all cards by 1.2 s and holds static
+            #    until 8.0 s despite background SFX cues at 3.2 s & 5.4 s, while passing staggered reveals and long quote reads
+            fdir = tdir / "hold-film"
+            (fdir / "build").mkdir(parents=True)
+            (fdir / "film.json").write_text(json.dumps({"format": {"fps": 30, "duration": 8, "size": [1920, 1080]}, "toy": "toy.json"}))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12}))
+            fps, frames = 30, 240
+            park = [0, -2, 0, 0, 0, 0, 1, 1e-4, 1e-4, 1e-4]
+            show = [0, 0.2, 0, 0, 0, 0, 1, 1, 1, 1]
+            # Card pops in at 1.0 s (frame 30) and sits completely unchanged until 8.0 s (frame 239)
+            card_static = [[s, *(show if s >= 30 else park)] for s in range(frames)]
+            anim_static = {
+                "fps": fps, "frames": frames, "sub": 1, "samples": frames,
+                "objects": [
+                    {"name": "camera", "parent": "root", "tr": [0, 0.2, 1.0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat0_c0_pic", "parent": "root", "geo": {"type": "uiBox", "rect": [-100, -60, 200, 120]}, "mat": {"type": "ui"}, "tr": park},
+                ],
+                "tracks": {
+                    "camera": [[0, 0, 0.2, 1.0, 0, 0, 0, 1, 1, 1, 1], [frames - 1, 0, 0.2, 1.0, 0, 0, 0, 1, 1, 1, 1]],
+                    "beat0_c0_pic": card_static,
+                },
+                "scalars": {"fov": [30.0] * frames},
+            }
+            (fdir / "build/anim.json").write_text(json.dumps(anim_static))
+            (fdir / "build/timeline.json").write_text(json.dumps({
+                "DURATION": 8.0, "BAR": 2.0,
+                "SEGMENTS": [{"kind": "beat", "f0": 0.0, "f1": 8.0}],
+                "cues": [{"t": 1.0, "kind": "pop"}, {"t": 3.2, "kind": "glint"}, {"t": 5.4, "kind": "push"}, {"t": 7.7, "kind": "whooshUp"}],
+            }))
+            (fdir / "build/reads.json").write_text(json.dumps([{"text": "爆款短片", "at": [1.0, 7.8]}]))
+            res_static = pacing.check(fdir)
+            self.assertEqual(res_static["dead"], [])  # Masked from `dead` by glint/push SFX cues!
+            self.assertEqual(len(res_static["staticHolds"]), 1)
+            self.assertGreaterEqual(res_static["staticHolds"][0][1] - res_static["staticHolds"][0][0], 6.0)
+
+            # Stagger a second card reveal at 4.2 s (frame 126) -> zero staticHolds!
+            anim_stagger = json.loads(json.dumps(anim_static))
+            anim_stagger["objects"].append({"name": "beat0_c1_pic", "parent": "root", "geo": {"type": "uiBox", "rect": [-100, -60, 200, 120]}, "mat": {"type": "ui"}, "tr": park})
+            anim_stagger["tracks"]["beat0_c1_pic"] = [[s, *(show if s >= 126 else park)] for s in range(frames)]
+            (fdir / "build/anim.json").write_text(json.dumps(anim_stagger))
+            self.assertEqual(pacing.check(fdir)["staticHolds"], [])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

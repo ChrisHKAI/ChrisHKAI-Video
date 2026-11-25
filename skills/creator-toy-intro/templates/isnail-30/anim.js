@@ -752,12 +752,18 @@ function fitSlogan() {
   return ls;
 }
 const sloganLabels = fitSlogan();
+function fitHeaderLabel(L, rawSpec) {
+  if (rawSpec?.em || rawSpec?.at) return L; // film.json sized or placed it itself
+  const maxW = T.CTA_LAYOUT.sloganWidth ?? 0.84;
+  if (L.W > maxW) L.fit = +(maxW / L.W).toFixed(4);
+  return L;
+}
 const N = { ...T.CTA_LAYOUT.name, ...CTA_TEXT.name }, HD = { ...T.CTA_LAYOUT.handle, ...CTA_TEXT.handle };
 export const LABELS = [
   ...sloganLabels,
-  label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + (STEADY_CTA ? 0.01 + 0.04 * i : 0.05 + 0.05 * i), N.ink ?? null),
+  fitHeaderLabel(label("name", N.text, N.em, N.paper, ...N.at, N.tilt, E.name, (i) => E.name + (STEADY_CTA ? 0.01 + 0.04 * i : 0.05 + 0.05 * i), N.ink ?? null), CTA_TEXT.name),
   // no handle (none, or the ending leaves it off: film.json cta.handle.text ""): the name alone
-  ...(HD.text ? [label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + (STEADY_CTA ? 0.20 : 0.18), (i) => E.name + (STEADY_CTA ? 0.21 : 0.22) + 0.025 * i, HD.ink ?? null)] : []),
+  ...(HD.text ? [fitHeaderLabel(label("handle", HD.text, HD.em, HD.paper, ...HD.at, HD.tilt, E.name + (STEADY_CTA ? 0.20 : 0.18), (i) => E.name + (STEADY_CTA ? 0.21 : 0.22) + 0.025 * i, HD.ink ?? null), CTA_TEXT.handle)] : []),
 ];
 LABELS.forEach(tear);
 const labelAt = (L, t) => labelT(L, t, cta);

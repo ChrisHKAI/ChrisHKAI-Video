@@ -366,6 +366,71 @@ def slanted(anim, segments):
     return out
 
 
+def visual_holds(anim, segments, bar, reads=None):
+    """Custom beat stretches (> max(2.25 * bar, 4.5) s) where foreground showcase cards, plaques and 3D lettering sit
+    visually unchanged—even when background SFX cues (`glint`, `push`) or tiny hover bobbing hide the lull from `dead`."""
+    rate = anim["fps"] * anim["sub"]
+    S = anim["samples"]
+    idx = np.arange(S)
+    max_hold = max(2.25 * bar, 4.5)
+    tr_map = anim.get("tracks") or {}
+    skip_re = re.compile(r"^beat\d+_(?:bg|cyc|floor|flake|spark|bit|glow|confetti|burst|beam|strip|route|lane|carpet|runway)")
+    beats = [s for s in segments or [] if s.get("kind") == "beat"]
+    cam_v = track(anim, "camera") if "camera" in tr_map and len(tr_map["camera"]) >= 2 else None
+    out = []
+    for k, seg in enumerate(beats):
+        f0, f1 = float(seg["f0"]), float(seg["f1"])
+        if f1 - f0 <= max_hold + 0.5:
+            continue
+        lo, hi = max(0, int(round(f0 * rate))), min(S, int(round(f1 * rate)))
+        if hi - lo < 4:
+            continue
+        pref = f"beat{k}_"
+        story_objs = []
+        for o in anim.get("objects") or []:
+            nm = o["name"]
+            if not nm.startswith(pref) or nm not in tr_map or len(tr_map[nm]) < 2 or skip_re.match(nm):
+                continue
+            geo_t = (o.get("geo") or {}).get("type")
+            mat_t = (o.get("mat") or {}).get("type")
+            if o.get("letter") or nm.endswith("_plate") or geo_t == "uiBox" or mat_t in ("ui", "sticker", "card2d"):
+                story_objs.append(nm)
+        if not story_objs:
+            continue
+        ev_ts = [f0]
+        r_win = max(1, int(0.30 * rate))
+        for nm in story_objs:
+            keys = np.array(sorted(tr_map[nm], key=lambda x: x[0]), dtype=float)
+            v = np.stack([np.interp(idx[lo:hi], keys[:, 0], keys[:, j]) for j in range(1, keys.shape[1])], axis=1)
+            dv = np.abs(np.diff(v, axis=0))
+            pos_move = np.linalg.norm(dv[:, :3], axis=1) > (0.08 / rate)  # > 80 mm/s real card slide/flip (ignores hover)
+            sc_move = dv[:, 7:10].max(axis=1) > 0.02  # card/letter pop-in, hide or readout digit step
+            sig = pos_move | sc_move
+            if sig.mean() > DRIFT:
+                continue
+            for s_rel in np.flatnonzero(sig & ~np.r_[False, sig[:-1]]):
+                if not sig[max(0, s_rel - r_win):s_rel].any():
+                    ev_ts.append(round((lo + s_rel) / rate, 2))
+            for s_end in np.flatnonzero(~sig & np.r_[False, sig[:-1]]):
+                ev_ts.append(round((lo + s_end) / rate, 2))
+        if cam_v is not None:
+            cv = cam_v[lo:hi]
+            cam_move = np.linalg.norm(np.diff(cv[:, :3], axis=0), axis=1) > (0.18 / rate)
+            if cam_move.mean() <= DRIFT:
+                for s_rel in np.flatnonzero(cam_move & ~np.r_[False, cam_move[:-1]]):
+                    ev_ts.append(round((lo + s_rel) / rate, 2))
+        end_guard = max(f0, f1 - 0.35)
+        ev_ts.append(round(end_guard, 2))
+        ordered = sorted(set(t for t in ev_ts if f0 <= t <= end_guard + 1e-6))
+        for a, z in zip(ordered, ordered[1:]):
+            if z - a <= max_hold + 1e-6:
+                continue
+            held = [r for r in reads or [] if r["at"][0] <= a + 0.25 and r["at"][1] >= z - 0.25 and z - a <= need(r["text"]) + 0.5]
+            if not held:
+                out.append((round(a, 2), round(z, 2)))
+    return out
+
+
 def check(film):
     """Everything the page and the review report, for one film folder."""
     b = Path(film) / "build"
@@ -442,7 +507,8 @@ def check(film):
     cue_ts = [0.0] + sorted(float(c["t"]) for c in tl["cues"] if 0.0 <= float(c["t"]) <= dur) + [float(dur)]
     max_cue_gap = max(2.25 * bar, 4.5)
     cue_gaps = [(round(a, 2), round(z, 2)) for a, z in zip(cue_ts, cue_ts[1:]) if z - a > max_cue_gap + 1e-6]
+    static_holds = visual_holds(anim, tl.get("SEGMENTS"), bar, reads)
 
-    return {"duration": dur, "bar": bar, "dead": dead, "cueGaps": cue_gaps, "alone": alone, "hook": hits[0] if hits else None,
+    return {"duration": dur, "bar": bar, "dead": dead, "cueGaps": cue_gaps, "staticHolds": static_holds, "alone": alone, "hook": hits[0] if hits else None,
             "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "shrunk": shrunk, "off": off,
             "slant": slanted(anim, tl.get("SEGMENTS"))}

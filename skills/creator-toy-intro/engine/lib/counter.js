@@ -46,8 +46,9 @@ export function counterGlyphs(v, value, layout, group, names) {
 // a number as the platform writes it: thousands separators, decimals, a unit after it
 // (10,000 · 1.5万 · 380+)
 export function formatCount(v, { decimals = 0, sep = ",", unit = "" } = {}) {
+  const sepStr = sep === true ? "," : (sep || "");
   const [i, d] = Math.abs(v).toFixed(decimals).split(".");
-  return (v < 0 ? "-" : "") + (sep ? i.replace(/\B(?=(\d{3})+(?!\d))/g, sep) : i) + (d ? `.${d}` : "") + unit;
+  return (v < 0 ? "-" : "") + (sepStr ? i.replace(/\B(?=(\d{3})+(?!\d))/g, sepStr) : i) + (d ? `.${d}` : "") + unit;
 }
 
 export function resolveReadoutFmt(fmt, from = 0, to = 0) {

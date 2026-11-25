@@ -107,7 +107,12 @@ when a wide/tall prop would clip the bottom or right edge mid-pan—set
 - **Landscape (16:9)**: steady, gently settling camera with the toy and full
   uncropped prop on the left (`x = -0.34`), and the name, handle, and
   two-line slogan stacked unobstructed on the right (`x = 0.22`) starting
-  shortly after landing (4+ s reading time). Long two-line slogans
+  shortly after landing (4+ s reading time). Always anchor custom `makeProp({
+  path })` pedestals on `path[0]..path[1]` rather than hardcoding `x = 0` so
+  the toy and prop never stand in front of the right-column labels
+  (`ctaPropBlocksLabels` warns in `check` / `clearance`). Unpinned long
+  bilingual `name` or `handle` strings automatically scale (`L.fit`) to stay
+  within the right-column safe zone, while long two-line slogans
   automatically finish typing early enough to pass `pace.py` while keeping
   `E.final` independent for the camera point (`story.events.lettersEnd`
   overrides the typing window directly if needed).

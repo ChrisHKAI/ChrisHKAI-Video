@@ -2653,7 +2653,8 @@ export function frameSlicesCard(anim, { aspect = 16 / 9, minSecs = 0.25, every =
     return n >= 4 ? { x0, x1, y0, y1, depth: dSum / n } : null;
   };
 
-  const open = new Map(), out = [];
+  const dt = every / anim.fps;
+  const prevFg = new Map(), open = new Map(), out = [];
   for (let f = 0; f < anim.frames; f += every) {
     const s = f * SUB, t = f / anim.fps, memo = new Map();
     const camW = worldOf("camera", s, memo);
@@ -2664,8 +2665,11 @@ export function frameSlicesCard(anim, { aspect = 16 / 9, minSecs = 0.25, every =
     const projFg = [];
     for (const fp of fgParts) {
       const w = worldOf(fp.o.name, s, memo);
-      if (Math.min(...w.s.map(Math.abs)) < 0.05) continue;
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) { prevFg.delete(fp.o.name); continue; }
       const obb = worldOBB(fp.spec, w);
+      const prev = prevFg.get(fp.o.name);
+      prevFg.set(fp.o.name, obb.c);
+      if (prev && Math.hypot(obb.c[0] - prev[0], obb.c[1] - prev[1]) / dt > 0.16) continue; // active transition wipe bar
       const pr = projBox(obb, camW, tanX, tanY);
       if (pr && pr.x1 > -1 && pr.x0 < 1 && pr.y1 > -1 && pr.y0 < 1) projFg.push({ ...fp, pr });
     }
@@ -2678,6 +2682,9 @@ export function frameSlicesCard(anim, { aspect = 16 / 9, minSecs = 0.25, every =
       const w = worldOf(c.o.name, s, memo);
       if (Math.min(...w.s.map(Math.abs)) < 0.05 * c.unit) continue;
       const obb = worldOBB(c.spec, w);
+      const minAx = obb.h[0] <= obb.h[1] && obb.h[0] <= obb.h[2] ? 0 : obb.h[1] <= obb.h[2] ? 1 : 2;
+      const nAx = obb.axes[minAx], nLen = Math.hypot(...nAx) || 1;
+      if (Math.abs(nAx[1] / nLen) >= 0.45) continue; // flat floor-lying mat/card
       const ext = obbExtrema(obb);
       if (Math.max(ext.hi[0] - ext.lo[0], ext.hi[1] - ext.lo[1]) > 0.65) continue;
       const cp = projBox(obb, camW, tanX, tanY);
@@ -3045,6 +3052,9 @@ export function propBlocksCard(anim, { aspect = 16 / 9, minSecs = 0.35, every = 
       const w = worldOf(c.o.name, s, memo);
       if (Math.min(...w.s.map(Math.abs)) < 0.25 * c.unit) continue;
       const obb = worldOBB(c.spec, w);
+      const minAx = obb.h[0] <= obb.h[1] && obb.h[0] <= obb.h[2] ? 0 : obb.h[1] <= obb.h[2] ? 1 : 2;
+      const nAx = obb.axes[minAx], nLen = Math.hypot(...nAx) || 1;
+      if (Math.abs(nAx[1] / nLen) >= 0.45) continue; // flat floor-lying mat/card
       const ext = obbExtrema(obb);
       if (Math.max(ext.hi[0] - ext.lo[0], ext.hi[1] - ext.lo[1]) > 0.65) continue;
       const cp = projBox(obb, camW, tanX, tanY);
@@ -3156,6 +3166,168 @@ export function describeFloatingCtaBase(items) {
     kind: "warn",
     ...m,
     text: `${m.from.toFixed(2)}–${m.to.toFixed(2)} s: grounded end-card prop base ${m.target} lifts ${Math.round(m.lift * 1000)} mm off the floor mid-hold (peak at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect when the settled toy (`hero`) or custom end-card prop (`cta_prop`) stands in front of any settled end-card
+ * torn-paper label (`label<i>_sheet` / `label<i>_rim`) in 2D camera space—catching `two-column` props that forgot to
+ * anchor on `path[0]` (`-0.34`) and placed the pedestal/toy at `x = 0` over the right-column slogan/name/handle.
+ */
+export function ctaPropBlocksLabels(anim, { aspect = 16 / 9, toy = "hero", minSecs = 0.40, every = 2, file = (p) => p } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera") || !objects.has("cta_floor") || !fovs?.length) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+
+  const byIdx = new Map();
+  for (const o of anim.objects) {
+    const m = o.name.match(/^label(\d+)_(rim|sheet)$/);
+    if (!m || o.geo?.type !== "curve" || !o.geo.rings?.length) continue;
+    const idx = +m[1], kind = m[2];
+    if (!byIdx.has(idx) || kind === "sheet") byIdx.set(idx, o);
+  }
+  const labels = [...byIdx.entries()].sort((a, b) => a[0] - b[0]).map(([idx, o]) => {
+    const pts = o.geo.rings.flat();
+    const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+    return {
+      idx,
+      name: `label${idx}`,
+      o,
+      corners: [
+        [Math.min(...xs), Math.min(...ys), 0],
+        [Math.max(...xs), Math.min(...ys), 0],
+        [Math.min(...xs), Math.max(...ys), 0],
+        [Math.max(...xs), Math.max(...ys), 0],
+      ],
+    };
+  });
+  if (!labels.length) return [];
+
+  const toyProbes = anim.objects
+    .filter((o) => o.geo && o.name !== toy && under(o, toy))
+    .map((o) => ({ o, pts: probesOf(o.geo, file) }))
+    .filter((p) => p.pts.length);
+
+  const propParts = anim.objects
+    .filter((o) => o.geo && !under(o, toy) && !o.letter && !o.mat?.outline && !SKIP_NAME.test(o.name)
+      && !/^(?:beat\d+_|panel_|strip_|glow_|stat_|wall|piece|sticker2d$|label\d+_|crown$|blob$)/.test(o.name))
+    .map((o) => ({ o, spec: propBoundsSpec(o) }))
+    .filter((x) => x.spec && Math.max(...x.spec.h) * 2 <= 0.65);
+
+  if (!toyProbes.length && !propParts.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const ctaCenter = worldOf("cta_floor", (anim.frames - 1) * SUB, new Map()).p;
+  const projPts = (pts, camW, tanX, tanY) => {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, dMin = Infinity, dSum = 0, n = 0;
+    let cx = 0, cy = 0;
+    for (const wp of pts) {
+      const lp = toLocal(camW, wp);
+      if (lp[2] >= -0.05 || -lp[2] > 6) continue;
+      const d = -lp[2];
+      const nx = lp[0] / (d * tanX), ny = lp[1] / (d * tanY);
+      if (nx < x0) x0 = nx; if (nx > x1) x1 = nx;
+      if (ny < y0) y0 = ny; if (ny > y1) y1 = ny;
+      if (d < dMin) dMin = d;
+      dSum += d; cx += wp[0]; cy += wp[1]; n++;
+    }
+    return n >= 4 ? { x0, x1, y0, y1, dMin, depth: dSum / n, worldXY: [cx / n, cy / n] } : null;
+  };
+
+  const dt = every / anim.fps;
+  const prevBlockerXY = new Map(), open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    if (Math.hypot(camW.p[0] - ctaCenter[0], camW.p[2] - ctaCenter[2]) >= 5) {
+      for (const [k, v] of open) { out.push(v); open.delete(k); }
+      prevBlockerXY.clear();
+      continue;
+    }
+    const fovDeg = fovs[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const seenNow = new Set();
+
+    const projLabels = [];
+    for (const lb of labels) {
+      const w = worldOf(lb.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.25) continue;
+      const pr = projPts(lb.corners.map((c) => apply(w, c)), camW, tanX, tanY);
+      if (pr && pr.x1 > pr.x0 && pr.y1 > pr.y0) projLabels.push({ lb, ...pr });
+    }
+    if (!projLabels.length) {
+      for (const [k, v] of open) { out.push(v); open.delete(k); }
+      continue;
+    }
+
+    const blockers = [];
+    const heroPts = [];
+    for (const { o, pts: local } of toyProbes) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 1e-3) continue;
+      for (const [lp] of local) heroPts.push(apply(w, lp));
+    }
+    const heroPr = projPts(heroPts, camW, tanX, tanY);
+    if (heroPr) {
+      const prev = prevBlockerXY.get("hero");
+      prevBlockerXY.set("hero", heroPr.worldXY);
+      if (!prev || Math.hypot(heroPr.worldXY[0] - prev[0], heroPr.worldXY[1] - prev[1]) / dt <= 0.16) {
+        blockers.push({ blocker: "hero", part: "hero", ...heroPr });
+      }
+    } else prevBlockerXY.delete("hero");
+
+    for (const { o, spec } of propParts) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05 || Math.hypot(w.p[0] - ctaCenter[0], w.p[2] - ctaCenter[2]) > 2.5) {
+        prevBlockerXY.delete(o.name);
+        continue;
+      }
+      const pr = projPts(obbCornersWorld(worldOBB(spec, w)), camW, tanX, tanY);
+      if (!pr) { prevBlockerXY.delete(o.name); continue; }
+      const prev = prevBlockerXY.get(o.name);
+      prevBlockerXY.set(o.name, pr.worldXY);
+      if (!prev || Math.hypot(pr.worldXY[0] - prev[0], pr.worldXY[1] - prev[1]) / dt <= 0.16) {
+        blockers.push({ blocker: "cta_prop", part: o.name, ...pr });
+      }
+    }
+
+    for (const L of projLabels) {
+      const lw = L.x1 - L.x0, lh = L.y1 - L.y0;
+      for (const B of blockers) {
+        const dz = L.depth - B.dMin;
+        if (dz < 0.005 || dz > 0.85) continue;
+        const ovX = Math.min(L.x1, B.x1) - Math.max(L.x0, B.x0);
+        const ovY = Math.min(L.y1, B.y1) - Math.max(L.y0, B.y0);
+        if (ovX <= 0 || ovY <= 0) continue;
+        const wShare = ovX / lw, hShare = ovY / lh;
+        if (wShare < 0.08 || hShare < 0.30) continue;
+        const key = `${B.blocker}->${L.lb.name}`;
+        seenNow.add(key);
+        const cur = open.get(key);
+        if (!cur) open.set(key, { blocker: B.blocker, part: B.part, label: L.lb.name, from: t, to: t, peak: t, share: wShare });
+        else { cur.to = t; if (wShare > cur.share) Object.assign(cur, { share: wShare, peak: t, part: B.part }); }
+      }
+    }
+    for (const [k, v] of open) if (!seenNow.has(k)) { out.push(v); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((m) => m.to - m.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.share - a.share);
+}
+
+export function describeCtaPropBlocksLabels(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: end-card ${m.blocker === "hero" ? "toy" : `prop (${m.part})`} covers ${Math.round(m.share * 100)}% of ${m.label} on camera (worst at ${m.peak.toFixed(2)} s)`,
   }));
 }
 

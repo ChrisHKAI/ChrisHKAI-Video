@@ -116,15 +116,19 @@ When fixing a prop or card clash:
   toy or custom beat/CTA prop that never comes within range of the active
   camera—catching both missing `at(x, y, z)` (`x ≈ 0`) and accidental double
   `at(POS[0], POS[1], POS[2])` calls (`x ≈ 2 × stage`).
-- **Unscaled picture cards, bezel overflows, prop-blocked plaques & floating bases
+- **Unscaled picture cards, bezel overflows, prop-blocked plaques & labels, and floating bases
   (`oversizedUiBoxes`, `movieWraps`, `cardBezelMismatches`, `frameSlicesCard`,
-  `propBlocksCard`, `floatingCtaBase`, `sparksOverHeroFace`)**:
+  `propBlocksCard`, `ctaPropBlocksLabels`, `floatingCtaBase`, `sparksOverHeroFace`)**:
   flags `kit.picture()` cards placed with raw `trs(...)` instead of `pic.at(...)`,
   warns when a cyclic video card wraps while visible, warns when a picture card
   protrudes past its backing bezel or below the stage floor (use
-  `kit.framedPicture()` + `.standY()`), warns when hollow foreground viewfinder
-  bars/glyphs slice across a picture card or when a foreground tabletop prop
-  (such as a mug handle or laptop lid) blocks part of a card or wide readout
-  plaque on camera (`propBlocksCard`), warns when a grounded end-card plinth
-  base lifts off the floor during a celebration hop (`floatingCtaBase`), and
-  warns when celebration sparks streak in front of the settled toy's eyes.
+  `kit.framedPicture()` + `.standY()`), warns when parked hollow foreground
+  viewfinder bars/glyphs slice across an upright picture card (`frameSlicesCard`
+  exempts flat floor-lying mats and actively sweeping transition wipe bars) or
+  when a foreground tabletop prop (such as a mug handle or laptop lid) blocks
+  part of an upright card or wide readout plaque on camera (`propBlocksCard`),
+  warns when a settled end-card toy or prop stands in front of torn-paper labels
+  because `makeProp` omitted `path[0]` (`ctaPropBlocksLabels`), warns when a
+  grounded end-card plinth base lifts off the floor during a celebration hop
+  (`floatingCtaBase`), and warns when celebration sparks streak in front of the
+  settled toy's eyes.

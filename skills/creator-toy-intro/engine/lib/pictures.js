@@ -95,6 +95,26 @@ export function framedPicture(file, w, { border = 0.006, frameDepth = 0.006, rad
   };
 }
 
+// a before/after framed picture pair (e.g. blueprint -> finished poster) that flips cleanly when a foreground wipe bar
+// crosses the card's centre (`revealed` boolean or progress >= 0.5), with zero UV stretching or simultaneous overlap
+export function wipePicture(beforeFile, afterFile, w, { beforeFrameColor, afterFrameColor, beforeOpts = {}, afterOpts = {}, ...sharedOpts } = {}) {
+  const before = framedPicture(beforeFile, w, { ...sharedOpts, ...(beforeFrameColor ? { frameColor: beforeFrameColor } : {}), ...beforeOpts });
+  const after = framedPicture(afterFile, w, { ...sharedOpts, ...(afterFrameColor ? { frameColor: afterFrameColor } : {}), ...afterOpts });
+  return {
+    beforeFile, afterFile, w: after.w, h: after.h, frameSize: after.frameSize, before, after,
+    standY: (stageY = 0, gap = 0.003) => Math.max(before.standY(stageY, gap), after.standY(stageY, gap)),
+    declare(add, prefix = "wpic") {
+      before.declare(add, `${prefix}_before`);
+      after.declare(add, `${prefix}_after`);
+    },
+    put(put, prefix, p, q = qId(), revealed = false, k = 1) {
+      const showAfter = typeof revealed === "number" ? revealed >= 0.5 : Boolean(revealed);
+      before.put(put, `${prefix}_before`, p, q, showAfter ? 0 : k);
+      after.put(put, `${prefix}_after`, p, q, showAfter ? k : 0);
+    },
+  };
+}
+
 // two cards back to back (a badge's front and back): [front's transform, back's], the back turned round. A card's
 // body runs its thickness behind its face, so two cards whose faces are nearer than both thicknesses lie inside
 // each other and both render black: each face stands its own thickness (and a hair) out from p, along q's +z

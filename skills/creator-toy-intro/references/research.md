@@ -26,7 +26,11 @@ Read only, always: never like, follow, comment or message.
   return only the last weeks and miss the biggest post. Search it in dated
   windows (`since:2026-06-01 until:2026-08-01`), or let Grok's search reach
   further back. In the browser tool, collect in short passes (scroll, read,
-  scroll): one long script times out in a hidden pane.
+  scroll): one long script times out in a hidden pane, and X's SPA routes
+  (`/highlights`, `/search`, `/i/grok`) hold background network streams open so
+  `readyState` stays `"interactive"`—use `waitUntil: "domcontentloaded"` (or
+  catch a navigation `load` timeout and wait on `article[data-testid="tweet"]`)
+  rather than blocking on full `load`.
 - The work itself, all of it, as it is today: what the posts are about. A
   repository: its README, its gallery or site and its folders (how many
   styles, tools, chapters there are now, and a picture of each); an

@@ -5,14 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
 import * as xMobile from "../skills/creator-toy-intro/themes/x-mobile/page.js";
 import * as xDesktopLayout from "../skills/creator-toy-intro/themes/x-desktop/layout.js";
 import * as xMobileLayout from "../skills/creator-toy-intro/themes/x-mobile/layout.js";
-import { readout, formatCount } from "../skills/creator-toy-intro/engine/lib/counter.js";
+import { readout, formatCount, resolveReadoutFmt } from "../skills/creator-toy-intro/engine/lib/counter.js";
 import { unexpectedTools, isPlaceholderAnswer, retrySearchPrompt } from "../skills/creator-toy-intro/engine/scripts/grok-search.mjs";
 import { makeLabel, paperOf, tear } from "../skills/creator-toy-intro/engine/lib/labels.js";
 import { pageless } from "../skills/creator-toy-intro/templates/isnail-30/ui.js";
@@ -1809,4 +1809,148 @@ test("v0.8.18: propBlocksCard foreground mug-handle plaque occlusion and floatin
   assert.ok(floatHits[0].lift >= 0.020);
   assert.match(describeFloatingCtaBase(floatHits)[0].text, /grounded end-card prop base prop_tier0 lifts 22 mm off the floor/);
   assert.equal(floatingCtaBase(makeCtaHopAnim(false)).length, 0);
+});
+
+test("v0.8.19: sep:true readout formatting, flat-mat & moving-wipe exemptions, ctaPropBlocksLabels, wipePicture, and bilingual CTA name auto-fit", () => {
+  // 1) formatCount & resolveReadoutFmt treat boolean sep: true as "," instead of stringifying "true"
+  assert.equal(formatCount(84714, { sep: true }), "84,714");
+  assert.equal(formatCount(84714, { sep: false }), "84714");
+  assert.equal(resolveReadoutFmt({ sep: true, unit: "次" }, 0, 84714)(84714), "84,714次");
+  const ro = readout({ fmt: { sep: true }, from: 100, to: 84714, em: 0.05, adv: () => 0.6 });
+  assert.ok(ro.names.some((n) => n.c === ","));
+  assert.ok(!ro.names.some((n) => /[true]/.test(n.c)));
+
+  // 2) frameSlicesCard & propBlocksCard skip flat floor-lying mats (qId()), and frameSlicesCard skips actively sweeping wipe bars
+  const cardGeo = { type: "uiBox", rect: [-160, -100, 320, 200], uvRect: [0, 0, 320, 200], thickness: 0.004, unitScale: 1 };
+  const barGeo = { type: "roundBox", size: [0.012, 0.24, 0.012], radius: 0.003 };
+  // 2a) Flat floor-lying mat (qId() -> normal along +Y) under a standing bar: zero false slices or blocks
+  const flatMatAnim = makeAnim(
+    [
+      { name: "camera", parent: "root", tr: pack([50, 0.22, 0.85]) },
+      { name: "beat1_floor_mat", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([50, 0.002, 0], QID, [1, 1, 1]) },
+      { name: "beat1_pillar_bar", parent: "root", geo: barGeo, tr: pack([50, 0.12, 0.05]) },
+    ],
+    { camera: [[0, ...pack([50, 0.22, 0.85])], [24, ...pack([50, 0.22, 0.85])]] },
+    { frames: 25, fps: 30, sub: 1 },
+  );
+  flatMatAnim.scalars = { fov: Array(25).fill(32) };
+  assert.equal(frameSlicesCard(flatMatAnim, { aspect: 16 / 9 }).length, 0);
+  assert.equal(propBlocksCard(flatMatAnim, { aspect: 16 / 9 }).length, 0);
+
+  // 2b) Upright poster card with a moving wipe bar sweeping from x = -0.35 to +0.35 in 1.0 s (0.70 m/s) -> exempt;
+  //     same bar parked statically at x = 0 in front of the upright card -> flagged!
+  const makeWipeAnim = (moving) => {
+    const barTrack = [];
+    for (let f = 0; f < 30; f++) {
+      const x = moving ? -0.35 + (0.70 * f) / 29 : 0.0;
+      barTrack.push([f, ...pack([50 + x, 0.16, 0.04])]);
+    }
+    const a = makeAnim(
+      [
+        { name: "camera", parent: "root", tr: pack([50, 0.16, 0.85]) },
+        { name: "beat1_poster_pic", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([50, 0.16, 0.0], UPRIGHT, [1, 1, 1]) },
+        { name: "beat1_wipe_bar", parent: "root", geo: barGeo, tr: pack([50, 0.16, 0.04]) },
+      ],
+      { camera: [[0, ...pack([50, 0.16, 0.85])], [29, ...pack([50, 0.16, 0.85])]], beat1_wipe_bar: barTrack },
+      { frames: 30, fps: 30, sub: 1 },
+    );
+    a.scalars = { fov: Array(30).fill(32) };
+    return a;
+  };
+  assert.equal(frameSlicesCard(makeWipeAnim(true), { aspect: 16 / 9 }).length, 0);
+  assert.equal(frameSlicesCard(makeWipeAnim(false), { aspect: 16 / 9 }).length, 1);
+
+  // 3) ctaPropBlocksLabels catches a misplaced x=0 pedestal/toy covering two-column right-side labels, and clears path[0]=-0.34
+  const labelRings = [[[-0.26, -0.04], [0.26, -0.04], [0.26, 0.04], [-0.26, 0.04]]];
+  const makeCtaBlockAnim = (propX) => {
+    const a = makeAnim(
+      [
+        { name: "camera", parent: "root", tr: pack([200.02, 0.165, 1.26]) },
+        { name: "cta_floor", parent: "root", geo: { type: "plane", w: 12, h: 12 }, tr: pack([200, 0, 0]) },
+        { name: "label0_sheet", parent: "root", geo: { type: "curve", rings: labelRings, depth: 0.002 }, tr: pack([200.22, 0.148, -0.055]) },
+        { name: "hero", parent: "root", tr: pack([200 + propX, 0.08, 0.05]) },
+        { name: "hero_body", parent: "hero", geo: { type: "roundBox", size: [0.08, 0.12, 0.06] }, tr: pack([0, 0.06, 0]) },
+        { name: "prop_pedestal", parent: "root", geo: { type: "roundBox", size: [0.18, 0.08, 0.14] }, tr: pack([200 + propX, 0.04, 0.05]) },
+      ],
+      { camera: [[0, ...pack([200.02, 0.165, 1.26])], [24, ...pack([200.02, 0.165, 1.26])]] },
+      { frames: 25, fps: 30, sub: 1 },
+    );
+    a.scalars = { fov: Array(25).fill(30) };
+    return a;
+  };
+  const ctaBlocked = ctaPropBlocksLabels(makeCtaBlockAnim(0.0), { aspect: 16 / 9 });
+  assert.ok(ctaBlocked.length >= 1);
+  assert.match(describeCtaPropBlocksLabels(ctaBlocked)[0].text, /covers \d+% of label0 on camera/);
+  assert.equal(ctaPropBlocksLabels(makeCtaBlockAnim(-0.34), { aspect: 16 / 9 }).length, 0);
+
+  // 4) wipePicture & isnail-30/anim.js fitHeaderLabel tested in an isolated temp FILM workspace
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-v0819-"));
+  try {
+    mkdirSync(join(dir, "assets"), { recursive: true });
+    mkdirSync(join(dir, "build"), { recursive: true });
+    // Minimal valid 1x1 PNG header + data
+    const png1x1 = Buffer.from("89504e470d0a1a0a0000000d4948445200000001000000010802000000907753de0000000c49444154789c63f8cfc000000301010018dd8db00000000049454e44ae426082", "hex");
+    writeFileSync(join(dir, "assets/before.png"), png1x1);
+    writeFileSync(join(dir, "assets/after.png"), png1x1);
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({ height: 0.12, center: [0, 0.06, 0], colors: { body: "#2F61EB" }, joints: { body: { p: [0, 0, 0] } }, parts: [] }));
+    const chars = [..."0123456789.万阅读楊哥 | Yang Onchain@YangOnchainAI视觉短片蜗牛King"];
+    const gStub = { advance: 0.65, rings: [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]] };
+    const glyphsObj = {};
+    for (const r of ["cjk", "latin", "heavy", "display"]) for (const ch of chars) glyphsObj[`${r}:${ch}`] = { ...gStub, advance: ch.codePointAt(0) >= 0x2e80 ? 1.0 : 0.58 };
+    writeFileSync(join(dir, "build/glyphs.json"), JSON.stringify(glyphsObj));
+    writeFileSync(join(dir, "film.json"), JSON.stringify({
+      id: "bilingual-fit",
+      template: "isnail-30",
+      theme: "x-desktop",
+      format: { fps: 30, bpm: 120, duration: 30, size: [1920, 1080] },
+      toy: "toy.json",
+      profile: { name: "楊哥 | Yang Onchain", handle: "@YangOnchain", bio: ["AI"] },
+      posts: {
+        pinned: { date: "2026-03-01", title: "A", counts: { views: "1万" }, cover: "assets/before.png" },
+        second: { date: "2026-03-02", title: "B", counts: { views: "1万" }, cover: "assets/after.png" },
+      },
+      counter: { value: 1, unit: "万", label: "阅读", display: "1万" },
+      cta: {
+        layout: "two-column",
+        slogan: [{ text: "AI视觉", paper: "cream" }, { text: "短片", paper: "red" }],
+        name: { text: "楊哥 | Yang Onchain", paper: "cream" },
+        handle: { text: "@YangOnchain", paper: "blue" },
+        prop: { kind: "plinth" },
+      },
+      story: { exit: "jump", segments: [{ story: "endCard" }] },
+    }));
+    const picUrl = new URL("../skills/creator-toy-intro/engine/lib/pictures.js", import.meta.url).href;
+    const animUrl = new URL("../skills/creator-toy-intro/templates/isnail-30/anim.js", import.meta.url).href;
+    const probe = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `import { wipePicture } from ${JSON.stringify(picUrl)};
+         import { LABELS } from ${JSON.stringify(animUrl)};
+         const wp = wipePicture("assets/before.png", "assets/after.png", 0.30, { beforeFrameColor: "#38BDF8", afterFrameColor: "#F59E0B" });
+         const decl = [], s0 = {}, s1 = {};
+         wp.declare((o) => decl.push(o.name), "w0");
+         wp.put((n, t) => (s0[n] = t.s), "w0", [0, 0.2, 0], undefined, false, 1);
+         wp.put((n, t) => (s1[n] = t.s), "w0", [0, 0.2, 0], undefined, true, 1);
+         const nameL = LABELS.find((l) => l.id === "name");
+         const handleL = LABELS.find((l) => l.id === "handle");
+         console.log(JSON.stringify({ decl, b0: s0.w0_before_frame[0], a0: s0.w0_after_frame[0], b1: s1.w0_before_frame[0], a1: s1.w0_after_frame[0], nameW: nameL.W, nameFit: nameL.fit ?? null, handleFit: handleL.fit ?? null }));`,
+      ],
+      { env: { ...process.env, FILM: dir }, encoding: "utf8" },
+    );
+    assert.equal(probe.status, 0, probe.stderr);
+    const res = JSON.parse(probe.stdout.trim().split("\n").at(-1));
+    assert.equal(res.decl.length, 4);
+    assert.equal(res.b0, 1);
+    assert.ok(res.a0 <= 1e-3);
+    assert.ok(res.b1 <= 1e-3);
+    assert.equal(res.a1, 1);
+    // 17-char bilingual name (> 0.62 m) gets auto-fitted so W * fit === 0.62 m; short @YangOnchain handle stays 1:1 (null)
+    assert.ok(res.nameW > 0.62 && res.nameFit > 0.5 && res.nameFit < 1);
+    assert.ok(res.nameW * res.nameFit <= 0.621);
+    assert.equal(res.handleFit, null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

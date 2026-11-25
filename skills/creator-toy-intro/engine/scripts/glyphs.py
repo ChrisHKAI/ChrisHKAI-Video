@@ -142,6 +142,9 @@ def harvest_js_glyphs(film_dir, film_json):
             role_h, lit = m.group(1), m.group(2)
             for ch in lit:
                 add_char(ch, role_h)
+        if re.search(r"\b(?:readoutBadge|readout|formatCount)\s*\(", src):
+            for ch in "0123456789,.+%":
+                add_char(ch)
     return found
 
 

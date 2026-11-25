@@ -150,7 +150,12 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
   error popup a window title bar with control dots, not a bare slab). Avoid
   detached 2D anime drops (such as a floating blue ellipsoid for sweat) that
   read in 3D PBR lighting as hovering pills or balloons—let the toy's posture
-  and concrete props carry the emotion. The blind reading says which were not.
+  and concrete props carry the emotion. Likewise, never draw "cluttered/bad
+  drafts" as abstract colored rectangles (which silent readers take for generic
+  charts)—draw unmistakable visual clichés (tacky lanterns, promo starbursts,
+  garish popups with a red `✗`), and never represent a transformation video by
+  its empty Frame 0: show a split mid-transformation before/after frame so the
+  change reads in a single still. The blind reading says which were not.
 - **Plain everyday words, never insider shorthand.** Do not compress a
   creator's pain point into telegraphic nouns stripped of verbs (writing
   `证件照  拦截翻车` for "AI portraits come out stiff like ID photos and hit
