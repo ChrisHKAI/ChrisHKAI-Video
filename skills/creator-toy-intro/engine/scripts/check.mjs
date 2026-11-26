@@ -10,10 +10,10 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
-import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
+import { film, FILM, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards, buriedCompoundCores, describeBuriedCompoundCores, lingeringPainHeadlines, describeLingeringPainHeadlines } from "../lib/clearance.js";
 
 const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
 const filmSceneHash = (f) => { const { step: _step, ...rest } = f ?? {}; return createHash("sha256").update(JSON.stringify(canonical(rest))).digest("hex"); };
@@ -142,10 +142,11 @@ if (film.sound === "score" && past("toy") && !existsSync(fromFilm(film.music?.sc
 
 // ── the world, built and sampled as export-anim does ────────────────────────
 if (past("toy") && toy && film.profile) {
-  let T = null, W = null;
+  let T = null, W = null, U = null;
   try {
     T = await importTemplate("timeline.js");
     W = await importTemplate("world.js");
+    U = await importTemplate("ui.js").catch(() => null);
     for (const w of T.SEG?.warnings ?? []) say("warn", w);
   } catch (e) {
     say("bad", `the story does not build: ${e.message.split("\n")[0]}`, hint(e));
@@ -185,7 +186,9 @@ if (past("toy") && toy && film.profile) {
     if (objects.some((o) => o.mat?.type === "cover")) ["assets/cover-wall.png", "assets/cover-full.png"].forEach((p) => images.add(p));
     if (film.posts?.pinned?.cover) images.add(film.posts.pinned.cover);
     for (const p of images) if (!existsSync(fromFilm(p))) say("bad", `the scene opens ${p}, which is not there`, whoWrites(p));
-    if (images.has("assets/ui.png") && existsSync(fromFilm("ui/profile.html"))) {
+    const beatUsesUi = objects.some((o) => /^beat\d+_/.test(o.name) && [o.mat?.image, o.mat?.movie, o.geo?.img?.image].includes("assets/ui.png"));
+    const expectsProfileUi = beatUsesUi || !(typeof U?.pageless === "function" && U.pageless(film, FILM));
+    if (images.has("assets/ui.png") && expectsProfileUi && existsSync(fromFilm("ui/profile.html"))) {
       const uiHtml = readFileSync(fromFilm("ui/profile.html"), "utf8");
       if (uiHtml.length < 250 && !/class=|id=|<svg|<img/i.test(uiHtml)) {
         say("bad", "the scene opens assets/ui.png, but ui wrote a blank pageless texture", "run.mjs ui (or set story.profilePage: true in film.json)");
@@ -296,6 +299,15 @@ if (past("toy") && toy && film.profile) {
     for (const m of emptyCuts) say("warn", `empty frame at shot cut: ${m.text}`, "start incoming stage props or toy entrance at g = 0 / EV.cut (not a frame later) so cuts never flash an empty dark frame");
     const coplanar = describeCoplanarCards(coplanarCards(motion, { aspect: fw / fh }));
     for (const m of coplanar) say(process.argv.includes("--render") ? "bad" : "warn", `coplanar or buried screen/card: ${m.text}`, "step the picture card >= 1 mm in front of its backing off-screen/lid, or use kit.screenPicture() / kit.framedPicture()");
+    const buriedCores = describeBuriedCompoundCores(buriedCompoundCores(motion));
+    for (const m of buriedCores) say("warn", `buried prop detail: ${m.text}`, "widen the detail core's camera-facing thickness or reduce the sibling tube/ellipsoid cap radius so center holes, pupils and LEDs stay visible");
+    const painLingering = describeLingeringPainHeadlines(lingeringPainHeadlines(motion));
+    for (const m of painLingering) say("warn", `lingering pain-point headline: ${m.text}`, "hide or swap the pain/rejection banner right at the beat's turn so negative copy never sits above the creator's own showcase cards");
+    const unkeyed = Object.entries(motion.tracks ?? {}).filter(([, ks]) => Array.isArray(ks) && ks.length === 0).map(([nm]) => nm);
+    if (unkeyed.length) {
+      const sampleNames = unkeyed.slice(0, 3).join(", ") + (unkeyed.length > 3 ? ` (+${unkeyed.length - 3} more)` : "");
+      say("warn", `unkeyed animated object(s) (${sampleNames}) were declared with anim: true but never placed with put()`, "pass { outline: true } to kit.putLine when declareLine declared an outline, or drop unused objects");
+    }
     const palPath = fromFilm("build/palette.json");
     if (existsSync(palPath) && statSync(palPath).mtimeMs >= statSync(animPath).mtimeMs) {
       for (const c of json("build/palette.json")?.film?.cards ?? []) {

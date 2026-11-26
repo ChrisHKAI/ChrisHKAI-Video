@@ -27,6 +27,8 @@ for a, z in p.get("cueGaps", []):
     print(f"  ! {a}–{z} s: {z - a:.1f} s with no sound effects: add beat cues so moves land by ear too")
 for a, z in p.get("staticHolds", []):
     print(f"  ! {a}–{z} s: {z - a:.1f} s visual hold with no new card, reveal or counter change (SFX alone will not carry it): stagger card arrivals, add a mid-beat turn/wipe, or trim a bar")
+for a, z in p.get("postLockHolds", []):
+    print(f"  ! {a}–{z} s: {z - a:.1f} s idle hold after the counter locks with no new card reveal before the cut: land the counter ~1.2–1.8 s before the cut, or trim a bar")
 for a, z, n in p["alone"]:
     print(f"  ! {a}–{z} s: only the toy hopping ({n} hops), nothing else new: does it need them?")
 for a, z, k in p["small"]:

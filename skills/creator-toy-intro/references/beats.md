@@ -189,6 +189,13 @@ demo, their site's media library).
   bezel forms one clean frame (`palette` and `check` warn on `cramped` side
   margins and `doubleBorder` box-in-a-box plaques, while `propBlocksCard` warns
   if a tabletop mug or laptop handle sits in front of any plaque character).
+  When drawing custom 2D UI screens or toggle cards in Pillow, use
+  `stagekit.draw_text()` or `stagekit.badge_check(size, ok=True)` rather than
+  raw `ImageDraw.text` for symbols (`✓`, `✗`, `➔`): many CJK bold faces lack
+  dingbat/arrow code points and silently draw `.notdef` tofu boxes (`☒`), whereas
+  `stagekit.text()`, `plaque()`, and `draw_text()` automatically detect missing
+  glyphs (`stagekit.missing_glyphs`) and substitute symbol fonts or crisp vector
+  icons.
 - **Multi-card showcases (4–5 works), `N`-item grids & frame-edge margins**: do not pull the
   camera far back just to cram five cards into one flat row where each card
   shrinks under ~20% of frame height and UI text turns unreadable. Stagger two
@@ -217,14 +224,21 @@ demo, their site's media library).
   crops `research/shots/profile.png` into a stage card, mask out its 2D avatar
   circle with `stagekit.empty_avatar_socket()` (and align the 0–2 s 3D sticker
   via `stagekit.card_socket_coords()`) so no flat 2D avatar duplicate remains on
-  the card once the 3D toy pops out.
-- **Obstacle-to-turn staging & varied beat entrances**: when a beat pivots from
-  an obstacle (an error card, quota wall, heavy block) to the creator's answer,
+  the card once the 3D toy pops out. Similarly, when a creator's article cover
+  thumbnail includes a large 2D illustration of their own avatar/mascot in one
+  corner, crop the showcase card to its content side so viewers never see two
+  copies of the character on screen at once.
+- **Obstacle-to-turn staging, pain-headline clearing & varied beat entrances**: when a beat pivots from
+  an obstacle (an error card, quota wall, heavy block, rejected ad deal) to the creator's answer,
   turn `o.yaw` so the toy physically faces the obstacle it pushes (`kit.push()`
   while facing `+z` camera with the obstacle behind at `-z` reads as pantomime
-  in thin air), and finish shoving or dropping the obstacle clear *before* the
+  in thin air), finish shoving or dropping the obstacle clear *before* the
   answer's stage rises so the two solids never overlap (`clearance` checks 3D
-  OBB pierce/embed). Across consecutive custom beats, vary how the toy enters
+  OBB pierce/embed), and hide or swap any negative pain-point / ad-rejection
+  headline (`失效`, `不好用`, `报错`) right at the turn (`lingeringPainHeadlines`
+  warns when a pain banner stays up past its reading floor over newly revealed
+  showcase cards, which makes blind viewers misread the creator's own work as
+  "bad"). Across consecutive custom beats, vary how the toy enters
   and exits—prefer `kit.strideIn` / `kit.strideOut` lateral floor dashes over repeating vertical
   sky-drops or late top-edge `leapOut` jumps that leave severed shoes dangling
   at the top border or streak across top-band 3D readouts (`heroStreaksOverText`),

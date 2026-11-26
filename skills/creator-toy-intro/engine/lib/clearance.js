@@ -3533,6 +3533,283 @@ export function describeCoplanarCards(items) {
 }
 
 /**
+ * Detect compound prop detail parts (`*_(core|hole|pupil|dot|iris|led\d*)$`) whose camera-facing front point sits
+ * completely buried inside an opaque sibling shell (`*_cone`, `*_head`, `*_body`, `*_bezel`) in the same prop group—
+ * e.g. a 3D GPS map pin whose `tube` cone end-cap (full `radii[-1]` sphere along ±Z) swallows its white `*_core` disc
+ * and turns the pin into a hole-less balloon. Surface-mounted LEDs or cores protruding >= 0.4 mm out of the shell pass.
+ */
+export function buriedCompoundCores(anim, { minMargin = 0.0004, minSecs = 0.35, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  if (!objects.has("camera")) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const DETAIL_RE = /_(?:core|hole|pupil|dot|iris|led\d*)$/i;
+  const TRANSPARENT_MAT = new Set(["glass", "bubble", "glow", "flake", "spark"]);
+
+  const details = [];
+  const shellsByGroup = new Map();
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, "hero") || o.letter || o.mat?.outline || SKIP_NAME.test(o.name)) continue;
+    const grp = groupOf(o.name);
+    if (!grp || grp === o.name) continue;
+    const spec = propBoundsSpec(o);
+    if (!spec) continue;
+    if (DETAIL_RE.test(o.name)) {
+      details.push({ o, spec, grp });
+    } else if (!TRANSPARENT_MAT.has(o.mat?.type)) {
+      if (!shellsByGroup.has(grp)) shellsByGroup.set(grp, []);
+      shellsByGroup.get(grp).push({ o, spec });
+    }
+  }
+  if (!details.length || !shellsByGroup.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const unit3 = (v) => { const n = Math.hypot(...v) || 1; return [v[0] / n, v[1] / n, v[2] / n]; };
+  const extAlong = (obb, ax) => obb.h[0] * Math.abs(dot3(obb.axes[0], ax)) + obb.h[1] * Math.abs(dot3(obb.axes[1], ax)) + obb.h[2] * Math.abs(dot3(obb.axes[2], ax));
+
+  const pointBuriedInShell = (pt, shell, shellW, shellOBB) => {
+    const g = shell.o.geo;
+    if (g.type === "ellipsoid" && g.r != null) {
+      const r0 = Array.isArray(g.r) ? g.r : [g.r, g.r, g.r];
+      const rx = Math.abs(r0[0] * shellW.s[0]), ry = Math.abs((r0[1] ?? r0[0]) * shellW.s[1]), rz = Math.abs((r0[2] ?? r0[0]) * shellW.s[2]);
+      if (Math.min(rx, ry, rz) <= minMargin) return 0;
+      const lp = toLocal(shellW, pt);
+      const q = Math.hypot(lp[0] / rx, lp[1] / ry, lp[2] / rz);
+      if (q >= 1) return 0;
+      const depth = (1 - q) * Math.min(rx, ry, rz);
+      return depth >= minMargin ? depth : 0;
+    }
+    if ((g.type === "tube" || g.type === "loop") && Array.isArray(g.pts) && g.pts.length >= 2) {
+      const radii = Array.isArray(g.radii) && g.radii.length ? g.radii : [0.003];
+      const sx = Math.abs(shellW.s[0]) || 1, sy = Math.abs(shellW.s[1]) || 1, sz = Math.abs(shellW.s[2]) || 1;
+      const sMean = (sx + sy + sz) / 3;
+      const lp = toLocal(shellW, pt).map((v, i) => v / ([sx, sy, sz][i] || 1));
+      let best = 0;
+      for (let i = 0; i + 1 < g.pts.length; i++) {
+        const a = g.pts[i], b = g.pts[i + 1];
+        const rA = radii[Math.min(i, radii.length - 1)], rB = radii[Math.min(i + 1, radii.length - 1)];
+        const ab = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        const ab2 = dot3(ab, ab);
+        const u = ab2 > 1e-12 ? Math.max(0, Math.min(1, dot3([lp[0] - a[0], lp[1] - a[1], lp[2] - a[2]], ab) / ab2)) : 0;
+        const q = [a[0] + ab[0] * u, a[1] + ab[1] * u, a[2] + ab[2] * u];
+        const rHere = (rA + (rB - rA) * u) * sMean;
+        const dist = Math.hypot((lp[0] - q[0]) * sx, (lp[1] - q[1]) * sy, (lp[2] - q[2]) * sz);
+        const depth = rHere - dist;
+        if (depth > best) best = depth;
+      }
+      return best >= minMargin ? best : 0;
+    }
+    const rel = [pt[0] - shellOBB.c[0], pt[1] - shellOBB.c[1], pt[2] - shellOBB.c[2]];
+    let minIn = Infinity;
+    for (let i = 0; i < 3; i++) {
+      const margin = shellOBB.h[i] - Math.abs(dot3(rel, shellOBB.axes[i]));
+      if (margin < minMargin) return 0;
+      if (margin < minIn) minIn = margin;
+    }
+    return minIn;
+  };
+
+  const open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const seenNow = new Set();
+
+    for (const det of details) {
+      const siblings = shellsByGroup.get(det.grp);
+      if (!siblings?.length) continue;
+      const dw = worldOf(det.o.name, s, memo);
+      if (Math.min(...dw.s.map(Math.abs)) < 0.05) continue;
+      const dOBB = worldOBB(det.spec, dw);
+      if (Math.hypot(dOBB.c[0] - camW.p[0], dOBB.c[1] - camW.p[1], dOBB.c[2] - camW.p[2]) > 5.5) continue;
+      const toCam = unit3([camW.p[0] - dOBB.c[0], camW.p[1] - dOBB.c[1], camW.p[2] - dOBB.c[2]]);
+      const reach = extAlong(dOBB, toCam);
+      const pFront = [dOBB.c[0] + toCam[0] * reach, dOBB.c[1] + toCam[1] * reach, dOBB.c[2] + toCam[2] * reach];
+
+      let worstShell = null, worstDepth = 0;
+      for (const sh of siblings) {
+        const sw = worldOf(sh.o.name, s, memo);
+        if (Math.min(...sw.s.map(Math.abs)) < 0.05) continue;
+        const sOBB = worldOBB(sh.spec, sw);
+        const dCenter = pointBuriedInShell(dOBB.c, sh, sw, sOBB);
+        if (dCenter <= 0) continue;
+        const dFront = pointBuriedInShell(pFront, sh, sw, sOBB);
+        if (dFront > worstDepth) {
+          worstDepth = dFront;
+          worstShell = sh.o.name;
+        }
+      }
+      if (!worstShell) continue;
+      const key = `${det.o.name}|${worstShell}`;
+      seenNow.add(key);
+      const cur = open.get(key);
+      if (!cur) open.set(key, { detail: det.o.name, shell: worstShell, from: t, to: t, peak: t, depth: worstDepth });
+      else {
+        cur.to = t;
+        if (worstDepth > cur.depth) Object.assign(cur, { depth: worstDepth, peak: t });
+      }
+    }
+    for (const [k, v] of open) if (!seenNow.has(k)) { out.push(v); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((m) => m.to - m.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || b.depth - a.depth);
+}
+
+export function describeBuriedCompoundCores(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    depthMm: +(m.depth * 1000).toFixed(1),
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: detail part ${m.detail} is completely buried inside sibling ${m.shell} (${(m.depth * 1000).toFixed(1)} mm under surface at ${m.peak.toFixed(2)} s; note tube end-caps add full radius along ±Z)`,
+  }));
+}
+
+/**
+ * Detect pure pain-point / ad-rejection 3D headlines in custom beats (e.g. "iOS 27 旧定位失效", "不好用 首单商单也拒")
+ * that linger past their required `pace.py` reading floor (`need + 0.45 s`) while newly revealed mid/late-beat
+ * showcase `uiBox` cards are up (`>= 0.90 s` overlap)—causing blind viewers to misread the creator's own tutorials
+ * or solved screen as "broken / bad". Headlines that include a turn/resolution word or clear within reading time pass.
+ */
+export function lingeringPainHeadlines(anim, { minOverlapSecs = 0.90, readSlackSecs = 0.45, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  if (!objects.has("camera")) return [];
+  const PAIN_RE = /(?:失效|不好用|不满意|报错|失败|卡死|卡住|封号|被封|封锁|限流|烂广|踩坑|踩雷|崩溃|乱塞|烧空|废稿|打叉|✗|✘|❌)/u;
+  const TURN_RE = /(?:->|→|➔|⇒|告别|解决|破局|跑通|翻倍|免费|开源|只留|不踩|防封|省流|逆袭|搞定|保姆级|指南|攻略|手册)/u;
+  const SKIP_BG_CARD = /^beat\d+_(?:p_|back$|avatar|banner|cyc|bg|floor|desk|pad|stage|rostrum|plinth|wall|bleed|plq|plaque)/i;
+
+  const needSecs = (text) => {
+    const cjk = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]/g) ?? []).length;
+    const words = (text.match(/[A-Za-z0-9@#]+(?:[,.'%+][A-Za-z0-9]+)*%?/g) ?? []).length;
+    return cjk / 4.5 + words / 3 + 1.5;
+  };
+  const idxOf = (o) => o.letterIndex ?? +(o.name.match(/(\d+)$/)?.[1] ?? 0);
+
+  const linesByBeat = new Map();
+  const cardsByBeat = new Map();
+  for (const o of anim.objects) {
+    const bm = o.name.match(/^(beat\d+)_/);
+    if (!bm) continue;
+    const beat = bm[1];
+    if (o.letter && !o.step && !o.pop && !o.mat?.outline && o.geo?.type === "curve") {
+      const key = o.line ? `${beat}_${o.line}` : o.name.replace(/\d+$/, "");
+      if (!linesByBeat.has(beat)) linesByBeat.set(beat, new Map());
+      if (!linesByBeat.get(beat).has(key)) linesByBeat.get(beat).set(key, []);
+      linesByBeat.get(beat).get(key).push(o);
+    } else if (o.geo?.type === "uiBox" && Array.isArray(o.geo.rect) && !SKIP_BG_CARD.test(o.name)) {
+      if (!cardsByBeat.has(beat)) cardsByBeat.set(beat, []);
+      cardsByBeat.get(beat).push({ o, unit: o.geo.unitScale ?? 1 });
+    }
+  }
+  if (!linesByBeat.size || !cardsByBeat.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const out = [];
+  for (const [beat, lineMap] of linesByBeat) {
+    const cards = cardsByBeat.get(beat);
+    if (!cards?.length) continue;
+    const painLines = [];
+    for (const [key, chars] of lineMap) {
+      const text = [...chars].sort((a, b) => idxOf(a) - idxOf(b)).map((x) => x.letter).join("");
+      if (!PAIN_RE.test(text) || TURN_RE.test(text)) continue;
+      painLines.push({ key, chars, text, need: needSecs(text) });
+    }
+    if (!painLines.length) continue;
+
+    // Scan frame visibility across the beat
+    const cardFirstAt = new Map();
+    const cardVisFrames = new Map();
+    const lineVisFrames = new Map(painLines.map((l) => [l.key, []]));
+    let beatStart = Infinity, beatEnd = -Infinity;
+
+    for (let f = 0; f < anim.frames; f += every) {
+      const s = f * SUB, t = f / anim.fps, memo = new Map();
+      const camP = worldOf("camera", s, memo).p;
+      for (const c of cards) {
+        const w = worldOf(c.o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.25 * c.unit) continue;
+        if (Math.hypot(w.p[0] - camP[0], w.p[1] - camP[1], w.p[2] - camP[2]) > 5.5) continue;
+        if (t < beatStart) beatStart = t;
+        if (t > beatEnd) beatEnd = t;
+        if (!cardFirstAt.has(c.o.name)) cardFirstAt.set(c.o.name, t);
+        if (!cardVisFrames.has(f)) cardVisFrames.set(f, []);
+        cardVisFrames.get(f).push(c.o.name);
+      }
+      for (const pl of painLines) {
+        let onCount = 0;
+        for (const ch of pl.chars) {
+          const w = worldOf(ch.name, s, memo);
+          if (Math.min(...w.s.map(Math.abs)) >= 0.45 && Math.hypot(w.p[0] - camP[0], w.p[1] - camP[1], w.p[2] - camP[2]) <= 5.5) onCount++;
+        }
+        if (onCount >= Math.max(1, Math.ceil(pl.chars.length * 0.6))) {
+          if (t < beatStart) beatStart = t;
+          if (t > beatEnd) beatEnd = t;
+          lineVisFrames.get(pl.key).push({ f, t });
+        }
+      }
+    }
+    if (!Number.isFinite(beatStart)) continue;
+
+    // Payoff cards are showcase cards that first pop in >= 1.1 s after the beat starts (after the initial obstacle)
+    const payoffCards = new Set([...cardFirstAt.entries()].filter(([, t0]) => t0 >= beatStart + 1.10).map(([nm]) => nm));
+    if (!payoffCards.size) continue;
+
+    for (const pl of painLines) {
+      const vis = lineVisFrames.get(pl.key);
+      if (vis.length < 2) continue;
+      const lineFrom = vis[0].t, lineTo = vis.at(-1).t;
+      const shownSecs = lineTo - lineFrom;
+      if (shownSecs <= pl.need + readSlackSecs) continue; // Cleared promptly right after satisfying pace.py!
+
+      let ovFrom = Infinity, ovTo = -Infinity;
+      const seenCards = new Set();
+      for (const { f, t } of vis) {
+        const activePayoff = (cardVisFrames.get(f) ?? []).filter((nm) => payoffCards.has(nm));
+        if (!activePayoff.length) continue;
+        if (t < ovFrom) ovFrom = t;
+        if (t > ovTo) ovTo = t;
+        for (const nm of activePayoff) seenCards.add(nm);
+      }
+      if (Number.isFinite(ovFrom) && ovTo - ovFrom >= minOverlapSecs - 1e-6) {
+        out.push({
+          line: pl.key,
+          text: pl.text,
+          from: +ovFrom.toFixed(2),
+          to: +ovTo.toFixed(2),
+          shownSecs: +shownSecs.toFixed(2),
+          needSecs: +pl.need.toFixed(2),
+          cards: [...seenCards].slice(0, 3),
+        });
+      }
+    }
+  }
+  return out.sort((a, b) => a.from - b.from);
+}
+
+export function describeLingeringPainHeadlines(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: pain-point headline "${m.text}" (${m.line}, shown ${m.shownSecs.toFixed(1)} s vs ${m.needSecs.toFixed(1)} s needed) lingers over payoff card(s) ${m.cards.join(", ")} and can mislabel the creator's own work`,
+  }));
+}
+
+/**
  * Maximum outward Z arm-lift angle (radians) that keeps a toy's hands visible outside its head silhouette.
  * Slender-headed toys keep the full target angle (e.g. 2.5 rad); wide-headed chibi/sculpt toys clamp
  * toward an outward Victory-V (~1.6–1.8 rad) so short arms do not disappear behind the cheeks.

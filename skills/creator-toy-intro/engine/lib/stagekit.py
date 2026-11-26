@@ -53,6 +53,17 @@ _FALLBACK = {  # a heavy face with Chinese, then a plain one, wherever this comp
               (str(Path.home() / ".chrishkai-video/fonts/SourceHanSansSC-Bold.otf"), 0)],
     "plain": [("/System/Library/Fonts/Hiragino Sans GB.ttc", 0), ("C:/Windows/Fonts/msyh.ttc", 0), ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 0)],
 }
+_SYMBOL_FALLBACK = [
+    ("/Library/Fonts/Arial Unicode.ttf", 0),
+    ("/System/Library/Fonts/Supplemental/Arial Unicode.ttf", 0),
+    ("/System/Library/Fonts/Menlo.ttc", 0),
+    ("/System/Library/Fonts/Apple Symbols.ttf", 0),
+    ("C:/Windows/Fonts/seguisym.ttf", 0),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0),
+    ("/usr/share/fonts/truetype/noto/NotoSansSymbols2-Regular.ttf", 0),
+]
+_VECTOR_SYMBOLS = {"✓", "✔", "✗", "✘", "★", "→", "➔", "➜"}
+_NOTDEF_CACHE = {}
 FACES = {}  # a film's own: FACES["words"] = (path, index), from film.json "type" (faces(film) sets them)
 # STAGEKIT_SILENT=1: the same frames with every word this kit letters blurred past reading, where it stands, at its
 # slant, in its colour (a label stays a label, a sign a sign), and Stage.save puts them in silent/. Marks (！ ？) stay.
@@ -112,6 +123,166 @@ def font(name, size):
     return _font("plain" if name in ("regular", "plain") else "words", int(size))
 
 
+def _notdef_sig(f):
+    key = id(f)
+    if key not in _NOTDEF_CACHE:
+        try:
+            m = f.getmask("\uffff")
+            _NOTDEF_CACHE[key] = (bytes(m), m.size, round(float(f.getlength("\uffff")), 3))
+        except Exception:
+            _NOTDEF_CACHE[key] = None
+    return _NOTDEF_CACHE[key]
+
+
+def has_glyph(f, ch):
+    """True when PIL font `f` has a real glyph for single character `ch` rather than falling back to `.notdef` (tofu box)."""
+    if not ch or ch.isspace():
+        return True
+    sig = _notdef_sig(f)
+    if sig is None:
+        return True
+    try:
+        m = f.getmask(ch)
+        return (bytes(m), m.size, round(float(f.getlength(ch)), 3)) != sig
+    except Exception:
+        return True
+
+
+def missing_glyphs(f, s):
+    """Sorted unique non-whitespace characters in `s` missing from PIL font `f`."""
+    seen = []
+    for ch in str(s):
+        if not ch.isspace() and ch not in seen and not has_glyph(f, ch):
+            seen.append(ch)
+    return seen
+
+
+@lru_cache(maxsize=256)
+def _load_symbol_face(path, index, size):
+    try:
+        return ImageFont.truetype(path, int(size), index=index)
+    except OSError:
+        return None
+
+
+def _symbol_font_for(ch, size):
+    for path, index in _SYMBOL_FALLBACK:
+        sf = _load_symbol_face(path, index, int(size))
+        if sf is not None and has_glyph(sf, ch):
+            return sf
+    return None
+
+
+def _draw_vector_symbol(d, x, y, asc, desc, ch, size, fill_rgba, stroke=0, stroke_rgba=None):
+    """Crisp geometric fallback for ✓, ✔, ✗, ✘, ★, →, ➔, ➜ when no system font covers the code point."""
+    w = size * 0.92
+    cy = y + asc * 0.56
+    cx = x + w * 0.50
+    sw = max(2, int(round(size * (0.13 if ch in ("✔", "✘", "➔", "➜") else 0.105))))
+
+    def seg(pts, width, col):
+        d.line(pts, fill=col, width=width, joint="curve")
+
+    layers = [((stroke * 2 + sw), stroke_rgba)] if stroke > 0 and stroke_rgba is not None else []
+    layers.append((sw, fill_rgba))
+    for lw, col in layers:
+        if ch in ("✓", "✔"):
+            seg([(cx - w * 0.30, cy + size * 0.02), (cx - w * 0.07, cy + size * 0.25), (cx + w * 0.33, cy - size * 0.24)], lw, col)
+        elif ch in ("✗", "✘"):
+            r = w * 0.27
+            seg([(cx - r, cy - r), (cx + r, cy + r)], lw, col)
+            seg([(cx + r, cy - r), (cx - r, cy + r)], lw, col)
+        elif ch == "★":
+            r_out = size * 0.38
+            pts = []
+            for k in range(10):
+                ang = -math.pi / 2 + k * math.pi / 5
+                rr = r_out if k % 2 == 0 else r_out * 0.42
+                pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
+            d.polygon(pts, fill=col)
+        elif ch in ("→", "➔", "➜"):
+            seg([(cx - w * 0.34, cy), (cx + w * 0.28, cy)], lw, col)
+            seg([(cx + w * 0.05, cy - size * 0.20), (cx + w * 0.31, cy), (cx + w * 0.05, cy + size * 0.20)], lw, col)
+    return w
+
+
+def _char_advance(f, ch, size):
+    if has_glyph(f, ch):
+        return float(f.getlength(ch))
+    sf = _symbol_font_for(ch, size)
+    if sf is not None:
+        return float(sf.getlength(ch))
+    if ch in _VECTOR_SYMBOLS:
+        return float(size) * 0.92
+    return float(f.getlength(ch))
+
+
+def _line_advance(f, ln, size, track=0):
+    if not ln:
+        return 0.0
+    if not track and not missing_glyphs(f, ln):
+        return float(f.getlength(ln))
+    return sum(_char_advance(f, ch, size) for ch in ln) + float(track) * float(size) * max(0, len(ln) - 1)
+
+
+def draw_text(d, xy, s, f, fill="#111111", stroke_width=0, stroke_fill="#ffffff", track_px=0.0):
+    """Draw single-line text `s` at `xy` using PIL font `f`, automatically substituting symbol fonts or crisp vector
+    glyphs for characters missing from `f` (such as `✓`, `✗`, `➔` in CJK bold faces) so `.notdef` tofu boxes never appear."""
+    x, y = float(xy[0]), float(xy[1])
+    fill_c = rgb(fill)
+    stroke_c = rgb(stroke_fill) if stroke_width else None
+    size = getattr(f, "size", 32)
+    if not track_px and not missing_glyphs(f, s):
+        if stroke_width:
+            d.text((x, y), s, font=f, fill=fill_c, stroke_width=stroke_width, stroke_fill=stroke_c)
+        else:
+            d.text((x, y), s, font=f, fill=fill_c)
+        return x + float(f.getlength(s))
+    asc, desc = f.getmetrics()
+    for idx, ch in enumerate(s):
+        if has_glyph(f, ch):
+            if stroke_width:
+                d.text((x, y), ch, font=f, fill=fill_c, stroke_width=stroke_width, stroke_fill=stroke_c)
+            else:
+                d.text((x, y), ch, font=f, fill=fill_c)
+            x += float(f.getlength(ch))
+        else:
+            sf = _symbol_font_for(ch, size)
+            if sf is not None:
+                s_asc, _ = sf.getmetrics()
+                sy = y + (asc - s_asc) * 0.85
+                if stroke_width:
+                    d.text((x, sy), ch, font=sf, fill=fill_c, stroke_width=stroke_width, stroke_fill=stroke_c)
+                else:
+                    d.text((x, sy), ch, font=sf, fill=fill_c)
+                x += float(sf.getlength(ch))
+            elif ch in _VECTOR_SYMBOLS:
+                x += _draw_vector_symbol(d, x, y, asc, desc, ch, size, fill_c, stroke_width, stroke_c)
+            else:
+                d.text((x, y), ch, font=f, fill=fill_c)
+                x += float(f.getlength(ch))
+        if idx + 1 < len(s):
+            x += track_px
+    return x
+
+
+def badge_check(size=48, ok=True, fill=None, mark="#FFFFFF"):
+    """2x-supersampled circular vector ✓ / ✗ status badge (zero font dependency) for UI cards and toggles."""
+    s2 = max(16, int(size) * 2)
+    bg = rgb(fill if fill is not None else ("#10B981" if ok else "#EF4444"))
+    fg = rgb(mark)
+    im = Image.new("RGBA", (s2, s2), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.ellipse((2, 2, s2 - 3, s2 - 3), fill=bg)
+    lw = max(3, int(round(s2 * 0.13)))
+    if ok:
+        d.line([(s2 * 0.25, s2 * 0.52), (s2 * 0.44, s2 * 0.70), (s2 * 0.76, s2 * 0.32)], fill=fg, width=lw, joint="curve")
+    else:
+        d.line([(s2 * 0.30, s2 * 0.30), (s2 * 0.70, s2 * 0.70)], fill=fg, width=lw)
+        d.line([(s2 * 0.70, s2 * 0.30), (s2 * 0.30, s2 * 0.70)], fill=fg, width=lw)
+    return im.resize((int(size), int(size)), Image.Resampling.LANCZOS)
+
+
 def rgb(c, a=255):
     if isinstance(c, tuple):
         return c if len(c) == 4 else (*c, a)
@@ -133,10 +304,7 @@ def text(s, size, fill="#111111", face="bold", stroke=0, stroke_fill="#ffffff", 
     f = font(face, size)
     lines = s.split("\n")
     pad = stroke + 4
-    if track:
-        widths = [sum(f.getlength(ch) for ch in ln) + track * size * max(0, len(ln) - 1) for ln in lines]
-    else:
-        widths = [f.getlength(ln) for ln in lines]
+    widths = [_line_advance(f, ln, size, track) for ln in lines]
     asc, desc = f.getmetrics()
     lh = int((asc + desc) * (1 + spacing))
     w, h = int(max(widths)) + 2 * pad, lh * len(lines) + 2 * pad
@@ -145,12 +313,7 @@ def text(s, size, fill="#111111", face="bold", stroke=0, stroke_fill="#ffffff", 
     for i, ln in enumerate(lines):
         x = pad + {"center": (w - 2 * pad - widths[i]) / 2, "left": 0, "right": w - 2 * pad - widths[i]}[align]
         y = pad + i * lh
-        if track:
-            for ch in ln:
-                d.text((x, y), ch, font=f, fill=rgb(fill), stroke_width=stroke, stroke_fill=rgb(stroke_fill))
-                x += f.getlength(ch) + track * size
-        else:
-            d.text((x, y), ln, font=f, fill=rgb(fill), stroke_width=stroke, stroke_fill=rgb(stroke_fill))
+        draw_text(d, (x, y), ln, f, fill=fill, stroke_width=stroke, stroke_fill=stroke_fill, track_px=track * size)
     box = im.getbbox()
     im = im.crop(box) if box else im
     return hush(im, size) if SILENT and _wordy(s) else im
@@ -739,8 +902,14 @@ def plaque(
                 seg_w += w_tok
             else:
                 txt, fnt, col = str(token[0]), token[1], token[2]
-                bb = probe.textbbox((0, 0), txt, font=fnt)
-                w_tok = bb[2] - bb[0]
+                f_sz = getattr(fnt, "size", 64)
+                if missing_glyphs(fnt, txt):
+                    w_tok = int(math.ceil(_line_advance(fnt, txt, f_sz)))
+                    asc, desc = fnt.getmetrics()
+                    bb = (0, 0, w_tok, asc + desc)
+                else:
+                    bb = probe.textbbox((0, 0), txt, font=fnt)
+                    w_tok = bb[2] - bb[0]
                 min_top = min(min_top, bb[1])
                 max_bot = max(max_bot, bb[3])
                 items.append(("text", txt, fnt, col, gap_before, w_tok, bb))
@@ -778,7 +947,7 @@ def plaque(
             else:
                 _, txt, fnt, col, gap_before, w_tok, bb = item
                 x += gap_before
-                d.text((x - bb[0], base_y), txt, font=fnt, fill=(*col[:3], 255))
+                draw_text(d, (x - bb[0], base_y), txt, fnt, fill=(*col[:3], 255))
                 x += w_tok
         if s_idx + 1 < len(seg_layouts):
             x += div_gap

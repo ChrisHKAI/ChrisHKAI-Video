@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards, buriedCompoundCores, describeBuriedCompoundCores, lingeringPainHeadlines, describeLingeringPainHeadlines, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
@@ -2181,4 +2181,108 @@ test("v0.8.21: coplanarCards catches same-group laptop screen z-fighting while s
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("v0.8.22: buriedCompoundCores catches pin_core swallowed by tube cap and passes protruding cores & surface LEDs", () => {
+  const frames = 24;
+  const makePinAnim = (coneTopY, coneTopR, coreZ) => ({
+    fps: 30,
+    sub: 1,
+    frames,
+    samples: frames,
+    scalars: { fov: Array(frames).fill(30) },
+    objects: [
+      { name: "camera", parent: "root", camera: true, tr: [0, 0.16, 0.90, 0, 0, 0, 1, 1, 1, 1] },
+      {
+        name: "beat1_pin_cone",
+        parent: "root",
+        geo: { type: "tube", pts: [[0, 0.004, 0], [0, coneTopY, 0]], radii: [0.004, coneTopR] },
+        mat: { type: "type", color: "#DC2626" },
+        tr: [0, 0.08, 0, 0, 0, 0, 1, 1, 1, 1],
+      },
+      {
+        name: "beat1_pin_head",
+        parent: "root",
+        geo: { type: "ellipsoid", r: [0.040, 0.040, 0.018] },
+        mat: { type: "type", color: "#EF4444" },
+        tr: [0, 0.158, 0, 0, 0, 0, 1, 1, 1, 1],
+      },
+      {
+        name: "beat1_pin_core",
+        parent: "root",
+        geo: { type: "ellipsoid", r: [0.018, 0.018, coreZ] },
+        mat: { type: "type", color: "#FFFFFF" },
+        tr: [0, 0.158, 0, 0, 0, 0, 1, 1, 1, 1],
+      },
+      {
+        name: "beat1_nas_bezel",
+        parent: "root",
+        geo: { type: "roundBox", size: [0.118, 0.088, 0.010], radius: 0.005 },
+        mat: { type: "type", color: "#475569" },
+        tr: [0.24, 0.044, 0.039, 0, 0, 0, 1, 1, 1, 1],
+      },
+      {
+        name: "beat1_nas_led0",
+        parent: "root",
+        geo: { type: "ellipsoid", r: [0.0045, 0.0045, 0.0032] },
+        mat: { type: "glow", color: "#34D399" },
+        tr: [0.286, 0.066, 0.044, 0, 0, 0, 1, 1, 1, 1],
+      },
+    ],
+    tracks: {},
+  });
+
+  // Swallowed: cone top at y=0.072 with r=0.034 extends along +Z to 0.034 > coreZ=0.020!
+  const bad = describeBuriedCompoundCores(buriedCompoundCores(makePinAnim(0.072, 0.034, 0.020)));
+  assert.equal(bad.length, 1);
+  assert.equal(bad[0].detail, "beat1_pin_core");
+  assert.equal(bad[0].shell, "beat1_pin_cone");
+  assert.match(bad[0].text, /buried inside sibling beat1_pin_cone/);
+
+  // Fixed: cone top lowered to y=0.056 (r=0.021) and coreZ=0.025 protrudes cleanly past both head & cone, plus surface LED passes!
+  const good = buriedCompoundCores(makePinAnim(0.056, 0.021, 0.025));
+  assert.equal(good.length, 0);
+});
+
+test("v0.8.22: lingeringPainHeadlines warns when negative headline stays past reading floor over payoff tutorials", () => {
+  const fps = 30, frames = 180; // 6.0 s beat
+  const park = [0, -2, 0, 0, 0, 0, 1, 1e-4, 1e-4, 1e-4];
+  const charGeo = { type: "curve", rings: [[[0, 0], [0.02, 0], [0.02, 0.03], [0, 0.03]]], depth: 0.004 };
+  const headline = [..."不好用首单商单也拒"]; // 9 CJK -> need = 9/4.5 + 1.5 = 3.50 s
+
+  const makeBeatAnim = (hideHeadlineAtSec, customText = headline) => {
+    const objs = [
+      { name: "camera", parent: "root", camera: true, tr: [0, 0.18, 1.05, 0, 0, 0, 1, 1, 1, 1] },
+      { name: "beat2_ad_card", parent: "root", geo: { type: "uiBox", rect: [-100, -60, 200, 120] }, mat: { type: "ui" }, tr: park },
+      { name: "beat2_cov0", parent: "root", geo: { type: "uiBox", rect: [-120, -70, 240, 140] }, mat: { type: "ui" }, tr: park },
+      { name: "beat2_cov1", parent: "root", geo: { type: "uiBox", rect: [-120, -70, 240, 140] }, mat: { type: "ui" }, tr: park },
+    ];
+    const tracks = {
+      camera: [[0, 0, 0.18, 1.05, 0, 0, 0, 1, 1, 1, 1], [frames - 1, 0, 0.18, 1.05, 0, 0, 0, 1, 1, 1, 1]],
+      beat2_ad_card: Array.from({ length: frames }, (_, f) => [f, ...(f < 42 ? [-0.32, 0.12, 0, 0, 0, 0, 1, 1, 1, 1] : park)]),
+      beat2_cov0: Array.from({ length: frames }, (_, f) => [f, ...(f >= 50 ? [-0.20, 0.26, -0.1, 0, 0, 0, 1, 1, 1, 1] : park)]),
+      beat2_cov1: Array.from({ length: frames }, (_, f) => [f, ...(f >= 72 ? [0.20, 0.26, -0.1, 0, 0, 0, 1, 1, 1, 1] : park)]),
+    };
+    customText.forEach((ch, idx) => {
+      const nm = `beat2_topb_ln_${idx}`;
+      objs.push({ name: nm, parent: "root", letter: ch, line: "topb_ln_", letterIndex: idx, geo: charGeo, mat: { type: "type", color: "#8C1D18" }, tr: park });
+      tracks[nm] = Array.from({ length: frames }, (_, f) => [
+        f,
+        ...(f >= 2 && f / fps <= hideHeadlineAtSec ? [-0.15 + idx * 0.03, 0.38, -0.1, 0, 0, 0, 1, 1, 1, 1] : park),
+      ]);
+    });
+    return { fps, sub: 1, frames, samples: frames, scalars: { fov: Array(frames).fill(30) }, objects: objs, tracks };
+  };
+
+  // Lingers until 5.8 s (shown ~5.7 s vs 3.5 s needed) over cov0 & cov1 -> warns!
+  const lingered = describeLingeringPainHeadlines(lingeringPainHeadlines(makeBeatAnim(5.8)));
+  assert.equal(lingered.length, 1);
+  assert.match(lingered[0].text, /不好用首单商单也拒/);
+  assert.ok(lingered[0].cards.includes("beat2_cov0"));
+
+  // Cleared right at reading floor (3.60 s <= 3.50 + 0.45 s) -> zero false positives!
+  assert.equal(lingeringPainHeadlines(makeBeatAnim(3.60)).length, 0);
+
+  // Headline that explicitly states the positive turn ("拒掉烂广只留实测攻略") -> zero warnings even if held to 5.8 s!
+  assert.equal(lingeringPainHeadlines(makeBeatAnim(5.8, [..."拒掉烂广只留实测攻略"])).length, 0);
 });

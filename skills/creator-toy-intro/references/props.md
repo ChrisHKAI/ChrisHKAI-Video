@@ -63,6 +63,11 @@ A prop is a module in the film's workspace, set in film.json
   scale local `Z` for vertical landing squash) so the cylinder lies flat under
   the toy's feet instead of standing upright like a vertical coin (`clearance`
   tests `prism` solids and stops when an upright cylinder swallows the toy's legs).
+  Similarly, `tube` caps both endpoints with full spheres of `radii[0]` / `radii[-1]`
+  along all 3 axes (`±Z` included): when building a flattened 3D icon such as a GPS
+  map pin (`*_cone` + `*_head` + `*_core`), keep the cone's top radius thinner than
+  the white `*_core` disc's `Z` half-depth so the spherical cap never swallows the
+  center hole (`buriedCompoundCores` warns in `check` / `clearance`).
 - `topAt(t)`: where the toy's feet stand on it (world, metres). When adding a
   celebratory bounce or hop at `E.final`, apply the vertical offset inside
   `topAt(t)` rather than `baseRoot(t)` so only the toy hops while a grounded

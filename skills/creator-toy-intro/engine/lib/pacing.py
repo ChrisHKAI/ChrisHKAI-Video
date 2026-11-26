@@ -41,7 +41,11 @@ def motion(anim):
     idx = np.arange(S)
     starts, cuts = [], set()
     for name, keys in anim["tracks"].items():
+        if not keys:
+            continue
         k = np.array(sorted(keys, key=lambda x: x[0]), dtype=float)
+        if k.ndim != 2 or k.shape[1] < 2:
+            continue
         whole = np.abs(k[:, 0] - np.round(k[:, 0])) < 1e-6
         if name == "camera":
             cuts.update(round((i + 0.02) / rate, 3) for i in k[~whole, 0])
@@ -61,7 +65,12 @@ def motion(anim):
 def track(anim, name):
     """An object's transform at every sample: (S, 10) position, quaternion (x, y, z, w), scale."""
     S = anim["samples"]
-    k = np.array(sorted(anim["tracks"][name], key=lambda x: x[0]), dtype=float)
+    raw = anim["tracks"].get(name) or []
+    if not raw:
+        o = next((x for x in anim.get("objects") or [] if x.get("name") == name), None)
+        tr = (o or {}).get("tr") or [0, -2, 0, 0, 0, 0, 1, 0, 0, 0]
+        return np.tile(np.array(tr, dtype=float), (S, 1))
+    k = np.array(sorted(raw, key=lambda x: x[0]), dtype=float)
     return np.stack([np.interp(np.arange(S), k[:, 0], k[:, j]) for j in range(1, k.shape[1])], axis=1)
 
 
@@ -431,6 +440,60 @@ def visual_holds(anim, segments, bar, reads=None):
     return out
 
 
+def post_lock_holds(anim, tl, max_tail=2.35):
+    """Custom beat tails (> max_tail s) after a rolling 3D counter (`step: true` digits + `lock` cue) locks where no
+    new showcase card or banner arrives before the segment cut—the exact 'counter stops at 15.0 s and freezes for 2.5 s'
+    lull viewers feel even when total beat length is under 4.5 s."""
+    rate = anim["fps"] * anim["sub"]
+    S = anim["samples"]
+    idx = np.arange(S)
+    tr_map = anim.get("tracks") or {}
+    cues = tl.get("cues") or []
+    beats = [s for s in tl.get("SEGMENTS") or [] if s.get("kind") == "beat"]
+    out = []
+    for k, seg in enumerate(beats):
+        f0, f1 = float(seg["f0"]), float(seg["f1"])
+        pref = f"beat{k}_"
+        step_objs = [o["name"] for o in anim.get("objects") or [] if o["name"].startswith(pref) and o.get("step") and tr_map.get(o["name"])]
+        if not step_objs:
+            continue
+        locks = sorted(float(c["t"]) for c in cues if c.get("kind") == "lock" and f0 + 0.5 <= float(c["t"]) <= f1 - 0.1)
+        if not locks:
+            continue
+        lock_t = locks[-1]
+        tail = f1 - lock_t
+        if tail <= max_tail + 1e-6:
+            continue
+        lo = min(S - 1, max(0, int(round((lock_t + 0.30) * rate))))
+        hi = min(S, max(lo + 1, int(round((f1 - 0.35) * rate))))
+        if hi - lo < 4:
+            continue
+        later_reveal = False
+        for o in anim.get("objects") or []:
+            nm = o["name"]
+            if not nm.startswith(pref) or o.get("step") or not tr_map.get(nm):
+                continue
+            geo_t = (o.get("geo") or {}).get("type")
+            mat_t = (o.get("mat") or {}).get("type")
+            if not (nm.endswith("_plate") or geo_t == "uiBox" or mat_t in ("ui", "sticker", "card2d")):
+                continue
+            keys = np.array(sorted(tr_map[nm], key=lambda x: x[0]), dtype=float)
+            if keys.ndim != 2 or len(keys) < 2:
+                continue
+            sc = np.min(np.abs(np.stack([np.interp(idx, keys[:, 0], keys[:, j]) for j in (8, 9, 10)], axis=1)), axis=1)
+            peak = float(sc[int(f0 * rate):min(S, int(f1 * rate))].max(initial=0))
+            if peak < 1e-2:
+                continue
+            was_off = sc[max(0, lo - 2)] < 0.25 * peak
+            came_on = (sc[lo:hi] > 0.65 * peak).any()
+            if was_off and came_on:
+                later_reveal = True
+                break
+        if not later_reveal:
+            out.append((round(lock_t, 2), round(f1, 2)))
+    return out
+
+
 def check(film):
     """Everything the page and the review report, for one film folder."""
     b = Path(film) / "build"
@@ -508,7 +571,8 @@ def check(film):
     max_cue_gap = max(2.25 * bar, 4.5)
     cue_gaps = [(round(a, 2), round(z, 2)) for a, z in zip(cue_ts, cue_ts[1:]) if z - a > max_cue_gap + 1e-6]
     static_holds = visual_holds(anim, tl.get("SEGMENTS"), bar, reads)
+    lock_holds = post_lock_holds(anim, tl)
 
-    return {"duration": dur, "bar": bar, "dead": dead, "cueGaps": cue_gaps, "staticHolds": static_holds, "alone": alone, "hook": hits[0] if hits else None,
+    return {"duration": dur, "bar": bar, "dead": dead, "cueGaps": cue_gaps, "staticHolds": static_holds, "postLockHolds": lock_holds, "alone": alone, "hook": hits[0] if hits else None,
             "mid": mid[0] if mid else None, "reads": lines, "unread": unread, "cuts": cuts, "starts": len(starts), "small": small, "shrunk": shrunk, "off": off,
             "slant": slanted(anim, tl.get("SEGMENTS"))}

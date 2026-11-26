@@ -51,7 +51,10 @@ Read only, always: never like, follow, comment or message.
      API credits, or when the local `grok` CLI has no quota / is not signed in,
      query `https://x.com/i/grok` inside their logged-in X session together
      with dated `from:<handle> since:YYYY-MM-DD until:YYYY-MM-DD` searches in
-     X's search bar, and either set `"grok": false` in `film.json` or write the
+     X's search bar (note: cold-loading `https://x.com/i/grok` in a fresh tab
+     often hits X's SSR error screen—navigate to `https://x.com/<handle>` first
+     and click the left-sidebar SPA link `a[href="/i/grok"]` so Grok opens
+     cleanly), and either set `"grok": false` in `film.json` or write the
      collected leads to `research/grok.json`.
   2. **Grok Build CLI (`grok-search.mjs`)**, when installed, signed in, and the
      user chose it in step 1 without asking for the free web-only route

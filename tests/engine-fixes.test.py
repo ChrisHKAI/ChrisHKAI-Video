@@ -1837,5 +1837,149 @@ class V0815EngineImprovementTests(unittest.TestCase):
             self.assertNotIn("Gmaj9", r_chk.stdout)
 
 
+class V0822EngineImprovementTests(unittest.TestCase):
+    def test_pacing_handles_empty_tracks_and_flags_post_lock_dead_tails(self):
+        import pacing
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir(parents=True)
+            (fdir / "film.json").write_text(json.dumps({"format": {"fps": 30, "duration": 8, "size": [1920, 1080]}, "toy": "toy.json"}))
+            (fdir / "toy.json").write_text(json.dumps({"height": 0.12}))
+            fps, frames = 30, 240
+            park = [0, -2, 0, 0, 0, 0, 1, 1e-4, 1e-4, 1e-4]
+            show = [0, 0.35, -0.1, 0, 0, 0, 1, 1, 1, 1]
+            anim = {
+                "fps": fps, "frames": frames, "sub": 1, "samples": frames,
+                "objects": [
+                    {"name": "camera", "parent": "root", "tr": [0, 0.2, 1.0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat0_cnt_n0", "parent": "root", "step": True, "letter": "1",
+                     "geo": {"type": "curve", "rings": [[[0, 0], [0.02, 0], [0.02, 0.03], [0, 0.03]]], "depth": 0.004},
+                     "mat": {"type": "type", "color": "#FFFFFF"}, "tr": park},
+                    {"name": "beat0_cnt_lblo0", "parent": "root", "geo": {"type": "curve", "rings": [[[0, 0], [0.01, 0], [0.01, 0.01], [0, 0.01]]], "depth": 0.002},
+                     "mat": {"type": "type", "outline": True}, "tr": park},
+                ],
+                "tracks": {
+                    "camera": [[0, 0, 0.2, 1.0, 0, 0, 0, 1, 1, 1, 1], [frames - 1, 0, 0.2, 1.0, 0, 0, 0, 1, 1, 1, 1]],
+                    "beat0_cnt_n0": [[s, *(show if s >= 60 else park)] for s in range(frames)],
+                    "beat0_cnt_lblo0": [],  # Unkeyed empty track that previously crashed pacing.motion() with IndexError!
+                },
+                "scalars": {"fov": [30.0] * frames},
+            }
+            (fdir / "build/anim.json").write_text(json.dumps(anim))
+            # Counter locks at 4.2 s while beat runs to 8.0 s (3.8 s dead tail > 2.35 s)
+            (fdir / "build/timeline.json").write_text(json.dumps({
+                "DURATION": 8.0, "BAR": 2.0,
+                "SEGMENTS": [{"kind": "beat", "f0": 0.0, "f1": 8.0}],
+                "cues": [{"t": 1.2, "kind": "pop"}, {"t": 4.2, "kind": "lock", "big": True}, {"t": 6.2, "kind": "glint"}],
+            }))
+            (fdir / "build/reads.json").write_text(json.dumps([{"text": "127.5万 查看", "at": [2.0, 7.8], "whole": 4.2}]))
+            res = pacing.check(fdir)
+            self.assertEqual(res["postLockHolds"], [(4.2, 8.0)])
+
+            # Landing counter at 6.2 s (1.8 s before cut) clears postLockHolds cleanly!
+            (fdir / "build/timeline.json").write_text(json.dumps({
+                "DURATION": 8.0, "BAR": 2.0,
+                "SEGMENTS": [{"kind": "beat", "f0": 0.0, "f1": 8.0}],
+                "cues": [{"t": 1.2, "kind": "pop"}, {"t": 6.2, "kind": "lock", "big": True}],
+            }))
+            self.assertEqual(pacing.check(fdir)["postLockHolds"], [])
+
+    def test_stagekit_missing_glyphs_and_tofu_free_vector_symbol_fallback(self):
+        from unittest import mock
+        import numpy as np
+        import stagekit
+
+        f = stagekit.font("bold", 48)
+        # Force symbol-font list empty so vector symbol fallback is exercised deterministically on every OS
+        with mock.patch.object(stagekit, "_SYMBOL_FALLBACK", []):
+            stagekit._load_symbol_face.cache_clear()
+            im_chk = stagekit.text("模拟定位 ✓", 48, fill="#065F46")
+            im_plain = stagekit.text("模拟定位", 48, fill="#065F46")
+            self.assertGreater(im_chk.width, im_plain.width + 18)
+
+            plq = stagekit.plaque(
+                [[("Java ➔ AI ✓", f, (248, 244, 232))], [("star", 32, (250, 204, 21)), ("1,332 ★", f, (253, 224, 71), 16)]],
+                h2x=240,
+            )
+            self.assertGreater(plq.width, 320)
+
+        b_ok = stagekit.badge_check(48, ok=True)
+        b_no = stagekit.badge_check(48, ok=False)
+        self.assertEqual(b_ok.size, (48, 48))
+        self.assertEqual(b_no.size, (48, 48))
+        self.assertGreater(int(np.asarray(b_ok)[24, 8, 1]), int(np.asarray(b_ok)[24, 8, 0]))
+        self.assertGreater(int(np.asarray(b_no)[24, 8, 0]), int(np.asarray(b_no)[24, 8, 1]))
+
+    def test_check_mjs_allows_pageless_custom_beats_and_warns_on_unkeyed_tracks(self):
+        from PIL import Image
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            for sub in ("build", "beats", "assets", "ui"):
+                (fdir / sub).mkdir(parents=True)
+            for img_name in ("ui.png", "retro.png", "avatar.png", "a.jpg"):
+                Image.new("RGB", (32, 32), (20, 30, 40)).save(fdir / "assets" / img_name)
+            blank_html = '<!doctype html><html><body style="margin:0;background:#000"></body></html>'
+            (fdir / "ui/profile.html").write_text(blank_html, encoding="utf-8")
+            (fdir / "ui/retro.html").write_text(blank_html, encoding="utf-8")
+            g_stub = {"advance": 0.9, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in set(" 0123456789.万查看阅读苏码玩家@suversal测试")
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12, "center": [0, 0.06, 0], "colors": {"body": "#2B3340", "plinth": "#F8FAFC", "plinthTop": "#3B82F6"},
+                "joints": {
+                    "body": {"p": [0, 0.04, 0]},
+                    "head": {"p": [0, 0.08, 0], "parent": "body"},
+                    "armL": {"p": [0.03, 0.06, 0], "parent": "body"},
+                    "armR": {"p": [-0.03, 0.06, 0], "parent": "body"},
+                    "legL": {"p": [0.015, 0.02, 0], "parent": "body"},
+                    "legR": {"p": [-0.015, 0.02, 0], "parent": "body"},
+                },
+                "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.05, 0], "size": [0.04, 0.05, 0.03], "mat": "body"}],
+            }))
+            (fdir / "beats/open.js").write_text(
+                "export function makeBeat({ at, fov, aspect, kit }) {\n"
+                "  return {\n"
+                "    declare(add) { add({ name: 'ghost', geo: { type: 'roundBox', size: [0.04, 0.04, 0.04], radius: 0.004 }, mat: { type: 'paper', color: '#ffffff' }, anim: true }); },\n"
+                "    sample() {}, pose: () => null,\n"
+                "    camera: kit.cameraFrom([{ t: 0, target: at(0, 0.1, 0), dist: 0.8, elev: 6, az: 0 }], { fov, aspect }),\n"
+                "    cues() {}, reads: [], storyboard: {},\n"
+                "  };\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            film_doc = {
+                "id": "pageless-ok", "template": "isnail-30", "theme": "x-desktop", "step": "story",
+                "format": {"fps": 30, "bpm": 120, "duration": 12, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "profile": {"name": "苏码玩家", "handle": "suversal", "bio": ["AI"]},
+                "posts": {"pinned": {"count": "1万", "cover": "assets/a.jpg"}, "retro": {"count": "1万"}},
+                "counter": {"value": 1, "unit": "万", "label": "查看", "display": "1万"},
+                "story": {"segments": [{"beat": "beats/open.js", "bars": 3}, {"story": [24, "end"]}]},
+                "cta": {"layout": "two-column", "slogan": [{"text": "测试", "paper": "cream"}], "name": {"text": "苏码玩家", "paper": "cream"}, "handle": {"text": "@suversal", "paper": "blue"}, "prop": {"kind": "plinth"}},
+                "branding": {"logo": "M0 0h1v1z"},
+            }
+            (fdir / "film.json").write_text(json.dumps(film_doc), encoding="utf-8")
+            env = {**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}
+            subprocess.run(["node", str(SKILL / "engine/scripts/dump-hero.mjs")], cwd=str(ROOT), env=env, capture_output=True, text=True, check=True)
+            r_exp = subprocess.run(["node", str(SKILL / "engine/scripts/export-anim.mjs")], cwd=str(ROOT), env=env, capture_output=True, text=True)
+            self.assertEqual(r_exp.returncode, 0, r_exp.stdout + r_exp.stderr)
+
+            # 1) Pageless custom-beat film passes check.mjs (exit 0) and warns on unkeyed `beat0_ghost`!
+            r_ok = subprocess.run(["node", str(SKILL / "engine/scripts/check.mjs")], cwd=str(ROOT), env=env, capture_output=True, text=True)
+            self.assertEqual(r_ok.returncode, 0, r_ok.stdout + r_ok.stderr)
+            self.assertNotIn("blank pageless texture", r_ok.stdout)
+            self.assertIn("unkeyed animated object(s) (beat0_ghost)", r_ok.stdout)
+
+            # 2) Opting into story.profilePage: true while ui/profile.html is still blank properly fails check.mjs!
+            film_doc["story"]["profilePage"] = True
+            (fdir / "film.json").write_text(json.dumps(film_doc), encoding="utf-8")
+            r_bad = subprocess.run(["node", str(SKILL / "engine/scripts/check.mjs")], cwd=str(ROOT), env=env, capture_output=True, text=True)
+            self.assertNotEqual(r_bad.returncode, 0)
+            self.assertIn("the scene opens assets/ui.png, but ui wrote a blank pageless texture", r_bad.stdout)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

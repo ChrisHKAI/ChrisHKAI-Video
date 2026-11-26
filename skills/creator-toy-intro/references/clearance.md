@@ -136,5 +136,9 @@ When fixing a prop or card clash:
   warns when a settled end-card toy or prop stands in front of torn-paper labels
   because `makeProp` omitted `path[0]` (`ctaPropBlocksLabels`), warns when a
   grounded end-card plinth base lifts off the floor during a celebration hop
-  (`floatingCtaBase`), and warns when celebration sparks streak in front of the
-  settled toy's eyes.
+  (`floatingCtaBase`), warns when a compound prop's center hole, pupil, or LED
+  (`*_core`, `*_hole`, `*_pupil`, `*_led*`) is completely swallowed inside an
+  opaque sibling `tube` cap or shell (`buriedCompoundCores`), warns when a
+  negative pain-point headline lingers past its reading floor over newly revealed
+  payoff cards (`lingeringPainHeadlines`), and warns when celebration sparks
+  streak in front of the settled toy's eyes.
