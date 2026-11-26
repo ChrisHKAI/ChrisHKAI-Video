@@ -13,7 +13,7 @@ import { clamp01, lerp, seg, smooth, easeIn, easeOut, easeInOut, backOut, TAU, v
 import { trs, qId, qEuler, qAxis, qMul, qRot, qFlat, apply, mulT } from "#engine/quat.js";
 import { makeSegments } from "#engine/segments.js";
 import { line, declareLine, putLine, facing, shade } from "#engine/lettering.js";
-import { picture, cutout } from "#engine/pictures.js";
+import { picture, framedPicture, wipePicture, screenPicture, cutout } from "#engine/pictures.js";
 import { places } from "./places.js";
 
 const L = await import(pathToFileURL(fromSkill("themes", film.theme, "layout.js")).href);
@@ -33,8 +33,8 @@ const coverAspect = (f, w, h) => { const c = readFilmJSON(f, null); return c ? c
 const WALL_W_M = S.coverMM / 1000;
 export const CTA_MODE = film.cta?.layout ?? "sweep";
 const D = places(L, { portrait: PORTRAIT, aspect: ASPECT, safe: SAFE, ctaLayout: CTA_MODE }, { w: WALL_W_M, h2: WALL_W_M * coverAspect("build/cover2.json", 1983, 793), h3: WALL_W_M * coverAspect("build/cover.json", 1028, 411) });
-// the end card's layout: film.json "cta" pins positions, else the defaults for the orientation
-export const CTA_LAYOUT = D.cta;
+// the end card's layout: film.json "cta" pins positions (including cta.path), else the defaults for the orientation
+export const CTA_LAYOUT = Array.isArray(film.cta?.path) && film.cta.path.length === 2 ? { ...D.cta, path: film.cta.path } : D.cta;
 
 export const FPS = film.format.fps;
 export const BPM = film.format.bpm;
@@ -91,19 +91,29 @@ const sloganReadSecs = (text) => {
   return cjk / 4.5 + words / 3 + 1.5;
 };
 const maxLastLetter = +(STORY_DURATION - sloganReadSecs(SLOGAN) - 0.04).toFixed(4);
-// Steady "two-column" / "still" end cards have no sweeping pan to wait for: bring slogan, name and handle in soon
-// after landing (and early enough for long two-line slogans to pass pace.py) while keeping E.final independent for
-// the camera point (events.lettersEnd overrides the typing window directly when needed).
-const defaultLettersStart = maxLastLetter < EV0.ride + 0.8
-  ? Math.max(+(EV0.cut + 0.10).toFixed(4), +(maxLastLetter - Math.max(0.65, [...SLOGAN].length * 0.055)).toFixed(4))
-  : +(EV0.ride + 0.35).toFixed(4);
+// Steady "two-column" / "still" end cards stack name & handle ABOVE the slogan: slap name & handle in top-to-bottom
+// right after landing (EV0.ride + 0.08 s -> +0.28 s), followed by the slogan below (while still pulling earlier when a
+// single-line or extra-long slogan needs more reading time to pass pace.py, keeping name strictly ahead of letters).
+const multiLineSlo = (film.cta?.slogan?.length ?? 0) > 1;
+const firstLineN = Math.max(0, [...(film.cta?.slogan?.[0]?.text ?? "")].length - 1);
+const sloBudgetStart = multiLineSlo
+  ? +(maxLastLetter - firstLineN * 0.055).toFixed(4)
+  : +(maxLastLetter - Math.max(0.65, [...SLOGAN].length * 0.055)).toFixed(4);
+const defaultLettersStart = Math.max(
+  +(EV0.cut + 0.34).toFixed(4),
+  Math.min(+(EV0.ride + 0.38).toFixed(4), sloBudgetStart),
+);
+const defaultNameStart = Math.max(
+  +(EV0.cut + 0.06).toFixed(4),
+  Math.min(+(EV0.ride + 0.08).toFixed(4), +(defaultLettersStart - 0.28).toFixed(4)),
+);
 const twoColFinal = userEv.final ?? EV0.final;
 const twoColEv = (CTA_MODE === "two-column" || CTA_MODE === "still") ? {
   ...(!("glide" in userEv) ? { glide: [+(EV0.ride + 0.62).toFixed(4), +(Math.max(EV0.ride + 0.68, twoColFinal - 0.16)).toFixed(4)] } : {}),
-  ...(!("letters" in userEv) ? { letters: defaultLettersStart } : {}),
-  ...(!("name" in userEv) ? { name: +(EV0.ride + 1.05).toFixed(4) } : {}),
+  ...(!("name" in userEv) ? { name: defaultNameStart } : {}),
+  ...(!("letters" in userEv) ? { letters: "name" in userEv ? defaultLettersStart : Math.max(defaultLettersStart, +(defaultNameStart + 0.28).toFixed(4)) } : {}),
   ...(!("final" in userEv) ? { final: twoColFinal } : {}),
-  ...(!("crown" in userEv) ? { crown: [+(EV0.ride + 1.55).toFixed(4), +(EV0.ride + 1.8).toFixed(4)] } : {}),
+  ...(!("crown" in userEv) ? { crown: [+(defaultNameStart + 0.50).toFixed(4), +(defaultNameStart + 0.75).toFixed(4)] } : {}),
 } : {};
 export const EV = { ...EV0, ...twoColEv };
 // the slogan's letters land a half beat apart; a long one closes up (16th notes, say) so its last letter is
@@ -142,7 +152,7 @@ const propGlyph = {
 };
 export const PROP = (await import(PROP_URL)).makeProp({
   film, E: EV, cta: (x, y, z) => [CTA[0] + x, CTA[1] + y, CTA[2] + z], path: CTA_LAYOUT.path, readFilmJSON, glyph: propGlyph,
-  lib: { clamp01, lerp, seg, smooth, easeIn, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, qAxis, qMul, qRot, qFlat, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine, facing, shade, picture, cutout },
+  lib: { clamp01, lerp, seg, smooth, easeIn, easeOut, easeInOut, backOut, TAU, v3, trs, qId, qEuler, qAxis, qMul, qRot, qFlat, apply, mulT, HIDDEN: 1e-4, line, declareLine, putLine, facing, shade, picture, framedPicture, wipePicture, screenPicture, cutout },
 });
 export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // camera keys: target = [UI x, UI y, height mm] or a tracker name; dist m,

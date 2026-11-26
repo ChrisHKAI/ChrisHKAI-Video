@@ -36,20 +36,28 @@ def note(name):
 
 
 SHARPS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-QUALITY = [("maj7", (4, 7, 11)), ("m7b5", (3, 6, 10)), ("m7", (3, 7, 10)), ("m6", (3, 7, 9)), ("dim7", (3, 6, 9)), ("dim", (3, 6)),
-           ("aug", (4, 8)), ("+", (4, 8)), ("sus2", (2, 7)), ("sus4", (5, 7)), ("sus", (5, 7)), ("add9", (4, 7, 14)),
-           ("m9", (3, 7, 10, 14)), ("9", (4, 7, 10, 14)), ("m", (3, 7)), ("7", (4, 7, 10)), ("6", (4, 7, 9)), ("", (4, 7))]
+QUALITY = [
+    ("maj13", (4, 7, 11, 14, 21)), ("maj11", (4, 7, 11, 14, 17)), ("maj9", (4, 7, 11, 14)), ("maj7", (4, 7, 11)),
+    ("mmaj7", (3, 7, 11)), ("m7b5", (3, 6, 10)), ("min9", (3, 7, 10, 14)), ("min7", (3, 7, 10)), ("min6", (3, 7, 9)),
+    ("m13", (3, 7, 10, 14, 21)), ("m11", (3, 7, 10, 14, 17)), ("m9", (3, 7, 10, 14)), ("m7", (3, 7, 10)), ("m6", (3, 7, 9)),
+    ("dim7", (3, 6, 9)), ("dim", (3, 6)), ("aug7", (4, 8, 10)), ("aug", (4, 8)), ("+", (4, 8)),
+    ("9sus4", (5, 7, 10, 14)), ("7sus4", (5, 7, 10)), ("7sus2", (2, 7, 10)), ("sus2", (2, 7)), ("sus4", (5, 7)), ("sus", (5, 7)),
+    ("6/9", (4, 7, 9, 14)), ("69", (4, 7, 9, 14)), ("add11", (4, 7, 17)), ("add9", (4, 7, 14)), ("add4", (4, 5, 7)), ("add2", (2, 4, 7)),
+    ("7b9", (4, 7, 10, 13)), ("7#9", (4, 7, 10, 15)), ("7b5", (4, 6, 10)), ("7#5", (4, 8, 10)),
+    ("13", (4, 7, 10, 14, 21)), ("11", (4, 7, 10, 14, 17)), ("9", (4, 7, 10, 14)),
+    ("min", (3, 7)), ("maj", (4, 7)), ("5", (7, 12)), ("m", (3, 7)), ("7", (4, 7, 10)), ("6", (4, 7, 9)), ("", (4, 7)),
+]
 
 
 def chord_tones(name):
-    """Any chord name (G, F#m, Dmaj7, Bbsus4, C/E …): its root's pitch class and the intervals above it."""
+    """Any chord name (G, F#m, Dmaj7, Gmaj9, Cm6, Bbsus4, C/E …): its root's pitch class and the intervals above it."""
     m = re.fullmatch(r"([A-G][#b]?)(.*?)(?:/[A-G][#b]?)?", name.strip())
     if not m:
-        raise ValueError(f"chord {name!r}: write a root A–G, then m, 7, maj7, m7, sus2, sus4, dim, aug, 6, add9 or 9")
+        raise ValueError(f"chord {name!r}: write a root A–G, then m, 7, maj7, maj9, m7, m6, sus2, sus4, dim, aug, 6, 6/9, add9 or 9")
     root = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#", "Cb": "B", "Fb": "E"}.get(m[1], m[1])
     q = next((iv for k, iv in QUALITY if m[2] == k), None)
     if q is None:
-        raise ValueError(f"chord {name!r}: {m[2]!r} is not a chord quality the score knows (m, 7, maj7, m7, sus2, sus4, dim, aug, 6, add9, 9)")
+        raise ValueError(f"chord {name!r}: {m[2]!r} is not a chord quality the score knows (m, 7, maj7, maj9, m7, m6, sus2, sus4, dim, aug, 6, 6/9, add9, 9, 11, 13)")
     return SHARPS.index(root), q
 
 

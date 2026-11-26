@@ -357,6 +357,13 @@ if CL.exists() and (FILM / "build/anim.json").exists() and CL.stat().st_mtime >=
     if "labels" in cl_data:
         lbs = cl_data["labels"]
         checks += [(False, W["c_labelclip"].format(a=f"{m['from']:.1f}", b=f"{m['to']:.1f}", x=m["a"], y=m["b"], d=round(m["depth"] * 1000))) for m in lbs] or [(True, W["c_labelclear"])]
+    for m in cl_data.get("coplanar") or []:
+        msg = {
+            "zh-Hant": f"{m['from']:.1f}–{m['to']:.1f} 秒畫面卡「{m['card']}」同背板「{m['solid']}」貼埋同一平面，渲染會切走半邊畫面：將畫面卡移前 1 mm 以上，或者改用 kit.screenPicture()",
+            "zh-Hans": f"{m['from']:.1f}–{m['to']:.1f} 秒画面卡「{m['card']}」与背板「{m['solid']}」贴在同一平面，渲染会切掉半边画面：把画面卡前移 1 mm 以上，或改用 kit.screenPicture()",
+            "en": f"{m['from']:.1f}–{m['to']:.1f} s: picture card {m['card']} lies flush with {m['solid']} and will cut or darken in Cycles: step it >= 1 mm forward, or use kit.screenPicture()",
+        }[LANG if LANG in ("zh-Hant", "zh-Hans", "en") else "zh-Hant"]
+        checks.append((False, msg))
 else:
     checks.append((False, W["c_clipnone"]))
 

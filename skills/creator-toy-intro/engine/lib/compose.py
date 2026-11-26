@@ -26,8 +26,10 @@ from pathlib import Path
 import numpy as np
 
 LIB = Path(__file__).resolve().parent
+sys.path.insert(0, str(LIB))
 sys.path.insert(0, str(LIB.parent / "vendor" / "lemo"))
 from sfx import add  # noqa: E402  a mono sound into a stereo buffer, panned
+from synth import Chords  # noqa: E402  dynamic chord voicings for any chord symbol
 
 BIG = ("pop", "lock", "slam", "tower")
 NAMES = {"C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11}
@@ -87,6 +89,7 @@ def context(TL, F, synth, sr, n, dur, story_pieces):
     except (SystemExit, ImportError):
         c.real = None
     c.add, c.midi = add, midi
+    c.chord = lambda name: [midi(x) for x in CHORDS[name]]
     return c
 
 
@@ -102,7 +105,7 @@ def load(path):
 
 # ── a worked score ──────────────────────────────────────────────────────────
 # To start from, never to keep: its key, chords, motif and instruments are placeholders for this film's own.
-CHORDS = {"G": ["G2", "B2", "D3", "G3"], "Em": ["E2", "G2", "B2", "E3"], "C": ["C3", "E3", "G3", "C4"], "D": ["D3", "F#3", "A3", "D4"], "Am": ["A2", "C3", "E3", "A3"]}
+CHORDS = Chords({"G": ["G2", "B2", "D3", "G3"], "Em": ["E2", "G2", "B2", "E3"], "C": ["C3", "E3", "G3", "C4"], "D": ["D3", "F#3", "A3", "D4"], "Am": ["A2", "C3", "E3", "A3"]}, "pad")
 STORY = {"opening": ["G", "C"], "act2": ["G", "Em", "C", "D"], "act3": ["Em", "C", "G", "D"], "exit": ["C", "D"], "endCard": ["C", "D", "G", "G"]}
 
 

@@ -1767,6 +1767,75 @@ class V0815EngineImprovementTests(unittest.TestCase):
             self.assertNotIn("all 0 characters", r_list.stdout)
             self.assertRegex(r_list.stdout, r"have all [1-9]\d+ characters the film shows")
 
+    def test_v0821_expanded_chord_qualities_compose_voicing_and_check_chord_validation(self):
+        sys.path.insert(0, str(SKILL / "engine/lib"))
+        import synth
+        import compose
+
+        synth.setup(2.0, 0.5)
+        pad_chords = synth.Chords({}, "pad")
+        bed_chords = synth.Chords({}, "bed")
+        for sym in ("Gmaj9", "Cm6", "F#m7b5", "D6/9", "Bbadd9", "E7sus4", "Am11", "C/E", "D5"):
+            self.assertEqual(len(pad_chords[sym]), 4, sym)
+            self.assertEqual(len(bed_chords[sym]), 4, sym)
+            self.assertEqual(len(compose.CHORDS[sym]), 4, sym)
+
+        tl = {
+            "BPM": 120, "BEAT": 0.5, "BAR": 2.0,
+            "cues": [{"t": 0.5, "kind": "pop"}],
+            "SEGMENTS": [{"kind": "beat", "f0": 0.0, "f1": 2.0, "beat": "beats/voyage.js", "music": {"groove": "light", "chords": ["Cm6", "Gmaj9"]}}],
+        }
+        ctx = compose.context(tl, {}, synth, synth.SR, int(synth.SR * 2.0), 2.0, {"opening": [0, 2]})
+        ctx.real = None
+        self.assertEqual(len(ctx.chord("Gmaj9")), 4)
+        buf = compose.example(ctx)
+        self.assertEqual(buf.shape, (int(synth.SR * 2.0), 2))
+        self.assertGreater(float(abs(buf).max()), 0.01)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "build").mkdir()
+            (fdir / "beats").mkdir()
+            g_stub = {"advance": 0.9, "rings": [[[0, 0], [0.5, 0], [0.5, 0.8], [0, 0.8]]]}
+            (fdir / "build/glyphs.json").write_text(json.dumps({
+                f"{role}:{ch}": g_stub for role in ("cjk", "latin", "heavy", "display") for ch in set("0123456789万阅读想风@xaiwind测试")
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12, "center": [0, 0.06, 0], "colors": {"body": "#2F61EB"},
+                "joints": {"body": {"p": [0, 0.04, 0]}},
+                "parts": [{"name": "torso", "group": "body", "shape": "roundBox", "pos": [0, 0.05, 0], "size": [0.04, 0.05, 0.03], "mat": "body"}],
+            }))
+            (fdir / "beats/bad_chord.js").write_text(
+                "export function makeBeat({ at, fov, aspect, kit }) {\n"
+                "  return {\n"
+                "    declare() {}, sample() {}, pose: () => null,\n"
+                "    camera: kit.cameraFrom([{ t: 0, target: at(0, 0.1, 0), dist: 0.7, elev: 6, az: 0 }], { fov, aspect }),\n"
+                "    cues() {}, reads: [], music: { groove: 'normal', chords: ['Cm6', 'Gmaj9', 'Gbad9'] }, storyboard: {},\n"
+                "  };\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "bad-chord", "template": "isnail-30", "theme": "x-desktop", "step": "story",
+                "format": {"fps": 30, "bpm": 120, "duration": 6, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "profile": {"name": "想风", "handle": "xaiwind", "bio": ["AI"]},
+                "posts": {"pinned": {"count": "1万", "cover": "assets/a.jpg"}, "retro": {"count": "1万"}},
+                "counter": {"value": 1, "unit": "万", "label": "阅读", "display": "1万"},
+                "story": {"profilePage": False, "segments": [{"beat": "beats/bad_chord.js", "bars": 3}]},
+                "cta": {"slogan": [{"text": "测试", "paper": "cream"}], "name": {"text": "想风"}, "handle": {"text": "@xaiwind"}, "prop": {"kind": "plinth"}},
+            }))
+            r_chk = subprocess.run(
+                ["node", str(SKILL / "engine/scripts/check.mjs")],
+                cwd=str(ROOT),
+                env={**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)},
+                capture_output=True, text=True,
+            )
+            self.assertNotEqual(r_chk.returncode, 0)
+            self.assertIn('unknown chord "Gbad9"', r_chk.stdout)
+            self.assertNotIn("Cm6", r_chk.stdout)
+            self.assertNotIn("Gmaj9", r_chk.stdout)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

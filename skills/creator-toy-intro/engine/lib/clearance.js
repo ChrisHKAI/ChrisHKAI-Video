@@ -3398,6 +3398,141 @@ export function describeEmptyCutFrames(items) {
 }
 
 /**
+ * Detect coplanar or burying backing solids (`roundBox`, `box`, `prism`, `plate`, `wallSlab`)—including same-group
+ * sibling parts like a laptop's dark off-screen `beat0_ndesk_lscrOff` behind `beat0_ndesk_lscr`—whose front face lies
+ * within `minGap` (default 0.45 mm) behind, flush with (`0.0 mm`), or slightly in front of an active `uiBox` picture
+ * card's front image face (`y_local = 0`, outward normal `rot(q, [0, 1, 0])`). In Cycles, coplanar or sub-0.4 mm faces
+ * intersect across the middle of the screen after 6-decimal track rounding and slice half the image dark.
+ */
+export function coplanarCards(anim, { aspect = 16 / 9, minGap = 0.00045, maxOver = 0.0035, minShare = 0.14, minSecs = 0.15, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera")) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const BUILTIN_CARD = /^(panel_|wall|piece|sticker2d$)/;
+  const BUILTIN_SOLID = /^(panel_|strip_|glow_|stat_|wall|piece|sticker2d$|flake_|spark_|bit_|label\d+_|crown$|cta_floor$|floor$|blob$|logo$)/;
+  const SOLID_TYPES = new Set(["box", "roundBox", "prism", "plate", "wallSlab"]);
+
+  const cards = [];
+  const solids = [];
+  for (const o of anim.objects) {
+    if (!o.geo || under(o, "hero") || o.letter || o.mat?.outline || SKIP_NAME.test(o.name)) continue;
+    if (o.geo.type === "uiBox" && Array.isArray(o.geo.rect) && o.geo.rect.length >= 4 && !BUILTIN_CARD.test(o.name)) {
+      cards.push({ o, unit: o.geo.unitScale ?? 1 });
+    } else if (SOLID_TYPES.has(o.geo.type) && !BUILTIN_SOLID.test(o.name) && !/_plate$/.test(o.name)
+      && o.mat?.type !== "flake" && o.mat?.type !== "glow" && o.mat?.type !== "bubble") {
+      const spec = propBoundsSpec(o);
+      if (spec) solids.push({ o, spec });
+    }
+  }
+  if (!cards.length || !solids.length) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const unit3 = (v) => { const n = Math.hypot(...v) || 1; return [v[0] / n, v[1] / n, v[2] / n]; };
+  const extAlong = (obb, ax) => obb.h[0] * Math.abs(dot3(obb.axes[0], ax)) + obb.h[1] * Math.abs(dot3(obb.axes[1], ax)) + obb.h[2] * Math.abs(dot3(obb.axes[2], ax));
+
+  const dt = every / anim.fps;
+  const prevSolidC = new Map(), open = new Map(), out = [];
+  for (let f = 0; f < anim.frames; f += every) {
+    const s = f * SUB, t = f / anim.fps, memo = new Map();
+    const camW = worldOf("camera", s, memo);
+    const fovDeg = fovs?.[Math.min(s, fovs.length - 1)] ?? 30;
+    const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+    const seenNow = new Set();
+
+    const activeSolids = [];
+    for (const sd of solids) {
+      const w = worldOf(sd.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.05) { prevSolidC.delete(sd.o.name); continue; }
+      const obb = worldOBB(sd.spec, w);
+      const prev = prevSolidC.get(sd.o.name);
+      prevSolidC.set(sd.o.name, obb.c);
+      if (prev && Math.hypot(obb.c[0] - prev[0], obb.c[1] - prev[1], obb.c[2] - prev[2]) / dt > 0.16) continue; // sweeping wipe bar
+      activeSolids.push({ o: sd.o, obb });
+    }
+    if (!activeSolids.length) {
+      for (const [k, v] of open) { out.push(v); open.delete(k); }
+      continue;
+    }
+
+    for (const c of cards) {
+      const w = worldOf(c.o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.15 * c.unit) continue;
+      const [x0, y0, rw, rh] = c.o.geo.rect;
+      const hu = (rw * MM / 2) * Math.abs(w.s[0]);
+      const hv = (rh * MM / 2) * Math.abs(w.s[2]);
+      if (Math.min(hu, hv) < 0.008 || Math.max(hu, hv) > 0.48) continue;
+      const faceCenter = apply(w, [(x0 + rw / 2) * MM, 0, (y0 + rh / 2) * MM]);
+      const N = unit3(rot(w.q, [0, 1, 0]));
+      if (Math.abs(N[1]) >= 0.65) continue; // flat floor-lying mat/page
+      const lp = toLocal(camW, faceCenter);
+      if (lp[2] >= -0.05 || -lp[2] > 5.5) continue;
+      const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+      if (Math.abs(nx) > 1.02 || Math.abs(ny) > 1.02) continue;
+      const toCam = unit3([camW.p[0] - faceCenter[0], camW.p[1] - faceCenter[1], camW.p[2] - faceCenter[2]]);
+      if (dot3(N, toCam) < 0.15) continue;
+
+      const U = unit3(rot(w.q, [1, 0, 0]));
+      const V = unit3(rot(w.q, [0, 0, 1]));
+      const cu = 0.90 * hu, cv = 0.90 * hv;
+      const coreArea = Math.max(1e-8, 4 * cu * cv);
+
+      for (const sd of activeSolids) {
+        const rel = [sd.obb.c[0] - faceCenter[0], sd.obb.c[1] - faceCenter[1], sd.obb.c[2] - faceCenter[2]];
+        if (dot3(rel, rel) > (Math.hypot(hu, hv) + sd.obb.r) ** 2) continue;
+        const nC = dot3(rel, N), nE = extAlong(sd.obb, N);
+        const nLo = nC - nE, nHi = nC + nE;
+        // Backing / flush surface: back sits behind or within 2 mm of screen face, and front reaches >= -minGap
+        if (nLo > 0.0020 || nHi < -minGap || nHi > maxOver) continue;
+        const uC = dot3(rel, U), uE = extAlong(sd.obb, U);
+        const vC = dot3(rel, V), vE = extAlong(sd.obb, V);
+        const ovU = Math.min(cu, uC + uE) - Math.max(-cu, uC - uE);
+        const ovV = Math.min(cv, vC + vE) - Math.max(-cv, vC - vE);
+        if (ovU <= 0 || ovV <= 0) continue;
+        const share = (ovU * ovV) / coreArea;
+        if (share < minShare) continue;
+        // Ignore thin elongated wipe/divider bars in front of the screen (handled by frameSlicesCard)
+        if (nLo > 0.0002 && Math.max(uE, vE) / Math.max(1e-5, Math.min(uE, vE)) >= 3.0) continue;
+        const gap = -nHi; // <= 0 when coplanar or protruding in front; (0, minGap] when dangerously flush
+        const key = `${c.o.name}|${sd.o.name}`;
+        seenNow.add(key);
+        const cur = open.get(key);
+        if (!cur) open.set(key, { card: c.o.name, solid: sd.o.name, from: t, to: t, peak: t, gap, share });
+        else {
+          cur.to = t;
+          cur.share = Math.max(cur.share, share);
+          if (gap < cur.gap) Object.assign(cur, { gap, peak: t });
+        }
+      }
+    }
+    for (const [k, v] of open) if (!seenNow.has(k)) { out.push(v); open.delete(k); }
+  }
+  out.push(...open.values());
+  return out.filter((m) => m.to - m.from >= minSecs - 1e-6).sort((a, b) => a.from - b.from || a.gap - b.gap);
+}
+
+export function describeCoplanarCards(items) {
+  return items.map((m) => {
+    const gapMm = +(m.gap * 1000).toFixed(1);
+    const rel = gapMm < -0.1 ? `${Math.abs(gapMm).toFixed(1)} mm behind ${m.solid}'s front face` : `coplanar/flush with ${m.solid} (${Math.max(0, gapMm).toFixed(1)} mm gap)`;
+    return {
+      kind: "into",
+      ...m,
+      gapMm,
+      text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: picture card ${m.card} is ${rel} across ${Math.round(m.share * 100)}% of its screen and will cut or darken in Cycles (worst at ${m.peak.toFixed(2)} s)`,
+    };
+  });
+}
+
+/**
  * Maximum outward Z arm-lift angle (radians) that keeps a toy's hands visible outside its head silhouette.
  * Slender-headed toys keep the full target angle (e.g. 2.5 rad); wide-headed chibi/sculpt toys clamp
  * toward an outward Victory-V (~1.6–1.8 rad) so short arms do not disappear behind the cheeks.

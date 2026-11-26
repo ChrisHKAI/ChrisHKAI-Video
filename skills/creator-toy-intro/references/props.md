@@ -105,9 +105,10 @@ the slogan slaps down behind it. To avoid repeating the sweeping end card—or
 when a wide/tall prop would clip the bottom or right edge mid-pan—set
 `"layout": "two-column"` (or `"still"`) in `film.json` `"cta"`:
 - **Landscape (16:9)**: steady, gently settling camera with the toy and full
-  uncropped prop on the left (`x = -0.34`), and the name, handle, and
-  two-line slogan stacked unobstructed on the right (`x = 0.22`) starting
-  shortly after landing (4+ s reading time). Always anchor custom `makeProp({
+  uncropped prop on the left (`x = -0.34`, or `film.json` `cta.path`), and the name, handle, and
+  two-line slogan stacked unobstructed on the right (`x = 0.22`) arriving
+  top-to-bottom (`name` → `handle` → `slogan`) right after landing (4+ s
+  reading time). Always anchor custom `makeProp({
   path })` pedestals on `path[0]..path[1]` rather than hardcoding `x = 0` so
   the toy and prop never stand in front of the right-column labels
   (`ctaPropBlocksLabels` warns in `check` / `clearance`). Unpinned long

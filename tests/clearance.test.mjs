@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
@@ -2046,6 +2046,138 @@ test("v0.8.20: shared-prefix partial cardScreenOverlaps, emptyCutFrames, end-car
     assert.ok(Array.isArray(got.salR) && Array.isArray(got.salL) && got.salR[2] > 0.04);
     assert.ok(Math.abs(got.salArmRz) < 0.5, "salute must not flare armR.z into a horizontal T-pose");
     assert.ok(Array.isArray(got.blkR) && Array.isArray(got.blkL) && got.blkR[2] > 0.06);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("v0.8.21: coplanarCards catches same-group laptop screen z-fighting while screenPicture, cta.path & top-to-bottom two-column order pass", () => {
+  const UPRIGHT = qAxis([1, 0, 0], Math.PI / 2);
+  // 1) Coplanar laptop screen (`beat0_ndesk_lscr` front at z=0.0028 vs `beat0_ndesk_lscrOff` front at z=0.0020 + 0.0008 = 0.0028)
+  const makeLaptopAnim = (scrZ) => ({
+    fps: 30,
+    sub: 1,
+    frames: 15,
+    samples: 15,
+    scalars: { fov: Array(15).fill(30) },
+    objects: [
+      { name: "camera", parent: "root", camera: true, tr: [0, 0.14, 0.68, 0, 0, 0, 1, 1, 1, 1] },
+      {
+        name: "beat0_ndesk_llid",
+        parent: "root",
+        geo: { type: "roundBox", size: [0.074, 0.040, 0.0034], radius: 0.0014 },
+        mat: { type: "type", color: "#EBE2CE" },
+        tr: [0.18, 0.12, 0, 0, 0, 0, 1, 1, 1, 1],
+      },
+      {
+        name: "beat0_ndesk_lscrOff",
+        parent: "root",
+        geo: { type: "roundBox", size: [0.068, 0.034, 0.0016], radius: 0.0004 },
+        mat: { type: "type", color: "#18241E" },
+        tr: [0.18, 0.12, 0.0020, 0, 0, 0, 1, 1, 1, 1],
+      },
+      {
+        name: "beat0_ndesk_lscr",
+        parent: "root",
+        geo: { type: "uiBox", rect: [-32, -16, 64, 32], thickness: 0.001, unitScale: 1 },
+        mat: { type: "ui", image: "assets/site.jpg" },
+        tr: [0.18, 0.12, scrZ, ...UPRIGHT, 1, 1, 1],
+      },
+    ],
+    tracks: {},
+  });
+
+  const broken = coplanarCards(makeLaptopAnim(0.0028), { aspect: 16 / 9 });
+  assert.equal(broken.length, 1, "coplanar 0.0 mm laptop off-screen must be flagged even in the same prop group");
+  assert.equal(broken[0].card, "beat0_ndesk_lscr");
+  assert.equal(broken[0].solid, "beat0_ndesk_lscrOff");
+  assert.match(describeCoplanarCards(broken)[0].text, /coplanar\/flush with beat0_ndesk_lscrOff/);
+
+  const buried = coplanarCards(makeLaptopAnim(0.0024), { aspect: 16 / 9 });
+  assert.equal(buried.length, 1, "buried screen behind off-screen front face must be flagged");
+  assert.match(describeCoplanarCards(buried)[0].text, /behind beat0_ndesk_lscrOff's front face/);
+
+  assert.equal(coplanarCards(makeLaptopAnim(0.0040), { aspect: 16 / 9 }).length, 0, "1.2 mm air gap passes cleanly");
+
+  // 2) kit.screenPicture() builds aspect-matched lid/off/pic with zero coplanar overlap on both put() and putHinge(),
+  //    and timeline.js honors film.cta.path + brings name -> handle -> letters in top-to-bottom order on two-column CTA
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-v0821-"));
+  try {
+    mkdirSync(join(dir, "build"), { recursive: true });
+    mkdirSync(join(dir, "assets"), { recursive: true });
+    mkdirSync(join(dir, "recipes"), { recursive: true });
+    // Minimal valid 200x100 PNG header for imageSize()
+    const pngHdr = Buffer.alloc(32);
+    pngHdr.writeUInt32BE(0x89504e47, 0);
+    pngHdr.writeUInt32BE(0x0d0a1a0a, 4);
+    pngHdr.writeUInt32BE(13, 8);
+    pngHdr.write("IHDR", 12);
+    pngHdr.writeUInt32BE(200, 16);
+    pngHdr.writeUInt32BE(100, 20);
+    writeFileSync(join(dir, "assets/screen.png"), pngHdr);
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({ height: 0.12, center: [0, 0.06, 0], colors: { body: "#2F61EB" }, joints: { body: { p: [0, 0, 0] } }, parts: [] }));
+    writeFileSync(join(dir, "build/glyphs.json"), "{}");
+    writeFileSync(join(dir, "recipes/prop.js"), `export function makeProp({ path, cta }) { return { gotPath: path, declare() {}, sample() {}, topAt: () => cta(path[0], 0.08, 0), cues() {} }; }\n`);
+    writeFileSync(join(dir, "film.json"), JSON.stringify({
+      id: "v0821-cta",
+      template: "isnail-30",
+      theme: "x-desktop",
+      format: { fps: 30, bpm: 120, duration: 30, size: [1920, 1080] },
+      toy: "toy.json",
+      profile: { name: "想风", handle: "@xaiwind", bio: ["AI"] },
+      posts: { pinned: { date: "2026-03-01", title: "A", counts: { views: "27万" }, cover: "assets/screen.png" }, retro: { date: "2026-03-02", title: "B", counts: { views: "21万" }, cover: "assets/screen.png" } },
+      counter: { value: 27, unit: "万", label: "阅读", display: "27万" },
+      cta: {
+        layout: "two-column",
+        path: [-0.28, -0.28],
+        slogan: [{ text: "把 AI 和出海", paper: "cream" }, { text: "讲成新手能上手的事", paper: "red" }],
+        name: { text: "想风", paper: "cream" },
+        handle: { text: "@xaiwind", paper: "blue" },
+        prop: { module: "recipes/prop.js" },
+      },
+      story: { exit: "jump", segments: [{ beat: "phrase", bars: 12, text: "测试" }, { story: [24, "end"] }] },
+    }));
+
+    const tlUrl = new URL("../skills/creator-toy-intro/templates/isnail-30/timeline.js", import.meta.url).href;
+    const picUrl = new URL("../skills/creator-toy-intro/engine/lib/pictures.js", import.meta.url).href;
+    const quatUrl = new URL("../skills/creator-toy-intro/engine/lib/quat.js", import.meta.url).href;
+    const probe = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `import { EV, CTA_LAYOUT, PROP } from ${JSON.stringify(tlUrl)};
+         import { screenPicture } from ${JSON.stringify(picUrl)};
+         import { trs, qEuler } from ${JSON.stringify(quatUrl)};
+         const sp = screenPicture("assets/screen.png", 0.066, { border: 0.004 });
+         const decl = [], placed = {};
+         sp.declare((o) => decl.push(o), "beat0_lap");
+         sp.putHinge((n, tr) => { placed[n] = [...tr.p, ...tr.q, ...(Array.isArray(tr.s) ? tr.s : [tr.s, tr.s, tr.s])]; }, "beat0_lap", trs([0.16, 0.10, 0], qEuler(-0.20, -0.30, 0), 1), { lit: 1 });
+         console.log(JSON.stringify({ ev: EV, layoutPath: CTA_LAYOUT.path, propPath: PROP.gotPath, w: sp.w, h: sp.h, lidSize: sp.lidSize, decl, placed }));`,
+      ],
+      { env: { ...process.env, FILM: dir }, encoding: "utf8" },
+    );
+    assert.equal(probe.status, 0, probe.stderr);
+    const got = JSON.parse(probe.stdout.trim().split("\n").at(-1));
+    assert.deepEqual(got.layoutPath, [-0.28, -0.28]);
+    assert.deepEqual(got.propPath, [-0.28, -0.28]);
+    assert.ok(got.ev.name < got.ev.letters, `two-column top name (${got.ev.name}) must arrive before bottom slogan (${got.ev.letters})`);
+    assert.equal(got.h, 0.033);
+    assert.deepEqual(got.lidSize, [0.074, 0.041, 0.0034]);
+
+    const hingeAnim = {
+      fps: 30,
+      sub: 1,
+      frames: 12,
+      samples: 12,
+      scalars: { fov: Array(12).fill(30) },
+      objects: [
+        { name: "camera", parent: "root", camera: true, tr: [0, 0.14, 0.68, 0, 0, 0, 1, 1, 1, 1] },
+        ...got.decl.map((o) => ({ ...o, parent: "root", tr: got.placed[o.name] })),
+      ],
+      tracks: {},
+    };
+    assert.equal(coplanarCards(hingeAnim, { aspect: 16 / 9 }).length, 0, "screenPicture.putHinge must have zero coplanar overlap");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

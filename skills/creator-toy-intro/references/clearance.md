@@ -118,10 +118,14 @@ When fixing a prop or card clash:
   toy or custom beat/CTA prop that never comes within range of the active
   camera—catching both missing `at(x, y, z)` (`x ≈ 0`) and accidental double
   `at(POS[0], POS[1], POS[2])` calls (`x ≈ 2 × stage`).
-- **Unscaled picture cards, bezel overflows, prop-blocked plaques & labels, and floating bases
-  (`oversizedUiBoxes`, `movieWraps`, `cardBezelMismatches`, `frameSlicesCard`,
+- **Unscaled picture cards, coplanar screens, bezel overflows, prop-blocked plaques & labels, and floating bases
+  (`oversizedUiBoxes`, `coplanarCards`, `movieWraps`, `cardBezelMismatches`, `frameSlicesCard`,
   `propBlocksCard`, `ctaPropBlocksLabels`, `floatingCtaBase`, `sparksOverHeroFace`)**:
   flags `kit.picture()` cards placed with raw `trs(...)` instead of `pic.at(...)`,
+  blocks `--render` when a picture card's front image face lies coplanar with or
+  `< 0.45 mm` ahead of a backing lid/off-screen solid (even inside the same prop
+  prefix, where Cycles track rounding slices half the screen dark—use
+  `kit.screenPicture()` or `kit.framedPicture()`),
   warns when a cyclic video card wraps while visible, warns when a picture card
   protrudes past its backing bezel or below the stage floor (use
   `kit.framedPicture()` + `.standY()`), warns when parked hollow foreground

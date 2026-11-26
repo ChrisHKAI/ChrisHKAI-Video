@@ -115,6 +115,69 @@ export function wipePicture(beforeFile, afterFile, w, { beforeFrameColor, afterF
   };
 }
 
+// a 3-part display assembly (outer lid/housing + recessed dark off-screen glass + active 1 mm picture slab) for laptops,
+// monitors, tablets and phones: matches the screenshot's exact aspect ratio and keeps a 1.5 mm air gap in front of the
+// dark glass so the lit screen never z-fights or cuts in half in Cycles (`put` places by screen centre; `putHinge`
+// rotates a laptop lid around its bottom hinge edge).
+export function screenPicture(file, w, {
+  border = 0.004,
+  innerRim = 0.001,
+  lidDepth = 0.0034,
+  lidRadius = 0.0014,
+  lidColor = "#EBE2CE",
+  lidRough = 0.34,
+  lidMat = null,
+  offColor = "#18241E",
+  offRough = 0.42,
+  offMat = null,
+  antiglare = true,
+  ...picOpts
+} = {}) {
+  const pic = picture(file, w, { thickness: 0.001, antiglare, ...picOpts });
+  const lidSize = [+(pic.w + border * 2).toFixed(6), +(pic.h + border * 2).toFixed(6), lidDepth];
+  const offSize = [+(pic.w + innerRim * 2).toFixed(6), +(pic.h + innerRim * 2).toFixed(6), 0.001];
+  const lidCy = +(lidSize[1] / 2).toFixed(6);
+  const zOff = +(lidDepth / 2 + 0.0003).toFixed(6);
+  const zPic = +(lidDepth / 2 + 0.0023).toFixed(6);
+  const lMat = lidMat ?? { type: "type", color: lidColor, emit: 0.0, rough: lidRough };
+  const oMat = offMat ?? { type: "type", color: offColor, emit: 0.0, rough: offRough };
+  return {
+    file, w: pic.w, h: pic.h, border, lidSize, offSize, lidCy, zOff, zPic, pic,
+    standY: (stageY = 0, gap = 0.003) => +(stageY + gap + lidSize[1] / 2).toFixed(6),
+    declare(add, prefix = "scr") {
+      add({ name: `${prefix}_lid`, geo: { type: "roundBox", size: lidSize, radius: lidRadius }, mat: lMat, anim: true });
+      add({ name: `${prefix}_off`, geo: { type: "roundBox", size: offSize, radius: 0.0003 }, mat: oMat, anim: true });
+      add({ name: `${prefix}_pic`, geo: pic.geo, mat: pic.mat, anim: true });
+    },
+    put(put, prefix, p, q = qId(), k = 1, { lit = 1 } = {}) {
+      if (k <= 0.01) {
+        const park = trs([p[0], p[1], p[2]], qId(), 1e-4);
+        put(`${prefix}_lid`, park);
+        put(`${prefix}_off`, park);
+        put(`${prefix}_pic`, pic.at(p, qId(), 1e-4));
+        return;
+      }
+      const root = trs(p, q, k);
+      put(`${prefix}_lid`, trs(apply(root, [0, 0, -zPic]), q, k));
+      put(`${prefix}_off`, trs(apply(root, [0, 0, zOff - zPic]), q, k));
+      put(`${prefix}_pic`, lit > 0.02 ? pic.at(p, q, k * lit) : pic.at([p[0], -2, p[2]], qId(), 1e-4));
+    },
+    putHinge(put, prefix, hingeTr, { lit = 1 } = {}) {
+      const k = Math.min(...hingeTr.s.map(Math.abs));
+      if (k <= 0.01) {
+        const park = trs([hingeTr.p[0], -2, hingeTr.p[2]], qId(), 1e-4);
+        put(`${prefix}_lid`, park);
+        put(`${prefix}_off`, park);
+        put(`${prefix}_pic`, pic.at([hingeTr.p[0], -2, hingeTr.p[2]], qId(), 1e-4));
+        return;
+      }
+      put(`${prefix}_lid`, trs(apply(hingeTr, [0, lidCy, 0]), hingeTr.q, k));
+      put(`${prefix}_off`, trs(apply(hingeTr, [0, lidCy, zOff]), hingeTr.q, k));
+      put(`${prefix}_pic`, lit > 0.02 ? pic.at(apply(hingeTr, [0, lidCy, zPic]), hingeTr.q, k * lit) : pic.at([hingeTr.p[0], -2, hingeTr.p[2]], qId(), 1e-4));
+    },
+  };
+}
+
 // two cards back to back (a badge's front and back): [front's transform, back's], the back turned round. A card's
 // body runs its thickness behind its face, so two cards whose faces are nearer than both thicknesses lie inside
 // each other and both render black: each face stands its own thickness (and a hair) out from p, along q's +z

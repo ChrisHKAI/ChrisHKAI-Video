@@ -13,7 +13,7 @@ import { join } from "node:path";
 import { film, fromFilm, fromSkill, TEMPLATE, fromTemplate, importTemplate } from "../lib/film.js";
 import { numberProvenanceIssues, resolveDirection } from "../lib/research.js";
 import { storyTestIssues } from "../lib/story-test.js";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames } from "../lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, sunkLetters, fastReveal, floatingSmallLetters, describeFloatingLetters, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards } from "../lib/clearance.js";
 
 const canonical = (v) => Array.isArray(v) ? v.map(canonical) : (v && typeof v === "object" ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical(v[k])])) : v);
 const filmSceneHash = (f) => { const { step: _step, ...rest } = f ?? {}; return createHash("sha256").update(JSON.stringify(canonical(rest))).digest("hex"); };
@@ -165,6 +165,21 @@ if (past("toy") && toy && film.profile) {
     } catch (e) {
       say("bad", `the world does not build: ${e.message.split("\n")[0]}`, hint(e));
     }
+    // Validate custom beat music.chords and music.groove symbols upfront before Python score synthesis
+    const CHORD_RE = /^[A-G][#b]?(?:maj13|maj11|maj9|maj7|mmaj7|m7b5|min9|min7|min6|m13|m11|m9|m7|m6|dim7|dim|aug7|aug|\+|9sus4|7sus4|7sus2|sus2|sus4|sus|6\/9|69|add11|add9|add4|add2|7b9|7#9|7b5|7#5|13|11|9|min|maj|5|m|7|6|)(?:\/[A-G][#b]?)?$/;
+    const GROOVE_SET = new Set(["normal", "light", "half", "double", "none"]);
+    for (const segInfo of (typeof W.timeline === "function" ? W.timeline()?.SEGMENTS ?? [] : [])) {
+      if (segInfo?.kind !== "beat" || !segInfo.music) continue;
+      const bName = segInfo.beat ?? "beat";
+      if (segInfo.music.groove && !GROOVE_SET.has(segInfo.music.groove)) {
+        say("warn", `${bName} music.groove "${segInfo.music.groove}" is not one of normal, light, half, double, none`, "references/beats.md");
+      }
+      for (const ch of segInfo.music.chords ?? []) {
+        if (typeof ch !== "string" || !CHORD_RE.test(ch.trim())) {
+          say("bad", `${bName} music.chords has unknown chord "${ch}"`, "write a root A–G (#/b) + m, 7, maj7, maj9, m7, m6, sus2, sus4, dim, aug, 6, 6/9, add9, 9, 11 or 13");
+        }
+      }
+    }
     // every picture or movie the scene opens
     const images = new Set(objects.flatMap((o) => [o.mat?.image, o.mat?.movie, o.geo?.img?.image]).filter(Boolean));
     if (objects.some((o) => o.mat?.type === "cover")) ["assets/cover-wall.png", "assets/cover-full.png"].forEach((p) => images.add(p));
@@ -279,6 +294,8 @@ if (past("toy") && toy && film.profile) {
     for (const m of ctaLabelBlocks) say("warn", `end-card toy or prop blocks labels: ${m.text}`, "anchor custom makeProp({ path }) pedestals along path[0]..path[1] (x = -0.34 in two-column landscape) so the toy and prop stay clear of the torn-paper labels (references/props.md)");
     const emptyCuts = describeEmptyCutFrames(emptyCutFrames(motion, {}));
     for (const m of emptyCuts) say("warn", `empty frame at shot cut: ${m.text}`, "start incoming stage props or toy entrance at g = 0 / EV.cut (not a frame later) so cuts never flash an empty dark frame");
+    const coplanar = describeCoplanarCards(coplanarCards(motion, { aspect: fw / fh }));
+    for (const m of coplanar) say(process.argv.includes("--render") ? "bad" : "warn", `coplanar or buried screen/card: ${m.text}`, "step the picture card >= 1 mm in front of its backing off-screen/lid, or use kit.screenPicture() / kit.framedPicture()");
     const palPath = fromFilm("build/palette.json");
     if (existsSync(palPath) && statSync(palPath).mtimeMs >= statSync(animPath).mtimeMs) {
       for (const c of json("build/palette.json")?.film?.cards ?? []) {
