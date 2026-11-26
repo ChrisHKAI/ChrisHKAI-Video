@@ -105,6 +105,11 @@ FILM=<film> python3 <skill>/engine/scripts/import-sculpt.py <sculpt folder> --ma
 ```
 
 Mesh at about 0.4 mm voxels while shaping (seconds), 0.25 mm for the film.
+When vertex-painting multi-colour sculpts (dark animal ears on a white head, a
+collar trim, or rolled sleeve cuffs on a tunic), mask colours by querying the
+signed distance to that exact SDF primitive (`d_ear < 0.0015`, `d_cuff < 0.0012`)
+rather than flat world `y`/`z` coordinate thresholds—axis cutoffs leave pale
+unpainted rims around curved ears or bleed tunic dye onto rolled cuffs.
 
 ## The signature move
 

@@ -34,8 +34,11 @@ Read only, always: never like, follow, comment or message.
 - The work itself, all of it, as it is today: what the posts are about. A
   repository: its README, its gallery or site and its folders (how many
   styles, tools, chapters there are now, and a picture of each); an
-  illustrator's drawings; a channel's videos; a product's own pages. Posts
-  say what happened; the work is what the film can show. Keep its pictures in
+  illustrator's drawings; a channel's videos; a product's own pages (when a
+  bio links a bare domain like `example.com` that returns `404` or refuses to
+  resolve, also try `https://www.example.com/` before concluding the site is
+  down; in `ego-browser`, run DOM read scripts via `ego-browser nodejs -e '...'`).
+  Posts say what happened; the work is what the film can show. Keep its pictures in
   `assets/work/` (all of them when there are many: a quantity is material
   too), and today's count of it in `extra` with its source and date. A shop
   that opened with 12 products and sells 80 today says 80 on screen; the 12 is
@@ -191,6 +194,11 @@ for a page that is not a profile.
   from) and `read` (the date). Historical milestones additionally keep their
   event date; they are not substituted for current counts. For supplied
   screenshots, record when received/read and label them as supplied evidence.
+  Keep counter units consistent across the film's on-screen copy (do not mix
+  `16万` on one beat with Latin shorthand `20w+` on the next—write `20万+`),
+  and pair unfamiliar circle acronyms (`GEO`, `FDE`) with plain-language words
+  on the same frame so first-time viewers outside that niche understand at once
+  (`resolveDirection` warns on both).
 - Their type: the face their own covers, site or titles use (a serif, a brush,
   a mono, a rounded face). Note it: the film's faces are chosen from it
   (beats.md, "Choosing the faces"), in film.json `type` (`display`: `[{

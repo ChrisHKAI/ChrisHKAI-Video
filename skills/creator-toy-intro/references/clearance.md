@@ -97,18 +97,20 @@ When fixing a prop or card clash:
   cut off by a frame edge for `>= 0.25 s` (fast vertical jump entries/exits are
   ignored). Pull the camera back, lock horizontal camera drift, or switch the
   end card to `cta.layout: "two-column"` so nothing clips an edge mid-pan.
-- **2D camera-space occlusions (`cardScreenOverlaps`, `heroFaceOcclusions`,
-  `confettiOverText`, `plaqueInControlsZone`, `preCutHeroGap`)**: even when
+- **2D camera-space occlusions & empty cuts (`cardScreenOverlaps`, `heroFaceOcclusions`,
+  `confettiOverText`, `plaqueInControlsZone`, `preCutHeroGap`, `emptyCutFrames`)**: even when
   objects are separated in Z depth so 3D SAT reports zero physical collision
   (`prism` cylinders are also tested as 3D solids and bounds so upright un-flattened
   pedestals cannot swallow the toy's legs), `clearance.mjs` and `check.mjs` warn
   when a foreground picture card, RGBA cutout (`sticker`/`card2d`), or
-  `readoutBadge`/`bannerLine` plate covers `>= 25%` of another showcase card or
-  cutout on camera (`>= 0.6 s`), when a foreground prop crosses in front of the
+  `readoutBadge`/`bannerLine` plate covers `>= 10%` of another showcase card or
+  cutout on camera (`>= 0.45 s`, including shared-prefix `framedPicture` cards), when a foreground prop crosses in front of the
   toy's face (`>= 30%` of `hero_head` for `>= 0.2 s`), when `>= 3` confetti
   flakes shoot across an active 3D headline/readout, when a bottom plaque dips
-  into the platform player's bottom scrub-bar / caption zone, or when an early
-  `strideOut` / `leapOut` leaves the stage empty for `>= 0.40 s` before a cut.
+  into the platform player's bottom scrub-bar / caption zone, when an early
+  `strideOut` / `leapOut` leaves the stage empty for `>= 0.40 s` before a cut,
+  or when a hard stage cut opens on `>= 1` completely empty dark frame before
+  the incoming shot's prop or toy appears (`emptyCutFrames`).
 - **3D headline overlaps (`lineOverlaps`)**: checks distinct 3D `letter` lines
   on the same stage and flags transitions where an outgoing headline has not
   finished hiding before the incoming headline appears on the same spot.

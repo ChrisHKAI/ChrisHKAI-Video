@@ -74,6 +74,7 @@ def harvest_js_glyphs(film_dir, film_json):
         re.compile(rf"""\bopts\.[A-Za-z0-9_]+\s*\?\?\s*{str_lit}"""),
         re.compile(rf"""\[\s*\.\.\.\s*{str_lit}\s*\]"""),
         re.compile(rf"""\b(?:text|label|unit|prefix|fmt)\s*:\s*{str_lit}"""),
+        re.compile(rf"""\+\s*{str_lit}"""),
     ]
     # Also harvest static prefix/suffix chunks inside template literals with `${...}` interpolations
     # (e.g. `fmt: (v) => \`${v.toFixed(1)}万\`` or `reads: [{ text: \`19.9万 ${COUNT_LABEL}\` }]`)

@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
@@ -1950,6 +1950,102 @@ test("v0.8.19: sep:true readout formatting, flat-mat & moving-wipe exemptions, c
     assert.ok(res.nameW > 0.62 && res.nameFit > 0.5 && res.nameFit < 1);
     assert.ok(res.nameW * res.nameFit <= 0.621);
     assert.equal(res.handleFit, null);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("v0.8.20: shared-prefix partial cardScreenOverlaps, emptyCutFrames, end-card EV.logo[0] clamp, and chibi salute/palmBlock", () => {
+  // 1) cardScreenOverlaps catches ~16% corner/edge overlap between shared-prefix framedPicture cards (`beat1_trap_fake_pic` &
+  //    `beat1_trap_poison_pic`), ignores wipePicture pairs (`_before_pic`/`_after_pic`), and ignores flat floor-lying mats
+  const cardGeo = { type: "uiBox", rect: [-150, -90, 300, 180], uvRect: [0, 0, 300, 180], thickness: 0.004, unitScale: 1 };
+  const partialObjs = [
+    { name: "camera", parent: "root", tr: pack([0, 0.16, 1.0]) },
+    { name: "beat1_trap_poison_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([0.04, 0.16, -0.08], UPRIGHT, [1, 1, 1]) },
+    { name: "beat1_trap_fake_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([-0.20, 0.14, 0.04], UPRIGHT, [1, 1, 1]) },
+    // Flat floor mat directly below must not trigger screen-overlap warnings
+    { name: "beat1_floor_mat_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([0.0, 0.002, 0.0], QID, [1, 1, 1]) },
+    // Wipe pair sharing `beat1_w0` group must never trigger against itself
+    { name: "beat1_w0_before_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([0.52, 0.16, 0.0], UPRIGHT, [1, 1, 1]) },
+    { name: "beat1_w0_after_pic", geo: cardGeo, mat: { type: "ui" }, tr: pack([0.52, 0.16, 0.001], UPRIGHT, [1, 1, 1]) },
+  ];
+  const partialAnim = { ...makeAnim(partialObjs, { camera: [[0, ...pack([0, 0.16, 1.0])], [24, ...pack([0, 0.16, 1.0])]] }, { frames: 25 }), scalars: { fov: Array(25).fill(30) } };
+  const cardHits = cardScreenOverlaps(partialAnim, { aspect: 16 / 9 });
+  assert.equal(cardHits.length, 1);
+  assert.equal(cardHits[0].front, "beat1_trap_fake_pic");
+  assert.equal(cardHits[0].back, "beat1_trap_poison_pic");
+  assert.ok(cardHits[0].share >= 0.10 && cardHits[0].share < 0.25, `expected 10–25% partial overlap, got ${cardHits[0].share}`);
+
+  // 2) emptyCutFrames catches a hard stage cut opening on 1 dark empty frame before incoming prop appears, and clears immediate visibility
+  const makeCutScene = (propStartFrame) => {
+    const camTrack = [];
+    const beatCardTrack = [];
+    const ctaPropTrack = [];
+    const hidden = pack([100, -2, 0], QID, [1e-4, 1e-4, 1e-4]);
+    for (let f = 0; f < 40; f++) {
+      const inCta = f >= 20;
+      camTrack.push([f, ...pack(inCta ? [100, 0.16, 1.2] : [150, 0.16, 1.2])]);
+      beatCardTrack.push([f, ...(inCta ? pack([150, -2, 0], QID, [1e-4, 1e-4, 1e-4]) : pack([150, 0.16, 0], UPRIGHT, [1, 1, 1]))]);
+      ctaPropTrack.push([f, ...(f >= propStartFrame ? pack([99.66, 0.12, 0]) : hidden)]);
+    }
+    return makeAnim(
+      [
+        { name: "camera", parent: "root", camera: true, tr: pack([150, 0.16, 1.2]) },
+        { name: "cta_floor", parent: "root", geo: { type: "plane", w: 12, h: 12 }, tr: pack([100, 0, 0]) },
+        { name: "beat0_card_pic", parent: "root", geo: cardGeo, mat: { type: "ui" }, tr: pack([150, 0.16, 0], UPRIGHT, [1, 1, 1]) },
+        { name: "prop_pedestal", parent: "root", geo: { type: "roundBox", size: [0.18, 0.10, 0.14] }, tr: hidden },
+      ],
+      { camera: camTrack, beat0_card_pic: beatCardTrack, prop_pedestal: ctaPropTrack },
+      { frames: 40, fps: 30, sub: 1 },
+    );
+  };
+  const emptyHits = emptyCutFrames(makeCutScene(21), {});
+  assert.equal(emptyHits.length, 1);
+  assert.equal(emptyHits[0].emptyFrames, 1);
+  assert.match(describeEmptyCutFrames(emptyHits)[0].text, /opens on 1 empty dark frame/);
+  assert.equal(emptyCutFrames(makeCutScene(20), {}).length, 0);
+
+  // 3) timeline.js clamps EV.logo[0] <= EV.cut on { story: [24, "end"] } and beatkit.js salute/palmBlock use world-space aim targets
+  const dir = mkdtempSync(join(tmpdir(), "ctoy-v0820-"));
+  try {
+    mkdirSync(join(dir, "build"), { recursive: true });
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({ height: 0.12, center: [0, 0.06, 0], colors: { body: "#2F61EB" }, joints: { body: { p: [0, 0, 0] }, armR: { p: [-0.02, 0.05, 0], parent: "body" }, armL: { p: [0.02, 0.05, 0], parent: "body" } }, parts: [] }));
+    writeFileSync(join(dir, "build/glyphs.json"), "{}");
+    writeFileSync(join(dir, "film.json"), JSON.stringify({
+      id: "cut-clamp",
+      template: "isnail-30",
+      theme: "x-desktop",
+      format: { fps: 30, bpm: 120, duration: 28, size: [1920, 1080] },
+      toy: "toy.json",
+      profile: { name: "司徒K", handle: "@situking", bio: ["AI"] },
+      posts: { pinned: { date: "2026-03-01", title: "A", counts: { views: "16万" }, cover: "assets/a.png" }, second: { date: "2026-03-02", title: "B", counts: { views: "1万" }, cover: "assets/b.png" } },
+      counter: { value: 16, unit: "万", label: "阅读", display: "16万" },
+      cta: { layout: "two-column", slogan: [{ text: "真功夫", paper: "cream" }, { text: "找司徒", paper: "red" }], name: { text: "司徒K", paper: "cream" }, handle: { text: "@situking", paper: "blue" }, prop: { kind: "plinth" } },
+      story: { exit: "jump", segments: [{ beat: "phrase", bars: 11, text: "测试" }, { story: [24, "end"] }] },
+    }));
+    const tlUrl = new URL("../skills/creator-toy-intro/templates/isnail-30/timeline.js", import.meta.url).href;
+    const bkUrl = new URL("../skills/creator-toy-intro/engine/lib/beatkit.js", import.meta.url).href;
+    const probe = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `import { EV } from ${JSON.stringify(tlUrl)};
+         import { stand, salute, palmBlock } from ${JSON.stringify(bkUrl)};
+         const p1 = salute(stand([150, 0, 0]), 1.0, 0.5, 1.5);
+         const p2 = palmBlock(stand([150, 0, 0]), 1.0, 0.5, 1.5, [150, 0.08, 0.25]);
+         console.log(JSON.stringify({ cut: EV.cut, logo0: EV.logo[0], logo1: EV.logo[1], salR: p1.aimR?.world, salL: p1.aimL?.world, salArmRz: p1.armR[2], blkR: p2.aimR?.world, blkL: p2.aimL?.world }));`,
+      ],
+      { env: { ...process.env, FILM: dir }, encoding: "utf8" },
+    );
+    assert.equal(probe.status, 0, probe.stderr);
+    const got = JSON.parse(probe.stdout.trim().split("\n").at(-1));
+    assert.equal(got.cut, 24);
+    assert.equal(got.logo0, 24);
+    assert.ok(got.logo1 > 24.2);
+    assert.ok(Array.isArray(got.salR) && Array.isArray(got.salL) && got.salR[2] > 0.04);
+    assert.ok(Math.abs(got.salArmRz) < 0.5, "salute must not flare armR.z into a horizontal T-pose");
+    assert.ok(Array.isArray(got.blkR) && Array.isArray(got.blkL) && got.blkR[2] > 0.06);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

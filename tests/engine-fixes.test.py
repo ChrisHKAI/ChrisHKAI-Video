@@ -1717,6 +1717,56 @@ class V0815EngineImprovementTests(unittest.TestCase):
             (fdir / "build/anim.json").write_text(json.dumps(anim_stagger))
             self.assertEqual(pacing.check(fdir)["staticHolds"], [])
 
+    def test_v0820_typesheet_facts_fallback_and_glyphs_plus_concat(self):
+        sys.path.insert(0, str(SKILL / "engine/scripts"))
+        import glyphs
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tdir = Path(tmp)
+            # 1) glyphs.harvest_js_glyphs() extracts string suffixes concatenated via `+ "..."` inside fmt callbacks
+            bdir = tdir / "beats"
+            bdir.mkdir(parents=True)
+            (bdir / "concat_fmt.js").write_text(
+                'export function makeBeat({ glyph, kit }) {\n'
+                '  const b1 = kit.readoutBadge(glyph, { from: 0.1, to: 16, fmt: (v) => v.toFixed(1) + "万" });\n'
+                '  const b2 = kit.readoutBadge(glyph, { from: 1, to: 124, fmt: (v) => Math.round(v) + \'条\' });\n'
+                '  return { storyboard: {} };\n'
+                '}\n',
+                encoding="utf-8",
+            )
+            harv = glyphs.harvest_js_glyphs(tdir, {"story": {"segments": [{"beat": "beats/concat_fmt.js", "bars": 3}]}})
+            for ch in ("万", "条"):
+                self.assertIn(ch, harv["heavy"])
+                self.assertIn(ch, harv["cjk"])
+
+            # 2) typesheet.py --list falls back to research/facts.json before apply-research populates film.json story/cta
+            fdir = tdir / "pre-apply"
+            (fdir / "research").mkdir(parents=True)
+            (fdir / "film.json").write_text(json.dumps({
+                "id": "pre-apply", "template": "isnail-30", "theme": "x-desktop",
+                "format": {"fps": 30, "bpm": 120, "duration": 28, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "story": {},
+            }))
+            (fdir / "research/facts.json").write_text(json.dumps({
+                "profile": {"name": "司徒K", "handle": "situking"},
+                "story": [{"id": "s1", "line": "五道真功夫"}],
+                "recommendedDirection": "A",
+                "directions": [{
+                    "id": "A",
+                    "hook": {"text": "拒绝黑帽套路"},
+                    "frames": [{"words": ["让品牌进 AI 答案"]}],
+                    "cta": {"slogan": ["AI 搜索优化", "找司徒K"]},
+                }],
+            }), encoding="utf-8")
+            r_list = subprocess.run(
+                [sys.executable, str(SKILL / "engine/scripts/typesheet.py"), "--list"],
+                env={**os.environ, "FILM": str(fdir)},
+                capture_output=True, text=True, check=True,
+            )
+            self.assertNotIn("all 0 characters", r_list.stdout)
+            self.assertRegex(r_list.stdout, r"have all [1-9]\d+ characters the film shows")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

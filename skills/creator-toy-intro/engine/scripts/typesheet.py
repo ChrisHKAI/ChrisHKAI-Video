@@ -49,6 +49,22 @@ def words(v):
 
 cta = F.get("cta") or {}
 direction = ((F.get("story") or {}).get("direction")) or {}
+facts_words = ""
+facts_lines = []
+if not direction and (FILM / "research/facts.json").is_file():
+    try:
+        facts_doc = json.loads((FILM / "research/facts.json").read_text(encoding="utf-8"))
+        picks_doc = facts_doc.get("picks") or {}
+        want_dir = picks_doc.get("direction") or facts_doc.get("recommendedDirection")
+        dirs = [d for d in (facts_doc.get("directions") or []) if isinstance(d, dict)]
+        direction = next((d for d in dirs if d.get("id") == want_dir), dirs[0] if dirs else {})
+        prof_name = ((facts_doc.get("profile") or {}).get("name")) or ""
+        story_lines = [s.get("line", "") for s in (facts_doc.get("story") or []) if isinstance(s, dict) and isinstance(s.get("line"), str)]
+        pick_slogan = [s if isinstance(s, str) else s.get("text", "") for s in ((picks_doc.get("cta") or {}).get("slogan") or []) if isinstance(s, (str, dict))]
+        facts_words = words([prof_name, *story_lines, *pick_slogan])
+        facts_lines = [*story_lines[:2], "".join(pick_slogan)]
+    except Exception:
+        pass
 # what a segment says for people, never on screen: why it is there, its music
 UNSHOWN = {"beat", "why", "music"}
 BEATS = [s for s in (F.get("story") or {}).get("segments", []) if "beat" in s]
@@ -70,6 +86,7 @@ CHARS = (
     + words(dir_frames_words)
     + words(dir_slogan)
     + words(hook_text)
+    + facts_words
     + js_harvest
 )
 LINES = [t.strip() for t in arg("--text", "").split(",") if t.strip()] or (
@@ -78,7 +95,7 @@ LINES = [t.strip() for t in arg("--text", "").split(",") if t.strip()] or (
 )
 LINES = [l for l in dict.fromkeys(LINES) if l.strip()]
 if not LINES:
-    fallback_lines = [*dir_frames_words[:2], "".join(dir_slogan), str(hook_text or "")]
+    fallback_lines = [*dir_frames_words[:2], "".join(dir_slogan), str(hook_text or ""), *facts_lines]
     LINES = [l.strip() for l in dict.fromkeys(fallback_lines) if l and l.strip()][:3]
 if not LINES and "--list" not in argv:
     raise SystemExit('no on-screen lines in film.json yet: run apply-research first, or pass --text "示例标题,副标题"')

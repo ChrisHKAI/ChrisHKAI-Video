@@ -1452,14 +1452,15 @@ export function describeMovieWraps(items) {
 /**
  * Detect when a visible picture card (`uiBox`), RGBA cutout (`plane` with `sticker`/`card2d`), or readout/banner
  * backing plate (`beat*_*_plate`) occludes >= minShare of another card/cutout in 2D camera screen space for >= minSecs,
- * even when separated in Z depth so 3D solidClashes reports zero physical intersection (e.g. a crescent cutout tucked
- * 35% behind a monitor corner, or a counter badge covering a proof screenshot).
+ * even when separated in Z depth so 3D solidClashes reports zero physical intersection (e.g. a front showcase card
+ * covering 12–20% of a rear card's corner copy, or a counter badge covering a proof screenshot).
  */
-export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.25, minSecs = 0.6, every = 2 } = {}) {
+export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.10, minSecs = 0.45, every = 2 } = {}) {
   const objects = new Map(anim.objects.map((o) => [o.name, o]));
   const fovs = anim.scalars?.fov;
   if (!objects.has("camera") || !fovs?.length) return [];
   const SKIP_CARD_SCREEN = /^(beat\d+_)?(p_|back$|avatar$|cyc|bg|floor|strip_|panel_)/;
+  const cardGroupOf = (name) => name.replace(/_(?:before_pic|after_pic|pic|card|plate)$/, "");
   const isCardOrBadge = (o) => {
     if (!o.geo || SKIP_CARD_SCREEN.test(o.name) || SKIP_NAME.test(o.name)) return false;
     if (o.geo.type === "uiBox") return Boolean(boxSpec(o));
@@ -1469,7 +1470,7 @@ export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.25, min
   };
   const cards = anim.objects
     .filter(isCardOrBadge)
-    .map((o) => ({ o, spec: propBoundsSpec(o), group: groupOf(o.name) }))
+    .map((o) => ({ o, spec: propBoundsSpec(o), group: cardGroupOf(o.name) }))
     .filter((x) => x.spec);
   if (cards.length < 2) return [];
 
@@ -1496,6 +1497,8 @@ export function cardScreenOverlaps(anim, { aspect = 16 / 9, minShare = 0.25, min
       if (Math.hypot(w.p[0] - camW.p[0], w.p[1] - camW.p[1], w.p[2] - camW.p[2]) > 8) continue;
       const obb = worldOBB(c.spec, w);
       if (Math.max(obb.h[0], obb.h[1], obb.h[2]) * 2 > 0.9) continue;
+      const thinAx = obb.h[0] <= obb.h[1] && obb.h[0] <= obb.h[2] ? 0 : obb.h[1] <= obb.h[2] ? 1 : 2;
+      if (Math.abs(obb.axes[thinAx][1]) > 0.85) continue; // skip flat floor-lying mats
       let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, depthSum = 0, ok = true;
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
         const wp = [
@@ -3328,6 +3331,69 @@ export function describeCtaPropBlocksLabels(items) {
     kind: "warn",
     ...m,
     text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: end-card ${m.blocker === "hero" ? "toy" : `prop (${m.part})`} covers ${Math.round(m.share * 100)}% of ${m.label} on camera (worst at ${m.peak.toFixed(2)} s)`,
+  }));
+}
+
+/**
+ * Detect hard camera cuts across stages (`> minCamJump` m) where frame 0 of the incoming shot shows ZERO visible
+ * non-floor/non-backdrop objects within `maxDist` m of the camera, followed within `maxGapSecs` by objects popping in
+ * (such as an end-card prop whose `logo[0]` started a frame after `cut`, flashing 1–3 pitch-black empty frames).
+ */
+export function emptyCutFrames(anim, { toy = "hero", minCamJump = 15, maxDist = 8, maxGapSecs = 0.5 }) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  if (!objects.has("camera") || !anim.tracks?.camera?.length || anim.frames < 3) return [];
+  const SKIP_EMPTY_CUT = /^(?:camera$|fx$|.*_floor$|^cta_floor$|.*_(?:bg|cyc|backdrop)\b)/i;
+  const watch = anim.objects.filter((o) => !o.camera && !o.light && !SKIP_EMPTY_CUT.test(o.name) && (o.name === toy || o.geo));
+  if (!watch.length) return [];
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+  const hasVisibleNearCam = (f) => {
+    const s = f * SUB, memo = new Map();
+    const camP = worldOf("camera", s, memo).p;
+    for (const o of watch) {
+      const w = worldOf(o.name, s, memo);
+      if (Math.min(...w.s.map(Math.abs)) < 0.02) continue;
+      if (Math.hypot(w.p[0] - camP[0], w.p[1] - camP[1], w.p[2] - camP[2]) <= maxDist) return true;
+    }
+    return false;
+  };
+  const out = [];
+  let prevCam = worldOf("camera", 0, new Map()).p;
+  const lookAhead = Math.max(2, Math.round(maxGapSecs * anim.fps));
+  for (let f = 1; f < anim.frames; f++) {
+    const camP = worldOf("camera", f * SUB, new Map()).p;
+    const jump = Math.hypot(camP[0] - prevCam[0], camP[1] - prevCam[1], camP[2] - prevCam[2]);
+    prevCam = camP;
+    if (jump < minCamJump || hasVisibleNearCam(f)) continue;
+    let firstVis = -1;
+    for (let k = f + 1; k < Math.min(anim.frames, f + lookAhead); k++) {
+      const kp = worldOf("camera", k * SUB, new Map()).p;
+      if (Math.hypot(kp[0] - camP[0], kp[1] - camP[1], kp[2] - camP[2]) >= minCamJump) break;
+      if (hasVisibleNearCam(k)) { firstVis = k; break; }
+    }
+    if (firstVis > f) {
+      out.push({
+        cutAt: +(f / anim.fps).toFixed(3),
+        firstVisibleAt: +(firstVis / anim.fps).toFixed(3),
+        emptyFrames: firstVis - f,
+      });
+    }
+  }
+  return out;
+}
+
+export function describeEmptyCutFrames(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `cut at ${m.cutAt.toFixed(2)} s opens on ${m.emptyFrames} empty dark frame(s) before stage objects appear at ${m.firstVisibleAt.toFixed(2)} s`,
   }));
 }
 

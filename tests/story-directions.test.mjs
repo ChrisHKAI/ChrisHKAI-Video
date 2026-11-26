@@ -864,3 +864,26 @@ test("what a frame shows can be played: each move for when things go wrong reach
     if (name !== "push") for (const leg of ["legR", "legL"]) assert.ok(near(m[leg], j[leg] ?? [0, 0, 0], 0.11), `${name} ${leg}: the film ${JSON.stringify(m[leg])}, the frames ${JSON.stringify(j[leg])}`);
   }
 });
+
+test("resolveDirection warns on mixed 万/w+ counter units and unglossed niche acronyms, and clears glossed copy", () => {
+  const f = facts();
+  f.story[0].line = "单篇 16万 阅读";
+  f.directions[0].frames = [
+    { words: ["GEO 实战"] },
+    { words: ["全网 20w+ 读者"] },
+  ];
+  f.directions[0].cta = { slogan: ["FDE 笔记", "找司徒"] };
+  const badWarnings = resolveDirection(f).warnings.join("\n");
+  assert.match(badWarnings, /mixes Chinese counter units.*20w\+/);
+  assert.match(badWarnings, /niche acronym "GEO"/);
+  assert.match(badWarnings, /niche acronym "FDE"/);
+
+  // Unified counter units (20万+) + plain-language Chinese glosses beside acronyms + familiar acronyms (GPT/API) -> zero warnings!
+  f.directions[0].frames = [
+    { words: ["GEO · 让品牌进 AI 答案 · 五道真功夫"] },
+    { words: ["GPT API 全网 20万+ 读者"] },
+  ];
+  f.directions[0].cta = { slogan: ["AI 搜索优化与企业落地", "找司徒K"] };
+  const cleanWarnings = resolveDirection(f).warnings.join("\n");
+  assert.doesNotMatch(cleanWarnings, /mixes Chinese counter units|niche acronym/);
+});

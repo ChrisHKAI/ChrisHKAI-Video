@@ -71,11 +71,19 @@ export const RETRO_COVER = L.ANCHORS.secondCover;
 // an end card played from the downbeat before its cut (when what comes before it adds up to whole bars,
 // apply-research writes { "story": [24, "end"] }) cuts to its stage on that downbeat, so its hits stay on
 // the film's downbeats and nothing of the story before the cut shows
-const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < S.events.cut - 1e-6 && s.s0 > S.events.cut - BAR && s.s1 > S.events.cut)?.s0;
-// and the prop arrives on that cut as it does on the story's own, so the stage is never empty before it; from the
-// toy's landing on (ride) everything keeps its downbeat
-const early = (v) => (Array.isArray(v) ? v.map(early) : +(v - (S.events.cut - END_FROM)).toFixed(4));
-const EV0 = END_FROM !== undefined ? { ...S.events, cut: END_FROM, ...Object.fromEntries(["logo", "snail", "eyes"].filter((k) => k in S.events).map((k) => [k, early(S.events[k])])) } : S.events;
+const userEv = film.story?.events ?? {};
+const END_FROM = SEG.list.find((s) => s.kind === "story" && s.s0 < STORY.events.cut - 1e-6 && s.s0 > STORY.events.cut - BAR && s.s1 > STORY.events.cut)?.s0;
+// Shift only template defaults not explicitly pinned in film.story.events, and clamp logo[0] <= cut so frame 0 of the
+// end card never opens on a 1-frame empty/dark stage (in story.json, logo[0] = 24.39 is +0.0067 s after cut = 24.3833).
+const early = (v) => (Array.isArray(v) ? v.map(early) : +(v - (STORY.events.cut - END_FROM)).toFixed(4));
+const baseCut = "cut" in userEv ? userEv.cut : (END_FROM ?? STORY.events.cut);
+const shiftedDefaults = END_FROM !== undefined
+  ? Object.fromEntries(["logo", "snail", "eyes"].filter((k) => k in STORY.events && !(k in userEv)).map((k) => [k, early(STORY.events[k])]))
+  : {};
+const rawEv0 = { ...S.events, cut: baseCut, ...shiftedDefaults };
+const EV0 = Array.isArray(rawEv0.logo) && rawEv0.logo[0] > baseCut
+  ? { ...rawEv0, logo: [baseCut, Math.max(+(baseCut + 0.05).toFixed(4), rawEv0.logo[1])] }
+  : rawEv0;
 export const SLOGAN = film.cta.slogan.map((p) => p.text).join("");
 const sloganReadSecs = (text) => {
   const cjk = (text.match(/[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]/g) ?? []).length;
@@ -86,7 +94,6 @@ const maxLastLetter = +(STORY_DURATION - sloganReadSecs(SLOGAN) - 0.04).toFixed(
 // Steady "two-column" / "still" end cards have no sweeping pan to wait for: bring slogan, name and handle in soon
 // after landing (and early enough for long two-line slogans to pass pace.py) while keeping E.final independent for
 // the camera point (events.lettersEnd overrides the typing window directly when needed).
-const userEv = film.story?.events ?? {};
 const defaultLettersStart = maxLastLetter < EV0.ride + 0.8
   ? Math.max(+(EV0.cut + 0.10).toFixed(4), +(maxLastLetter - Math.max(0.65, [...SLOGAN].length * 0.055)).toFixed(4))
   : +(EV0.ride + 0.35).toFixed(4);

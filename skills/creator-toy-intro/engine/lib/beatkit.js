@@ -269,6 +269,38 @@ export function bow(o, g, g0, g1) {
   o.armR = [0.3 * k, 0, o.armR[2]]; o.armL = [0.3 * k, 0, o.armL[2]];
   return o;
 }
+// hands brought cleanly together in front of the chest (a martial salute, clasped thanks, or proud bow—never flares chibi arms into a T-pose)
+export function salute(o, g, g0, g1) {
+  const k = held(g, g0, g1, 0.18);
+  const pop = o.pop ?? POP;
+  const cy = o.pos[1] + 0.048 * pop;
+  const fwd = [Math.sin(o.yaw ?? 0), Math.cos(o.yaw ?? 0)];
+  const right = [fwd[1], -fwd[0]];
+  o.aimR = { world: [o.pos[0] - right[0] * 0.014 * pop + fwd[0] * 0.048 * pop, cy, o.pos[2] - right[1] * 0.014 * pop + fwd[1] * 0.048 * pop], k, len: 1.08 };
+  o.aimL = { world: [o.pos[0] + right[0] * 0.014 * pop + fwd[0] * 0.048 * pop, cy, o.pos[2] + right[1] * 0.014 * pop + fwd[1] * 0.048 * pop], k, len: 1.08 };
+  o.pitch += 0.08 * k;
+  o.head = [o.head[0] + 0.10 * k, o.head[1], o.head[2]];
+  return o;
+}
+// firm forward palm-stop toward `world` (halting a trap card or blocking noise with grounded knees—zero horizontal T-pose)
+export function palmBlock(o, g, g0, g1, world, { both = true } = {}) {
+  const k = held(g, g0, g1, 0.16);
+  const pop = o.pop ?? POP;
+  const to = world ?? [o.pos[0], o.pos[1] + 0.052 * pop, o.pos[2] + 0.18];
+  const yaw = yawTo(o.pos, to);
+  o.yaw = lerpAngle(o.yaw ?? 0, yaw, 0.45 * k);
+  const fwd = [Math.sin(o.yaw), Math.cos(o.yaw)];
+  const right = [fwd[1], -fwd[0]];
+  const py = o.pos[1] + 0.054 * pop;
+  o.aimR = { world: [o.pos[0] - right[0] * (both ? 0.022 : 0.008) * pop + fwd[0] * 0.068 * pop, py, o.pos[2] - right[1] * (both ? 0.022 : 0.008) * pop + fwd[1] * 0.068 * pop], k, len: 1.18 };
+  if (both) {
+    o.aimL = { world: [o.pos[0] + right[0] * 0.022 * pop + fwd[0] * 0.068 * pop, py, o.pos[2] + right[1] * 0.022 * pop + fwd[1] * 0.068 * pop], k, len: 1.18 };
+  }
+  o.legR = [o.legR[0], 0, -0.14 * k];
+  o.legL = [o.legL[0], 0, 0.14 * k];
+  squash(o, 0.05 * k);
+  return o;
+}
 // sits down on the floor (legs forward) and gets up again at g1; a toy with no legs settles lower
 export function sit(o, g, g0, g1) {
   const k = held(g, g0, g1, 0.3);
