@@ -20,6 +20,7 @@ ctx holds what a score is written to:
 example(ctx) is a worked score: copy it as music/score.py to start, then write this film's own.
 """
 import importlib.util
+import re
 import sys
 from pathlib import Path
 
@@ -28,17 +29,21 @@ import numpy as np
 LIB = Path(__file__).resolve().parent
 sys.path.insert(0, str(LIB))
 sys.path.insert(0, str(LIB.parent / "vendor" / "lemo"))
-from sfx import add  # noqa: E402  a mono sound into a stereo buffer, panned
-from synth import Chords  # noqa: E402  dynamic chord voicings for any chord symbol
+from synth import Chords, add  # noqa: E402  stereo/mono buffer adder + dynamic chord voicings
 
 BIG = ("pop", "lock", "slam", "tower")
-NAMES = {"C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11}
+NAMES = {"C": 0, "C#": 1, "Db": 1, "D": 2, "D#": 3, "Eb": 3, "E": 4, "Fb": 4, "E#": 5, "F": 5, "F#": 6, "Gb": 6, "G": 7, "G#": 8, "Ab": 8, "A": 9, "A#": 10, "Bb": 10, "B": 11, "Cb": 11}
 
 
 def midi(name):
-    """'G3' → 55, 'F#4' → 66"""
-    p = name[:-1]
-    return 12 * (int(name[-1]) + 1) + NAMES[p]
+    """'G3' → 55, 'F#4' → 66, 'Bb-1' → 10, 60 → 60"""
+    if isinstance(name, (int, float, np.integer, np.floating)):
+        return int(round(float(name)))
+    m = re.fullmatch(r"\s*([A-Ga-g][#b]?)(-?\d+)\s*", str(name))
+    if not m:
+        raise ValueError(f"cannot parse note {name!r}")
+    p = m.group(1)[0].upper() + m.group(1)[1:]
+    return 12 * (int(m.group(2)) + 1) + NAMES[p]
 
 
 class Ctx:
@@ -51,13 +56,14 @@ class Real:
         self.real, self.S, self.USED = real, real.S, real.USED
 
     def note(self, inst, pitch, dur, vel=0.8, **kw):
-        return self.real.note(inst, pitch, dur, vel, **kw)
+        return self.real.note(inst, midi(pitch) if isinstance(pitch, str) else pitch, dur, vel, **kw)
 
     def hit(self, inst, var=None, vel=0.8):
         return self.real.hit(inst, var, vel)
 
     def chord(self, inst, pitches, dur, vel=0.8, strum=0.0, **kw):
-        return self.real.chord(inst, pitches, dur, vel=vel, strum=strum, **kw)
+        ps = [midi(p) if isinstance(p, str) else p for p in pitches]
+        return self.real.chord(inst, ps, dur, vel=vel, strum=strum, **kw)
 
     def room(self, x, size=0.5, mix=0.2):
         return self.S.room(x, size=size, mix=mix)

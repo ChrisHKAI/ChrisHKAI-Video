@@ -169,6 +169,8 @@ def film_colours(film):
             glows.setdefault(group(o["name"]), {}).setdefault(m["color"].upper(), 0)
             glows[group(o["name"])][m["color"].upper()] += 1
     for r in text_rows:
+        if r["on"] != STAGE.upper():
+            continue
         meets = edges.get((r["hex"], r["on"])) or r["hex"]
         for b in sorted(beat_of.get((r["hex"], r["on"]), ())):
             near = [h for h in glows.get(b, {}) if float(np.linalg.norm(lab(meets) - lab(h))) < TWIN]

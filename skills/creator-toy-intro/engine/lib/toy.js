@@ -21,7 +21,7 @@ export const MASCOT_PARTS = TOY.parts;
 export const JOINTS = TOY.joints;
 export const COLORS = TOY.colors;
 export const HEIGHT = TOY.height;
-export const CENTER = TOY.center;
+export const CENTER = TOY.center ?? [0, (TOY.height ?? 0.1) / 2, 0];
 
 // the geometry Blender builds for a part (scene.py, lib/toyblend.py)
 export function toyGeo(p) {

@@ -117,20 +117,27 @@ def sweep_filter(x, kind, f0, f1, chunk=480):
     return out
 
 
+def add(buf, sig, at, gain=1.0, pan=0.0):
+    """Add a mono `(M,)` or stereo `(M, 2)` signal into stereo `buf` `(N, 2)` at `at` seconds with equal-power pan."""
+    sig = np.asarray(sig, dtype=float)
+    if sig.ndim == 1:
+        l, r = np.cos((pan + 1) * np.pi / 4), np.sin((pan + 1) * np.pi / 4)
+        sig = np.stack([sig * l * 1.414, sig * r * 1.414], axis=1)
+    n_buf = len(buf)
+    i = int(round(at * SR))
+    if i >= n_buf or i + len(sig) <= 0:
+        return
+    j = min(n_buf, i + len(sig))
+    k0 = max(0, -i)
+    buf[max(i, 0):j] += sig[k0:j - i] * gain
+
+
 class Bus:
     def __init__(self):
         self.x = np.zeros((N, 2))
 
     def add(self, sig, at, gain=1.0, pan=0.0):
-        if sig.ndim == 1:
-            l, r = np.cos((pan + 1) * np.pi / 4), np.sin((pan + 1) * np.pi / 4)
-            sig = np.stack([sig * l * 1.414, sig * r * 1.414], axis=1)
-        i = int(round(at * SR))
-        if i >= N:
-            return
-        j = min(N, i + len(sig))
-        k0 = max(0, -i)
-        self.x[max(i, 0):j] += sig[k0:j - i] * gain
+        add(self.x, sig, at, gain=gain, pan=pan)
 
 
 # ── Instruments ─────────────────────────────────────────────────────────────

@@ -184,7 +184,7 @@ Hold each frame to the film the user keeps as the best, not to a diagram:
   top border. And when
   using a live browser screenshot of a profile or post, crop strictly to the
   creator's centre column—never leave the logged-in operator's sidebar handle,
-  account switcher or "Who to follow" rail in the frame, where a blind reader
+  account switcher, "Who to follow" rail, or viewer-relationship pill (`"Follows you"` / `"跟隨你"` / `"关注了你"`) in the frame, and keep platform UI chrome in the film's own script (`正在关注`/`帖子` in `zh-Hans` vs `正在跟隨`/`則貼文` in `zh-Hant`), so a blind reader never sees mixed scripts or
   mistakes a bystander's name for part of the story.
 - **Dark screens need a lit bezel on a dark set.** A dark-mode IDE, terminal or
   audio visualizer (`< 10%` mean brightness) dropped raw onto a dark stage

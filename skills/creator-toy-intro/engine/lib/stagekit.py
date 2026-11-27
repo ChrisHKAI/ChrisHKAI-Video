@@ -871,6 +871,7 @@ def plaque(
     *,
     h2x=336,
     pad_x=152,
+    pad_y=None,
     div_gap=56,
     div_rgba=(251, 191, 36, 105),
     top_rgb=(23, 35, 56),
@@ -918,6 +919,8 @@ def plaque(
 
     if min_top > max_bot:
         min_top, max_bot = 0, int(h2x * 0.4)
+    if pad_y is not None:
+        h2x = max(64, int(math.ceil(((max_bot - min_top) + 2.0 * float(pad_y)) / 4.0) * 4))
     div_w = 4
     total_w = sum(sw for sw, _ in seg_layouts) + max(0, len(seg_layouts) - 1) * (2 * div_gap + div_w)
     w2x = max(64, int(math.ceil((total_w + 2 * pad_x) / 4.0) * 4))

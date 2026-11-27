@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards, buriedCompoundCores, describeBuriedCompoundCores, lingeringPainHeadlines, describeLingeringPainHeadlines, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
+import { clearance, describe, solidClashes, describeClashes, labelOverlaps, describeLabelOverlaps, lineOverlaps, describeLineOverlaps, edgeCrops, describeEdgeCrops, fastReveal, floatingSmallLetters, describeFloatingLetters, armLiftLimit, offStageHero, describeOffStageHero, offStageObjects, describeOffStageObjects, oversizedUiBoxes, describeOversizedUiBoxes, movieWraps, describeMovieWraps, cardScreenOverlaps, describeCardScreenOverlaps, heroFaceOcclusions, describeHeroFaceOcclusions, confettiOverText, describeConfettiOverText, lineBackdropClashes, describeLineBackdropClashes, propCoversToyBody, describePropCoversToyBody, heroStreaksOverText, describeHeroStreaksOverText, edgeOnCards, describeEdgeOnCards, pedestalSideClashes, describePedestalSideClashes, cardBezelMismatches, describeCardBezelMismatches, frameSlicesCard, describeFrameSlicesCard, sparksOverHeroFace, describeSparksOverHeroFace, plaqueInControlsZone, describePlaqueInControlsZone, preCutHeroGap, describePreCutHeroGap, propBlocksCard, describePropBlocksCard, floatingCtaBase, describeFloatingCtaBase, ctaPropBlocksLabels, describeCtaPropBlocksLabels, emptyCutFrames, describeEmptyCutFrames, coplanarCards, describeCoplanarCards, buriedCompoundCores, describeBuriedCompoundCores, lingeringPainHeadlines, describeLingeringPainHeadlines, flashCards, describeFlashCards, restBounds } from "../skills/creator-toy-intro/engine/lib/clearance.js";
 import { qEuler, qFlat, qRot } from "../skills/creator-toy-intro/engine/lib/quat.js";
 import { line, declareLine, putLine, facing, eyePoint } from "../skills/creator-toy-intro/engine/lib/lettering.js";
 import * as xDesktop from "../skills/creator-toy-intro/themes/x-desktop/page.js";
@@ -2283,6 +2283,172 @@ test("v0.8.22: lingeringPainHeadlines warns when negative headline stays past re
   // Cleared right at reading floor (3.60 s <= 3.50 + 0.45 s) -> zero false positives!
   assert.equal(lingeringPainHeadlines(makeBeatAnim(3.60)).length, 0);
 
-  // Headline that explicitly states the positive turn ("拒掉烂广只留实测攻略") -> zero warnings even if held to 5.8 s!
+  // Headline that explicitly states the positive turn ("拒掉烂广只留实测攻略" / "自己先踩坑实测 · 省钱通路喂到嘴边") -> zero warnings even if held to 5.8 s!
   assert.equal(lingeringPainHeadlines(makeBeatAnim(5.8, [..."拒掉烂广只留实测攻略"])).length, 0);
+  assert.equal(lingeringPainHeadlines(makeBeatAnim(5.8, [..."自己先踩坑实测省钱通路喂到嘴边"])).length, 0);
+});
+
+test("v0.8.23: bannerLine, readoutBadge, lettering.line & makeLabel use shadow-free micro-relief and tight middle-dot kerning", () => {
+  const glyph = {
+    has: () => true,
+    adv: (k) => (k.endsWith(": ") ? 0.30 : k.split(":")[1].codePointAt(0) >= 0x2e80 || k.endsWith(":·") ? 1.0 : 0.6),
+    geo: (_k, em, depth, bevel) => ({
+      type: "curve",
+      rings: [[[0, -0.08 * em], [0.9 * em, -0.08 * em], [0.9 * em, 0.78 * em], [0, 0.78 * em]]],
+      depth,
+      bevel,
+    }),
+  };
+
+  // 1) Middle-dot adjacent spaces tighten from 0.30 em to 0.05 em while normal spaces ("AI 视觉") keep 0.30 em
+  const dotLine = line(glyph, "01年 · 前大厂程序员", 0.024);
+  const noSpaceDot = line(glyph, "01年·前大厂程序员", 0.024);
+  assert.ok(Math.abs((dotLine.W - noSpaceDot.W) - 2 * 0.05 * 0.024) < 1e-6, `expected 2 * 0.05 em around middle dot, got ${dotLine.W - noSpaceDot.W}`);
+  const aiLine = line(glyph, "AI 视觉", 0.024);
+  const aiTight = line(glyph, "AI视觉", 0.024);
+  assert.ok(Math.abs((aiLine.W - aiTight.W) - 0.30 * 0.024) < 1e-6);
+
+  const lblDot = makeLabel({ id: "d", text: "01年 · 前大厂", em: 0.024, paper: "cream", c: [0, 0, 0], tilt: 0, at: 0, letterAt: () => 0, adv: glyph.adv });
+  const lblNoSp = makeLabel({ id: "w", text: "01年·前大厂", em: 0.024, paper: "cream", c: [0, 0, 0], tilt: 0, at: 0, letterAt: () => 0, adv: glyph.adv });
+  assert.ok(Math.abs((lblDot.W - lblNoSp.W) - 2 * 0.06 * 0.024) < 1e-6);
+
+  // 2) Probe bannerLine & readoutBadge via subprocess with a minimal FILM workspace
+  const dir = mkdtempSync(join(tmpdir(), "plaque-relief-"));
+  try {
+    writeFileSync(join(dir, "film.json"), JSON.stringify({ format: { fps: 30, duration: 4, size: [1920, 1080] }, toy: "toy.json" }));
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({ height: 0.12, colors: { body: "#FFFFFF" }, parts: [] }));
+    const kitUrl = new URL("../skills/creator-toy-intro/engine/lib/beatkit.js", import.meta.url).href;
+    const probe = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `import { bannerLine, readoutBadge } from ${JSON.stringify(kitUrl)};
+         const glyph = {
+           has: () => true,
+           adv: (k) => (k.split(":")[1].codePointAt(0) >= 0x2e80 || k.endsWith(":·") ? 1.0 : 0.6),
+           geo: (_k, em, depth, bevel) => ({ type: "curve", rings: [[[0, -0.08 * em], [0.9 * em, -0.08 * em], [0.9 * em, 0.78 * em], [0, 0.78 * em]]], depth, bevel }),
+         };
+         const ban = bannerLine(glyph, "01年 · 前大厂程序员", { em: 0.023 });
+         const badge = readoutBadge(glyph, { from: 1, to: 44.9, fmt: { decimals: 1, unit: "万" }, label: "查看", em: 0.048 });
+         const decl = [], placed = {};
+         ban.declare((o) => decl.push(o), "osub", { plateColor: "#E6DEC8", color: "#111827" });
+         badge.declare((o) => decl.push(o), "cnt", { plateColor: "#0F172A", numColor: "#F8FAFC", labelColor: "#BAE6FD" });
+         ban.put((n, tr) => { placed[n] = tr; }, "osub", [0, 0.25, 0], [0, 0.25, 0.8], 1);
+         console.log(JSON.stringify({ decl, placed }));`,
+      ],
+      { env: { ...process.env, FILM: dir }, encoding: "utf8" },
+    );
+    assert.equal(probe.status, 0, probe.stderr);
+    const { decl, placed } = JSON.parse(probe.stdout.trim().split("\n").at(-1));
+    const subChar = decl.find((o) => o.name === "osub_ln_0");
+    const cntChar = decl.find((o) => o.name.startsWith("cnt_") && o.letter);
+    assert.equal(subChar.mat.shadow, false, "bannerLine letters must set mat.shadow=false to keep CJK counters open");
+    assert.equal(cntChar.mat.shadow, false, "readoutBadge digits must set mat.shadow=false");
+    assert.ok(subChar.geo.depth <= 0.0016 && subChar.geo.bevel <= 0.0002, `expected micro-relief depth/bevel, got ${JSON.stringify(subChar.geo)}`);
+    // Plate front face (center.z + 0.003) sits inside solid letter [-d/2, +d/2] with < 1 mm proud front relief
+    const plateFrontZ = placed.osub_plate.p[2] + 0.003;
+    const letterFrontZ = placed.osub_ln_0.p[2] + subChar.geo.depth / 2;
+    const letterBackZ = placed.osub_ln_0.p[2] - subChar.geo.depth / 2;
+    assert.ok(plateFrontZ > letterBackZ && letterFrontZ - plateFrontZ < 0.001, `expected <1mm micro-relief, got proud=${letterFrontZ - plateFrontZ}`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("v0.8.23: flashCards catches blink-and-miss story cards, kit.hop returns pose, readoutBadge.put guards val, and two-column CAMERA2 aligns to EV.cut", () => {
+  const fps = 30, frames = 120; // 4.0 s beat
+  const park = [0, -2, 0, 0, 0, 0, 1, 1e-4, 1e-4, 1e-4];
+  const cardGeo = { type: "uiBox", rect: [-120, -70, 240, 140], uvRect: [0, 0, 240, 140], thickness: 0.002 };
+
+  // 1) flashCards: beat1_night flashes for 0.80 s (0.10–0.90 s) and vanishes while beat1_payoff holds 1.00–3.95 s; wipePicture _before_pic is exempt
+  const anim = {
+    fps,
+    sub: 1,
+    frames,
+    samples: frames,
+    scalars: { fov: Array(frames).fill(30) },
+    objects: [
+      { name: "camera", parent: "root", camera: true, tr: [0, 0.2, 1.1, 0, 0, 0, 1, 1, 1, 1] },
+      { name: "beat1_night_pic", parent: "root", geo: cardGeo, mat: { type: "ui", image: "build/night.png" }, tr: park },
+      { name: "beat1_wipe_before_pic", parent: "root", geo: cardGeo, mat: { type: "ui", image: "build/before.png" }, tr: park },
+      { name: "beat1_payoff_pic", parent: "root", geo: cardGeo, mat: { type: "ui", image: "build/payoff.png" }, tr: park },
+    ],
+    tracks: {
+      camera: [[0, 0, 0.2, 1.1, 0, 0, 0, 1, 1, 1, 1], [frames - 1, 0, 0.2, 1.1, 0, 0, 0, 1, 1, 1, 1]],
+      beat1_night_pic: Array.from({ length: frames }, (_, f) => [f, ...(f >= 3 && f <= 27 ? [-0.22, 0.24, 0, ...UPRIGHT, 1, 1, 1] : park)]),
+      beat1_wipe_before_pic: Array.from({ length: frames }, (_, f) => [f, ...(f >= 3 && f <= 24 ? [0.22, 0.24, 0, ...UPRIGHT, 1, 1, 1] : park)]),
+      beat1_payoff_pic: Array.from({ length: frames }, (_, f) => [f, ...(f >= 30 ? [0, 0.24, 0, ...UPRIGHT, 1, 1, 1] : park)]),
+    },
+  };
+  const flashed = describeFlashCards(flashCards(anim));
+  assert.equal(flashed.length, 1);
+  assert.equal(flashed[0].card, "beat1_night_pic");
+  assert.match(flashed[0].text, /flashes for only/);
+
+  // 2) kit.hop returns pose `o`, readoutBadge.put rejects missing numeric val, and two-column CAMERA2[0].t matches EV.cut (24.0)
+  const dir = mkdtempSync(join(tmpdir(), "kit-hop-cam2-"));
+  try {
+    mkdirSync(join(dir, "beats"), { recursive: true });
+    writeFileSync(join(dir, "beats/noop.js"), `export const makeBeat = () => ({ declare() {}, sample() {}, pose: () => null, camera: () => ({ tr: { p: [0,0,1], q: [0,0,0,1], s: [1,1,1] }, fov: 30, focus: 1, fstop: 5.6 }), cues() {}, reads: [] });\n`);
+    writeFileSync(
+      join(dir, "film.json"),
+      JSON.stringify({
+        template: "isnail-30",
+        theme: "x-desktop",
+        format: { fps: 30, bpm: 120, duration: 30, size: [1920, 1080] },
+        toy: "toy.json",
+        profile: { name: "Alley", handle: "alleywu270684", bio: ["PM"] },
+        posts: { pinned: { title: "t", counts: {}, cover: "assets/p.jpg" }, retro: { title: "r", counts: {}, cover: "assets/r.jpg" } },
+        counter: { value: 6.3, unit: "万", label: "查看", display: "6.3万" },
+        cta: {
+          layout: "two-column",
+          slogan: [{ text: "跑通省钱链路", paper: "cream" }, { text: "找 Alley", paper: "red" }],
+          name: { text: "alley wu", paper: "cream" },
+          handle: { text: "@alleywu270684", paper: "blue" },
+          prop: { kind: "plinth" },
+        },
+        story: {
+          exit: "jump",
+          segments: [
+            { beat: "beats/noop.js", bars: 12 },
+            { story: [24, "end"] },
+          ],
+        },
+      }),
+    );
+    writeFileSync(join(dir, "toy.json"), JSON.stringify({ height: 0.12, colors: { body: "#FFFFFF" }, joints: { body: { p: [0, 0.05, 0] } }, parts: [{ name: "torso", group: "body", shape: "ellipsoid", pos: [0, 0.05, 0], r: [0.02, 0.03, 0.02], mat: "body" }] }));
+    const kitUrl = new URL("../skills/creator-toy-intro/engine/lib/beatkit.js", import.meta.url).href;
+    const tlUrl = new URL("../skills/creator-toy-intro/templates/isnail-30/timeline.js", import.meta.url).href;
+    const probe = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "-e",
+        `import { stand, hop, toyFrom, readoutBadge } from ${JSON.stringify(kitUrl)};
+         import { EV, CAMERA2 } from ${JSON.stringify(tlUrl)};
+         const o = stand([0, 0, 0]);
+         const ret = hop(o, 0.5, [0, 0, 0], [0.2, 0, 0], 0, 1, 0.08);
+         const tf = toyFrom(ret, [0, -2, 0]);
+         const glyph = { has: () => true, adv: () => 0.6, geo: (_k, em, depth, bevel) => ({ type: "curve", rings: [[[0, 0], [em, 0], [em, em], [0, em]]], depth, bevel }) };
+         const badge = readoutBadge(glyph, { from: 1, to: 10, fmt: { unit: "万" }, em: 0.04 });
+         let badValErr = "";
+         try { badge.put(() => {}, "cnt", [0, 0.3, 0], [0, 0.3, 1], 1); } catch (e) { badValErr = e.message; }
+         let badPoseErr = "";
+         try { toyFrom(0.5, [0, -2, 0]); } catch (e) { badPoseErr = e.message; }
+         console.log(JSON.stringify({ sameRef: ret === o, heroY: tf.hero.p[1], badValErr, badPoseErr, cut: EV.cut, cam2FirstT: CAMERA2[0].t }));`,
+      ],
+      { env: { ...process.env, FILM: dir }, encoding: "utf8" },
+    );
+    assert.equal(probe.status, 0, probe.stderr);
+    const got = JSON.parse(probe.stdout.trim().split("\n").at(-1));
+    assert.equal(got.sameRef, true, "kit.hop must return the pose object o");
+    assert.ok(got.heroY > 0.07, `expected mid-hop apex > 0.07 m, got ${got.heroY}`);
+    assert.match(got.badValErr, /omit numeric val before centerWorld/);
+    assert.match(got.badPoseErr, /pose\(g\) must return a pose object/);
+    assert.equal(got.cut, 24);
+    assert.equal(got.cam2FirstT, 24, "two-column CAMERA2[0].t must align with EV.cut = 24.0 when END_FROM = 24");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

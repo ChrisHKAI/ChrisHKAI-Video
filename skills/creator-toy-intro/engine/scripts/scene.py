@@ -361,7 +361,14 @@ def material(spec):
         mp.inputs["Scale"].default_value = (0.45, 0.45, 0.45)
         L.new(tc.outputs["Object"], mp.inputs["Vector"])
         L.new(mp.outputs["Vector"], grad.inputs["Vector"])
-        p = principled(nt, LOOK.stage["glass"], 0.34, 0.4, coat=0.25, coat_rough=0.3)
+        p = principled(
+            nt,
+            LOOK.stage["glass"],
+            0.34,
+            0.06 if ENGINE == "eevee" else 0.4,
+            coat=0.02 if ENGINE == "eevee" else 0.25,
+            coat_rough=0.3,
+        )
         dark = nt.nodes.new("ShaderNodeBsdfDiffuse")
         dark.inputs["Color"].default_value = rgba(LOOK.stage["fade"])
         mx = nt.nodes.new("ShaderNodeMixShader")
@@ -798,8 +805,13 @@ def islands(rings):
     """The rings grouped into islands: an outer ring (inside an even number of others) and the holes right inside
     it. Blender's fill decides the holes of all a curve's rings at once, and two islands side by side can fool it
     into taking one for a hole of the other: 优's 亻 touches its 尤 at a point, and most of 亻 went unfilled. A
-    ring is inside another when most of its points are."""
-    area = lambda r: abs(0.5 * sum(r[i - 1][0] * r[i][1] - r[i][0] * r[i - 1][1] for i in range(len(r))))  # noqa: E731
+    ring is inside another when most of its points are. When a font supplies signed outer/hole contours (positive AND
+    negative shoelace areas, as in PingFang SC's 默 where positive 丶/丿 strokes sit inside 黑's box), same-sign
+    strokes stay independent solid islands instead of XOR-cutting slits out of the enclosing frame."""
+    sareas = [0.5 * sum(r[i - 1][0] * r[i][1] - r[i][0] * r[i - 1][1] for i in range(len(r))) for r in rings]
+    area = lambda idx: abs(sareas[idx])  # noqa: E731
+    has_signed_holes = any(a > 1e-9 for a in sareas) and any(a < -1e-9 for a in sareas)
+    outer_sign = (1 if sareas[max(range(len(rings)), key=area)] >= 0 else -1) if rings else 1
     box = [(min(x for x, _ in r), min(y for _, y in r), max(x for x, _ in r), max(y for _, y in r)) for r in rings]
     def within(i, j):  # (two dozen of its points are enough to tell)
         a, b = box[i], box[j]
@@ -808,10 +820,18 @@ def islands(rings):
         pts = rings[i][:: max(1, len(rings[i]) // 24)]
         return sum(inside(p, rings[j]) for p in pts) > len(pts) / 2
     holders = [[j for j in range(len(rings)) if j != i and within(i, j)] for i in range(len(rings))]
+    if has_signed_holes:
+        groups = {i: [rings[i]] for i in range(len(rings)) if sareas[i] * outer_sign >= 0}
+        for i, h in enumerate(holders):
+            if sareas[i] * outer_sign < 0:
+                outer_h = [j for j in h if j in groups]
+                own = min(outer_h, key=area, default=None)
+                (groups[own] if own is not None else groups.setdefault(i, [])).append(rings[i])
+        return list(groups.values())
     groups = {i: [rings[i]] for i, h in enumerate(holders) if len(h) % 2 == 0}
     for i, h in enumerate(holders):
         if len(h) % 2:
-            own = min((j for j in h if j in groups), key=lambda j: area(rings[j]), default=None)
+            own = min((j for j in h if j in groups), key=area, default=None)
             (groups[own] if own is not None else groups.setdefault(i, [])).append(rings[i])
     return list(groups.values())
 
@@ -1012,6 +1032,8 @@ for o in DATA["objects"]:
     objs[name] = ob
     if name.startswith(("strip_", "blob")):
         ob.visible_shadow = name.startswith("strip_")
+    if (o.get("mat") or {}).get("shadow") is False:
+        ob.visible_shadow = False
 print(f"objects built in {time.time() - t0:.1f}s", flush=True)
 
 t0 = time.time()

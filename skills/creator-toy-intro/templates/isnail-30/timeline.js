@@ -159,7 +159,9 @@ export const COVER_MM = S.coverMM; // the act 3 wall's width once it stands up
 // elev / az deg (az 0 = from the south edge); after the cut, CAMERA2 targets
 // are metres from the CTA stage
 export const CAMERA = S.camera ?? D.camera;
-export const CAMERA2 = S.camera2 ?? D.camera2;
+export const CAMERA2 = S.camera2 ?? ((CTA_MODE === "two-column" || CTA_MODE === "still") && END_FROM !== undefined && D.camera2[0]?.t > EV.cut
+  ? [{ ...D.camera2[0], t: EV.cut }, ...D.camera2.slice(1)]
+  : D.camera2);
 export const FOV = S.fov;
 export const SHAKES = S.shakes; // 2–3 frame shakes on hits: [t, strength]
 

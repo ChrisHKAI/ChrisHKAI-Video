@@ -18,8 +18,10 @@
 import { apply, trs, qMul, qEuler } from "./quat.js";
 
 const blank = (c) => /\s/.test(c);
+const midDot = (c) => c === "·" || c === "・" || c === "•";
 const cjk = (c) => c.codePointAt(0) >= 0x2e80;
 const lowest = (geo) => Math.min(0, ...geo.rings.flatMap((r) => r.map((p) => p[1])));
+const highest = (geo) => Math.max(0, ...geo.rings.flatMap((r) => r.map((p) => p[1])));
 export const DEPTH = 0.08; // em
 export const TRACK = { cjk: 0.08, latin: 0.03 }; // em between letters: a CJK face's letters fill their whole em
 
@@ -56,13 +58,23 @@ export function line(glyph, text, em, { face = "heavy", track, edge = 0 } = {}) 
   const missing = chars.filter((c) => !blank(c) && !glyph.has(key(c)));
   if (missing.length) throw new Error(`no lettering for ${missing.join("")}: run the glyph step (run.mjs glyphs); a character only a beat or a prop shows goes in film.json "glyphs"`);
   const gap = (c) => track ?? (cjk(c) ? TRACK.cjk : TRACK.latin);
-  const advs = chars.map((c) => (blank(c) ? 0.3 : glyph.adv(key(c)) + gap(c)) * em);
+  // CJK middle dots ("·", "・") already carry generous built-in sidebearings (0.5–1.0 em); tighten adjacent spaces
+  // from 0.30 em to 0.05 em so "01年 · 前大厂程序员" never splits apart across a triple-wide chasm.
+  const spaceEm = (i) => (midDot(chars[i - 1]) || midDot(chars[i + 1]) ? 0.05 : 0.3);
+  const advs = chars.map((c, i) => (blank(c) ? spaceEm(i) : glyph.adv(key(c)) + gap(c)) * em);
   const W = advs.reduce((a, b) => a + b, 0) - gap(chars[chars.length - 1] ?? "a") * em;
   let x = -W / 2;
   const items = [];
-  chars.forEach((c, i) => { if (!blank(c)) items.push({ c, i, key: key(c), x, low: lowest(glyph.geo(key(c), em, 0, 0)) }); x += advs[i]; });
+  chars.forEach((c, i) => {
+    if (!blank(c)) {
+      const g0 = glyph.geo(key(c), em, 0, 0);
+      items.push({ c, i, key: key(c), x, low: lowest(g0), high: highest(g0) });
+    }
+    x += advs[i];
+  });
   const low = Math.min(0, ...items.map((it) => it.low));
-  return { items, W, em, low, stand: -low + edge * em, edge, text: chars.join(""), geo: glyph.geo };
+  const high = Math.max(em * 0.72, ...items.map((it) => it.high));
+  return { items, W, em, low, high, stand: -low + edge * em, edge, text: chars.join(""), geo: glyph.geo };
 }
 
 // its letters as objects, name + i (and name + "o" + i for the edge). outline: true for a dark glossy edge, or a

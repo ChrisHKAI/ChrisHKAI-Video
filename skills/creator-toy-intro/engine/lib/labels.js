@@ -37,8 +37,12 @@ export const TRACK = { cjk: 0.06, latin: 0.02 };
 export function makeLabel({ id, text, em, paper, ink = null, c, tilt, at, letterAt, adv, font = "heavy", track, padX: padXEm = 0.2 }) {
   const chars = [...text];
   const keys = chars.map((ch) => `${font}:${ch}`);
+  const midDot = (ch) => ch === "·" || ch === "・" || ch === "•";
   const gap = (ch) => track ?? (ch.codePointAt(0) >= 0x2e80 ? TRACK.cjk : TRACK.latin);
-  const step = (i) => (adv(keys[i]) + (i < chars.length - 1 ? gap(chars[i]) : 0)) * em;
+  const step = (i) => {
+    if (/\s/.test(chars[i]) && (midDot(chars[i - 1]) || midDot(chars[i + 1]))) return 0.06 * em;
+    return (adv(keys[i]) + (i < chars.length - 1 ? gap(chars[i]) : 0)) * em;
+  };
   const w = keys.reduce((sum, _, i) => sum + step(i), 0);
   const padX = padXEm * em, padY = 0.2 * em;
   const W = w + 2 * padX, H = 0.93 * em + 2 * padY;

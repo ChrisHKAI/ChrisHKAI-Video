@@ -140,5 +140,7 @@ When fixing a prop or card clash:
   (`*_core`, `*_hole`, `*_pupil`, `*_led*`) is completely swallowed inside an
   opaque sibling `tube` cap or shell (`buriedCompoundCores`), warns when a
   negative pain-point headline lingers past its reading floor over newly revealed
-  payoff cards (`lingeringPainHeadlines`), and warns when celebration sparks
+  payoff cards (`lingeringPainHeadlines`, while exempting positive solution/testing
+  compounds like `踩坑实测` / `避坑` / `省钱通路`), warns when a standalone showcase
+  picture card flashes for `< 1.15 s` and vanishes mid-beat (`flashCards`), and warns when celebration sparks
   streak in front of the settled toy's eyes.

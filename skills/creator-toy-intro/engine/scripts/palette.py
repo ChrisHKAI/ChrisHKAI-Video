@@ -134,6 +134,9 @@ for k, r in bad:
     elif k == "twin":
         print(f"  ! lettering in {r['hex']} ({r['objects']} objects: {', '.join(r['names'])}) is the toy's own colour {r['twin']}: beside it, the two melt into one; another colour")
         continue
+    elif k == "glow":
+        print(f"  ! lettering in {r['hex']} ({r['objects']} objects: {', '.join(r['names'])}) melts into a nearby glow of {r['glow']} in the same beat: pick a contrasting colour, mount on a matte plate, or lower the prop's emit below 0.8")
+        continue
     else:
         what = f"confetti {r['hex']}"
     print(f"  ! {what}: {r['contrast']:.1f}:1 on the stage, will not read")

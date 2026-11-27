@@ -180,10 +180,10 @@ demo, their site's media library).
   never eyeball hardcoded pixel numbers—and visually inspect the generated
   image standalone before placing it in the scene. For bottom multi-stat or
   product-suite strips mounted in `kit.framedPicture(..., { antiglare: true })`,
-  render them with `stagekit.plaque(segments)` (and save recipe textures with
+  render them with `stagekit.plaque(segments, pad_y=…)` (and save recipe textures with
   `stagekit.save_if_changed(img, path)` so unchanged recipe re-runs keep file
   `mtime`s intact): `plaque()` supersamples at 2× (`LANCZOS`), auto-sizes width
-  from measured glyph bounds with generous side padding so characters never
+  (and height when `pad_y` is given) from measured glyph bounds with generous side padding so characters never
   collide with edges, draws crisp geometric `"star"` icons and subtle vertical
   dividers, and omits any inner 2D border rectangle so the 3D `framedPicture`
   bezel forms one clean frame (`palette` and `check` warn on `cramped` side
@@ -208,8 +208,9 @@ demo, their site's media library).
   promises a small specific count of distinct tools or modules (e.g. `四款自研工具`),
   never show one shrunken multi-card webpage screenshot whose tiny sub-labels
   blur ("writes four, shows zero readable"): split them into *N* separate,
-  boldly labeled Chinese cards popping sequentially on the beat as the toy
-  points to each. And when turning dark banners (such as an eclipse) into an
+  boldly labeled macro poster cards (large emblem/icon + 4–6 word header, never raw full-page browser text) popping sequentially on the beat as the toy
+  points to each, and hold every standalone story picture card for `>= 1.2 s`
+  (`flashCards` warns when a showcase card flashes for `< 1.15 s` and vanishes mid-beat before viewers can register it). And when turning dark banners (such as an eclipse) into an
   RGBA `kit.cutout()`, carve an unmistakable silhouette (a true curved crescent
   rather than a dark circular disc) so it never reads as a flat dark puck on a
   mid-tone grey stage when words are covered.
@@ -288,9 +289,13 @@ the story page reads the film's own frames afterwards. Then:
 }
 ```
 
-`heavy` is the film's words (the beats' lines and the end card; the name is
-the role's first face, it means whatever the film chose, and a single face can
-also be written as `"PingFang TC:Semibold"`), `display` a beat's
+- `heavy` is the film's words (the beats' lines and the end card; the name is
+  the role's first face, it means whatever the film chose, and a single face can
+  also be written as `"PingFang TC:Semibold"` or `"PingFang SC:Medium"`—prefer
+  `Medium` or `Regular` over ultra-heavy CJK faces on multi-stroke characters like
+  `默`/`懂`/`藏` so inner counter holes stay airy and open at phone size, paired with
+  warm white `#FFF8F0` ink on coral/crimson `#D94E28` accent strips rather than
+  glaring pure `#FFFFFF` on `#FF0000`), `display` a beat's
 own line in the creator's own face, `cjk` and `latin` the counter's unit and
 digits; a role left out takes the words' face. `track` (em) sets the air
 between the end card's letters for the face chosen. Several faces in a role

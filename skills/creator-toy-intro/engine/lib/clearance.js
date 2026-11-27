@@ -3681,7 +3681,7 @@ export function lingeringPainHeadlines(anim, { minOverlapSecs = 0.90, readSlackS
   const objects = new Map(anim.objects.map((o) => [o.name, o]));
   if (!objects.has("camera")) return [];
   const PAIN_RE = /(?:失效|不好用|不满意|报错|失败|卡死|卡住|封号|被封|封锁|限流|烂广|踩坑|踩雷|崩溃|乱塞|烧空|废稿|打叉|✗|✘|❌)/u;
-  const TURN_RE = /(?:->|→|➔|⇒|告别|解决|破局|跑通|翻倍|免费|开源|只留|不踩|防封|省流|逆袭|搞定|保姆级|指南|攻略|手册)/u;
+  const TURN_RE = /(?:->|→|➔|⇒|告别|解决|破局|跑通|翻倍|免费|开源|只留|不踩|避坑|防坑|踩坑实测|实测|省钱|省心|通路|打通|通关|喂到嘴边|手把手|稳稳|防封|省流|逆袭|搞定|保姆级|指南|攻略|手册)/u;
   const SKIP_BG_CARD = /^beat\d+_(?:p_|back$|avatar|banner|cyc|bg|floor|desk|pad|stage|rostrum|plinth|wall|bleed|plq|plaque)/i;
 
   const needSecs = (text) => {
@@ -3806,6 +3806,96 @@ export function describeLingeringPainHeadlines(items) {
     kind: "warn",
     ...m,
     text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: pain-point headline "${m.text}" (${m.line}, shown ${m.shownSecs.toFixed(1)} s vs ${m.needSecs.toFixed(1)} s needed) lingers over payoff card(s) ${m.cards.join(", ")} and can mislabel the creator's own work`,
+  }));
+}
+
+/**
+ * Detect blink-and-miss-it custom-beat showcase `uiBox` picture cards (`0.20 s <= shown < 1.15 s`) that pop onto stage
+ * and disappear well before the beat's cut (`< beatEnd - 0.20 s`)—such as a story hook card flashed for 0.9 s that
+ * vanishes before viewers register what was on it. Exempts `wipePicture` (`_before`/`_after`) pairs, background/plaque
+ * slabs, and 5+ card rapid flipbooks.
+ */
+export function flashCards(anim, { aspect = 16 / 9, minVisibleSecs = 0.20, minHoldSecs = 1.15, every = 2 } = {}) {
+  const objects = new Map(anim.objects.map((o) => [o.name, o]));
+  const fovs = anim.scalars?.fov;
+  if (!objects.has("camera")) return [];
+  const under = (o, root) => { for (let p = o; p; p = objects.get(p.parent)) if (p.name === root) return true; return false; };
+  const SKIP_BG_CARD = /^beat\d+_(?:p_|back$|avatar|banner|cyc|bg|floor|desk|pad|stage|rostrum|plinth|wall|bleed|plq|plaque)/i;
+  const WIPE_CARD = /_(?:before|after)(?:_pic)?$/i;
+
+  const cardsByBeat = new Map();
+  for (const o of anim.objects) {
+    const bm = o.name.match(/^(beat\d+)_/);
+    if (!bm || !o.geo || under(o, "hero") || SKIP_NAME.test(o.name) || SKIP_BG_CARD.test(o.name) || WIPE_CARD.test(o.name)) continue;
+    if (o.geo.type !== "uiBox" || !Array.isArray(o.geo.rect)) continue;
+    const beat = bm[1];
+    if (!cardsByBeat.has(beat)) cardsByBeat.set(beat, []);
+    cardsByBeat.get(beat).push({ o, unit: o.geo.unitScale ?? 1 });
+  }
+  if (!cardsByBeat.size) return [];
+
+  const sampleAt = trackReader(anim), SUB = anim.sub ?? 1;
+  const worldOf = (name, s, memo) => {
+    if (memo.has(name)) return memo.get(name);
+    const o = objects.get(name);
+    const local = sampleAt(name, s) ?? unpack(o.tr);
+    const w = o.parent && o.parent !== "root" ? compose(worldOf(o.parent, s, memo), local) : local;
+    memo.set(name, w);
+    return w;
+  };
+
+  const out = [];
+  for (const [, cards] of cardsByBeat) {
+    if (cards.length >= 5) continue; // flipbook / montage wall intentionally cycles cards rapidly
+    const visByCard = new Map(cards.map((c) => [c.o.name, []]));
+    let beatEnd = -Infinity;
+    for (let f = 0; f < anim.frames; f += every) {
+      const s = f * SUB, t = f / anim.fps, memo = new Map();
+      const camW = worldOf("camera", s, memo);
+      const fovDeg = fovs?.[Math.min(s, fovs.length - 1)] ?? 30;
+      const tanY = Math.tan((fovDeg * Math.PI) / 360), tanX = tanY * aspect;
+      for (const c of cards) {
+        const w = worldOf(c.o.name, s, memo);
+        if (Math.min(...w.s.map(Math.abs)) < 0.45 * c.unit) continue;
+        const [x0, y0, rw, rh] = c.o.geo.rect;
+        const center = apply(w, [(x0 + rw / 2) * MM, 0, (y0 + rh / 2) * MM]);
+        const lp = toLocal(camW, center);
+        if (lp[2] >= -0.05 || -lp[2] > 5.5) continue;
+        const nx = lp[0] / (-lp[2] * tanX), ny = lp[1] / (-lp[2] * tanY);
+        if (Math.abs(nx) > 1.05 || Math.abs(ny) > 1.05) continue;
+        if (t > beatEnd) beatEnd = t;
+        visByCard.get(c.o.name).push(t);
+      }
+    }
+    if (!Number.isFinite(beatEnd)) continue;
+    const step = (every / anim.fps) * 1.6;
+    for (const c of cards) {
+      const ts = visByCard.get(c.o.name);
+      if (ts.length < 2) continue;
+      // Split into contiguous visible runs
+      const runs = [[ts[0], ts[0]]];
+      for (let i = 1; i < ts.length; i++) {
+        if (ts[i] - runs.at(-1)[1] <= step) runs.at(-1)[1] = ts[i];
+        else runs.push([ts[i], ts[i]]);
+      }
+      const totalShown = runs.reduce((acc, [a, b]) => acc + (b - a), 0);
+      if (totalShown >= minHoldSecs - 1e-6) continue;
+      for (const [from, to] of runs) {
+        const secs = to - from;
+        if (secs >= minVisibleSecs - 1e-6 && secs < minHoldSecs - 1e-6 && to < beatEnd - 0.20) {
+          out.push({ card: c.o.name, image: c.o.mat?.image ?? null, from: +from.toFixed(2), to: +to.toFixed(2), secs: +secs.toFixed(2), needSecs: minHoldSecs });
+        }
+      }
+    }
+  }
+  return out.sort((a, b) => a.from - b.from);
+}
+
+export function describeFlashCards(items) {
+  return items.map((m) => ({
+    kind: "warn",
+    ...m,
+    text: `${m.from.toFixed(1)}–${m.to.toFixed(1)} s: showcase picture card ${m.card}${m.image ? ` (${m.image})` : ""} flashes for only ${m.secs.toFixed(2)} s before vanishing mid-beat (hold >= ${m.needSecs.toFixed(2)} s so viewers can register it)`,
   }));
 }
 

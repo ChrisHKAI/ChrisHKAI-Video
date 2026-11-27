@@ -5,7 +5,7 @@
 import { fromFilm } from "./film.js";
 import { TOY, CENTER, JOINTS, COLORS } from "./toy.js";
 import { armLiftLimit } from "./clearance.js";
-import { basePose, squash, landSquash, crouch, hop, heroT, partsAt } from "./rig.js";
+import { basePose, squash, landSquash, crouch, hop as rigHop, heroT, partsAt } from "./rig.js";
 import { makeCamera } from "./camera.js";
 import { readout, formatCount } from "./counter.js";
 import { line as makeLine, declareLine as declLine, putLine as placeLine, facing as faceCam, eyePoint } from "./lettering.js";
@@ -24,7 +24,12 @@ export { line, declareLine, putLine, facing, eyePoint, shade } from "./lettering
 
 export const HIDDEN = 1e-4;
 export const POP = 1.3; // the toy's size on a beat's small stage, as on the end card
-export { squash, landSquash, crouch, hop, CENTER };
+export { squash, landSquash, crouch, CENTER };
+// ballistic hop on a beat's pose: mutates `o` like `rig.hop` and returns `o` (consistent with `stand`, `dropIn`, `strideIn`, `wave`, `point` so `return kit.hop(...)` works directly in `pose(g)`)
+export function hop(o, t, a, b, t0, t1, apex, opts = {}) {
+  rigHop(o, t, a, b, t0, t1, apex, opts);
+  return o;
+}
 
 // the toy standing at spot (world metres), at the stage size
 export function stand(spot) {
@@ -95,13 +100,13 @@ function antiGlarePlate(plateHex, inkHex, raw = false) {
   return "#" + [pr, pg, pb].map((c) => Math.round(c * k).toString(16).padStart(2, "0")).join("").toUpperCase();
 }
 
-// centred, flush-mounted 3D counter + label badge: outline-free solid letters rooted cleanly into a matte paper
-// backing plate (< 3 mm flush threshold: zero double shadow, zero grown-plate stroke shimmer) and level by default
+// centred, flush-mounted 3D counter + label badge: outline-free micro-relief letters rooted cleanly into a matte paper
+// backing plate (< 1 mm front relief + shadow: false so Key-Sun shadows never plug < 2 mm CJK counter holes) and level by default
 export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056, labelEm = em * 0.78, gap = em * 0.36, padX = em * 1.1, padY = em * 0.45, depth = 0.006 } = {}) {
   const num = readout({ fmt, from, to, em, adv: glyph.adv });
   const ln = label ? makeLine(glyph, label, labelEm, { edge: 0, track: 0.08 }) : null;
-  const letterDepth = Math.max(em * 0.11, 0.0038);
-  const letterBevel = Math.min(0.0005, em * 0.014);
+  const letterDepth = Math.max(em * 0.045, 0.0014);
+  const letterBevel = Math.min(0.00018, em * 0.005);
   const numW = num.width(to), lblW = ln ? ln.W : 0;
   const textW = numW + (lblW > 0 ? gap + lblW : 0);
   const plateSize = [textW + padX, Math.max(em, labelEm) + padY, depth];
@@ -111,7 +116,7 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
     declare(add, prefix = "badge", { plateColor = "#FF4500", numColor = "#FFFFFF", labelColor = "#FFD166", outline = false, withOutline = false, rawPlate = false } = {}) {
       hasOutline = Boolean(withOutline && outline);
       const safePlate = antiGlarePlate(plateColor, numColor, rawPlate);
-      const inkFinish = { on: plateColor, side: null, rough: 0.42, coat: 0.12 };
+      const inkFinish = { on: plateColor, side: null, rough: 0.42, coat: 0.12, shadow: false };
       for (const n of num.names) {
         add({ name: `${prefix}_${n.name}`, letter: n.key.split(":")[1], geo: glyph.geo(n.key, em, letterDepth, letterBevel), mat: { type: "type", color: numColor, emit: 0.0, ...inkFinish }, anim: true, step: true, pop: true });
       }
@@ -119,6 +124,10 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
       add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: safePlate }, anim: true });
     },
     put(put, prefix, val, centerWorld, eyeWorld, scale = 1, { level = true } = {}) {
+      if (typeof val !== "number" || !Number.isFinite(val)) {
+        const got = Array.isArray(val) ? `[${val.join(", ")}] — did you omit numeric val before centerWorld?` : String(val);
+        throw new Error(`readoutBadge.put(put, "${prefix}", val, centerWorld, eyeWorld, scale) expects a finite number for val (got ${got})`);
+      }
       const park = trs([centerWorld[0], -2, centerWorld[2]], qId(), HIDDEN);
       if (scale <= 0.01) {
         put(`${prefix}_plate`, park);
@@ -130,9 +139,9 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
       const aimFrom = level ? [eye[0], centerWorld[1], centerWorld[2]] : centerWorld;
       const q = faceCam(eye, aimFrom);
       const root = trs(centerWorld, q, 1);
-      // Plate front face sits at z = -1.3 mm (inside solid letter depth [-halfD, +halfD], behind any optional outline)
-      const frontBack = hasOutline ? letterDepth + 0.0014 : 0.0013;
-      put(`${prefix}_plate`, trs(apply(root, [0, em * 0.36, -(depth / 2 + frontBack)]), q, scale));
+      // Plate front sits just inside solid letter depth so ~0.6 mm of crisp micro-relief stands proud with zero gap
+      const frontBack = hasOutline ? letterDepth + 0.0012 : letterDepth * 0.18;
+      put(`${prefix}_plate`, trs(apply(root, [0, em * 0.345, -(depth / 2 + frontBack)]), q, scale));
       const grp = trs(centerWorld, q, scale);
       for (const [k, tr] of Object.entries(num.centerAt(val, grp, { afterWidth: lblW, gap }))) put(`${prefix}_${k}`, tr);
       if (ln) {
@@ -142,20 +151,21 @@ export function readoutBadge(glyph, { from = 1, to, fmt, label = "", em = 0.056,
     },
   };
 }
-// centred, flush-mounted 3D text banner plaque: outline-free solid letters on a matte paper plate, level by default
-// so gentle camera azimuth drifts never shimmer CJK strokes or tilt paired bottom bars into an inverted V
+// centred, flush-mounted 3D text banner plaque: outline-free micro-relief letters on a matte paper plate (shadow: false so
+// Key-Sun shadows never plug CJK counters like 前/程/序/员 on light plates), optically centred and level by default
 export function bannerLine(glyph, text, { em = 0.032, edge = 0.07, track = 0.08, padX = em * 1.15, padY = em * 0.52, depth = 0.006 } = {}) {
   const ln = makeLine(glyph, text, em, { edge: 0, track });
-  const letterDepth = Math.max(em * 0.11, 0.0038);
-  const letterBevel = Math.min(0.0005, em * 0.014);
+  const letterDepth = Math.max(em * 0.045, 0.0014);
+  const letterBevel = Math.min(0.00018, em * 0.005);
   const plateSize = [ln.W + padX, em + padY, depth];
+  const inkMidY = (ln.stand + ln.low + ln.stand + (ln.high ?? em * 0.82)) * 0.5 - em * 0.02;
   let hasOutline = false;
   return {
     ln, em, plateSize,
     declare(add, prefix = "ban", { plateColor = "#241232", color = "#FFFFFF", outline = false, withOutline = false, emit = 0.0, rawPlate = false } = {}) {
       hasOutline = Boolean(withOutline && outline);
       const safePlate = antiGlarePlate(plateColor, color, rawPlate);
-      declLine(add, `${prefix}_ln_`, ln, { color, emit, depth: letterDepth, bevel: letterBevel, outline: hasOutline ? outline : false, edge, finish: { on: plateColor, side: null, rough: 0.42, coat: 0.12 } });
+      declLine(add, `${prefix}_ln_`, ln, { color, emit, depth: letterDepth, bevel: letterBevel, outline: hasOutline ? outline : false, edge, finish: { on: plateColor, side: null, rough: 0.42, coat: 0.12, shadow: false } });
       add({ name: `${prefix}_plate`, geo: { type: "roundBox", size: plateSize, radius: plateSize[1] * 0.16 }, mat: { type: "paper", color: safePlate }, anim: true });
     },
     put(put, prefix, centerWorld, eyeWorld, scale = 1, { level = true } = {}) {
@@ -170,9 +180,9 @@ export function bannerLine(glyph, text, { em = 0.032, edge = 0.07, track = 0.08,
       const aimFrom = level ? [eye[0], centerWorld[1], centerWorld[2]] : centerWorld;
       const q = faceCam(eye, aimFrom);
       const root = trs(centerWorld, q, 1);
-      // Plate front face sits at z = -1.3 mm (inside solid letter depth [-halfD, +halfD]: zero gap, zero stroke shimmer)
-      const frontBack = hasOutline ? letterDepth + 0.0014 : 0.0013;
-      put(`${prefix}_plate`, trs(apply(root, [0, ln.stand + em * 0.36, -(depth / 2 + frontBack)]), q, scale));
+      // Plate front sits just inside solid letter depth so ~0.6 mm of crisp micro-relief stands proud with zero gap
+      const frontBack = hasOutline ? letterDepth + 0.0012 : letterDepth * 0.18;
+      put(`${prefix}_plate`, trs(apply(root, [0, inkMidY, -(depth / 2 + frontBack)]), q, scale));
       placeLine(put, `${prefix}_ln_`, ln, (it) => apply(root, [it.x, ln.stand, 0]), q, () => scale, { outline: hasOutline, depth: letterDepth });
     },
   };
@@ -391,6 +401,9 @@ export function holdUp(o, g, g0, g1) {
 // the toy for a pose: its transform, its parts and its contact shadow on the
 // floor under it (null: the toy is not in this beat)
 export function toyFrom(o, park) {
+  if (o !== null && o !== undefined && (typeof o !== "object" || !Array.isArray(o.pos))) {
+    throw new Error(`pose(g) must return a pose object from kit.stand(...) or null (got ${typeof o}: ${JSON.stringify(o)})`);
+  }
   if (!o || o.show === false) {
     const p = o ? o.pos : park;
     const hero = trs(p.slice(), qId(), HIDDEN);

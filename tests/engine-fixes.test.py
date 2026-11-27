@@ -1980,6 +1980,155 @@ class V0822EngineImprovementTests(unittest.TestCase):
             self.assertNotEqual(r_bad.returncode, 0)
             self.assertIn("the scene opens assets/ui.png, but ui wrote a blank pageless texture", r_bad.stdout)
 
+    def test_scene_signed_cjk_islands_and_shadow_false_visibility(self):
+        local_mac = "/Applications/Blender.app/Contents/MacOS/Blender"
+        home_mac = str(Path.home() / "Applications/Blender.app/Contents/MacOS/Blender")
+        blender = (local_mac if Path(local_mac).exists() else None) or (home_mac if Path(home_mac).exists() else None) or shutil.which("blender")
+        if not blender:
+            self.skipTest("Blender not installed")
+
+        # Simulate PingFang SC's 默 (黑 radical): CCW outer box (+area) + 2 CW counter holes (-area) + 2 CCW inner strokes (+area) inside the box!
+        ccw_rect = lambda x0, y0, x1, y1: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
+        cw_rect = lambda x0, y0, x1, y1: [[x0, y0], [x0, y1], [x1, y1], [x1, y0]]
+        mo_rings = [
+            ccw_rect(0.00, 0.00, 0.04, 0.04),   # outer 黑 frame (+area)
+            cw_rect(0.005, 0.006, 0.017, 0.034),  # left counter hole (-area)
+            cw_rect(0.023, 0.006, 0.035, 0.034),  # right counter hole (-area)
+            ccw_rect(0.009, 0.014, 0.014, 0.026), # positive 丶 stroke overlapping inside frame (+area — MUST NOT become a hole!)
+            ccw_rect(0.026, 0.014, 0.031, 0.026), # positive 丿 stroke overlapping inside frame (+area — MUST NOT become a hole!)
+        ]
+        # Legacy unsigned nested rings (all CCW): outer + hole + inner island -> 2 groups ([outer, hole], [inner])
+        unsigned_rings = [
+            ccw_rect(0.00, 0.00, 0.04, 0.04),
+            ccw_rect(0.006, 0.006, 0.034, 0.034),
+            ccw_rect(0.014, 0.014, 0.026, 0.026),
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "film.json").write_text(json.dumps({
+                "format": {"fps": 30, "duration": 1, "size": [320, 180]},
+                "toy": "toy.json", "cta": {}, "look": {},
+            }))
+            (fdir / "toy.json").write_text(json.dumps({"colors": {"body": "#2F61EB"}, "height": 0.12}))
+            (fdir / "build").mkdir()
+            (fdir / "build/anim.json").write_text(json.dumps({
+                "fps": 30, "frames": 1, "sub": 1, "samples": 1,
+                "objects": [
+                    {"name": "camera", "parent": "root", "camera": True, "geo": None, "tr": [0, 0, 1, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "fx", "parent": "root", "light": True, "geo": None, "tr": [0, 1, 1, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "mo_glyph", "parent": "root", "geo": {"type": "curve", "rings": mo_rings, "depth": 0.0014, "bevel": 0.00015}, "mat": {"type": "type", "color": "#111827", "emit": 0, "shadow": False}, "tr": [0, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "unsigned_glyph", "parent": "root", "geo": {"type": "curve", "rings": unsigned_rings, "depth": 0.0014, "bevel": 0.00015}, "mat": {"type": "type", "color": "#FFFFFF", "emit": 0}, "tr": [0.1, 0, 0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {}, "colors": {},
+                "scalars": {"fov": [35.0], "focus": [1.0], "fstop": [5.6], "fx_energy": [1.0], "fx_color": [[1.0, 1.0, 1.0]]},
+            }))
+            check_expr = """
+import bpy, json
+deps = bpy.context.evaluated_depsgraph_get()
+mo_ob = bpy.data.objects["mo_glyph"]
+un_ob = bpy.data.objects["unsigned_glyph"]
+# Raycast along -Z into the center of the left inner stroke (0.0115, 0.020) and an open hole corner (0.007, 0.008)
+mo_eval = mo_ob.evaluated_get(deps)
+hit_stroke = mo_eval.ray_cast((0.0115, 0.020, 0.05), (0.0, 0.0, -1.0))[0]
+hit_hole = mo_eval.ray_cast((0.007, 0.008, 0.05), (0.0, 0.0, -1.0))[0]
+un_eval = un_ob.evaluated_get(deps)
+hit_un_center = un_eval.ray_cast((0.020, 0.020, 0.05), (0.0, 0.0, -1.0))[0]
+hit_un_moat = un_eval.ray_cast((0.009, 0.009, 0.05), (0.0, 0.0, -1.0))[0]
+print("RESULT:" + json.dumps({
+    "mo_shadow": mo_ob.visible_shadow,
+    "un_shadow": un_ob.visible_shadow,
+    "hit_stroke": hit_stroke,
+    "hit_hole": hit_hole,
+    "hit_un_center": hit_un_center,
+    "hit_un_moat": hit_un_moat,
+}))
+"""
+            env = {**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}
+            r = subprocess.run([blender, "-b", "--factory-startup", "--python-exit-code", "1", "-P", str(SCRIPTS / "scene.py"), "--python-expr", check_expr, "--", "--samples", "1", "--scale", "10"], capture_output=True, text=True, env=env)
+            self.assertEqual(r.returncode, 0, msg=f"Blender failed:\nSTDOUT:\n{r.stdout}\nSTDERR:\n{r.stderr}")
+            got = json.loads(next(x for x in r.stdout.splitlines() if x.startswith("RESULT:")).split("RESULT:", 1)[1])
+            self.assertFalse(got["mo_shadow"])
+            self.assertTrue(got["un_shadow"])
+            self.assertTrue(got["hit_stroke"], "signed inner stroke in 默 must stay solid, not XOR-cut as a hole")
+            self.assertFalse(got["hit_hole"], "negative-area counter hole must remain open")
+            self.assertTrue(got["hit_un_center"], "unsigned nested center island must remain solid")
+            self.assertFalse(got["hit_un_moat"], "unsigned odd-parity moat must remain open")
+
+    def test_v0823_palette_glow_message_plaque_pad_y_synth_add_and_eevee_stage_floor(self):
+        import colors
+        import compose
+        import stagekit
+        import synth
+        from PIL import Image
+
+        # 1) stagekit.plaque accepts pad_y and auto-sizes height cleanly
+        f_big = stagekit.font("bold", 72)
+        plq_default = stagekit.plaque([[("3,500+ 用户", f_big, (255, 248, 240))]])
+        plq_compact = stagekit.plaque([[("3,500+ 用户", f_big, (255, 248, 240))]], pad_y=24)
+        self.assertEqual(plq_default.size[1], 168)
+        self.assertLess(plq_compact.size[1], plq_default.size[1])
+        self.assertGreaterEqual(plq_compact.size[1], 48)
+
+        # 2) synth.add supports both 1D mono and 2D stereo buffers, and compose.midi accepts strings, flats & numbers
+        buf = np.zeros((4800, 2), dtype=float)
+        mono = np.ones(240, dtype=float) * 0.25
+        stereo = np.column_stack([np.ones(240) * 0.1, np.ones(240) * 0.3])
+        synth.add(buf, mono, 0.01, gain=1.0, pan=0.0)
+        synth.add(buf, stereo, 0.05, gain=0.5)
+        self.assertGreater(float(buf[480:720].sum()), 0.0)
+        self.assertAlmostEqual(float(buf[2400, 0]), 0.05, places=5)
+        self.assertAlmostEqual(float(buf[2400, 1]), 0.15, places=5)
+        self.assertEqual(compose.midi("G3"), 55)
+        self.assertEqual(compose.midi("Bb2"), 46)
+        self.assertEqual(compose.midi(60), 60)
+
+        # 3) palette.py reports k == "glow" accurately (never "! confetti ..."), while plated lettering skips glow clash
+        with tempfile.TemporaryDirectory() as tmp:
+            fdir = Path(tmp)
+            (fdir / "assets").mkdir()
+            (fdir / "build").mkdir()
+            Image.new("RGB", (64, 64), (36, 92, 210)).save(fdir / "assets/avatar.png")
+            (fdir / "film.json").write_text(json.dumps({
+                "format": {"fps": 30, "duration": 2, "size": [1920, 1080]},
+                "toy": "toy.json",
+                "pop": {"confetti": ["#38BDF8"]},
+                "cta": {},
+                "look": {"stage": "dark"},
+            }))
+            (fdir / "toy.json").write_text(json.dumps({
+                "height": 0.12,
+                "colors": {"body": "#245CD2"},
+                "parts": [{"name": "torso", "group": "body", "shape": "ellipsoid", "r": [0.03, 0.04, 0.03], "mat": "body"}],
+            }))
+            sq = [[[0, 0], [0.03, 0], [0.03, 0.03], [0, 0.03]]]
+            (fdir / "build/anim.json").write_text(json.dumps({
+                "fps": 30, "frames": 2, "sub": 1, "samples": 2,
+                "objects": [
+                    {"name": "camera", "parent": "root", "camera": True, "geo": None, "tr": [0, 0.2, 1.2, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_orb", "parent": "root", "geo": {"type": "curve", "rings": sq, "depth": 0.01}, "mat": {"type": "type", "color": "#FFEFA0", "emit": 0.9}, "tr": [0, 0.2, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_float0", "parent": "root", "letter": "亮", "geo": {"type": "curve", "rings": sq, "depth": 0.003}, "mat": {"type": "type", "color": "#FFF099", "emit": 0.0}, "tr": [0.1, 0.2, 0, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_ban_plate", "parent": "root", "geo": {"type": "roundBox", "size": [0.3, 0.08, 0.006], "radius": 0.01}, "mat": {"type": "paper", "color": "#1B2838"}, "tr": [-0.2, 0.2, -0.004, 0, 0, 0, 1, 1, 1, 1]},
+                    {"name": "beat1_ban_ln_0", "parent": "root", "letter": "稳", "geo": {"type": "curve", "rings": sq, "depth": 0.0014}, "mat": {"type": "type", "color": "#FFF099", "emit": 0.0, "on": "#1B2838"}, "tr": [-0.2, 0.2, 0, 0, 0, 0, 1, 1, 1, 1]},
+                ],
+                "tracks": {"camera": [[0, 0, 0.2, 1.2, 0, 0, 0, 1, 1, 1, 1], [1, 0, 0.2, 1.2, 0, 0, 0, 1, 1, 1, 1]]},
+                "scalars": {"fov": [30.0, 30.0]},
+            }))
+            fc = colors.film_colours(fdir)
+            probs = dict(colors.problems(fc))
+            self.assertIn("glow", probs)
+            self.assertEqual(probs["glow"]["on"], "#0B0C10", "only stage-floating lettering should flag glow clash, not plated lettering")
+            env = {**os.environ, "FILM": str(fdir), "SKILL": str(SKILL)}
+            r_pal = subprocess.run([sys.executable, str(SCRIPTS / "palette.py")], capture_output=True, text=True, env=env)
+            self.assertEqual(r_pal.returncode, 0, r_pal.stderr)
+            self.assertIn("melts into a nearby glow of #FFEFA0", r_pal.stdout)
+            self.assertNotIn("confetti #FFF099", r_pal.stdout)
+
+        # 4) scene.py stage floor keeps Cycles spec=0.4/coat=0.25 while toning EEVEE probe glare down
+        scene_src = (SCRIPTS / "scene.py").read_text(encoding="utf-8")
+        self.assertIn('0.06 if ENGINE == "eevee" else 0.4', scene_src)
+        self.assertIn('coat=0.02 if ENGINE == "eevee" else 0.25', scene_src)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
